@@ -148,6 +148,7 @@ public class GameOfLife extends PApplet {
         return (Frame) comp;
     }
 
+
     // Override the exit() method to save window properties before closing
     @Override
     public void exit() {
