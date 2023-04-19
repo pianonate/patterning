@@ -27,3 +27,9 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### intellij bs ###
+.idea/uiDesigner.xml
+.idea/inspectionProfiles/Project_Default.xml
+
+
