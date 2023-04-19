@@ -5,23 +5,24 @@ import java.util.HashMap;
 //        if it reaches a size then increase it by a load factor and copy it to the new array
 
 public class LifeUniverse {
-    private final double LOAD_FACTOR = 0.9;
-    private final int INITIAL_SIZE = 16;
+    private static final double LOAD_FACTOR = 0.9;
+    private static final int INITIAL_SIZE = 16;
 
-    private final int EMPTY_TREE_CACHE_SIZE = 1024;
-    private final int HASHMAP_LIMIT = 24;
-    private final int MASK_LEFT = 1;
-    private final int MASK_TOP = 2;
-    private final int MASK_RIGHT = 4;
-    private final int MASK_BOTTOM = 8;
+    private static final int EMPTY_TREE_CACHE_SIZE = 1024;
+    private static final int HASHMAP_LIMIT = 24;
+    private static final int MASK_LEFT = 1;
+    private static final int MASK_TOP = 2;
+    private static final int MASK_RIGHT = 4;
+    private static final int MASK_BOTTOM = 8;
 
     public int lastId;
     private int hashmapSize;
-    public int maxLoad = 0;
+    public int maxLoad;
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
     private final double[] _powers;
+    @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
     private int rule_b;
     private int rule_s;
@@ -86,10 +87,7 @@ public class LifeUniverse {
 
         this.rewind_state = null;
 
-        /**
-         * number of generations to calculate at one time,
-         * written as 2^n
-         */
+        // number of generations to calculate at one time, written as 2^n
         this.step = 0;
 
         // in which generation are we
@@ -153,7 +151,7 @@ public class LifeUniverse {
             }
         } else {
             if (level > root.level) {
-                // no need to delete pixels outside of the universe
+                // no need to delete pixels outside the universe
                 return;
             }
         }
@@ -162,6 +160,7 @@ public class LifeUniverse {
     }
 
     public boolean getBit(int x, int y) {
+        //noinspection SuspiciousNameCombination
         int level = getLevelFromBounds(new Bounds(x, y, x, y));
 
         if (level > root.level) {
@@ -186,8 +185,8 @@ public class LifeUniverse {
 
     // will always be called with integer boundaries
     public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
-        int offsetX = Math.round((bounds.left - bounds.right) / 2) - bounds.left;
-        int offsetY = Math.round((bounds.top - bounds.bottom) / 2) - bounds.top;
+        int offsetX = Math.round((float) (bounds.left - bounds.right) / 2) - bounds.left;
+        int offsetY = Math.round((float) (bounds.top - bounds.bottom) / 2) - bounds.top;
 
         moveField(fieldX, fieldY, offsetX, offsetY);
 
@@ -359,12 +358,6 @@ public class LifeUniverse {
 
         long end = System.currentTimeMillis();
         System.out.println("gc millis: " + (end - start));
-
-        // System.out.println("new entries: " + last_id);
-        // System.out.println("population: " + root.population());
-        // System.out.println("new hashmap size: " + hashmap_size);
-        // System.out.println("GC done in " + (System.currentTimeMillis() - t));
-        // System.out.println("size: " + Arrays.stream(hashmap).filter(Objects::nonNull).count());
     }
 
     // the hash function used for the hashmap
@@ -529,6 +522,7 @@ public class LifeUniverse {
     }
 
 
+    @SuppressWarnings("unused")
     public void setStep(int step) {
         if (step != this.step) {
             this.step = step;
@@ -539,6 +533,7 @@ public class LifeUniverse {
         }
     }
 
+    @SuppressWarnings("unused")
     public void setRules(int s, int b) {
         if (this.rule_s != s || this.rule_b != b) {
             this.rule_s = s;
@@ -631,13 +626,15 @@ public class LifeUniverse {
             return nodeQuickNextGeneration(node);
         }
 
+        // right now i have seen a nodeNextGeneration where
+        // node.level == 2 so...
+        // maybe this doesn't need to exist?
+        // todo: see what happens when you have a blank canvas and use setbit...
         if (node.level == 2) {
-            if (node.quick_cache != null) {
-                return node.quick_cache;
-            } else {
+            if (node.quick_cache == null) {
                 node.quick_cache = node_level2_next(node);
-                return node.quick_cache;
             }
+            return node.quick_cache;
         }
 
         Node nw = node.nw;
@@ -645,6 +642,7 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
+        @SuppressWarnings("DuplicatedCode")
         Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw);
         Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw);
         Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw);

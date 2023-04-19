@@ -2,17 +2,19 @@ import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class HUDInfo {
-    private Map<String, Integer> data;
+public class HUDStringBuilder {
+    private final Map<String, Integer> data;
     private String cachedFormattedString;
+    private final NumberFormat numberFormat;
+    private final String delimiter;
     private int lastUpdateFrame;
-    private NumberFormat numberFormat;
 
-    public HUDInfo() {
+    public HUDStringBuilder() {
         data = new LinkedHashMap<>(); // Use LinkedHashMap to maintain the insertion order
         cachedFormattedString = "";
         lastUpdateFrame = 0;
         numberFormat = NumberFormat.getInstance();
+        delimiter = " | ";
     }
 
     public void addOrUpdate(String key, int value) {
@@ -39,6 +41,6 @@ public class HUDInfo {
     }
 
     public String getFormattedString(int frameCount, int updateFrequency) {
-        return getFormattedString(frameCount, updateFrequency, ", ");
+        return getFormattedString(frameCount, updateFrequency, this.delimiter);
     }
 }

@@ -6,15 +6,6 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.nio.IntBuffer;
 
-
-
-class Formats {
-
-    Result parseRLE(String text) throws NotLifeException {
-        return new RLEParser(text).getResult();
-    }
-}
-
 public class RLEParser {
     final String METADATA_PREFIX = "#";
     final String HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$";
