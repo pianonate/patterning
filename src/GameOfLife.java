@@ -2,19 +2,29 @@ import processing.core.PApplet;
 import processing.data.JSONObject;
 
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 import java.awt.datatransfer.*;
 import java.io.File;
 import java.io.IOException;
 
 /**
- * todo
- * Add mc parser support
- * do you need to manage the size of the hashmap?
- * create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
- * here's what would be cool - zoom over a section - if your mouse is over a section of what's going on, you can see the details at a much higher zoom level
+ * DONE: don't start on paste - you want to look at it first
+ * DONE: count down to start and allow for a space to interrupt it
+ * todo: research "debounce"
+ * todo: move with arrow keys
+ * todo: move with mouse
+ * todo: hairline grid drawing -toggle with the letter g
+ * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
+ * todo: move HUD to upper right with a panel with an expander/collapser
+ * todo: display pasted in metadata in a HUD section
+ * todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
+ * todo: Add mc parser support
+ * todo: do you need to manage the size of the hashmap?
+ * todo: possibly simplification create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
+ * todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on, you can see the details at a much higher zoom level
+ * todo: load RLEs from a file
+ * todo: save all pasted in valid RLEs in a folder.  check if it's already there and if it's different.
+ * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  */
 public class GameOfLife extends PApplet {
 
@@ -27,12 +37,13 @@ public class GameOfLife extends PApplet {
     private LifeDrawer drawer;
     private Result result;
     private HUDStringBuilder hudInfo;
+    private CountdownText countdownText;
     private boolean running;
     private boolean fitToWindow;
     // used for resize detection
     private int prevWidth, prevHeight;
     // right now this is the only way that life gets into the game
-    private String pastedLife;
+    private String storedLife;
     private static final String PROPERTY_FILE_NAME = "GameOfLife.json";
 
     void setupPattern() {
@@ -67,7 +78,7 @@ public class GameOfLife extends PApplet {
             properties = loadJSONObject(dataPath(propertiesFileName));
             width = properties.getInt("width", width);
             height = properties.getInt("height", height);
-            this.pastedLife = properties.getString("lifeForm", "");
+            this.storedLife = properties.getString("lifeForm", "");
         }
 
         // Set the window size
@@ -97,9 +108,9 @@ public class GameOfLife extends PApplet {
         loadSavedWindowPositions();
 
         // good life was saved prior
-        if (!(pastedLife == null || pastedLife.isEmpty())) {
+        if (!(storedLife == null || storedLife.isEmpty())) {
             // invoke the logic you already have to reify this
-            pasteBaby();
+            parseStoredLife();
         }
     }
 
@@ -184,7 +195,7 @@ public class GameOfLife extends PApplet {
         properties.setInt("height", frame.getHeight());
         properties.setInt("screen", screenIndex);
         // oh baby - reify
-        properties.setString("lifeForm", pastedLife);
+        properties.setString("lifeForm", storedLife);
 
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME));
     }
@@ -204,7 +215,7 @@ public class GameOfLife extends PApplet {
 
         background(255);
 
-        // result is null until a value has been passed in from a copy/paste of RLE (currently)
+        // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (result != null) {
 
             if (life.generation == 0) {
@@ -219,12 +230,16 @@ public class GameOfLife extends PApplet {
 
             Bounds bounds = life.getRootBounds();
 
-
             // default is to constrain to screen size
             // but if people start using +/- to zoom in and out then
             // fit bounds stops until then f is invoked to "refit"
             if (fitToWindow)
                 drawer.fit_bounds(bounds);
+
+            if (countdownText != null) {
+                countdownText.update();
+                countdownText.draw();
+            }
 
         }
 
@@ -236,7 +251,7 @@ public class GameOfLife extends PApplet {
 
         // Assuming key is of type char and running is a boolean variable
         switch (key) {
-            case '+' -> {
+            case '+', '=' -> {
                 // zoom in -
                 // stop fitting to window first so just let it ride out
                 fitToWindow = false;
@@ -248,11 +263,17 @@ public class GameOfLife extends PApplet {
                 fitToWindow = false;
                 drawer.zoom_centered(true);
             }
-            case 'F', 'f' -> {
-                fitToWindow = true;
-            }
+            case 'F', 'f' -> fitToWindow = true;
             case ' ' -> {
-                running = !running;
+                // it's been created and we're not in the process of counting down
+                boolean que = countdownText!=null && !countdownText.isCountingDown;
+                if (countdownText!=null && countdownText.isCountingDown) {
+                    countdownText.interruptCountdown();
+                } else {
+                    running = !running;
+                }
+
+
             }
             case 'V', 'v' -> {
                 if (keyCode == 86) {
@@ -266,11 +287,7 @@ public class GameOfLife extends PApplet {
 
     }
 
-    /**
-     * extracted from draw() for readability
-     */
     private void drawHUD() {
-
 
         Node root = life.root;
 
@@ -307,39 +324,38 @@ public class GameOfLife extends PApplet {
             // Get the system clipboard
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
-            // Check if the clipboard contains text data
-            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) //noinspection CommentedOutCode
-            {
-                // Get the text data from the clipboard
-                pastedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
+            // Check if the clipboard contains text data and then get it
+            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+                storedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
 
-                Formats parser = new Formats();
-                result = parser.parseRLE(pastedLife);
-
-                /*
-                    println("title: " + result.title);
-                    println("author: " + result.author);
-                    println("comments: " + result.comments);
-                    println("width: " + result.width);
-                    println("height: " + result.height);
-                    println("rule_s: " + result.rule_s);
-                    println("rule_b: " + result.rule_b);
-                    println("rule: " + result.rule);
-                    println("field_x: " + result.field_x);
-                    println("field_y: " + result.field_y);
-                    println("instructions: " + result.instructions);
-                    println("length of instructions: " + result.instructions.length());
-                */
-
-                setupPattern();
-
-                running = true;
+                parseStoredLife();
             }
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void parseStoredLife() {
+
+        try {
+
+            running = false;
+
+            Formats parser = new Formats();
+            result = parser.parseRLE(storedLife);
+
+            setupPattern();
+
+            countdownText = new CountdownText(this, this::run, "counting down - press space to begin immediately: ");
+            countdownText.startCountdown();
+
         } catch (NotLifeException e) {
             println("get a life - here's what failed:\n\n" + e.getMessage());
         }
+    }
+
+    public void run() {
+        running = true;
     }
 
 }
