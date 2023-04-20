@@ -2,20 +2,19 @@ import processing.core.PApplet;
 import processing.data.JSONObject;
 
 import java.awt.*;
-
-import java.awt.datatransfer.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.IOException;
 
 /**
- * DONE: don't start on paste - you want to look at it first
- * DONE: count down to start and allow for a space to interrupt it
  * todo: research "debounce"
  * todo: move with arrow keys
  * todo: move with mouse
  * todo: hairline grid drawing -toggle with the letter g
  * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
- * todo: move HUD to upper right with a panel with an expander/collapser
+ * todo: move HUD to upper right with a panel with an expand/collapse
  * todo: display pasted in metadata in a HUD section
  * todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
  * todo: Add mc parser support
@@ -56,10 +55,7 @@ public class GameOfLife extends PApplet {
 
         life.setupField(result.field_x, result.field_y, bounds);
 
-        // the following was in the original but you're not operating the same way so...
-        // i think you can let it go but wait till you've done some other stuff to decide
-        // bounds = life.getRootBounds();
-        // drawer.fit_bounds(bounds);
+
     }
 
     public void settings() {
@@ -97,7 +93,7 @@ public class GameOfLife extends PApplet {
         frameRate(120);
 
         running = false;
-        fitToWindow = true;
+        fitToWindow = false;
 
         drawer = new LifeDrawer(this, 4);
         // create a new LifeUniverse object with the given points
@@ -200,12 +196,14 @@ public class GameOfLife extends PApplet {
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME));
     }
 
+    // guaranteed by processing to be called prior to the draw phase
     public void pre() {
 
         if (prevWidth != width || prevHeight != height) {
+            // moral equivalent of a resize
             // System.out.println("Window resized to: " + width + " x " + height);
-            drawer.canvas_width = width;
-            drawer.canvas_height = height;
+            drawer.setSize(width, height);
+
         }
         prevWidth = width;
         prevHeight = height;
@@ -218,7 +216,10 @@ public class GameOfLife extends PApplet {
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (result != null) {
 
+            Bounds bounds = life.getRootBounds();
+
             if (life.generation == 0) {
+                drawer.fit_bounds(bounds);
                 life.saveRewindState();
             }
 
@@ -227,8 +228,6 @@ public class GameOfLife extends PApplet {
             }
 
             drawer.redraw(life.root);
-
-            Bounds bounds = life.getRootBounds();
 
             // default is to constrain to screen size
             // but if people start using +/- to zoom in and out then
@@ -265,7 +264,7 @@ public class GameOfLife extends PApplet {
             }
             case 'F', 'f' -> fitToWindow = true;
             case ' ' -> {
-                // it's been created and we're not in the process of counting down
+                // it's been created, and we're not in the process of counting down
                 boolean que = countdownText!=null && !countdownText.isCountingDown;
                 if (countdownText!=null && countdownText.isCountingDown) {
                     countdownText.interruptCountdown();

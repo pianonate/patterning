@@ -1,5 +1,8 @@
 import processing.core.PApplet;
 
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+
 class LifeDrawer {
     PApplet p;
     int canvas_offset_x = 0;
@@ -11,6 +14,10 @@ class LifeDrawer {
     int background_color = 255;
     float cell_width;
     float border_width_ratio = 0;
+
+    // float pixel_ratio = 1;
+    double pixel_ratio_x = 1;
+    double pixel_ratio_y = 1;
 
 
     LifeDrawer(PApplet p, float cell_width) {
@@ -54,6 +61,33 @@ class LifeDrawer {
         p.noStroke();
         p.fill(cell_color);
         p.rect(x, y, width, height);
+    }
+
+    // todo: so...it seems that the canvas_offset values are part of the conversation
+    void setSize(int width, int height) {
+        if (width != canvas_width || height != canvas_height) {
+            canvas_width = width;
+            canvas_height = height;
+
+
+            /* if (true) {
+                canvas.style("width", width + "px");
+                canvas.style("height", height + "px");
+                factor = displayDensity();
+            } else {
+                factor = 1;
+            } */
+
+
+            GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            GraphicsDevice device = env.getDefaultScreenDevice();
+            GraphicsConfiguration config = device.getDefaultConfiguration();
+            AffineTransform transform = config.getDefaultTransform();
+
+            pixel_ratio_x = transform.getScaleX();
+            pixel_ratio_y = transform.getScaleY();
+
+        }
     }
 
     void redraw(Node node) {
