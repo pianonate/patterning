@@ -28,7 +28,7 @@ public class LifeUniverse {
     private int rule_s;
     public Node root;
     private Node rewind_state;
-    private int step;
+    public int step;
     public float generation;
 
     private final Node falseLeaf;
@@ -76,12 +76,12 @@ public class LifeUniverse {
         this._bitcounts[15] = 4;
 
         for (int i = 0x10; i < 0x758; i++) {
-            this._bitcounts[i] = (byte)(this._bitcounts[i & 0xF] + this._bitcounts[i >> 4 & 0xF] + this._bitcounts[i >> 8]);
+            this._bitcounts[i] = (byte) (this._bitcounts[i & 0xF] + this._bitcounts[i >> 4 & 0xF] + this._bitcounts[i >> 8]);
         }
 
         // current rule setting
         this.rule_b = 1 << 3;
-        this.rule_s =  1 << 2 | 1 << 3;
+        this.rule_s = 1 << 2 | 1 << 3;
 
         this.root = null;
 
@@ -208,7 +208,6 @@ public class LifeUniverse {
     }
 
 
-
     private Node emptyTree(int level) {
         if (emptyTreeCache[level] != null) {
             return emptyTreeCache[level];
@@ -229,7 +228,7 @@ public class LifeUniverse {
 
 
     private Node expandUniverse(Node node) {
-       // System.out.println("expanding universe");
+        // System.out.println("expanding universe");
 
         Node t = emptyTree(node.level - 1);
 
@@ -245,10 +244,12 @@ public class LifeUniverse {
     // generations forward
     private void uncache(boolean alsoQuick) {
         for (Node node : hashmap.values()) {
-            node.cache = null;
-            node.hashmapNext = null;
-            if (alsoQuick) {
-                node.quick_cache = null;
+            if (node != null) {
+                node.cache = null;
+                node.hashmapNext = null;
+                if (alsoQuick) {
+                    node.quick_cache = null;
+                }
             }
         }
     }
@@ -605,9 +606,9 @@ public class LifeUniverse {
         Node se = node.se;
         int bitmask =
                 nw.nw.population << 15 | nw.ne.population << 14 | ne.nw.population << 13 | ne.ne.population << 12 |
-                        nw.sw.population << 11 | nw.se.population << 10 | ne.sw.population <<  9 | ne.se.population <<  8 |
-                        sw.nw.population <<  7 | sw.ne.population <<  6 | se.nw.population <<  5 | se.ne.population <<  4 |
-                        sw.sw.population <<  3 | sw.se.population <<  2 | se.sw.population <<  1 | se.se.population;
+                        nw.sw.population << 11 | nw.se.population << 10 | ne.sw.population << 9 | ne.se.population << 8 |
+                        sw.nw.population << 7 | sw.ne.population << 6 | se.nw.population << 5 | se.ne.population << 4 |
+                        sw.sw.population << 3 | sw.se.population << 2 | se.sw.population << 1 | se.se.population;
 
         int result = evalMask(bitmask >> 5) |
                 evalMask(bitmask >> 4) << 1 |
@@ -617,7 +618,7 @@ public class LifeUniverse {
         return level1Create(result);
     }
 
-    private  Node nodeNextGeneration(Node node) {
+    private Node nodeNextGeneration(Node node) {
         if (node.cache != null) {
             return node.cache;
         }

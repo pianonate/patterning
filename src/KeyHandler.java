@@ -1,4 +1,5 @@
 import processing.core.PApplet;
+import processing.event.KeyEvent;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -12,16 +13,26 @@ public class KeyHandler {
     private long lastIncreaseTime;
     private float initialMoveAmount = 1;
     private float moveAmount = initialMoveAmount;
-
     private boolean displayBounds = false;
-
 
     public KeyHandler(PApplet p, LifeUniverse life, LifeDrawer drawer) {
         this.p = p;
+        p.registerMethod("keyEvent", this);
+        p.registerMethod("post", this);
         this.drawer = drawer;
         this.life = life;
         this.pressedKeys = new HashSet<>();
+        // todo: if you increase it here then any time you handle movement you will exceed
+        //       the last increase time - this seems like a bug to me
         this.lastIncreaseTime = System.currentTimeMillis();
+    }
+
+    public void keyEvent(KeyEvent e) {
+
+        switch (e.getAction()) {
+            case KeyEvent.PRESS -> handleKeyPressed();
+            case KeyEvent.RELEASE -> handleKeyReleased();
+        }
     }
 
     public void handleKeyPressed() {
@@ -36,9 +47,13 @@ public class KeyHandler {
         switch (p.key) {
             case '+', '=' -> zoom(false);
             case '-' -> zoom(true);
+            case ']' -> handleStep(true);
+            case '[' -> handleStep(false);
             case 'B', 'b' -> displayBounds = !displayBounds;
             case 'C', 'c' -> drawer.center_view();
             case 'F', 'f' -> drawer.fit_bounds(life.getRootBounds());
+            case 'V', 'v' -> handlePaste();
+            case ' ' -> ((GameOfLife) p).spaceBarHandler();
             default -> {
                 // System.out.println("key: " + key + " keycode: " + keyCode);
             }
@@ -47,12 +62,28 @@ public class KeyHandler {
         handleMovementKeys();
     }
 
-    private void zoom(boolean out) {
-        Bounds bounds = life.getRootBounds();
-        drawer.zoom_bounds(out, bounds);
+    private void handleStep(Boolean faster) {
+        int step = life.step;
+        if (faster)
+            step++;
+        else
+            step--;
+
+        life.setStep(step);
+
     }
 
-    public void handleKeyReleased() {
+    private void handlePaste() {
+        if (p.keyCode == 86) {
+            ((GameOfLife) p).pasteHandler();
+        }
+    }
+
+    private void zoom(boolean out) {
+        drawer.zoom_at(out, p.mouseX, p.mouseY);
+    }
+
+    private void handleKeyReleased() {
         int keyCode = p.keyCode;
         pressedKeys.remove(keyCode);
 
@@ -101,13 +132,12 @@ public class KeyHandler {
         lastDirection = currentDirection;
     }
 
-    // update is invoked by the draw of the main sketch
-    // so that it can delegate responsibility to dealing with
-    // draw functions related to the keyboard driven interface of this thing
-    // if we ever create buttons for the user experience
-    // we may have to refactor this so the drawing operations are separated out to be invoked
-    // either by user interface elements or by key presses that are bound to the user interface elements
-    public void update() {
+    // post is a registeredMethod guaranteed to be invoked
+    // after the draw of the main sketch
+    // it handles draw functions that must be invoked each draw cycle
+    // related to the keyboard driven interface of this thing
+    // such as moving it around or displaying the boundary
+    public void post() {
         for (int i = 0; i < 2; i++) {
             handleMovementKeys();
         }

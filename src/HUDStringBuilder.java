@@ -3,7 +3,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HUDStringBuilder {
-    private final Map<String, Integer> data;
+    private final Map<String, Long> data;
     private String cachedFormattedString;
     private final NumberFormat numberFormat;
     private final String delimiter;
@@ -17,14 +17,14 @@ public class HUDStringBuilder {
         delimiter = " | ";
     }
 
-    public void addOrUpdate(String key, int value) {
+    public void addOrUpdate(String key, long value) {
         data.put(key, value);
     }
 
     public String getFormattedString(int frameCount, int updateFrequency, String delimiter) {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
             StringBuilder formattedString = new StringBuilder();
-            for (Map.Entry<String, Integer> entry : data.entrySet()) {
+            for (Map.Entry<String, Long> entry : data.entrySet()) {
                 formattedString.append(entry.getKey())
                         .append(" ")
                         .append(numberFormat.format(entry.getValue()))

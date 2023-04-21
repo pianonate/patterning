@@ -13,5 +13,6 @@ out/
 ### intellij bs ###
 .idea/uiDesigner.xml
 .idea/inspectionProfiles/Project_Default.xml
+.idea/libraries/G4P.xml
 
 

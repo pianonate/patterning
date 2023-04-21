@@ -1,3 +1,7 @@
+import g4p_controls.G4P;
+import g4p_controls.GCustomSlider;
+import g4p_controls.GEvent;
+import g4p_controls.GValueControl;
 import processing.core.PApplet;
 import processing.data.JSONObject;
 
@@ -9,8 +13,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * todo: zoom so that the mouse location is the center of the zoom so that you can get at specific areas rapidly.  possibly this was what his mousewheel functionality was doing?
  * todo: step functionality on [ and ]
+ * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
  * todo: is it possible to
  * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
@@ -27,6 +31,7 @@ import java.io.IOException;
  * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
+ *
  */
 public class GameOfLife extends PApplet {
 
@@ -45,7 +50,8 @@ public class GameOfLife extends PApplet {
     private boolean running;
     // todo: refactor result to have a more useful name
     private Result result;
-    private KeyHandler keyHandler;
+
+    private GCustomSlider stepSlider;
 
     // used for resize detection
     private int prevWidth, prevHeight;
@@ -100,12 +106,19 @@ public class GameOfLife extends PApplet {
 
         frameRate(120);
 
-        running = false;
-
         // create a new LifeUniverse object with the given points
         life = new LifeUniverse();
         drawer = new LifeDrawer(this, 4);
-        keyHandler = new KeyHandler(this, life, drawer);
+
+        KeyHandler keyHandler = new KeyHandler(this, life, drawer);
+
+        stepSlider = new GCustomSlider(this, 20, 80, 260, 50);
+        stepSlider.setShowDecor(false, true, false, true);
+        stepSlider.setNumberFormat(G4P.INTEGER);
+        stepSlider.setLimits(1, 32);
+        stepSlider.setValue(1);
+        stepSlider.setShowValue(true);
+
 
         hudInfo = new HUDStringBuilder();
 
@@ -232,9 +245,6 @@ public class GameOfLife extends PApplet {
 
             drawer.redraw(life.root);
 
-            // moving some functionality directly into the keyHandler to make it easier to follow (in theory)
-            keyHandler.update();
-
             if (countdownText != null) {
                 countdownText.update();
                 countdownText.draw();
@@ -242,56 +252,27 @@ public class GameOfLife extends PApplet {
 
         }
 
+        // always draw HUD
         drawHUD();
 
     }
 
     public void mousePressed() {
+        if (stepSlider.hasFocus()) return;
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
     }
 
     public void mouseReleased() {
+        if (stepSlider.hasFocus()) return;
         last_mouse_x = 0;
         last_mouse_y = 0;
-    }
-
-    public void keyReleased() {
-        keyHandler.handleKeyReleased();
-    }
-
-    public void keyPressed() {
-
-        keyHandler.handleKeyPressed();
-
-        // Assuming key is of type char and running is a boolean variable
-        switch (key) {
-
-            case ' ' -> {
-                // it's been created, and we're not in the process of counting down
-                if (countdownText != null && countdownText.isCountingDown) {
-                    countdownText.interruptCountdown();
-                    // running = false;
-                } else {
-                    // todo: normally we just toggle running (to be handled later)
-                    running = !running;
-                }
-            }
-            case 'V', 'v' -> {
-                if (keyCode == 86) {
-                    pasteHandler();
-                }
-            }
-            default -> {
-                // System.out.println("key: " + key + " keycode: " + keyCode);
-            }
-        }
-
     }
 
     public void mouseDragged() {
         // turn off fit to window mode as we're dragging it and if 'f' is on it
         // will keep trying to bounce back
+        if (stepSlider.hasFocus()) return;
 
         float dx = Math.round(mouseX - last_mouse_x);
         float dy = Math.round(mouseY - last_mouse_y);
@@ -302,12 +283,18 @@ public class GameOfLife extends PApplet {
         last_mouse_y += dy;
     }
 
+    public void onSliderChange(int value) {
+        println("slider changed:" + value);
+
+    }
+
     private void drawHUD() {
 
         Node root = life.root;
 
         hudInfo.addOrUpdate("fps", parseInt(frameRate));
-        hudInfo.addOrUpdate("generation", parseInt(life.generation));
+        hudInfo.addOrUpdate("step", (long) Math.pow(2, life.step));
+        hudInfo.addOrUpdate("generation", (long) (life.generation));
         hudInfo.addOrUpdate("population", root.population);
         hudInfo.addOrUpdate("maxLoad", life.maxLoad);
         hudInfo.addOrUpdate("lastID", life.lastId);
@@ -333,7 +320,7 @@ public class GameOfLife extends PApplet {
 
     }
 
-    private void pasteHandler() {
+    public void pasteHandler() {
 
         try {
             // Get the system clipboard
@@ -354,7 +341,7 @@ public class GameOfLife extends PApplet {
 
         try {
 
-            running = false;
+            stop();
 
             Formats parser = new Formats();
             result = parser.parseRLE(storedLife);
@@ -375,6 +362,27 @@ public class GameOfLife extends PApplet {
 
     public void stop() {
         running = false;
+    }
+
+    private void toggleRunning() {
+        running = !running;
+    }
+
+    public void spaceBarHandler() {
+
+        // it's been created, and we're not in the process of counting down
+        if (countdownText != null && countdownText.isCountingDown) {
+            countdownText.interruptCountdown();
+        } else {
+            // todo: normally we just toggle running (to be handled later)
+            toggleRunning();
+        }
+    }
+
+
+    public void handleSliderEvents(GValueControl slider, GEvent even) {
+        println("integer value:" + slider.getValueI() + " float value:" + slider.getValueF());
+        life.setStep(slider.getValueI());
     }
 
 
