@@ -4,15 +4,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class KeyHandler {
-    private PApplet p;
-    private LifeUniverse life;
-    private LifeDrawer drawer;
-    private Set<Integer> pressedKeys;
+    private final PApplet p;
+    private final LifeUniverse life;
+    private final LifeDrawer drawer;
+    private final Set<Integer> pressedKeys;
     private int lastDirection = 0;
     private long lastIncreaseTime;
     private float initialMoveAmount = 1;
     private float moveAmount = initialMoveAmount;
-    private long increaseInterval = 500;
 
     private boolean displayBounds = false;
 
@@ -21,7 +20,7 @@ public class KeyHandler {
         this.p = p;
         this.drawer = drawer;
         this.life = life;
-        this.pressedKeys = new HashSet<Integer>();
+        this.pressedKeys = new HashSet<>();
         this.lastIncreaseTime = System.currentTimeMillis();
     }
 
@@ -42,7 +41,6 @@ public class KeyHandler {
             case 'F', 'f' -> drawer.fit_bounds(life.getRootBounds());
             default -> {
                 // System.out.println("key: " + key + " keycode: " + keyCode);
-
             }
         }
 
@@ -92,6 +90,7 @@ public class KeyHandler {
         } else {
             // Increase moveAmount if enough time has passed since last increase
             long currentTime = System.currentTimeMillis();
+            long increaseInterval = 500;
             if (currentTime - lastIncreaseTime >= increaseInterval) {
                 moveAmount += 0.5f;
                 lastIncreaseTime = currentTime;

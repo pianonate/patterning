@@ -11,15 +11,17 @@ public class CountdownText {
     boolean isCountingDown;
     private int startTime;
     int fadeValue;
-    Runnable registeredMethod;
+    Runnable interruptMethod;
+    Runnable runMethod;
 
-    CountdownText(PApplet parent, Runnable registeredMethod, String message) {
-        this(parent, registeredMethod, message, 30, 0xFF000000, 1500, 3);
+    CountdownText(PApplet parent, Runnable runMethod, Runnable interruptMethod, String message) {
+        this(parent, runMethod, interruptMethod, message, 30, 0xFF000000, 1500, 3);
     }
 
-    CountdownText(PApplet parent, Runnable registeredMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
+    CountdownText(PApplet parent, Runnable runMethod, Runnable interruptMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
         this.parent = parent;
-        this.registeredMethod = registeredMethod;
+        this.runMethod = runMethod;
+        this.interruptMethod = interruptMethod;
         this.message = message;
         this.textSize = textSize;
         this.textColor = textColor;
@@ -49,9 +51,10 @@ public class CountdownText {
                     currentCount = newCount;
                 }
 
+                // kick off the thing you've been asked to kickoff
                 if (currentCount < 0) {
                     isCountingDown = false;
-                    registeredMethod.run();
+                    runMethod.run();
                 }
             }
         }
@@ -72,7 +75,7 @@ public class CountdownText {
     public void interruptCountdown() {
         if (isCountingDown) {
             isCountingDown = false;
-            registeredMethod.run();
+            interruptMethod.run();
         }
     }
 }

@@ -9,12 +9,14 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * todo: move with mouse
- * todo: move with arrow keys
- * todo: hairline grid drawing -toggle with the letter g
+ * todo: zoom so that the mouse location is the center of the zoom so that you can get at specific areas rapidly.  possibly this was what his mousewheel functionality was doing?
+ * todo: step functionality on [ and ]
+ * todo: is it possible to bind keyboard shortcuts to methods?
+ * todo: is it possible to
  * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
  * todo: move HUD to upper right with a panel with an expand/collapse
  * todo: display pasted in metadata in a HUD section
+ * todo: smooth zoom - is that possible? seems to me it would have to be possible.
  * todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
  * todo: Add mc parser support
  * todo: do you need to manage the size of the hashmap?
@@ -23,6 +25,8 @@ import java.io.IOException;
  * todo: load RLEs from a file
  * todo: save all pasted in valid RLEs in a folder.  check if it's already there and if it's different.
  * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
+ * todo: allow for rotating the images for visual appeal
+ * todo: copy / paste selections
  */
 public class GameOfLife extends PApplet {
 
@@ -226,7 +230,6 @@ public class GameOfLife extends PApplet {
                 life.nextGeneration(true);
             }
 
-
             drawer.redraw(life.root);
 
             // moving some functionality directly into the keyHandler to make it easier to follow (in theory)
@@ -264,14 +267,13 @@ public class GameOfLife extends PApplet {
         // Assuming key is of type char and running is a boolean variable
         switch (key) {
 
-
             case ' ' -> {
                 // it's been created, and we're not in the process of counting down
-                boolean que = countdownText != null && !countdownText.isCountingDown;
                 if (countdownText != null && countdownText.isCountingDown) {
                     countdownText.interruptCountdown();
-                    running = false;
+                    // running = false;
                 } else {
+                    // todo: normally we just toggle running (to be handled later)
                     running = !running;
                 }
             }
@@ -282,15 +284,9 @@ public class GameOfLife extends PApplet {
             }
             default -> {
                 // System.out.println("key: " + key + " keycode: " + keyCode);
-
             }
         }
 
-    }
-
-    private void zoom(boolean out) {
-        Bounds bounds = life.getRootBounds();
-        drawer.zoom_bounds(out, bounds);
     }
 
     public void mouseDragged() {
@@ -365,7 +361,7 @@ public class GameOfLife extends PApplet {
 
             setupPattern();
 
-            countdownText = new CountdownText(this, this::run, "counting down - press space to begin immediately: ");
+            countdownText = new CountdownText(this, this::run, this::stop, "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
 
         } catch (NotLifeException e) {
@@ -376,5 +372,10 @@ public class GameOfLife extends PApplet {
     public void run() {
         running = true;
     }
+
+    public void stop() {
+        running = false;
+    }
+
 
 }
