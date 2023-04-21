@@ -9,9 +9,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * todo: research "debounce"
- * todo: move with arrow keys
  * todo: move with mouse
+ * todo: move with arrow keys
  * todo: hairline grid drawing -toggle with the letter g
  * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
  * todo: move HUD to upper right with a panel with an expand/collapse
@@ -34,10 +33,17 @@ public class GameOfLife extends PApplet {
 
     private LifeUniverse life;
     private LifeDrawer drawer;
-    private Result result;
+
+    float last_mouse_x;
     private HUDStringBuilder hudInfo;
     private CountdownText countdownText;
+    float last_mouse_y;
     private boolean running;
+    // todo: refactor result to have a more useful name
+    private Result result;
+    private KeyListener keyListener;
+    private boolean displayBounds = false;
+
     private boolean fitToWindow;
     // used for resize detection
     private int prevWidth, prevHeight;
@@ -50,11 +56,11 @@ public class GameOfLife extends PApplet {
         life.clearPattern();
         Bounds bounds = life.getBounds(result.field_x, result.field_y);
 
-        // the following was in the original but i'm not sure if it's needed right now...
-        // life.makeCenter(result.field_x, result.field_y, bounds);
-
         life.setupField(result.field_x, result.field_y, bounds);
+        life.saveRewindState();
 
+        // added to do only once at load rather than all the time during draw before it starts running
+        drawer.fit_bounds(bounds);
 
     }
 
@@ -98,6 +104,8 @@ public class GameOfLife extends PApplet {
         drawer = new LifeDrawer(this, 4);
         // create a new LifeUniverse object with the given points
         life = new LifeUniverse();
+
+        keyListener = new KeyListener();
 
         hudInfo = new HUDStringBuilder();
 
@@ -218,11 +226,6 @@ public class GameOfLife extends PApplet {
 
             Bounds bounds = life.getRootBounds();
 
-            if (life.generation == 0) {
-                drawer.fit_bounds(bounds);
-                life.saveRewindState();
-            }
-
             if (running) {
                 life.nextGeneration(true);
             }
@@ -235,6 +238,9 @@ public class GameOfLife extends PApplet {
             if (fitToWindow)
                 drawer.fit_bounds(bounds);
 
+            if (displayBounds)
+                drawer.draw_bounds(bounds);
+
             if (countdownText != null) {
                 countdownText.update();
                 countdownText.draw();
@@ -246,44 +252,87 @@ public class GameOfLife extends PApplet {
 
     }
 
+    public void mousePressed() {
+        last_mouse_x += mouseX;
+        last_mouse_y += mouseY;
+    }
+
+    public void mouseReleased() {
+        last_mouse_x = 0;
+        last_mouse_y = 0;
+    }
+
+    public void keyReleased() {
+        keyListener.keyReleased(key, keyCode);
+    }
+
     public void keyPressed() {
+
+        keyListener.keyPressed(key, keyCode);
 
         // Assuming key is of type char and running is a boolean variable
         switch (key) {
-            case '+', '=' -> {
-                // zoom in -
-                // stop fitting to window first so just let it ride out
-                fitToWindow = false;
-                drawer.zoom_centered(false);
-            }
-            case '-' -> {
-                // zoom out -
-                // stop fitting to window first so just let it ride out
-                fitToWindow = false;
-                drawer.zoom_centered(true);
-            }
+            case '+', '=' -> zoom(false);
+            case '-' -> zoom(true);
+            case 'B', 'b' -> displayBounds = !displayBounds;
+            case 'C', 'c' -> drawer.center_view();
             case 'F', 'f' -> fitToWindow = true;
             case ' ' -> {
                 // it's been created, and we're not in the process of counting down
-                boolean que = countdownText!=null && !countdownText.isCountingDown;
-                if (countdownText!=null && countdownText.isCountingDown) {
+                boolean que = countdownText != null && !countdownText.isCountingDown;
+                if (countdownText != null && countdownText.isCountingDown) {
                     countdownText.interruptCountdown();
+                    running = false;
                 } else {
                     running = !running;
                 }
-
-
             }
             case 'V', 'v' -> {
                 if (keyCode == 86) {
-                    pasteBaby();
+                    pasteHandler();
                 }
             }
             default -> {
-                // Handle other keys if needed
+                System.out.println("key: " + key + " keycode: " + keyCode);
+                handleKeyCodes(keyCode);
             }
         }
 
+    }
+
+    private void handleKeyCodes(int keyCode) {
+        int moveAmount = 1;
+        switch (keyCode) {
+            case LEFT -> drawer.move(-moveAmount, 0);
+            case UP -> drawer.move(0, -moveAmount);
+            case RIGHT -> drawer.move(moveAmount, 0);
+            case DOWN -> drawer.move(0, moveAmount);
+
+            default -> {
+
+            }
+        }
+
+    }
+
+    private void zoom(boolean out) {
+        fitToWindow = false;
+        Bounds bounds = life.getRootBounds();
+        drawer.zoom_bounds(out, bounds);
+    }
+
+    public void mouseDragged() {
+        // turn off fit to window mode as we're dragging it and if 'f' is on it
+        // will keep trying to bounce back
+        fitToWindow = false;
+
+        float dx = Math.round(mouseX - last_mouse_x);
+        float dy = Math.round(mouseY - last_mouse_y);
+
+        drawer.move(dx, dy);
+
+        last_mouse_x += dx;
+        last_mouse_y += dy;
     }
 
     private void drawHUD() {
@@ -317,7 +366,7 @@ public class GameOfLife extends PApplet {
 
     }
 
-    private void pasteBaby() {
+    private void pasteHandler() {
 
         try {
             // Get the system clipboard

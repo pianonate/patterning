@@ -1,8 +1,5 @@
 import processing.core.PApplet;
 
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-
 class LifeDrawer {
     PApplet p;
     int canvas_offset_x = 0;
@@ -15,9 +12,6 @@ class LifeDrawer {
     float cell_width;
     float border_width_ratio = 0;
 
-    // float pixel_ratio = 1;
-    double pixel_ratio_x = 1;
-    double pixel_ratio_y = 1;
 
 
     LifeDrawer(PApplet p, float cell_width) {
@@ -63,46 +57,25 @@ class LifeDrawer {
         p.rect(x, y, width, height);
     }
 
-    // todo: so...it seems that the canvas_offset values are part of the conversation
     void setSize(int width, int height) {
         if (width != canvas_width || height != canvas_height) {
             canvas_width = width;
             canvas_height = height;
-
-
-            /* if (true) {
-                canvas.style("width", width + "px");
-                canvas.style("height", height + "px");
-                factor = displayDensity();
-            } else {
-                factor = 1;
-            } */
-
-
-            GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            GraphicsDevice device = env.getDefaultScreenDevice();
-            GraphicsConfiguration config = device.getDefaultConfiguration();
-            AffineTransform transform = config.getDefaultTransform();
-
-            pixel_ratio_x = transform.getScaleX();
-            pixel_ratio_y = transform.getScaleY();
-
         }
     }
 
     void redraw(Node node) {
-        p.background(background_color);
         border_width = (int) (border_width_ratio * cell_width);
         float size = (float) Math.pow(2, node.level - 1) * cell_width;
         draw_node(node, 2 * size, -size, -size);
     }
 
-    void move(int dx, int dy) {
-        canvas_offset_x += dx;
-        canvas_offset_y += dy;
+    void move(float dx, float dy) {
+        canvas_offset_x += Math.round(dx);
+        canvas_offset_y += Math.round(dy);
     }
 
-    void zoom(boolean out, int center_x, int center_y) {
+    void zoom(boolean out, double center_x, double center_y) {
         if (out) {
             canvas_offset_x -= (canvas_offset_x - center_x) / 2;
             canvas_offset_y -= (canvas_offset_y - center_y) / 2;
@@ -131,6 +104,39 @@ class LifeDrawer {
             zoom_centered(false);
         }
     }
+
+    /*
+    This implementation calculates the center of the bounding rectangle based on the
+    passed Bounds and the current canvas_offset_x and canvas_offset_y values. It then
+     determines the zoom factor (either 1.1 for zooming out or 0.9 for zooming in)
+     and updates the cell_width accordingly. Finally, the canvas_offset_x and canvas_offset_y
+      values are updated to keep the center of the bounding rectangle at the same
+      position on the screen during the zoom operation.
+
+    You can call this zoom_bounds method with the out parameter
+    set to true or false and the Bounds instance you want to zoom in or out from.
+     */
+    public void zoom_bounds(boolean out, Bounds bounds) {
+        float width = bounds.right - bounds.left;
+        float height = bounds.bottom - bounds.top;
+
+        // Calculate the center of the bounding rectangle
+        float centerX = canvas_offset_x + (bounds.left + width / 2) * cell_width;
+        float centerY = canvas_offset_y + (bounds.top + height / 2) * cell_width;
+
+        // Calculate the zoom factor
+        float zoomFactor = out ? 1.01f : 0.99f;
+
+        // Update the cell width
+        cell_width *= zoomFactor;
+
+        // Update canvas offsets to keep the center of the bounding rectangle at the same position on the screen
+        canvas_offset_x = (int) (centerX - (bounds.left + width / 2) * cell_width);
+        canvas_offset_y = (int) (centerY - (bounds.top + height / 2) * cell_width);
+
+        zoom_at(out, (int) centerX, (int) centerY);
+    }
+
 
     void center_view() {
         canvas_offset_x = canvas_width / 2;
@@ -163,6 +169,22 @@ class LifeDrawer {
         canvas_offset_y = Math.round(y);
     }
 
+    void draw_bounds(Bounds bounds) {
+
+        float width = bounds.right - bounds.left;
+        float height = bounds.bottom - bounds.top;
+
+        // Calculate the top-left corner coordinates of the bounding rectangle
+        float x = canvas_offset_x + bounds.left * cell_width;
+        float y = canvas_offset_y + bounds.top * cell_width;
+
+        p.noFill();
+        p.stroke(200);
+        p.strokeWeight(1);
+        p.rect(x, y, width * cell_width, height * cell_width);
+
+    }
+
     void draw_cell(int x, int y, boolean set) {
         float cell_x = x * cell_width + canvas_offset_x;
         float cell_y = y * cell_width + canvas_offset_y;
@@ -177,17 +199,6 @@ class LifeDrawer {
         p.rect(cell_x, cell_y, width, width);
     }
 
-    /*
-    the original javascript for this:
-        function pixel2cell(x, y)
-    {
-        return {
-            x : Math.floor((x * pixel_ratio - canvas_offset_x + drawer.border_width / 2) / drawer.cell_width),
-            y : Math.floor((y * pixel_ratio - canvas_offset_y + drawer.border_width / 2) / drawer.cell_width)
-        };
-  }
-
-*/
 
     boolean isFinite(float value) {
         return !Float.isInfinite(value) && !Float.isNaN(value);

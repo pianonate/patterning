@@ -8,7 +8,7 @@ out/
 
 ### my bs ###
 
-/src/javascriptSources/
+/src/resources/
 
 ### intellij bs ###
 .idea/uiDesigner.xml
