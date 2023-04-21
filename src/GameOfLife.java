@@ -41,10 +41,8 @@ public class GameOfLife extends PApplet {
     private boolean running;
     // todo: refactor result to have a more useful name
     private Result result;
-    private KeyListener keyListener;
-    private boolean displayBounds = false;
+    private KeyHandler keyHandler;
 
-    private boolean fitToWindow;
     // used for resize detection
     private int prevWidth, prevHeight;
     // right now this is the only way that life gets into the game
@@ -99,13 +97,11 @@ public class GameOfLife extends PApplet {
         frameRate(120);
 
         running = false;
-        fitToWindow = false;
 
-        drawer = new LifeDrawer(this, 4);
         // create a new LifeUniverse object with the given points
         life = new LifeUniverse();
-
-        keyListener = new KeyListener();
+        drawer = new LifeDrawer(this, 4);
+        keyHandler = new KeyHandler(this, life, drawer);
 
         hudInfo = new HUDStringBuilder();
 
@@ -224,22 +220,17 @@ public class GameOfLife extends PApplet {
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (result != null) {
 
-            Bounds bounds = life.getRootBounds();
+            //  Bounds bounds = life.getRootBounds();
 
             if (running) {
                 life.nextGeneration(true);
             }
 
+
             drawer.redraw(life.root);
 
-            // default is to constrain to screen size
-            // but if people start using +/- to zoom in and out then
-            // fit bounds stops until then f is invoked to "refit"
-            if (fitToWindow)
-                drawer.fit_bounds(bounds);
-
-            if (displayBounds)
-                drawer.draw_bounds(bounds);
+            // moving some functionality directly into the keyHandler to make it easier to follow (in theory)
+            keyHandler.update();
 
             if (countdownText != null) {
                 countdownText.update();
@@ -263,20 +254,17 @@ public class GameOfLife extends PApplet {
     }
 
     public void keyReleased() {
-        keyListener.keyReleased(key, keyCode);
+        keyHandler.handleKeyReleased();
     }
 
     public void keyPressed() {
 
-        keyListener.keyPressed(key, keyCode);
+        keyHandler.handleKeyPressed();
 
         // Assuming key is of type char and running is a boolean variable
         switch (key) {
-            case '+', '=' -> zoom(false);
-            case '-' -> zoom(true);
-            case 'B', 'b' -> displayBounds = !displayBounds;
-            case 'C', 'c' -> drawer.center_view();
-            case 'F', 'f' -> fitToWindow = true;
+
+
             case ' ' -> {
                 // it's been created, and we're not in the process of counting down
                 boolean que = countdownText != null && !countdownText.isCountingDown;
@@ -293,22 +281,7 @@ public class GameOfLife extends PApplet {
                 }
             }
             default -> {
-                System.out.println("key: " + key + " keycode: " + keyCode);
-                handleKeyCodes(keyCode);
-            }
-        }
-
-    }
-
-    private void handleKeyCodes(int keyCode) {
-        int moveAmount = 1;
-        switch (keyCode) {
-            case LEFT -> drawer.move(-moveAmount, 0);
-            case UP -> drawer.move(0, -moveAmount);
-            case RIGHT -> drawer.move(moveAmount, 0);
-            case DOWN -> drawer.move(0, moveAmount);
-
-            default -> {
+                // System.out.println("key: " + key + " keycode: " + keyCode);
 
             }
         }
@@ -316,7 +289,6 @@ public class GameOfLife extends PApplet {
     }
 
     private void zoom(boolean out) {
-        fitToWindow = false;
         Bounds bounds = life.getRootBounds();
         drawer.zoom_bounds(out, bounds);
     }
@@ -324,7 +296,6 @@ public class GameOfLife extends PApplet {
     public void mouseDragged() {
         // turn off fit to window mode as we're dragging it and if 'f' is on it
         // will keep trying to bounce back
-        fitToWindow = false;
 
         float dx = Math.round(mouseX - last_mouse_x);
         float dy = Math.round(mouseY - last_mouse_y);
