@@ -1,3 +1,4 @@
+import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 
@@ -29,7 +30,7 @@ public class LifeUniverse {
     public Node root;
     private Node rewind_state;
     public int step;
-    public float generation;
+    public BigInteger generation;
 
     private final Node falseLeaf;
     private final Node trueLeaf;
@@ -91,10 +92,10 @@ public class LifeUniverse {
         this.step = 0;
 
         // in which generation are we
-        this.generation = 0;
+        this.generation = BigInteger.ZERO;
 
-        this.falseLeaf = new Node(3, 0, 0);
-        this.trueLeaf = new Node(2, 1, 0);
+        this.falseLeaf = new Node(3, BigInteger.ZERO, 0);
+        this.trueLeaf = new Node(2, BigInteger.ONE, 0);
 
         // the final necessary setup bits
         clearPattern();
@@ -116,7 +117,7 @@ public class LifeUniverse {
 
     // only called from main game
     public void restoreRewindState() {
-        generation = 0;
+        generation = BigInteger.ZERO;
         root = rewind_state;
 
         // make sure to rebuild the hashmap, in case its size changed
@@ -171,7 +172,7 @@ public class LifeUniverse {
     }
 
     public Bounds getRootBounds() {
-        if (root.population == 0) {
+        if (root.population.equals(BigInteger.ZERO)) {
             return new Bounds(0, 0, 0, 0);
         }
 
@@ -322,18 +323,18 @@ public class LifeUniverse {
         Node root = this.root;
 
         while ((isSingle && root.level <= this.step + 2) ||
-                root.nw.population != root.nw.se.se.population ||
-                root.ne.population != root.ne.sw.sw.population ||
-                root.sw.population != root.sw.ne.ne.population ||
-                root.se.population != root.se.nw.nw.population) {
+                !root.nw.population.equals(root.nw.se.se.population) ||
+                !root.ne.population.equals(root.ne.sw.sw.population) ||
+                !root.sw.population.equals(root.sw.ne.ne.population) ||
+                !root.se.population.equals(root.se.nw.nw.population)) {
             root = this.expandUniverse(root);
         }
 
         if (isSingle) {
-            this.generation += pow2(this.step);
+            this.generation = this.generation.add(BigInteger.valueOf((long) pow2(this.step)));
             root = nodeNextGeneration(root);
         } else {
-            this.generation += pow2(this.root.level - 2);
+            this.generation = this.generation.add(BigInteger.valueOf((long) pow2(this.root.level - 2)));
             root = nodeQuickNextGeneration(root);
         }
 
@@ -379,7 +380,7 @@ public class LifeUniverse {
             this.hashmap.put(i, null);
 
         this.root = this.emptyTree(3);
-        this.generation = 0;
+        this.generation = BigInteger.ZERO;
     }
 
     public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
@@ -572,7 +573,7 @@ public class LifeUniverse {
     }
 
     private boolean nodeGetBit(Node node, int x, int y) {
-        if (node.population == 0) {
+        if (node.population.equals(BigInteger.ZERO)) {
             return false;
         }
 
@@ -604,16 +605,17 @@ public class LifeUniverse {
         Node ne = node.ne;
         Node sw = node.sw;
         Node se = node.se;
-        int bitmask =
-                nw.nw.population << 15 | nw.ne.population << 14 | ne.nw.population << 13 | ne.ne.population << 12 |
-                        nw.sw.population << 11 | nw.se.population << 10 | ne.sw.population << 9 | ne.se.population << 8 |
-                        sw.nw.population << 7 | sw.ne.population << 6 | se.nw.population << 5 | se.ne.population << 4 |
-                        sw.sw.population << 3 | sw.se.population << 2 | se.sw.population << 1 | se.se.population;
 
-        int result = evalMask(bitmask >> 5) |
-                evalMask(bitmask >> 4) << 1 |
-                evalMask(bitmask >> 1) << 2 |
-                evalMask(bitmask) << 3;
+        BigInteger bitmask =
+                nw.nw.population.shiftLeft(15).or(nw.ne.population.shiftLeft(14)).or(ne.nw.population.shiftLeft(13)).or(ne.ne.population.shiftLeft(12))
+                        .or(nw.sw.population.shiftLeft(11)).or(nw.se.population.shiftLeft(10)).or(ne.sw.population.shiftLeft(9)).or(ne.se.population.shiftLeft(8))
+                        .or(sw.nw.population.shiftLeft(7)).or(sw.ne.population.shiftLeft(6)).or(se.nw.population.shiftLeft(5)).or(se.ne.population.shiftLeft(4))
+                        .or(sw.sw.population.shiftLeft(3)).or(sw.se.population.shiftLeft(2)).or(se.sw.population.shiftLeft(1)).or(se.se.population);
+
+        int result = evalMask(bitmask.shiftRight(5).intValue()) |
+                evalMask(bitmask.shiftRight(4).intValue()) << 1 |
+                evalMask(bitmask.shiftRight(1).intValue()) << 2 |
+                evalMask(bitmask.intValue()) << 3;
 
         return level1Create(result);
     }
@@ -726,7 +728,7 @@ public class LifeUniverse {
     }
 
     private void nodeGetBoundary(Node node, int left, int top, int findMask, Bounds boundary) {
-        if (node.population == 0 || findMask == 0) {
+        if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
             return;
         }
 
@@ -746,8 +748,8 @@ public class LifeUniverse {
         } else {
             double offset = pow2(node.level - 1);
 
-            if (left >= boundary.left && left + (int) offset * 2 <= boundary.right &&
-                    top >= boundary.top && top + (int) offset * 2 <= boundary.bottom) {
+            if (left >= boundary.left && left + offset * 2 <= boundary.right &&
+                    top >= boundary.top && top + offset * 2 <= boundary.bottom) {
                 // this square is already inside the found boundary
                 return;
             }
@@ -757,22 +759,22 @@ public class LifeUniverse {
             int findNE = findMask;
             int findSE = findMask;
 
-            if (node.nw.population != 0) {
+            if (!node.nw.population.equals(BigInteger.ZERO)) {
                 findSW &= ~MASK_TOP;
                 findNE &= ~MASK_LEFT;
                 findSE &= ~(MASK_TOP | MASK_LEFT);
             }
-            if (node.sw.population != 0) {
+            if (!node.sw.population.equals(BigInteger.ZERO)) {
                 findSE &= ~MASK_LEFT;
                 findNW &= ~MASK_BOTTOM;
                 findNE &= ~(MASK_BOTTOM | MASK_LEFT);
             }
-            if (node.ne.population != 0) {
+            if (!node.ne.population.equals(BigInteger.ZERO)) {
                 findNW &= ~MASK_RIGHT;
                 findSE &= ~MASK_TOP;
                 findSW &= ~(MASK_TOP | MASK_RIGHT);
             }
-            if (node.se.population != 0) {
+            if (!node.se.population.equals(BigInteger.ZERO)) {
                 findSW &= ~MASK_RIGHT;
                 findNE &= ~MASK_BOTTOM;
                 findNW &= ~(MASK_BOTTOM | MASK_RIGHT);

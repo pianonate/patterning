@@ -18,7 +18,7 @@ public class KeyHandler {
     public KeyHandler(PApplet p, LifeUniverse life, LifeDrawer drawer) {
         this.p = p;
         p.registerMethod("keyEvent", this);
-        p.registerMethod("post", this);
+        p.registerMethod("draw", this);
         this.drawer = drawer;
         this.life = life;
         this.pressedKeys = new HashSet<>();
@@ -137,12 +137,17 @@ public class KeyHandler {
     // it handles draw functions that must be invoked each draw cycle
     // related to the keyboard driven interface of this thing
     // such as moving it around or displaying the boundary
-    public void post() {
+    public void draw() {
+
+
         for (int i = 0; i < 2; i++) {
             handleMovementKeys();
         }
 
-        if (displayBounds)
+        if (displayBounds) {
+
             drawer.draw_bounds(life.getRootBounds());
+        }
+
     }
 }

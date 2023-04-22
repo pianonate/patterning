@@ -1,5 +1,6 @@
-import g4p_controls.G4P;
-import g4p_controls.GCustomSlider;
+// import g4p_controls.G4P;
+// import g4p_controls.GCustomSlider;
+
 import g4p_controls.GEvent;
 import g4p_controls.GValueControl;
 import processing.core.PApplet;
@@ -11,9 +12,11 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 
 /**
  * todo: step functionality on [ and ]
+ * todo: bounding box seems to be broken - can you add it back with tests?
  * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
  * todo: is it possible to
@@ -45,13 +48,14 @@ public class GameOfLife extends PApplet {
 
     float last_mouse_x;
     private HUDStringBuilder hudInfo;
+
     private CountdownText countdownText;
     float last_mouse_y;
     private boolean running;
     // todo: refactor result to have a more useful name
     private Result result;
 
-    private GCustomSlider stepSlider;
+    // private GCustomSlider stepSlider;
 
     // used for resize detection
     private int prevWidth, prevHeight;
@@ -112,12 +116,14 @@ public class GameOfLife extends PApplet {
 
         KeyHandler keyHandler = new KeyHandler(this, life, drawer);
 
-        stepSlider = new GCustomSlider(this, 20, 80, 260, 50);
+      /*  stepSlider = new GCustomSlider(this, 20, 80, 260, 50);
         stepSlider.setShowDecor(false, true, false, true);
         stepSlider.setNumberFormat(G4P.INTEGER);
         stepSlider.setLimits(1, 32);
+        stepSlider.setNbrTicks(32);
+        stepSlider.setStickToTicks(true);
         stepSlider.setValue(1);
-        stepSlider.setShowValue(true);
+        stepSlider.setShowValue(false); */
 
 
         hudInfo = new HUDStringBuilder();
@@ -237,8 +243,6 @@ public class GameOfLife extends PApplet {
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (result != null) {
 
-            //  Bounds bounds = life.getRootBounds();
-
             if (running) {
                 life.nextGeneration(true);
             }
@@ -254,17 +258,16 @@ public class GameOfLife extends PApplet {
 
         // always draw HUD
         drawHUD();
-
     }
 
     public void mousePressed() {
-        if (stepSlider.hasFocus()) return;
+        //  if (stepSlider.hasFocus()) return;
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
     }
 
     public void mouseReleased() {
-        if (stepSlider.hasFocus()) return;
+        // if (stepSlider.hasFocus()) return;
         last_mouse_x = 0;
         last_mouse_y = 0;
     }
@@ -272,7 +275,7 @@ public class GameOfLife extends PApplet {
     public void mouseDragged() {
         // turn off fit to window mode as we're dragging it and if 'f' is on it
         // will keep trying to bounce back
-        if (stepSlider.hasFocus()) return;
+        //if (stepSlider.hasFocus()) return;
 
         float dx = Math.round(mouseX - last_mouse_x);
         float dy = Math.round(mouseY - last_mouse_y);
@@ -292,9 +295,11 @@ public class GameOfLife extends PApplet {
 
         Node root = life.root;
 
-        hudInfo.addOrUpdate("fps", parseInt(frameRate));
-        hudInfo.addOrUpdate("step", (long) Math.pow(2, life.step));
-        hudInfo.addOrUpdate("generation", (long) (life.generation));
+        hudInfo.addOrUpdate("fps", Math.round(frameRate));
+        // so - steps can get real big - but does it really work in the code?
+        BigInteger bigStep = new BigInteger("2").pow(life.step);
+        hudInfo.addOrUpdate("step", bigStep);
+        hudInfo.addOrUpdate("generation", life.generation);
         hudInfo.addOrUpdate("population", root.population);
         hudInfo.addOrUpdate("maxLoad", life.maxLoad);
         hudInfo.addOrUpdate("lastID", life.lastId);
@@ -381,7 +386,7 @@ public class GameOfLife extends PApplet {
 
 
     public void handleSliderEvents(GValueControl slider, GEvent even) {
-        println("integer value:" + slider.getValueI() + " float value:" + slider.getValueF());
+        // println("integer value:" + slider.getValueI() + " float value:" + slider.getValueF());
         life.setStep(slider.getValueI());
     }
 

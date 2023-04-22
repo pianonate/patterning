@@ -1,5 +1,7 @@
 import processing.core.PApplet;
 
+import java.math.BigInteger;
+
 class LifeDrawer {
     PApplet p;
     int canvas_offset_x = 0;
@@ -23,7 +25,7 @@ class LifeDrawer {
 
 
     void draw_node(Node node, float size, float left, float top) {
-        if (node.population == 0) {
+        if (node.population.equals(BigInteger.ZERO)) {
             return;
         }
 
@@ -32,11 +34,11 @@ class LifeDrawer {
         }
 
         if (size <= 1) {
-            if (node.population > 0) {
+            if ((node.population.compareTo(BigInteger.ZERO) > 0)) {
                 fill_square(left + canvas_offset_x, top + canvas_offset_y, 1);
             }
         } else if (node.level == 0) {
-            if (node.population > 0) {
+            if (node.population.compareTo(BigInteger.ZERO) > 0) {
                 fill_square(left + canvas_offset_x, top + canvas_offset_y, cell_width);
             }
         } else {
@@ -181,7 +183,7 @@ class LifeDrawer {
         p.noFill();
         p.stroke(200);
         p.strokeWeight(1);
-        p.rect(x, y, width * cell_width, height * cell_width);
+        p.rect(x, y, width * cell_width + cell_width, height * cell_width + cell_width);
 
     }
 

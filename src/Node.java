@@ -1,3 +1,5 @@
+import java.math.BigInteger;
+
 public class Node {
     public Node nw;
     public Node ne;
@@ -6,16 +8,16 @@ public class Node {
 
     public int id;
     public int level;
-    public int population;
+    public BigInteger population;
 
     public Node cache = null;
     public Node quick_cache = null;
     public Node hashmapNext = null;
 
-    public Node(int id, int population, int level) {
-        this.id=id;
-        this.population=population;
-        this.level=level;
+    public Node(int id, BigInteger population, int level) {
+        this.id = id;
+        this.population = population;
+        this.level = level;
     }
 
     public Node(Node nw, Node ne, Node sw, Node se, int id) {
@@ -27,6 +29,6 @@ public class Node {
 
         this.level = nw.level + 1;
 
-        this.population = nw.population + ne.population + sw.population + se.population;
+        this.population = nw.population.add(ne.population).add(sw.population).add(se.population);
     }
 }
