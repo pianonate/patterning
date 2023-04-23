@@ -15,8 +15,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 
 /**
- * todo: step functionality on [ and ]
- * todo: bounding box seems to be broken - can you add it back with tests?
+ * add: testing
+ * todo: single step mode
+ * todo: out of memory error
  * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
  * todo: is it possible to
