@@ -7,5 +7,4 @@ public class Bounds {
         this.bottom = bottom;
         this.right = right;
     }
-    // test comment
 }
