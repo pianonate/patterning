@@ -1,18 +1,28 @@
-### IntelliJ IDEA ###
+# IntelliJ IDEA
 out/
+!.idea/out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-### Mac OS ###
-.DS_Store
+# Gradle files
+.gradle/
+build/
+gradle/
 
-### my bs ###
+# Gradle Wrapper files
+gradlew
+gradlew.bat
+
+# Files and directories for local use only
 /src/resources/
 
-### intellij bs ###
-.idea/uiDesigner.xml
-.idea/inspectionProfiles/Project_Default.xml
-.idea/libraries/G4P.xml
+# IntelliJ IDEA files and directories
+.idea/
+*.iml
+*.ipr
+*.iws
+
+
 
 
 
