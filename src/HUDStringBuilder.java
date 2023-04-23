@@ -1,14 +1,12 @@
 import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 public class HUDStringBuilder {
     private final Map<String, Number> data;
     private String cachedFormattedString;
     private final NumberFormat numberFormat;
     private final String delimiter;
     private int lastUpdateFrame;
-
     public HUDStringBuilder() {
         data = new LinkedHashMap<>(); // Use LinkedHashMap to maintain the insertion order
         cachedFormattedString = "";
