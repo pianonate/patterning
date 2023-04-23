@@ -4,6 +4,9 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+# mac OS
+.DS_Store
+
 # Gradle files
 .gradle/
 build/
