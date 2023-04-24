@@ -17,13 +17,13 @@ gradlew
 gradlew.bat
 
 # Files and directories for local use only
-/src/resources/
+/src/main/resources/
 
 # IntelliJ IDEA files and directories
 .idea/
-*.iml
-*.ipr
-*.iws
+##*.iml
+##*.ipr
+##*.iws
 
 
 

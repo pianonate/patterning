@@ -1,6 +1,7 @@
 import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 public class HUDStringBuilder {
     private final Map<String, Number> data;
     private String cachedFormattedString;

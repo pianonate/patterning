@@ -16,6 +16,7 @@ import java.math.BigInteger;
 
 /**
  * add: testing
+ * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
  * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
@@ -42,6 +43,7 @@ public class GameOfLife extends PApplet {
     public static void main(String[] args) {
 
         PApplet.main("GameOfLife");
+        System.out.println("testing buildfirst");
     }
 
     private LifeUniverse life;
@@ -287,10 +289,10 @@ public class GameOfLife extends PApplet {
         last_mouse_y += dy;
     }
 
-    public void onSliderChange(int value) {
+   /* public void onSliderChange(int value) {
         println("slider changed:" + value);
 
-    }
+    }*/
 
     private void drawHUD() {
 
@@ -386,10 +388,10 @@ public class GameOfLife extends PApplet {
     }
 
 
-    public void handleSliderEvents(GValueControl slider, GEvent even) {
+  /*  public void handleSliderEvents(GValueControl slider, GEvent even) {
         // println("integer value:" + slider.getValueI() + " float value:" + slider.getValueF());
         life.setStep(slider.getValueI());
-    }
+    }*/
 
 
 }

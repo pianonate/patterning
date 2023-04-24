@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'application'
 }
 
 group 'com.example'
@@ -7,13 +7,36 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation files('/Users/nmccoy96/Documents/Processing.app/Contents/Java/core/library/core.jar')
+    implementation files('/Users/nmccoy96/Documents/Processing/libraries/G4P/library/G4P.jar')
+
+
 }
 
 test {
     useJUnitPlatform()
 }
+
+
+jar {
+    manifest {
+        attributes "Main-Class": "GameOfLife"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+application {
+    mainClassName = 'GameOfLife'
+}
+
+
+
