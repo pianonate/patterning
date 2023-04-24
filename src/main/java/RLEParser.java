@@ -8,12 +8,13 @@ import java.nio.IntBuffer;
 
 public class RLEParser {
     final String METADATA_PREFIX = "#";
-    final String HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$";
-    private final int MIN_BUFFER_SIZE = 64;
-    private  static final int MAX_BUFFER_SIZE = 1048576;
-    private final float DENSITY_ESTIMATE = 1.5f;
 
-    private Result result;
+    final int MIN_BUFFER_SIZE = 64;
+
+    final String HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$";
+    private  static final int MAX_BUFFER_SIZE = 1048576;
+
+    private final Result result;
 
     RLEParser(String text) throws NotLifeException {
         result = new Result();
@@ -44,6 +45,7 @@ public class RLEParser {
             int size = result.width * result.height;
 
             if (size > 0) {
+                float DENSITY_ESTIMATE = 1.5f;
                 initialSize = (int) Math.max(initialSize, size * DENSITY_ESTIMATE);
                 initialSize = Math.min(MAX_BUFFER_SIZE, initialSize);
             }
@@ -105,7 +107,7 @@ public class RLEParser {
         Pattern compiledPattern = Pattern.compile(HEADER_PATTERN, Pattern.MULTILINE);
         Matcher matcher = compiledPattern.matcher(text);
 
-        String line = "";
+        String line;
         if (matcher.find()) {
             line = matcher.group();
             result.instructions = text.substring(matcher.end());
@@ -113,25 +115,19 @@ public class RLEParser {
             throw new NotLifeException("can't find the header line");
         }
 
-        String header[] = PApplet.split(line, ", ");
+        String[] header = PApplet.split(line, ", ");
 
         for (String headerLine : header) {
 
-            String components[] = PApplet.split(headerLine, ' ');
+            String[] components = PApplet.split(headerLine, ' ');
 
             String component = components[0];
             String value = components[2];
 
             switch (component) {
-                case "x":
-                    result.width = PApplet.parseInt(value);
-                    break;
-
-                case "y":
-                    result.height = PApplet.parseInt(value);
-                    break;
-
-                case "rule":
+                case "x" -> result.width = PApplet.parseInt(value);
+                case "y" -> result.height = PApplet.parseInt(value);
+                case "rule" -> {
                     // parseRuleRLE ensures that the if there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
                     // that's what the true and false are for here
@@ -143,11 +139,10 @@ public class RLEParser {
                     String readable = rule2str(result.rule_s, result.rule_b);
                     result.comments.add("\nRule: " + readable + "\n");
                     result.rule = readable;
-                    break;
-
-                default:
+                }
+                default ->
                     // if we got here we don't have something we know about
-                    throw new NotLifeException("invalid header: " + line);
+                        throw new NotLifeException("invalid header: " + line);
             }
         }
     }
@@ -224,23 +219,23 @@ public class RLEParser {
     }
 
     public String rule2str(int ruleS, int ruleB) {
-        String rule = "";
+        StringBuilder rule = new StringBuilder();
 
         for (int i = 0; ruleS != 0; ruleS >>= 1, i++) {
             if ((ruleS & 1) != 0) {
-                rule += i;
+                rule.append(i);
             }
         }
 
-        rule += "/";
+        rule.append("/");
 
         for (int i = 0; ruleB != 0; ruleB >>= 1, i++) {
             if ((ruleB & 1) != 0) {
-                rule += i;
+                rule.append(i);
             }
         }
 
-        return rule;
+        return rule.toString();
     }
 
     boolean isNumber(String test) {
@@ -254,33 +249,19 @@ public class RLEParser {
     }
 
     void handleMetaData(String text) throws NotLifeException {
-        String lines[] = PApplet.split(text, '\n');
+        String[] lines = PApplet.split(text, '\n');
 
         for (String line : lines) {
-            if (line.startsWith("#") && line.length()>1) {
+            if (line.startsWith(METADATA_PREFIX) && line.length()>1) {
 
                 char secondChar = line.charAt(1);
-                String remainder="";
-
-                if (line.length() > 1) {
-                    remainder = line.substring(2).trim();
-                }
+                String remainder = line.substring(2).trim();
 
                 switch (secondChar) {
-                    case 'N':
-                        result.title = remainder;
-                        break;
-
-                    case 'O':
-                        result.author = remainder;
-                        break;
-                    case 'C':
-                    case 'D':
-                        result.comments.add(remainder);
-                        break;
-
-                    default:
-                        throw new NotLifeException("unknown metadata type: " + line);
+                    case 'N' -> result.title = remainder;
+                    case 'O' -> result.author = remainder;
+                    case 'C', 'D' -> result.comments.add(remainder);
+                    default -> throw new NotLifeException("unknown metadata type: " + line);
                 }
             }
         }
@@ -313,7 +294,7 @@ class Result {
         rule="";
         title="";
         author="";
-        comments = new ArrayList<String>();
+        comments = new ArrayList<>();
         instructions = "";
     }
 }
