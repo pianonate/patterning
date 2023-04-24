@@ -319,10 +319,10 @@ public class LifeUniverse {
         return newNode;
     }
 
-    public void nextGeneration(boolean isSingle) {
+    public void nextGeneration() {
         Node root = this.root;
 
-        while ((isSingle && root.level <= this.step + 2) ||
+        while ((root.level <= this.step + 2) ||
                 !root.nw.population.equals(root.nw.se.se.population) ||
                 !root.ne.population.equals(root.ne.sw.sw.population) ||
                 !root.sw.population.equals(root.sw.ne.ne.population) ||
@@ -330,13 +330,8 @@ public class LifeUniverse {
             root = this.expandUniverse(root);
         }
 
-        if (isSingle) {
-            this.generation = this.generation.add(BigInteger.valueOf((long) pow2(this.step)));
-            root = nodeNextGeneration(root);
-        } else {
-            this.generation = this.generation.add(BigInteger.valueOf((long) pow2(this.root.level - 2)));
-            root = nodeQuickNextGeneration(root);
-        }
+        this.generation = this.generation.add(BigInteger.valueOf(2).pow(this.step));
+        root = nodeNextGeneration(root);
 
         this.root = root;
     }
@@ -364,8 +359,7 @@ public class LifeUniverse {
 
     // the hash function used for the hashmap
     int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
-        int hash = ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
-        return hash;
+        return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
     }
 
     public void clearPattern() {
@@ -787,6 +781,3 @@ public class LifeUniverse {
         }
     }
 }
-
-
-

@@ -1,6 +1,7 @@
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,7 +12,7 @@ public class KeyHandler {
     private final Set<Integer> pressedKeys;
     private int lastDirection = 0;
     private long lastIncreaseTime;
-    private float initialMoveAmount = 1;
+    private final float initialMoveAmount = 1;
     private float moveAmount = initialMoveAmount;
     private boolean displayBounds = false;
 
@@ -25,6 +26,7 @@ public class KeyHandler {
         // todo: if you increase it here then any time you handle movement you will exceed
         //       the last increase time - this seems like a bug to me
         this.lastIncreaseTime = System.currentTimeMillis();
+
     }
 
     public void keyEvent(KeyEvent e) {
@@ -62,6 +64,7 @@ public class KeyHandler {
         handleMovementKeys();
     }
 
+    // todo - i think you can't let step be less than 1
     private void handleStep(Boolean faster) {
         int step = life.step;
         if (faster)
@@ -69,8 +72,13 @@ public class KeyHandler {
         else
             step--;
 
-        life.setStep(step);
+        // don't allow steps below 0
+        if (step == -1) {
+            step = 0;
+        }
 
+        System.out.println("step: " + step);
+        life.setStep(step);
     }
 
     private void handlePaste() {
@@ -132,13 +140,12 @@ public class KeyHandler {
         lastDirection = currentDirection;
     }
 
-    // post is a registeredMethod guaranteed to be invoked
-    // after the draw of the main sketch
+    // draw is a registeredMethod guaranteed to be invoked
+    // (I believe) during the draw event - i think after
     // it handles draw functions that must be invoked each draw cycle
     // related to the keyboard driven interface of this thing
     // such as moving it around or displaying the boundary
     public void draw() {
-
 
         for (int i = 0; i < 2; i++) {
             handleMovementKeys();

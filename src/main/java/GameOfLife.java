@@ -2,9 +2,11 @@
 // import g4p_controls.GCustomSlider;
 
 import g4p_controls.GEvent;
+
 import g4p_controls.GValueControl;
 import processing.core.PApplet;
 import processing.data.JSONObject;
+
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -15,7 +17,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 
 /**
- * add: testing
+ * todo: show what level you have zoomed to
  * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
@@ -111,11 +113,11 @@ public class GameOfLife extends PApplet {
 
         background(255);
 
-        frameRate(120);
+        frameRate(20);
 
         // create a new LifeUniverse object with the given points
-        life = new LifeUniverse();
-        drawer = new LifeDrawer(this, 4);
+        this.life = new LifeUniverse();
+        this.drawer = new LifeDrawer(this, 4);
 
         KeyHandler keyHandler = new KeyHandler(this, life, drawer);
 
@@ -129,12 +131,12 @@ public class GameOfLife extends PApplet {
         stepSlider.setShowValue(false); */
 
 
-        hudInfo = new HUDStringBuilder();
+        this.hudInfo = new HUDStringBuilder();
 
         loadSavedWindowPositions();
 
         // good life was saved prior
-        if (!(storedLife == null || storedLife.isEmpty())) {
+        if (!(this.storedLife == null || this.storedLife.isEmpty())) {
             // invoke the logic you already have to reify this
             parseStoredLife();
         }
@@ -247,7 +249,7 @@ public class GameOfLife extends PApplet {
         if (result != null) {
 
             if (running) {
-                life.nextGeneration(true);
+                life.nextGeneration();
             }
 
             drawer.redraw(life.root);
