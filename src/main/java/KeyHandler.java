@@ -52,8 +52,9 @@ public class KeyHandler {
             case ']' -> handleStep(true);
             case '[' -> handleStep(false);
             case 'B', 'b' -> displayBounds = !displayBounds;
-            case 'C', 'c' -> drawer.center_view();
+            case 'C', 'c' -> drawer.center_view(life.getRootBounds());
             case 'F', 'f' -> drawer.fit_bounds(life.getRootBounds());
+            case 'R', 'r' -> rewind();
             case 'V', 'v' -> handlePaste();
             case ' ' -> ((GameOfLife) p).spaceBarHandler();
             default -> {
@@ -62,6 +63,13 @@ public class KeyHandler {
         }
 
         handleMovementKeys();
+    }
+
+    private void rewind() {
+        life.restoreRewindState();
+        life.setStep(0);
+        p.stop();
+        drawer.fit_bounds(life.getRootBounds());
     }
 
     // todo - i think you can't let step be less than 1

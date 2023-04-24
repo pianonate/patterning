@@ -1,10 +1,17 @@
+import java.math.BigInteger;
 public class Bounds {
-    public int top, left, bottom, right;
+    public BigInteger top, left, bottom, right;
 
-    public Bounds(int top, int left, int bottom, int right) {
-        this.top = top;
-        this.left = left;
+    public Bounds(BigInteger top, BigInteger left, BigInteger bottom, BigInteger right) {
+        this(top, left);
         this.bottom = bottom;
         this.right = right;
+    }
+
+    public Bounds(BigInteger top, BigInteger left) {
+        this.top = top;
+        this.left = left;
+        this.bottom = top;
+        this.right = left;
     }
 }

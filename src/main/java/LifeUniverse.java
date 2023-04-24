@@ -22,7 +22,8 @@ public class LifeUniverse {
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
-    private final double[] _powers;
+    private final BigInteger[] _powers;
+
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
     private int rule_b;
@@ -51,11 +52,13 @@ public class LifeUniverse {
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
         this.level2Cache = new HashMap<>();
 
-        this._powers = new double[1024];
-        this._powers[0] = 1;
+        // todo: magic value that you can share with drawer to specify
+        // the size of the MathContext
+        this._powers = new BigInteger[1024];
+        this._powers[0] = BigInteger.ONE;
 
         for (int i = 1; i < 1024; i++) {
-            this._powers[i] = this._powers[i - 1] * 2;
+            this._powers[i] = this._powers[i - 1].multiply(BigInteger.TWO);
         }
 
         this._bitcounts = new byte[0x758];
@@ -102,9 +105,9 @@ public class LifeUniverse {
     }
 
     // return the cached power of 2 - for performance reasons
-    private double pow2(int x) {
+    private BigInteger pow2(int x) {
         if (x >= 1024) {
-            return Double.POSITIVE_INFINITY;
+            return BigInteger.valueOf(2).pow(1024);
         }
         return this._powers[x];
     }
@@ -143,8 +146,8 @@ public class LifeUniverse {
         );
     }
 
-    private void setBit(int x, int y, boolean living) {
-        int level = getLevelFromBounds(new Bounds(x, y, x, y));
+    private void setBit(BigInteger x, BigInteger y, boolean living) {
+        int level = getLevelFromBounds(new Bounds(y,x));
 
         if (living) {
             while (level > root.level) {
@@ -160,9 +163,10 @@ public class LifeUniverse {
         root = nodeSetBit(root, x, y, living);
     }
 
-    public boolean getBit(int x, int y) {
-        //noinspection SuspiciousNameCombination
-        int level = getLevelFromBounds(new Bounds(x, y, x, y));
+
+
+    public boolean getBit(BigInteger x, BigInteger y) {
+        int level = getLevelFromBounds(new Bounds(y,x));
 
         if (level > root.level) {
             return false;
@@ -171,30 +175,39 @@ public class LifeUniverse {
         }
     }
 
+
     public Bounds getRootBounds() {
         if (root.population.equals(BigInteger.ZERO)) {
-            return new Bounds(0, 0, 0, 0);
+            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
         }
 
-        Bounds bounds = new Bounds(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
-        double offset = pow2(root.level - 1);
+        Bounds bounds = new Bounds(BigInteger.valueOf(Integer.MAX_VALUE), BigInteger.valueOf(Integer.MAX_VALUE),
+                BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MIN_VALUE));
 
-        nodeGetBoundary(root, (int) -offset, (int) -offset, MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
+        BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
+
+        nodeGetBoundary(root, offset.negate(), offset.negate(),
+                MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
 
         return bounds;
     }
 
-    // will always be called with integer boundaries
     public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
-        int offsetX = Math.round((float) (bounds.left - bounds.right) / 2) - bounds.left;
-        int offsetY = Math.round((float) (bounds.top - bounds.bottom) / 2) - bounds.top;
+        BigInteger offsetX = bounds.left.subtract(bounds.right)
+                .divide(BigInteger.valueOf(2))
+                .subtract(bounds.left)
+                .negate();
+        BigInteger offsetY = bounds.top.subtract(bounds.bottom)
+                .divide(BigInteger.valueOf(2))
+                .subtract(bounds.top)
+                .negate();
 
-        moveField(fieldX, fieldY, offsetX, offsetY);
+        moveField(fieldX, fieldY, offsetX.intValue(), offsetY.intValue());
 
-        bounds.left += offsetX;
-        bounds.right += offsetX;
-        bounds.top += offsetY;
-        bounds.bottom += offsetY;
+        bounds.left = bounds.left.add(offsetX);
+        bounds.right = bounds.right.add(offsetX);
+        bounds.top = bounds.top.add(offsetY);
+        bounds.bottom = bounds.bottom.add(offsetY);
     }
 
 
@@ -379,25 +392,29 @@ public class LifeUniverse {
 
     public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
         if (fieldX.capacity() == 0) {
-            return new Bounds(0, 0, 0, 0);
+            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
         }
 
-        Bounds bounds = new Bounds(fieldY.get(0), fieldX.get(0), fieldY.get(0), fieldX.get(0));
+        // this sets up a bounds that just has an initial top and bottom that are the same and left and right the same
+        // the RLEBuffer creates x and y to be the same size regardless of source width and height - it will make it
+        // the size of the bounding box
+        Bounds bounds = new Bounds(BigInteger.valueOf(fieldY.get(0)), BigInteger.valueOf(fieldX.get(0)));
         int len = fieldX.capacity();
 
+        // todo: pass in varied width and heights and look at the field size they actually generate
         for (int i = 1; i < len; i++) {
-            int x = fieldX.get(i);
-            int y = fieldY.get(i);
+            BigInteger x = BigInteger.valueOf(fieldX.get(i));
+            BigInteger y = BigInteger.valueOf(fieldY.get(i));
 
-            if (x < bounds.left) {
+            if (x.compareTo(bounds.left) < 0) {
                 bounds.left = x;
-            } else if (x > bounds.right) {
+            } else if (x.compareTo(bounds.right) > 0) {
                 bounds.right = x;
             }
 
-            if (y < bounds.top) {
+            if (y.compareTo(bounds.top) < 0) {
                 bounds.top = y;
-            } else if (y > bounds.bottom) {
+            } else if (y.compareTo(bounds.bottom) > 0) {
                 bounds.bottom = y;
             }
         }
@@ -405,12 +422,13 @@ public class LifeUniverse {
         return bounds;
     }
 
+
     public int getLevelFromBounds(Bounds bounds) {
         int max = 4;
         String[] keys = {"top", "left", "bottom", "right"};
 
         for (String key : keys) {
-            int coordinate = 0;
+            BigInteger coordinate = BigInteger.ZERO;
 
             switch (key) {
                 case "top" -> coordinate = bounds.top;
@@ -421,24 +439,22 @@ public class LifeUniverse {
                 }
             }
 
-            if (coordinate + 1 > max) {
-                max = coordinate + 1;
-            } else if (-coordinate > max) {
-                max = -coordinate;
+            if (coordinate.add(BigInteger.ONE).compareTo(BigInteger.valueOf(max)) > 0) {
+                max = coordinate.add(BigInteger.ONE).intValue();
+            } else if (coordinate.negate().compareTo(BigInteger.valueOf(max)) > 0) {
+                max = coordinate.negate().intValue();
             }
         }
 
         return (int) Math.ceil(Math.log(max) / Math.log(2)) + 1;
     }
 
+
     public void setupField(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
-        if (bounds == null) {
-            bounds = getBounds(fieldX, fieldY);
-        }
         int level = getLevelFromBounds(bounds);
-        double offset = pow2(level - 1);
+        BigInteger offset = BigInteger.valueOf(2).pow(level - 1);
         int count = fieldX.capacity();
-        moveField(fieldX, fieldY, (int) offset, (int) offset);
+        moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
         root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
     }
 
@@ -541,32 +557,34 @@ public class LifeUniverse {
         }
     }
 
-    private Node nodeSetBit(Node node, int x, int y, boolean living) {
+    private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean living) {
+
         if (node.level == 0) {
             return living ? trueLeaf : falseLeaf;
         }
 
-        double offset = node.level == 1 ? 0 : pow2(node.level - 2);
+        BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
+
         Node nw = node.nw, ne = node.ne, sw = node.sw, se = node.se;
 
-        if (x < 0) {
-            if (y < 0) {
-                nw = nodeSetBit(nw, x + (int) offset, y + (int) offset, living);
+        if (x.compareTo(BigInteger.ZERO) < 0) {
+            if (y.compareTo(BigInteger.ZERO) < 0) {
+                nw = nodeSetBit(nw, x.add(offset), y.add(offset), living);
             } else {
-                sw = nodeSetBit(sw, x + (int) offset, y - (int) offset, living);
+                sw = nodeSetBit(sw, x.add(offset), y.subtract(offset), living);
             }
         } else {
-            if (y < 0) {
-                ne = nodeSetBit(ne, x - (int) offset, y + (int) offset, living);
+            if (y.compareTo(BigInteger.ZERO) < 0) {
+                ne = nodeSetBit(ne, x.subtract(offset), y.add(offset), living);
             } else {
-                se = nodeSetBit(se, x - (int) offset, y - (int) offset, living);
+                se = nodeSetBit(se, x.subtract(offset), y.subtract(offset), living);
             }
         }
 
         return createTree(nw, ne, sw, se);
     }
 
-    private boolean nodeGetBit(Node node, int x, int y) {
+    private boolean nodeGetBit(Node node, BigInteger x, BigInteger y) {
         if (node.population.equals(BigInteger.ZERO)) {
             return false;
         }
@@ -576,22 +594,23 @@ public class LifeUniverse {
             return true;
         }
 
-        double offset = node.level == 1 ? 0 : pow2(node.level - 2);
+        BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
 
-        if (x < 0) {
-            if (y < 0) {
-                return nodeGetBit(node.nw, x + (int) offset, y + (int) offset);
+        if (x.compareTo(BigInteger.ZERO) < 0) {
+            if (y.compareTo(BigInteger.ZERO) < 0) {
+                return nodeGetBit(node.nw, x.add(offset), y.add(offset));
             } else {
-                return nodeGetBit(node.sw, x + (int) offset, y - (int) offset);
+                return nodeGetBit(node.sw, x.add(offset), y.subtract(offset));
             }
         } else {
-            if (y < 0) {
-                return nodeGetBit(node.ne, x - (int) offset, y + (int) offset);
+            if (y.compareTo(BigInteger.ZERO) < 0) {
+                return nodeGetBit(node.ne, x.subtract(offset), y.add(offset));
             } else {
-                return nodeGetBit(node.se, x - (int) offset, y - (int) offset);
+                return nodeGetBit(node.se, x.subtract(offset), y.subtract(offset));
             }
         }
     }
+
 
 
     public Node node_level2_next(Node node) {
@@ -721,29 +740,29 @@ public class LifeUniverse {
         }
     }
 
-    private void nodeGetBoundary(Node node, int left, int top, int findMask, Bounds boundary) {
+    private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds boundary) {
         if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
             return;
         }
 
         if (node.level == 0) {
-            if (left < boundary.left) {
+            if (left.compareTo(boundary.left) < 0) {
                 boundary.left = left;
             }
-            if (left > boundary.right) {
+            if (left.compareTo(boundary.right) > 0) {
                 boundary.right = left;
             }
-            if (top < boundary.top) {
+            if (top.compareTo(boundary.top) < 0) {
                 boundary.top = top;
             }
-            if (top > boundary.bottom) {
+            if (top.compareTo(boundary.bottom) > 0) {
                 boundary.bottom = top;
             }
         } else {
-            double offset = pow2(node.level - 1);
+            BigInteger offset = BigInteger.valueOf(2).pow(node.level - 1);
 
-            if (left >= boundary.left && left + offset * 2 <= boundary.right &&
-                    top >= boundary.top && top + offset * 2 <= boundary.bottom) {
+            if (left.compareTo(boundary.left) >= 0 && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
+                    top.compareTo(boundary.top) >= 0 && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
                 // this square is already inside the found boundary
                 return;
             }
@@ -775,9 +794,9 @@ public class LifeUniverse {
             }
 
             nodeGetBoundary(node.nw, left, top, findNW, boundary);
-            nodeGetBoundary(node.sw, left, top + (int) offset, findSW, boundary);
-            nodeGetBoundary(node.ne, left + (int) offset, top, findNE, boundary);
-            nodeGetBoundary(node.se, left + (int) offset, top + (int) offset, findSE, boundary);
+            nodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary);
+            nodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary);
+            nodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary);
         }
     }
 }

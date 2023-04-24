@@ -17,7 +17,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 
 /**
- * todo: show what level you have zoomed to
+ * todo: show what level you have zoomed to using fade in face out text on screen
+ * todo: same for rewinding
+ * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width - make it a constant so that you
+ * todo: fix the cell_width so it is a proper multiple of the window size
  * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
@@ -56,7 +59,7 @@ public class GameOfLife extends PApplet {
 
     private CountdownText countdownText;
     float last_mouse_y;
-    private boolean running;
+    private boolean running, fitted;
     // todo: refactor result to have a more useful name
     private Result result;
 
@@ -75,10 +78,6 @@ public class GameOfLife extends PApplet {
 
         life.setupField(result.field_x, result.field_y, bounds);
         life.saveRewindState();
-
-        // added to do only once at load rather than all the time during draw before it starts running
-        drawer.fit_bounds(bounds);
-
     }
 
     public void settings() {
@@ -118,6 +117,8 @@ public class GameOfLife extends PApplet {
         // create a new LifeUniverse object with the given points
         this.life = new LifeUniverse();
         this.drawer = new LifeDrawer(this, 4);
+
+        this.fitted = false;
 
         KeyHandler keyHandler = new KeyHandler(this, life, drawer);
 
@@ -239,6 +240,18 @@ public class GameOfLife extends PApplet {
         }
         prevWidth = width;
         prevHeight = height;
+
+        // putting this here to not clutter the main draw as it should only happen at startup
+        // maybe because of loading saved window location it gets different height values from the
+        // first call to fit_bounds than after the app is launched
+        // so calling it once here makes sense
+        // there has to be a more elegant way to get the window value correct the first time
+        // but for now, here it is. if you can get the window value correct you could put this
+        // in the setupPattern method where it belongs
+        if (!fitted) {
+            drawer.fit_bounds(life.getRootBounds());
+            fitted = true;
+        }
     }
 
     public void draw() {
@@ -341,6 +354,11 @@ public class GameOfLife extends PApplet {
                 storedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
 
                 parseStoredLife();
+
+                // it would be better if this could be called from setupPattern
+                // or parseStoredLife - it's a drag as this seems like duplciation
+                // look at the comment in the pre method for more info
+                drawer.fit_bounds(life.getRootBounds());
             }
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
@@ -384,7 +402,6 @@ public class GameOfLife extends PApplet {
         if (countdownText != null && countdownText.isCountingDown) {
             countdownText.interruptCountdown();
         } else {
-            // todo: normally we just toggle running (to be handled later)
             toggleRunning();
         }
     }

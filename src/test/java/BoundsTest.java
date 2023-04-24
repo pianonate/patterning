@@ -1,5 +1,8 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BoundsTest {
@@ -7,14 +10,15 @@ class BoundsTest {
 
     @BeforeEach
     void setUp() {
-        bounds = new Bounds(1, 2, 3, 4);
+        bounds = new Bounds(BigInteger.valueOf(1), BigInteger.valueOf(2),
+                BigInteger.valueOf(3), BigInteger.valueOf(4));
     }
 
     @Test
     void constructorTest() {
-        assertEquals(1, bounds.top, "Top should be initialized to 1");
-        assertEquals(2, bounds.left, "Left should be initialized to 2");
-        assertEquals(3, bounds.bottom, "Bottom should be initialized to 3");
-        assertEquals(4, bounds.right, "Right should be initialized to 4");
+        assertEquals(BigInteger.valueOf(1), bounds.top, "Top should be initialized to 1");
+        assertEquals(BigInteger.valueOf(2), bounds.left, "Left should be initialized to 2");
+        assertEquals(BigInteger.valueOf(3), bounds.bottom, "Bottom should be initialized to 3");
+        assertEquals(BigInteger.valueOf(4), bounds.right, "Right should be initialized to 4");
     }
 }
