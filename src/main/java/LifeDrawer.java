@@ -120,7 +120,7 @@ class LifeDrawer {
         canvas_offset_x = offsetXBeforeZoom.add(zoomedOffsetX.toBigInteger());
         canvas_offset_y = offsetYBeforeZoom.add(zoomedOffsetY.toBigInteger());
 
-        cell_width = newCellWidth;
+        cell_width = Math.round(newCellWidth);
 
         System.out.println("cell_width updated in zoom(): " + cell_width);
         if (cell_width == 0) {
@@ -128,8 +128,6 @@ class LifeDrawer {
         }
     }
 
-
-    // todo: set this to scale without putting borders between cells -it doesn't work perfectly and i think this a 4.0 conversation will help
     void zoom(boolean out, float x, float y) {
         BigInteger xBigInt = BigInteger.valueOf(Math.round(x));
         BigInteger yBigInt = BigInteger.valueOf(Math.round(y));
@@ -143,32 +141,15 @@ class LifeDrawer {
 
         // Adjust cell width to align with grid
         if (out) {
-            float halfWidth = cell_width / 2.0f;
-            float remainder = halfWidth % 1.0f;
-            if (remainder > 0) {
-                cell_width = (float) Math.floor(halfWidth) * 2.0f;
-            } else {
-                cell_width = halfWidth;
-            }
+            cell_width = cell_width / 2.0f;
         } else {
-            cell_width *= 2.0f;
+            cell_width = cell_width * 2.0f;
         }
+        cell_width = Math.round(cell_width);
 
         canvas_offset_x = offsetX;
         canvas_offset_y = offsetY;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     void zoom_at(boolean out, float mouse_x, float mouse_y) {

@@ -7,7 +7,6 @@ import g4p_controls.GValueControl;
 import processing.core.PApplet;
 import processing.data.JSONObject;
 
-
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
