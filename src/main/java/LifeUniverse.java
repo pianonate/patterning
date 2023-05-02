@@ -6,15 +6,37 @@ import java.util.HashMap;
 //        if it reaches a size then increase it by a load factor and copy it to the new array
 
 public class LifeUniverse {
-    private static final double LOAD_FACTOR = 0.9;
+    private static final double LOAD_FACTOR = 0.7;
     private static final int INITIAL_SIZE = 16;
 
-    private static final int EMPTY_TREE_CACHE_SIZE = 1024;
+    // this is extremely large but can be reached when you reach a step size of 1024...
+    // todo: figure out if there's a way to have an arbitrarily large size - the cache could expand
+    //       what else is going wrong at this size?
+    private static final int EMPTY_TREE_CACHE_SIZE = 2048;
     private static final int HASHMAP_LIMIT = 24;
     private static final int MASK_LEFT = 1;
     private static final int MASK_TOP = 2;
     private static final int MASK_RIGHT = 4;
     private static final int MASK_BOTTOM = 8;
+
+    // todo: magic value that you can share with drawer to specify
+    private static final BigInteger[] _powers = new BigInteger[1024];
+
+    static {// the size of the MathContext
+        _powers[0] = BigInteger.ONE;
+
+        for (int i = 1; i < 1024; i++) {
+            _powers[i] = _powers[i - 1].multiply(BigInteger.TWO);
+        }
+    }
+
+    // return the cached power of 2 - for performance reasons
+    public static BigInteger pow2(int x) {
+        if (x >= 1024) {
+            return BigInteger.valueOf(2).pow(1024);
+        }
+        return _powers[x];
+    }
 
     public int lastId;
     private int hashmapSize;
@@ -22,7 +44,7 @@ public class LifeUniverse {
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
-    private final BigInteger[] _powers;
+
 
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
@@ -51,15 +73,6 @@ public class LifeUniverse {
         this.hashmap = new HashMap<>();
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
         this.level2Cache = new HashMap<>();
-
-        // todo: magic value that you can share with drawer to specify
-        // the size of the MathContext
-        this._powers = new BigInteger[1024];
-        this._powers[0] = BigInteger.ONE;
-
-        for (int i = 1; i < 1024; i++) {
-            this._powers[i] = this._powers[i - 1].multiply(BigInteger.TWO);
-        }
 
         this._bitcounts = new byte[0x758];
         this._bitcounts[0] = 0;
@@ -103,15 +116,6 @@ public class LifeUniverse {
         // the final necessary setup bits
         clearPattern();
     }
-
-    // return the cached power of 2 - for performance reasons
-    private BigInteger pow2(int x) {
-        if (x >= 1024) {
-            return BigInteger.valueOf(2).pow(1024);
-        }
-        return this._powers[x];
-    }
-
 
     // only called from main game
     public void saveRewindState() {
@@ -181,10 +185,14 @@ public class LifeUniverse {
             return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
         }
 
+        // todo: why does this have to be the size that it is to start?
+        // seems to cause an error when the step size is huge...
         Bounds bounds = new Bounds(BigInteger.valueOf(Integer.MAX_VALUE), BigInteger.valueOf(Integer.MAX_VALUE),
                 BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MIN_VALUE));
 
-        BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
+
+        // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
+        BigInteger offset = pow2(root.level - 1);
 
         nodeGetBoundary(root, offset.negate(), offset.negate(),
                 MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
@@ -540,8 +548,9 @@ public class LifeUniverse {
             this.step = step;
 
             uncache(false);
-            emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-            level2Cache = new HashMap<>(0x10000);
+            // todo: why did this originally exist - it seems empty trees are all the same
+            // emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+            // level2Cache = new HashMap<>(0x10000);
         }
     }
 
@@ -638,9 +647,13 @@ public class LifeUniverse {
             return node.cache;
         }
 
-        if (this.step == node.level - 2) {
-            return nodeQuickNextGeneration(node);
-        }
+        // todo: this slows things down not to have it there
+        // but we also don't get errors on gc when nodeQuickNextGeneration starts
+        // rapidly recursing and creating too many nodes for the current hashmap size
+        // triggering more garbageCollection calls and never breaking out of the loop
+     /*   if (this.step == node.level - 2) {
+            return nodeQuickNextGeneration(node, 0);
+        } */
 
         // right now i have seen a nodeNextGeneration where
         // node.level == 2 so...
@@ -681,7 +694,7 @@ public class LifeUniverse {
         return result;
     }
 
-    public Node nodeQuickNextGeneration(Node node) {
+    public Node nodeQuickNextGeneration(Node node, int depth) {
         if (node.quick_cache != null) {
             return node.quick_cache;
         }
@@ -690,26 +703,32 @@ public class LifeUniverse {
             return node.quick_cache = this.node_level2_next(node);
         }
 
+        if (depth > 100) {
+            System.out.println("nodeQuickNextGeneration depth: " + depth);
+        }
+
         Node nw = node.nw;
         Node ne = node.ne;
         Node sw = node.sw;
         Node se = node.se;
 
-        Node n00 = this.nodeQuickNextGeneration(nw);
-        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw));
-        Node n02 = this.nodeQuickNextGeneration(ne);
-        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne));
-        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw));
-        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne));
-        Node n20 = this.nodeQuickNextGeneration(sw);
-        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw));
-        Node n22 = this.nodeQuickNextGeneration(se);
+        depth = depth +1;
+
+        Node n00 = this.nodeQuickNextGeneration(nw, depth);
+        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw), depth);
+        Node n02 = this.nodeQuickNextGeneration(ne, depth);
+        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne), depth);
+        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw), depth);
+        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne), depth);
+        Node n20 = this.nodeQuickNextGeneration(sw, depth);
+        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw), depth);
+        Node n22 = this.nodeQuickNextGeneration(se, depth);
 
         return node.quick_cache = this.createTree(
-                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11)),
-                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12)),
-                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21)),
-                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22))
+                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11), depth),
+                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12), depth),
+                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21), depth),
+                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22), depth)
         );
     }
 
@@ -759,7 +778,8 @@ public class LifeUniverse {
                 boundary.bottom = top;
             }
         } else {
-            BigInteger offset = BigInteger.valueOf(2).pow(node.level - 1);
+            // BigInteger offset = BigInteger.valueOf(2).pow(node.level - 1);
+            BigInteger offset = pow2(node.level - 1);
 
             if (left.compareTo(boundary.left) >= 0 && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
                     top.compareTo(boundary.top) >= 0 && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {

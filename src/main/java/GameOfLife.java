@@ -1,9 +1,6 @@
 // import g4p_controls.G4P;
 // import g4p_controls.GCustomSlider;
 
-import g4p_controls.GEvent;
-
-import g4p_controls.GValueControl;
 import processing.core.PApplet;
 import processing.data.JSONObject;
 
@@ -233,8 +230,7 @@ public class GameOfLife extends PApplet {
 
         if (prevWidth != width || prevHeight != height) {
             // moral equivalent of a resize
-            // System.out.println("Window resized to: " + width + " x " + height);
-            drawer.setSize(width, height);
+            drawer.surfaceResized(width, height);
 
         }
         prevWidth = width;
@@ -355,7 +351,7 @@ public class GameOfLife extends PApplet {
                 parseStoredLife();
 
                 // it would be better if this could be called from setupPattern
-                // or parseStoredLife - it's a drag as this seems like duplciation
+                // or parseStoredLife - it's a drag as this seems like duplication
                 // look at the comment in the pre method for more info
                 drawer.fit_bounds(life.getRootBounds());
             }

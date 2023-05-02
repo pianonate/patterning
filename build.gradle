@@ -15,14 +15,15 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
     implementation files('/Users/nmccoy96/Documents/Processing.app/Contents/Java/core/library/core.jar')
     implementation files('/Users/nmccoy96/Documents/Processing/libraries/G4P/library/G4P.jar')
-
-
 }
 
 test {
     useJUnitPlatform()
 }
 
+run {
+    jvmArgs = ["-Xms4g"]
+}
 
 jar {
     manifest {

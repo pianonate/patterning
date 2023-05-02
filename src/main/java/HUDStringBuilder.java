@@ -1,11 +1,13 @@
-//import java.math.BigInteger;
-//import java.text.DecimalFormat;
+import java.math.BigInteger;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HUDStringBuilder {
-    private final Map<String, Number> data;
+    private final Map<String, Object> data; // Changed from Number to Object
     private String cachedFormattedString;
     private final NumberFormat numberFormat;
     private final String delimiter;
@@ -19,38 +21,60 @@ public class HUDStringBuilder {
         delimiter = " | ";
     }
 
-    public void addOrUpdate(String key, Number value) {
-        data.put(key, value);
+    public void addOrUpdate(String key, Object value) {
+        if (value instanceof Number) {
+            data.put(key, value);
+        } else {
+            throw new IllegalArgumentException("Value must be a Number or BigInteger.");
+        }
     }
 
-    public String formatLargeNumber(Number value) {
+    public String formatLargeNumber(Object value) {
+        if (value instanceof BigInteger bigValue) {
+            int exponent = bigValue.toString().length() - 1;
+            return formatLargeNumberUsingExponent(new BigDecimal(bigValue), exponent);
+        } else {
+            Number numValue = (Number) value;
+            double doubleValue = numValue.doubleValue();
+            int exponent = (int) Math.floor(Math.log10(doubleValue));
+            return formatLargeNumberUsingExponent(BigDecimal.valueOf(doubleValue), exponent);
+        }
+    }
+
+
+    private String formatLargeNumberUsingExponent(BigDecimal value, int exponent) {
         String[] largeNumberNames = {
                 "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
-                "septillion", "octillion", "nonillion", "decillion"
+                "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
+                "tredecillion", "quattuordecillion"
         };
 
-        double doubleValue = value.doubleValue();
-        int exponent = (int) Math.floor(Math.log10(doubleValue));
         int index = (exponent - 3) / 3;
 
         if (index < 0) {
             return numberFormat.format(value);
         } else if (index < largeNumberNames.length) {
-            double shortNumber = doubleValue / Math.pow(10, index * 3 + 3);
+            BigDecimal divisor = BigDecimal.valueOf(Math.pow(10, index * 3 + 3));
+            BigDecimal shortNumber = value.divide(divisor, 1, RoundingMode.HALF_UP);
             return String.format("%.1f %s", shortNumber, largeNumberNames[index]);
         } else {
-            return String.format("%.1e", doubleValue);
+            return String.format("%.1e", value);
         }
     }
+
+
+
 
     public String getFormattedString(int frameCount, int updateFrequency, String delimiter) {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
             StringBuilder formattedString = new StringBuilder();
-            for (Map.Entry<String, Number> entry : data.entrySet()) {
-                Number value = entry.getValue();
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                Object value = entry.getValue();
                 String formattedValue;
 
-                if (value.doubleValue() >= Math.pow(10, 9)) {
+                if (value instanceof Number && ((Number) value).doubleValue() >= Math.pow(10, 9)) {
+                    formattedValue = formatLargeNumber(value);
+                } else if (value instanceof BigInteger && ((BigInteger) value).compareTo(BigInteger.valueOf(1000000000)) >= 0) {
                     formattedValue = formatLargeNumber(value);
                 } else {
                     formattedValue = numberFormat.format(value);
@@ -70,6 +94,7 @@ public class HUDStringBuilder {
         }
         return cachedFormattedString;
     }
+
 
     public String getFormattedString(int frameCount, int updateFrequency) {
         return getFormattedString(frameCount, updateFrequency, this.delimiter);

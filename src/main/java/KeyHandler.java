@@ -1,7 +1,5 @@
 import processing.core.PApplet;
 import processing.event.KeyEvent;
-
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -95,6 +93,8 @@ public class KeyHandler {
         }
     }
 
+    // call the zoom implementation that zooms in or out based on
+    // the current position of the mouse (but you could go in or out based on any position
     private void zoom(boolean out) {
         drawer.zoom_at(out, p.mouseX, p.mouseY);
     }
