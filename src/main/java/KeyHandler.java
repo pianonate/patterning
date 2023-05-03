@@ -4,7 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class KeyHandler {
-    private final PApplet p;
+    private final PApplet processing;
+    private final  GameOfLife gol;
     private final LifeUniverse life;
     private final LifeDrawer drawer;
     private final Set<Integer> pressedKeys;
@@ -14,17 +15,18 @@ public class KeyHandler {
     private float moveAmount = initialMoveAmount;
     private boolean displayBounds = false;
 
-    public KeyHandler(PApplet p, LifeUniverse life, LifeDrawer drawer) {
-        this.p = p;
-        p.registerMethod("keyEvent", this);
-        p.registerMethod("draw", this);
+    public KeyHandler(PApplet processing,LifeUniverse life, LifeDrawer drawer) {
+
+        this.processing = processing;
+        this.gol = (GameOfLife) processing;
         this.drawer = drawer;
         this.life = life;
+
         this.pressedKeys = new HashSet<>();
-        // todo: if you increase it here then any time you handle movement you will exceed
-        //       the last increase time - this seems like a bug to me
         this.lastIncreaseTime = System.currentTimeMillis();
 
+        processing.registerMethod("keyEvent", this);
+        processing.registerMethod("draw", this);
     }
 
     public void keyEvent(KeyEvent e) {
@@ -36,7 +38,7 @@ public class KeyHandler {
     }
 
     public void handleKeyPressed() {
-        int keyCode = p.keyCode;
+        int keyCode = processing.keyCode;
         pressedKeys.add(keyCode);
 
         // zoom, fit_bounds, center_view, etc. - they don't actually draw
@@ -44,7 +46,7 @@ public class KeyHandler {
         // the right thing will happen
         // that's why it's cool for them to be invoked on keypress
 
-        switch (p.key) {
+        switch (processing.key) {
             case '+', '=' -> zoom(false);
             case '-' -> zoom(true);
             case ']' -> handleStep(true);
@@ -57,7 +59,7 @@ public class KeyHandler {
             }
             case 'R', 'r' -> rewind();
             case 'V', 'v' -> handlePaste();
-            case ' ' -> ((GameOfLife) p).spaceBarHandler();
+            case ' ' -> gol.spaceBarHandler();
             default -> {
                 // System.out.println("key: " + key + " keycode: " + keyCode);
             }
@@ -69,7 +71,7 @@ public class KeyHandler {
     private void rewind() {
         life.restoreRewindState();
         life.setStep(0);
-        ((GameOfLife)p).stop();
+        processing.stop();
         drawer.fit_bounds(life.getRootBounds());
     }
 
@@ -79,23 +81,23 @@ public class KeyHandler {
         int increment = (faster) ? 1 : -1;
 
         System.out.println((faster) ? "faster requested" : "slower requested");
-        ((GameOfLife) p).incrementTarget(increment);
+        gol.incrementTarget(increment);
     }
 
     private void handlePaste() {
-        if (p.keyCode == 86) {
-            ((GameOfLife) p).pasteHandler();
+        if (processing.keyCode == 86) {
+           gol.pasteHandler();
         }
     }
 
     // call the zoom implementation that zooms in or out based on
     // the current position of the mouse (but you could go in or out based on any position
     private void zoom(boolean out) {
-        drawer.zoom_at(out, p.mouseX, p.mouseY);
+        drawer.zoom_at(out, processing.mouseX, processing.mouseY);
     }
 
     private void handleKeyReleased() {
-        int keyCode = p.keyCode;
+        int keyCode = processing.keyCode;
         pressedKeys.remove(keyCode);
 
         handleMovementKeys();
@@ -106,7 +108,7 @@ public class KeyHandler {
         float moveX = 0;
         float moveY = 0;
 
-        int[][] directions = {{p.LEFT, 0, -1}, {p.UP, -1, 0}, {p.RIGHT, 0, 1}, {p.DOWN, 1, 0}, {p.UP + p.LEFT, -1, -1}, {p.UP + p.RIGHT, -1, 1}, {p.DOWN + p.LEFT, 1, -1}, {p.DOWN + p.RIGHT, 1, 1}};
+        int[][] directions = {{processing.LEFT, 0, -1}, {processing.UP, -1, 0}, {processing.RIGHT, 0, 1}, {processing.DOWN, 1, 0}, {processing.UP + processing.LEFT, -1, -1}, {processing.UP + processing.RIGHT, -1, 1}, {processing.DOWN + processing.LEFT, 1, -1}, {processing.DOWN + processing.RIGHT, 1, 1}};
 
         for (int[] direction : directions) {
             boolean isMoving = pressedKeys.contains(direction[0]);
