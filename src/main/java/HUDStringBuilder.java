@@ -30,6 +30,11 @@ public class HUDStringBuilder {
         }
     }
 
+    public void addOrUpdate(String key, String value) {
+        data.put(key, value);
+    }
+
+
     public String formatLargeNumber(Object value) {
         if (value instanceof BigInteger bigValue) {
             int exponent = bigValue.toString().length() - 1;
@@ -63,28 +68,26 @@ public class HUDStringBuilder {
         }
     }
 
-
-
-
     public String getFormattedString(int frameCount, int updateFrequency, String delimiter) {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
             StringBuilder formattedString = new StringBuilder();
             for (Map.Entry<String, Object> entry : data.entrySet()) {
                 Object value = entry.getValue();
-                String formattedValue;
+                String formattedValue = "";
 
-                if (value instanceof Number && ((Number) value).doubleValue() >= Math.pow(10, 9)) {
-                    formattedValue = formatLargeNumber(value);
-                } else if (value instanceof BigInteger && ((BigInteger) value).compareTo(BigInteger.valueOf(1000000000)) >= 0) {
-                    formattedValue = formatLargeNumber(value);
-                } else {
-                    formattedValue = numberFormat.format(value);
+                if (value != null) {
+                    if (value instanceof Number && ((Number) value).doubleValue() >= Math.pow(10, 9)) {
+                        formattedValue = entry.getKey() + " " + formatLargeNumber(value);
+                    } else if (value instanceof BigInteger && ((BigInteger) value).compareTo(BigInteger.valueOf(1000000000)) >= 0) {
+                        formattedValue = entry.getKey() + " " + formatLargeNumber(value);
+                    } else if (value instanceof String) {
+                        formattedValue = (String) value;
+                    } else {
+                        formattedValue = entry.getKey() + " " + numberFormat.format(value);
+                    }
                 }
 
-                formattedString.append(entry.getKey())
-                        .append(" ")
-                        .append(formattedValue)
-                        .append(delimiter);
+                formattedString.append(formattedValue).append(delimiter);
             }
             // Remove the last delimiter
             if (formattedString.length() > 0) {

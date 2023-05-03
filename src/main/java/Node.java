@@ -10,6 +10,8 @@ public class Node {
     public int level;
     public BigInteger population;
 
+    public int step;
+
     public Node cache = null;
     public Node quick_cache = null;
     public Node hashmapNext = null;
@@ -18,14 +20,16 @@ public class Node {
         this.id = id;
         this.population = population;
         this.level = level;
+        this.step = 0;
     }
 
-    public Node(Node nw, Node ne, Node sw, Node se, int id) {
+    public Node(Node nw, Node ne, Node sw, Node se, int id, int step) {
         this.nw = nw;
         this.ne = ne;
         this.sw = sw;
         this.se = se;
         this.id = id;
+        this.step = step;
 
         this.level = nw.level + 1;
 

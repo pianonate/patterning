@@ -51,7 +51,10 @@ public class KeyHandler {
             case '[' -> handleStep(false);
             case 'B', 'b' -> displayBounds = !displayBounds;
             case 'C', 'c' -> drawer.center_view(life.getRootBounds());
-            case 'F', 'f' -> drawer.fit_bounds(life.getRootBounds());
+            case 'F', 'f' -> {
+                System.out.println("KeyHandler Bounds: " + life.getRootBounds().toString());
+                drawer.fit_bounds(life.getRootBounds());
+            }
             case 'R', 'r' -> rewind();
             case 'V', 'v' -> handlePaste();
             case ' ' -> ((GameOfLife) p).spaceBarHandler();
@@ -66,25 +69,17 @@ public class KeyHandler {
     private void rewind() {
         life.restoreRewindState();
         life.setStep(0);
-        p.stop();
+        ((GameOfLife)p).stop();
         drawer.fit_bounds(life.getRootBounds());
     }
 
     // todo - i think you can't let step be less than 1
     private void handleStep(Boolean faster) {
-        int step = life.step;
-        if (faster)
-            step++;
-        else
-            step--;
 
-        // don't allow steps below 0
-        if (step == -1) {
-            step = 0;
-        }
+        int increment = (faster) ? 1 : -1;
 
-        System.out.println("step: " + step);
-        life.setStep(step);
+        System.out.println((faster) ? "faster requested" : "slower requested");
+        ((GameOfLife) p).incrementTarget(increment);
     }
 
     private void handlePaste() {

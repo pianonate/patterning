@@ -2,38 +2,39 @@ import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 
+
 // todo - dynamically allocate the empty tree cache size just like the hashmap
 //        if it reaches a size then increase it by a load factor and copy it to the new array
 
 public class LifeUniverse {
-    private static final double LOAD_FACTOR = 0.7;
+    private static final double LOAD_FACTOR = 0.95;
     private static final int INITIAL_SIZE = 16;
 
     // this is extremely large but can be reached when you reach a step size of 1024...
     // todo: figure out if there's a way to have an arbitrarily large size - the cache could expand
     //       what else is going wrong at this size?
     private static final int EMPTY_TREE_CACHE_SIZE = 2048;
-    private static final int HASHMAP_LIMIT = 24;
+    private static final int HASHMAP_LIMIT = 30;
     private static final int MASK_LEFT = 1;
     private static final int MASK_TOP = 2;
     private static final int MASK_RIGHT = 4;
     private static final int MASK_BOTTOM = 8;
 
     // todo: magic value that you can share with drawer to specify
-    private static final BigInteger[] _powers = new BigInteger[1024];
+    private static final BigInteger[] _powers = new BigInteger[EMPTY_TREE_CACHE_SIZE];
 
     static {// the size of the MathContext
         _powers[0] = BigInteger.ONE;
 
-        for (int i = 1; i < 1024; i++) {
+        for (int i = 1; i < EMPTY_TREE_CACHE_SIZE; i++) {
             _powers[i] = _powers[i - 1].multiply(BigInteger.TWO);
         }
     }
 
     // return the cached power of 2 - for performance reasons
     public static BigInteger pow2(int x) {
-        if (x >= 1024) {
-            return BigInteger.valueOf(2).pow(1024);
+        if (x >= EMPTY_TREE_CACHE_SIZE) {
+            return BigInteger.valueOf(2).pow(EMPTY_TREE_CACHE_SIZE);
         }
         return _powers[x];
     }
@@ -44,8 +45,6 @@ public class LifeUniverse {
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
-
-
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
     private int rule_b;
@@ -125,7 +124,7 @@ public class LifeUniverse {
     // only called from main game
     public void restoreRewindState() {
         generation = BigInteger.ZERO;
-        root = rewind_state;
+         root = rewind_state;
 
         // make sure to rebuild the hashmap, in case its size changed
         garbageCollect();
@@ -179,7 +178,6 @@ public class LifeUniverse {
         }
     }
 
-
     public Bounds getRootBounds() {
         if (root.population.equals(BigInteger.ZERO)) {
             return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
@@ -194,8 +192,13 @@ public class LifeUniverse {
         // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
         BigInteger offset = pow2(root.level - 1);
 
+        //System.out.println("Initial Bounds - Left: " + bounds.left + ", Right: " + bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
+
         nodeGetBoundary(root, offset.negate(), offset.negate(),
                 MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
+
+        //System.out.println("Final Bounds - Left: " + bounds.left + ", Right: " + bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
+
 
         return bounds;
     }
@@ -264,7 +267,7 @@ public class LifeUniverse {
 
     // Preserve the tree, but remove all cached
     // generations forward
-    private void uncache(boolean alsoQuick) {
+   private void uncache(boolean alsoQuick) {
         for (Node node : hashmap.values()) {
             if (node != null) {
                 node.cache = null;
@@ -325,12 +328,12 @@ public class LifeUniverse {
             node = node.hashmapNext;
         }
 
-        if (lastId > maxLoad) {
+       if (lastId > maxLoad) {
             garbageCollect();
             return createTree(nw, ne, sw, se);
         }
 
-        Node newNode = new Node(nw, ne, sw, se, lastId++);
+        Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
         if (prev != null) {
             prev.hashmapNext = newNode;
         } else {
@@ -352,8 +355,9 @@ public class LifeUniverse {
         }
 
         this.generation = this.generation.add(BigInteger.valueOf(2).pow(this.step));
-        root = nodeNextGeneration(root);
 
+
+        root = nodeNextGeneration(root);
         this.root = root;
     }
 
@@ -367,15 +371,15 @@ public class LifeUniverse {
 
         maxLoad = (int) (hashmapSize * LOAD_FACTOR);
 
-        for (int i = 0; i <= hashmapSize; i++) {
+       /* for (int i = 0; i <= hashmapSize; i++) {
             this.hashmap.put(i, null);
-        }
+        }*/
 
         lastId = 4;
         nodeHash(root);
 
         long end = System.currentTimeMillis();
-        System.out.println("gc millis: " + (end - start));
+        System.out.println("gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
     }
 
     // the hash function used for the hashmap
@@ -396,6 +400,7 @@ public class LifeUniverse {
 
         this.root = this.emptyTree(3);
         this.generation = BigInteger.ZERO;
+        this.step = 0;
     }
 
     public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
@@ -544,14 +549,19 @@ public class LifeUniverse {
 
     @SuppressWarnings("unused")
     public void setStep(int step) {
+
+
         if (step != this.step) {
+
             this.step = step;
 
             uncache(false);
+
             // todo: why did this originally exist - it seems empty trees are all the same
             // emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
             // level2Cache = new HashMap<>(0x10000);
         }
+
     }
 
     @SuppressWarnings("unused")
@@ -642,18 +652,28 @@ public class LifeUniverse {
         return level1Create(result);
     }
 
+    private long quickgen;
+
     private Node nodeNextGeneration(Node node) {
+
         if (node.cache != null) {
             return node.cache;
         }
 
-        // todo: this slows things down not to have it there
-        // but we also don't get errors on gc when nodeQuickNextGeneration starts
-        // rapidly recursing and creating too many nodes for the current hashmap size
-        // triggering more garbageCollection calls and never breaking out of the loop
-     /*   if (this.step == node.level - 2) {
-            return nodeQuickNextGeneration(node, 0);
-        } */
+        try {
+            // todo: nodeQuickNextGeneration slows things down not to have it
+            //      but we also don't get into a trap of creating too many nodes before another gc happens
+            //      when rapidly recursing and creating too many nodes for the current hashmap size
+            //      triggering more garbageCollection calls and never breaking out of the loop
+            //      can you figure this out?
+            if (this.step == node.level - 2) {
+                quickgen = 0;
+                return nodeQuickNextGeneration(node, 0);
+            }
+        } catch (IllegalStateException e) {
+            System.out.println("caught: " + e);
+            // just continue on if you're here as quickgen didn't work out...
+        }
 
         // right now i have seen a nodeNextGeneration where
         // node.level == 2 so...
@@ -694,7 +714,16 @@ public class LifeUniverse {
         return result;
     }
 
-    public Node nodeQuickNextGeneration(Node node, int depth) {
+    public Node nodeQuickNextGeneration(Node node, int depth) throws IllegalStateException {
+        quickgen += 1;
+
+        if (quickgen % 10000000 == 0) {
+            System.out.printf("Step %d, Level %d, quickgen: %,d%n", step, node.level, quickgen);
+            if (quickgen % 100000000 == 0) {
+                throw new IllegalStateException("quickgen count: " + quickgen);
+            }
+        }
+
         if (node.quick_cache != null) {
             return node.quick_cache;
         }
@@ -703,7 +732,7 @@ public class LifeUniverse {
             return node.quick_cache = this.node_level2_next(node);
         }
 
-        if (depth > 100) {
+        if (depth > 500) {
             System.out.println("nodeQuickNextGeneration depth: " + depth);
         }
 

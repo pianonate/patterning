@@ -37,7 +37,6 @@ import java.math.BigInteger;
  * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
- *
  */
 public class GameOfLife extends PApplet {
 
@@ -51,10 +50,13 @@ public class GameOfLife extends PApplet {
     private LifeDrawer drawer;
 
     float last_mouse_x;
-    private HUDStringBuilder hudInfo;
-
-    private CountdownText countdownText;
     float last_mouse_y;
+
+    float frameRateThreshold = 6.0f;
+    boolean frameRateTooSlow = false;
+
+    private HUDStringBuilder hudInfo;
+    private CountdownText countdownText;
     private boolean running, fitted;
     // todo: refactor result to have a more useful name
     private Result result;
@@ -67,11 +69,16 @@ public class GameOfLife extends PApplet {
     private String storedLife;
     private static final String PROPERTY_FILE_NAME = "GameOfLife.json";
 
+    private int targetStep;
+
     void setupPattern() {
 
+        // todo: you have to set the step size here and in life.clearPattern() to 0
+        // so... that's not encapsulated..
+        this.targetStep = 0;
+        life.setStep(0);
         life.clearPattern();
         Bounds bounds = life.getBounds(result.field_x, result.field_y);
-
         life.setupField(result.field_x, result.field_y, bounds);
         life.saveRewindState();
     }
@@ -108,13 +115,14 @@ public class GameOfLife extends PApplet {
 
         background(255);
 
-        frameRate(20);
+        frameRate(30);
 
         // create a new LifeUniverse object with the given points
         this.life = new LifeUniverse();
         this.drawer = new LifeDrawer(this, 4);
 
         this.fitted = false;
+        this.targetStep = 0;
 
         KeyHandler keyHandler = new KeyHandler(this, life, drawer);
 
@@ -244,6 +252,8 @@ public class GameOfLife extends PApplet {
         // but for now, here it is. if you can get the window value correct you could put this
         // in the setupPattern method where it belongs
         if (!fitted) {
+            System.out.println("Initial Bounds: " + life.getRootBounds().toString());
+
             drawer.fit_bounds(life.getRootBounds());
             fitted = true;
         }
@@ -256,10 +266,38 @@ public class GameOfLife extends PApplet {
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (result != null) {
 
+            // don't try unless things are going fast enough
             if (running) {
-                life.nextGeneration();
+                if (frameRate > frameRateThreshold) {
+
+                    if (frameRateTooSlow) {
+                        frameRateTooSlow = false;
+                        println("frameRate fast enough again: " + frameRate);
+                    }
+
+                    // smooth steps - once per frame regardless of
+                    // request rate from the keyhandler
+                    // todo - somwhere on the screen show
+                    //        fade in the target step and the current
+                    //        step until they're one and the same and then
+                    //        fade out
+                    int step = life.step;
+                    if (step != targetStep) {
+                        step += (step < targetStep) ? 1 : -1;
+                        life.setStep(step);
+                        println("step updated to: " + step + " out of " + targetStep);
+                    }
+
+                    life.nextGeneration();
+                } else {
+                    if (!frameRateTooSlow) {
+                        println("frame rate too slow for complexity: " + frameRate);
+                        frameRateTooSlow = true;
+                    }
+                }
             }
 
+            // make it so
             drawer.redraw(life.root);
 
             if (countdownText != null) {
@@ -309,7 +347,9 @@ public class GameOfLife extends PApplet {
         Node root = life.root;
 
         hudInfo.addOrUpdate("fps", Math.round(frameRate));
-        // so - steps can get real big - but does it really work in the code?
+        hudInfo.addOrUpdate("running", (running) ? "running" : "stopped");
+
+        hudInfo.addOrUpdate("level: ", life.root.level);
         BigInteger bigStep = new BigInteger("2").pow(life.step);
         hudInfo.addOrUpdate("step", bigStep);
         hudInfo.addOrUpdate("generation", life.generation);
@@ -384,7 +424,15 @@ public class GameOfLife extends PApplet {
     }
 
     public void stop() {
+        targetStep = 0;
         running = false;
+    }
+
+    public void incrementTarget(int increment) {
+
+        if (this.targetStep + increment < 0) increment = 0;
+        this.targetStep += increment;
+        System.out.println("targetStep: " + this.targetStep);
     }
 
     private void toggleRunning() {
