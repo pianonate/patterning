@@ -7,7 +7,6 @@ public abstract class ProcessingKeyCallback {
     public final static String MAC = "mac";
     public final static String NON_MAC = "nonmac";
     private final static String currentOS = System.getProperty("os.name").toLowerCase();
-
     private final Set<Integer> keyCodes;
     private final Integer modifiers;
     private final String validOS;
@@ -30,7 +29,7 @@ public abstract class ProcessingKeyCallback {
         this.validOS = validOS;
     }
 
-    public abstract void onKeyEvent();
+    public abstract void onKeyEvent(KeyEvent event);
 
     public abstract String getUsageText();
 

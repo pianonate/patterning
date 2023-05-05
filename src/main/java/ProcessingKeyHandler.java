@@ -10,12 +10,15 @@ import java.util.stream.Collectors;
 public class ProcessingKeyHandler {
     private final Map<Set<Integer>, ProcessingKeyCallback> keyCallbacks;
 
-    private final String currentOS;
+    private final Set<Integer> pressedKeys;
+
 
     public ProcessingKeyHandler(PApplet processing) {
+
         this.keyCallbacks = new LinkedHashMap<>();
+        this.pressedKeys = new HashSet<>();
+
         processing.registerMethod("keyEvent", this);
-        this.currentOS = System.getProperty("os.name").toLowerCase();
     }
 
     public void addKeyCallback(ProcessingKeyCallback callback) {
@@ -32,8 +35,6 @@ public class ProcessingKeyHandler {
         keyCallbacks.put(keyCodes, callback);
     }
 
-
-
     private Set<Integer> findDuplicateKeyCodes(Set<Integer> keyCodes) {
         Set<Integer> duplicateKeyCodes = new HashSet<>();
 
@@ -49,15 +50,39 @@ public class ProcessingKeyHandler {
         return duplicateKeyCodes;
     }
 
-
+    // this is registered with processing in the constructor
+    // which is why you don't see any usages in the IDE
     public void keyEvent(KeyEvent event) {
-        if (event.getAction() == KeyEvent.PRESS) {
-            for (ProcessingKeyCallback callback : keyCallbacks.values()) {
-                if (callback.matches(event)) {
-                    callback.onKeyEvent();
-                    break;
+
+        int keyCode = event.getKeyCode();
+
+        for (ProcessingKeyCallback callback : keyCallbacks.values()) {
+
+            boolean matched = callback.matches(event);
+
+            if (event.getAction() == KeyEvent.PRESS) {
+                if (matched) {
+                    callback.onKeyEvent(event);
+
+                    if (callback instanceof KeyCallbackMovement) {
+                        ((KeyCallbackMovement)callback).move(pressedKeys);
+                    }
+
+                }
+
+                pressedKeys.add(keyCode);
+            }
+
+            if (event.getAction() == KeyEvent.RELEASE) {
+                pressedKeys.remove(keyCode);
+
+                if (callback instanceof KeyCallbackMovement  && pressedKeys.size()==0) {
+                    ((KeyCallbackMovement)callback).stopMoving();
                 }
             }
+
+            if (matched)
+                break;
         }
     }
 
@@ -76,7 +101,7 @@ public class ProcessingKeyHandler {
                             keysStringBuilder.append(keyStr).append(", ");
                         }
                     }
-                    return keysStringBuilder.length()-2;
+                    return keysStringBuilder.length() - 2;
                 })
                 .max().orElse(0);
 
@@ -99,7 +124,7 @@ public class ProcessingKeyHandler {
             String keysString = keysStringBuilder.toString().replaceAll(", $", "");
 
             String usageDescription = callback.getUsageText();
-            usageText.append(String.format("%-" + (maxKeysWidth+1) + "s: %s\n", keysString, usageDescription));
+            usageText.append(String.format("%-" + (maxKeysWidth + 1) + "s: %s\n", keysString, usageDescription));
 
             processedCallbacks.add(callback);
         }
@@ -107,11 +132,10 @@ public class ProcessingKeyHandler {
         return usageText.toString();
     }
 
-
     private String keyCodeToText(int keyCode, int modifiers) {
         StringBuilder keyTextBuilder = new StringBuilder();
 
-        if ((modifiers & KeyEvent.META) != 0 && currentOS.contains("mac")) {
+        if ((modifiers & KeyEvent.META) != 0) {
             keyTextBuilder.append("Cmd+");
         }
         if ((modifiers & KeyEvent.CTRL) != 0) {
@@ -126,6 +150,5 @@ public class ProcessingKeyHandler {
 
         return keyTextBuilder.toString();
     }
-
 
 }

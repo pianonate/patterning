@@ -25,6 +25,11 @@ run {
     jvmArgs = ["-Xms8g", "-Xmx16g"]
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-Xlint:unchecked'
+    options.deprecation = true
+}
+
 jar {
     manifest {
         attributes "Main-Class": "GameOfLife"

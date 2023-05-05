@@ -7,7 +7,6 @@ import java.util.Map;
 public class KeyHandler {
 
     private final PApplet processing;
-    private final  GameOfLife gol;
     private final LifeUniverse life;
     private final LifeDrawer drawer;
     private final Set<Integer> pressedKeys;
@@ -19,7 +18,7 @@ public class KeyHandler {
     public KeyHandler(PApplet processing,LifeUniverse life, LifeDrawer drawer) {
 
         this.processing = processing;
-        this.gol = (GameOfLife) processing;
+        GameOfLife gol = (GameOfLife) processing;
         this.drawer = drawer;
         this.life = life;
 
@@ -42,21 +41,8 @@ public class KeyHandler {
         int keyCode = processing.keyCode;
         pressedKeys.add(keyCode);
 
-        // zoom, fit_bounds, center_view, etc. - they don't actually draw
-        // they just put the drawer into a state that on the next redraw
-        // the right thing will happen
-        // that's why it's cool for them to be invoked on keypress
-
-        switch (processing.key) {
-           // case ' ' -> gol.spaceBarHandler();
-            default -> {
-                // System.out.println("key: " + key + " keycode: " + keyCode);
-            }
-        }
-
         handleMovementKeys();
     }
-
 
 
     private void handleKeyReleased() {

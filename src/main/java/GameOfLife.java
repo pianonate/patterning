@@ -15,6 +15,7 @@ import java.io.IOException;
 
 import java.math.BigInteger;
 import java.util.Set;
+import java.util.HashSet;
 
 
 /**
@@ -55,6 +56,9 @@ public class GameOfLife extends PApplet {
 
     private LifeUniverse life;
     private LifeDrawer drawer;
+
+    private Set<Integer> pressedKeys;
+    private MovementHandler movementHandler;
 
     float last_mouse_x;
     float last_mouse_y;
@@ -142,13 +146,14 @@ public class GameOfLife extends PApplet {
         // create a new LifeUniverse object with the given points
         this.life = new LifeUniverse();
         this.drawer = new LifeDrawer(this, 4);
+        this.movementHandler = new MovementHandler(this.drawer);
 
         this.fitted = false;
         this.targetStep = 0;
         this.displayBounds = false;
 
 
-        KeyHandler keyHandler = new KeyHandler(this, life, drawer);
+       // KeyHandler keyHandler = new KeyHandler(this, life, drawer);
 
 
         this.hudInfo = new HUDStringBuilder();
@@ -283,6 +288,8 @@ public class GameOfLife extends PApplet {
         if (lifeForm != null) {
 
             goForwardInTime();
+
+            movementHandler.move(pressedKeys);
 
             // make it so
             drawer.redraw(life.root);
@@ -508,13 +515,40 @@ public class GameOfLife extends PApplet {
         keyHandler.addKeyCallback(callbackRewind);
         keyHandler.addKeyCallback(callbackPaste);
 
+        keyHandler.addKeyCallback(callbackMovement);
+
+
         System.out.println(keyHandler.generateUsageText());
     }
+
+    private final ProcessingKeyCallback callbackMovement = new KeyCallbackMovement() {
+        @Override
+        public void onKeyEvent(KeyEvent event) {
+
+        }
+
+        @Override
+        public void move(Set<Integer> pressedKeys) {
+            GameOfLife.this.pressedKeys = pressedKeys;
+        }
+
+        @Override
+        public void stopMoving() {
+            GameOfLife.this.pressedKeys = null;
+            GameOfLife.this.movementHandler.stop();
+        }
+
+        @Override
+        public String getUsageText() {
+            return "use arrow keys to move the image around. hold down two keys to move diagonally";
+        }
+    };
+
 
     // Implement the getActionDescription() method for the zoom callback
     private final ProcessingKeyCallback callbackZoomIn = new ProcessingKeyCallback(Set.of('+', '=')) {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             drawer.zoom_at(true, mouseX, mouseY);
         }
 
@@ -526,7 +560,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackZoomOut = new ProcessingKeyCallback('-') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             drawer.zoom_at(false, mouseX, mouseY);
         }
 
@@ -538,7 +572,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackStepFaster = new ProcessingKeyCallback(']') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             handleStep(true);
         }
 
@@ -551,7 +585,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackStepSlower = new ProcessingKeyCallback('[') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             handleStep(false);
         }
 
@@ -576,7 +610,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackDisplayBounds = new ProcessingKeyCallback('b') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             displayBounds = !displayBounds;
         }
 
@@ -588,7 +622,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackCenterView = new ProcessingKeyCallback('c') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             drawer.center_view(life.getRootBounds());
         }
 
@@ -600,7 +634,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackFitUniverseOnScreen = new ProcessingKeyCallback('f') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             fitUniverseOnScreen();
         }
 
@@ -616,7 +650,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackRewind = new ProcessingKeyCallback('r') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             stop();
             life.restoreRewindState();
 
@@ -635,7 +669,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackPaste = new ProcessingKeyCallback('v', KeyEvent.META, ProcessingKeyCallback.MAC) {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             pasteLifeForm();
         }
 
@@ -647,7 +681,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackPasteWindows = new ProcessingKeyCallback('v', KeyEvent.CTRL, ProcessingKeyCallback.NON_MAC) {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             pasteLifeForm();
         }
 
@@ -659,7 +693,7 @@ public class GameOfLife extends PApplet {
 
     private final ProcessingKeyCallback callbackPause = new ProcessingKeyCallback(' ') {
         @Override
-        public void onKeyEvent() {
+        public void onKeyEvent(KeyEvent event) {
             if (countdownText != null && countdownText.isCountingDown) {
                 countdownText.interruptCountdown();
             } else {
