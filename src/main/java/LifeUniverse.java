@@ -124,7 +124,7 @@ public class LifeUniverse {
     // only called from main game
     public void restoreRewindState() {
         generation = BigInteger.ZERO;
-         root = rewind_state;
+        root = rewind_state;
 
         // make sure to rebuild the hashmap, in case its size changed
         garbageCollect();
@@ -150,7 +150,7 @@ public class LifeUniverse {
     }
 
     private void setBit(BigInteger x, BigInteger y, boolean living) {
-        int level = getLevelFromBounds(new Bounds(y,x));
+        int level = getLevelFromBounds(new Bounds(y, x));
 
         if (living) {
             while (level > root.level) {
@@ -167,9 +167,8 @@ public class LifeUniverse {
     }
 
 
-
     public boolean getBit(BigInteger x, BigInteger y) {
-        int level = getLevelFromBounds(new Bounds(y,x));
+        int level = getLevelFromBounds(new Bounds(y, x));
 
         if (level > root.level) {
             return false;
@@ -267,7 +266,7 @@ public class LifeUniverse {
 
     // Preserve the tree, but remove all cached
     // generations forward
-   private void uncache(boolean alsoQuick) {
+    private void uncache(boolean alsoQuick) {
         for (Node node : hashmap.values()) {
             if (node != null) {
                 node.cache = null;
@@ -328,7 +327,7 @@ public class LifeUniverse {
             node = node.hashmapNext;
         }
 
-       if (lastId > maxLoad) {
+        if (lastId > maxLoad) {
             garbageCollect();
             return createTree(nw, ne, sw, se);
         }
@@ -364,6 +363,7 @@ public class LifeUniverse {
     public void garbageCollect() {
         long start = System.currentTimeMillis();
 
+        // if rewinding just keep things as they are
         if (hashmapSize < (1 << HASHMAP_LIMIT) - 1) {
             hashmapSize = (hashmapSize << 1) | 1;
             hashmap = new HashMap<>(hashmapSize + 1);
@@ -631,7 +631,6 @@ public class LifeUniverse {
     }
 
 
-
     public Node node_level2_next(Node node) {
         Node nw = node.nw;
         Node ne = node.ne;
@@ -741,7 +740,7 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
-        depth = depth +1;
+        depth = depth + 1;
 
         Node n00 = this.nodeQuickNextGeneration(nw, depth);
         Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw), depth);

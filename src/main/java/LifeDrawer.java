@@ -77,14 +77,14 @@ class LifeDrawer {
         updateCanvasOffsets(dx, dy);
     }
 
-    void zoom(boolean out, float x, float y) {
+    void zoom(boolean in, float x, float y) {
         float previousCellWidth = cell_width;
 
         // Adjust cell width to align with grid
-        if (out) {
-            cell_width = cell_width / 2.0f;
-        } else {
+        if (in) {
             cell_width = cell_width * 2.0f;
+        } else {
+            cell_width = cell_width / 2.0f;
         }
 
         // Apply rounding conditionally based on a threshold
@@ -110,8 +110,8 @@ class LifeDrawer {
         canvas_offset_y = canvas_offset_y.add(BigInteger.valueOf(Math.round(offsetY)));
     }
 
-    void zoom_at(boolean out, float mouse_x, float mouse_y) {
-        zoom(out, mouse_x, mouse_y);
+    void zoom_at(boolean in, float mouse_x, float mouse_y) {
+        zoom(in, mouse_x, mouse_y);
     }
 
     void center_view(Bounds bounds) {

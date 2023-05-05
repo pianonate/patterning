@@ -14,10 +14,10 @@ public class RLEParser {
     final String HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$";
     private  static final int MAX_BUFFER_SIZE = 1048576;
 
-    private final Result result;
+    private final LifeForm lifeForm;
 
     RLEParser(String text) throws NotLifeException {
-        result = new Result();
+        lifeForm = new LifeForm();
 
         handleMetaData(text);
         handleHeader(text);
@@ -34,15 +34,15 @@ public class RLEParser {
 
     void parseInstructions() throws NotLifeException {
 
-        String instructions = result.instructions;
+        String instructions = lifeForm.instructions;
         if (instructions.length()==0) {
             throw new NotLifeException("no life was found in the details of the RLE");
         }
 
         int initialSize = MIN_BUFFER_SIZE;
 
-        if (result.width > 0 && result.height > 0) {
-            int size = result.width * result.height;
+        if (lifeForm.width > 0 && lifeForm.height > 0) {
+            int size = lifeForm.width * lifeForm.height;
 
             if (size > 0) {
                 float DENSITY_ESTIMATE = 1.5f;
@@ -98,8 +98,8 @@ public class RLEParser {
             }
         }
 
-        result.field_x= fieldX.slice(0, aliveCount);
-        result.field_y = fieldY.slice(0, aliveCount);
+        lifeForm.field_x= fieldX.slice(0, aliveCount);
+        lifeForm.field_y = fieldY.slice(0, aliveCount);
     }
 
     void handleHeader(String text) throws NotLifeException {
@@ -110,7 +110,7 @@ public class RLEParser {
         String line;
         if (matcher.find()) {
             line = matcher.group();
-            result.instructions = text.substring(matcher.end());
+            lifeForm.instructions = text.substring(matcher.end());
         } else {
             throw new NotLifeException("can't find the header line");
         }
@@ -125,20 +125,20 @@ public class RLEParser {
             String value = components[2];
 
             switch (component) {
-                case "x" -> result.width = PApplet.parseInt(value);
-                case "y" -> result.height = PApplet.parseInt(value);
+                case "x" -> lifeForm.width = PApplet.parseInt(value);
+                case "y" -> lifeForm.height = PApplet.parseInt(value);
                 case "rule" -> {
                     // parseRuleRLE ensures that the if there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
                     // that's what the true and false are for here
-                    result.rule_s = parseRuleRLE(value, true);
-                    result.rule_b = parseRuleRLE(value, false);
+                    lifeForm.rule_s = parseRuleRLE(value, true);
+                    lifeForm.rule_b = parseRuleRLE(value, false);
 
                     // add the rule used to the comments list and also to the result object
                     // in a consistent manner
-                    String readable = rule2str(result.rule_s, result.rule_b);
-                    result.comments.add("\nRule: " + readable + "\n");
-                    result.rule = readable;
+                    String readable = rule2str(lifeForm.rule_s, lifeForm.rule_b);
+                    lifeForm.comments.add("\nRule: " + readable + "\n");
+                    lifeForm.rule = readable;
                 }
                 default ->
                     // if we got here we don't have something we know about
@@ -258,21 +258,21 @@ public class RLEParser {
                 String remainder = line.substring(2).trim();
 
                 switch (secondChar) {
-                    case 'N' -> result.title = remainder;
-                    case 'O' -> result.author = remainder;
-                    case 'C', 'D' -> result.comments.add(remainder);
+                    case 'N' -> lifeForm.title = remainder;
+                    case 'O' -> lifeForm.author = remainder;
+                    case 'C', 'D' -> lifeForm.comments.add(remainder);
                     default -> throw new NotLifeException("unknown metadata type: " + line);
                 }
             }
         }
     }
 
-    Result getResult() {
-        return result;
+    LifeForm getResult() {
+        return lifeForm;
     }
 }
 
-class Result {
+class LifeForm {
 
     int width;
     int height;
@@ -286,7 +286,7 @@ class Result {
     IntBuffer field_x;
     IntBuffer field_y;
 
-    Result() {
+    LifeForm() {
         width=0;
         height=0;
         rule_s=0;

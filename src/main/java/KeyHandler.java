@@ -2,8 +2,10 @@ import processing.core.PApplet;
 import processing.event.KeyEvent;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 
 public class KeyHandler {
+
     private final PApplet processing;
     private final  GameOfLife gol;
     private final LifeUniverse life;
@@ -13,7 +15,6 @@ public class KeyHandler {
     private long lastIncreaseTime;
     private final float initialMoveAmount = 1;
     private float moveAmount = initialMoveAmount;
-    private boolean displayBounds = false;
 
     public KeyHandler(PApplet processing,LifeUniverse life, LifeDrawer drawer) {
 
@@ -47,19 +48,7 @@ public class KeyHandler {
         // that's why it's cool for them to be invoked on keypress
 
         switch (processing.key) {
-            case '+', '=' -> zoom(false);
-            case '-' -> zoom(true);
-            case ']' -> handleStep(true);
-            case '[' -> handleStep(false);
-            case 'B', 'b' -> displayBounds = !displayBounds;
-            case 'C', 'c' -> drawer.center_view(life.getRootBounds());
-            case 'F', 'f' -> {
-                System.out.println("KeyHandler Bounds: " + life.getRootBounds().toString());
-                drawer.fit_bounds(life.getRootBounds());
-            }
-            case 'R', 'r' -> rewind();
-            case 'V', 'v' -> handlePaste();
-            case ' ' -> gol.spaceBarHandler();
+           // case ' ' -> gol.spaceBarHandler();
             default -> {
                 // System.out.println("key: " + key + " keycode: " + keyCode);
             }
@@ -68,33 +57,7 @@ public class KeyHandler {
         handleMovementKeys();
     }
 
-    private void rewind() {
-        life.restoreRewindState();
-        life.setStep(0);
-        processing.stop();
-        drawer.fit_bounds(life.getRootBounds());
-    }
 
-    // todo - i think you can't let step be less than 1
-    private void handleStep(Boolean faster) {
-
-        int increment = (faster) ? 1 : -1;
-
-        System.out.println((faster) ? "faster requested" : "slower requested");
-        gol.incrementTarget(increment);
-    }
-
-    private void handlePaste() {
-        if (processing.keyCode == 86) {
-           gol.pasteHandler();
-        }
-    }
-
-    // call the zoom implementation that zooms in or out based on
-    // the current position of the mouse (but you could go in or out based on any position
-    private void zoom(boolean out) {
-        drawer.zoom_at(out, processing.mouseX, processing.mouseY);
-    }
 
     private void handleKeyReleased() {
         int keyCode = processing.keyCode;
@@ -154,11 +117,6 @@ public class KeyHandler {
 
         for (int i = 0; i < 2; i++) {
             handleMovementKeys();
-        }
-
-        if (displayBounds) {
-
-            drawer.draw_bounds(life.getRootBounds());
         }
 
     }

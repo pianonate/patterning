@@ -3,7 +3,7 @@
  */
 public final class Formats {
 
-    Result parseRLE(String text) throws NotLifeException {
+    LifeForm parseRLE(String text) throws NotLifeException {
         return new RLEParser(text).getResult();
     }
 }
