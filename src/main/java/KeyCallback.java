@@ -3,7 +3,7 @@ import processing.event.KeyEvent;
 import java.util.stream.Collectors;
 import java.util.Set;
 
-public abstract class ProcessingKeyCallback {
+public abstract class KeyCallback {
     public final static String MAC = "mac";
     public final static String NON_MAC = "nonmac";
     private final static String currentOS = System.getProperty("os.name").toLowerCase();
@@ -11,19 +11,19 @@ public abstract class ProcessingKeyCallback {
     private final Integer modifiers;
     private final String validOS;
 
-    public ProcessingKeyCallback(char key) {
+    public KeyCallback(char key) {
         this(Set.of((int) Character.toUpperCase(key)), null, null);
     }
 
-    public ProcessingKeyCallback(Set<Character> keys) {
+    public KeyCallback(Set<Character> keys) {
         this(keys.stream().mapToInt(c -> (int) Character.toUpperCase(c)).boxed().collect(Collectors.toSet()), null, null);
     }
 
-    public ProcessingKeyCallback(char key, Integer modifiers, String validOS) {
+    public KeyCallback(char key, Integer modifiers, String validOS) {
         this(Set.of((int) Character.toUpperCase(key)), modifiers, validOS);
     }
 
-    private ProcessingKeyCallback(Set<Integer> keys, Integer modifiers, String validOS) {
+    private KeyCallback(Set<Integer> keys, Integer modifiers, String validOS) {
         this.keyCodes = keys;
         this.modifiers = modifiers != null ? modifiers : 0;
         this.validOS = validOS;
@@ -56,10 +56,10 @@ public abstract class ProcessingKeyCallback {
             return true;
         }
 
-        if (validOS.equalsIgnoreCase(ProcessingKeyCallback.MAC) && currentOS.contains(ProcessingKeyCallback.MAC)) {
+        if (validOS.equalsIgnoreCase(KeyCallback.MAC) && currentOS.contains(KeyCallback.MAC)) {
             return true;
         } else {
-            return validOS.equalsIgnoreCase(ProcessingKeyCallback.NON_MAC) && !currentOS.contains(ProcessingKeyCallback.MAC);
+            return validOS.equalsIgnoreCase(KeyCallback.NON_MAC) && !currentOS.contains(KeyCallback.MAC);
         }
     }
 }

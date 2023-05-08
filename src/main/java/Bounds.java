@@ -14,7 +14,6 @@ public class Bounds {
     private static long cacheHits = 0;
     private static long cacheMisses = 0;
 
-
     public Bounds(BigInteger top, BigInteger left, BigInteger bottom, BigInteger right) {
         this(top, left);
         this.bottom = bottom;

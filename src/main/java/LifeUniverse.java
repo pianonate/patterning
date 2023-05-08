@@ -45,6 +45,8 @@ public class LifeUniverse {
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
+
+
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
     private int rule_b;
@@ -270,6 +272,8 @@ public class LifeUniverse {
         for (Node node : hashmap.values()) {
             if (node != null) {
                 node.cache = null;
+
+                node.clearBinaryBitArray();
                 node.hashmapNext = null;
                 if (alsoQuick) {
                     node.quick_cache = null;
@@ -312,54 +316,6 @@ public class LifeUniverse {
     }
 
 
-    // create or search for a tree node given its children
-    private Node createTree(Node nw, Node ne, Node sw, Node se) {
-
-        int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
-        Node node = hashmap.get(hash);
-        Node prev = null;
-
-        while (node != null) {
-            if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
-                return node;
-            }
-            prev = node;
-            node = node.hashmapNext;
-        }
-
-        if (lastId > maxLoad) {
-            garbageCollect();
-            return createTree(nw, ne, sw, se);
-        }
-
-        Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
-        if (prev != null) {
-            prev.hashmapNext = newNode;
-        } else {
-            hashmap.put(hash, newNode);
-        }
-
-        return newNode;
-    }
-
-    public void nextGeneration() {
-        Node root = this.root;
-
-        while ((root.level <= this.step + 2) ||
-                !root.nw.population.equals(root.nw.se.se.population) ||
-                !root.ne.population.equals(root.ne.sw.sw.population) ||
-                !root.sw.population.equals(root.sw.ne.ne.population) ||
-                !root.se.population.equals(root.se.nw.nw.population)) {
-            root = this.expandUniverse(root);
-        }
-
-        this.generation = this.generation.add(BigInteger.valueOf(2).pow(this.step));
-
-
-        root = nodeNextGeneration(root);
-        this.root = root;
-    }
-
     public void garbageCollect() {
         long start = System.currentTimeMillis();
 
@@ -368,10 +324,10 @@ public class LifeUniverse {
             hashmapSize = (hashmapSize << 1) | 1;
             hashmap = new HashMap<>(hashmapSize + 1);
         }
-
         maxLoad = (int) (hashmapSize * LOAD_FACTOR);
+        hashmap.clear();
 
-       /* for (int i = 0; i <= hashmapSize; i++) {
+      /* for (int i = 0; i <= hashmapSize; i++) {
             this.hashmap.put(i, null);
         }*/
 
@@ -547,9 +503,7 @@ public class LifeUniverse {
     }
 
 
-    @SuppressWarnings("unused")
     public void setStep(int step) {
-
 
         if (step != this.step) {
 
@@ -558,8 +512,9 @@ public class LifeUniverse {
             uncache(false);
 
             // todo: why did this originally exist - it seems empty trees are all the same
-            // emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-            // level2Cache = new HashMap<>(0x10000);
+            //       hmmm - uncommenting this seems to have fixed the nextgen issue... did it for real?
+            emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+            level2Cache = new HashMap<>(0x10000);
         }
 
     }
@@ -651,12 +606,67 @@ public class LifeUniverse {
         return level1Create(result);
     }
 
-    private long quickgen;
+    // create or search for a tree node given its children
+    private Node createTree(Node nw, Node ne, Node sw, Node se) {
+
+        int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
+        Node node = hashmap.get(hash);
+        Node prev = null;
+
+        while (node != null) {
+            if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
+                return node;
+            }
+            prev = node;
+            node = node.hashmapNext;
+        }
+
+        if (lastId > maxLoad) {
+            garbageCollect();
+            return createTree(nw, ne, sw, se);
+        }
+
+        Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
+        if (prev != null) {
+            prev.hashmapNext = newNode;
+        } else {
+            hashmap.put(hash, newNode);
+        }
+
+        return newNode;
+    }
+
+
+
+    public void nextGeneration() {
+        Node root = this.root;
+
+        while ((root.level <= this.step + 2) ||
+                !root.nw.population.equals(root.nw.se.se.population) ||
+                !root.ne.population.equals(root.ne.sw.sw.population) ||
+                !root.sw.population.equals(root.sw.ne.ne.population) ||
+                !root.se.population.equals(root.se.nw.nw.population)) {
+            root = this.expandUniverse(root);
+        }
+
+        // Node maintains a per generation set of nodes that were newly created
+        // clear them so the drawing routine can use unchnaged nodes as a key to a cache associated with their
+        // drawing
+        Node.clearChanged();
+
+        root = nodeNextGeneration(root);
+
+        this.root = root;
+
+        BigInteger generationIncrease = BigInteger.valueOf(2).pow(this.step);
+
+        this.generation = this.generation.add(generationIncrease);
+    }
 
     private Node nodeNextGeneration(Node node) {
 
         if (node.cache != null) {
-            return node.cache;
+            return node.cache ;
         }
 
         try {
@@ -690,7 +700,6 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
-        @SuppressWarnings("DuplicatedCode")
         Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw);
         Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw);
         Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw);
@@ -701,17 +710,44 @@ public class LifeUniverse {
         Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw);
         Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw);
 
-        Node result = createTree(
+      /*  Node result = createTree(
                 nodeNextGeneration(createTree(n00, n01, n10, n11)),
                 nodeNextGeneration(createTree(n01, n02, n11, n12)),
                 nodeNextGeneration(createTree(n10, n11, n20, n21)),
                 nodeNextGeneration(createTree(n11, n12, n21, n22))
-        );
+        );*/
+
+        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11));
+        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12));
+        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21));
+        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22));
+
+        Node result = createTree(newNW, newNE, newSW, newSE);
+/*
+        if (node.changed || newNW.changed || newNE.changed || newSW.changed || newSE.changed) {
+            System.out.println("re-used node already changed in this round - population + " + node.population.intValue());
+            if (node.population.equals(this.root.population)) {
+                System.out.println("root");
+            }
+        } */
+
+        // cascade it up the tree
+       Node.addChanged(node);
+        // mark the new one changed
+        Node.addChanged(result);
+        // mark children changed
+         //Node.addChanged(newNW);
+         //Node.addChanged(newNE);
+         //Node.addChanged(newSW);
+         //Node.addChanged(newSE);
 
         node.cache = result;
 
         return result;
     }
+
+
+    private long quickgen;
 
     public Node nodeQuickNextGeneration(Node node, int depth) throws IllegalStateException {
         quickgen += 1;

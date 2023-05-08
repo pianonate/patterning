@@ -3,7 +3,7 @@ import java.util.Set;
 import processing.core.PApplet;
 
 
-abstract class KeyCallbackMovement extends ProcessingKeyCallback {
+abstract class KeyCallbackMovement extends KeyCallback {
 
     KeyCallbackMovement() {
         super(Set.of((char) PApplet.LEFT, (char) PApplet.RIGHT, (char) PApplet.UP, (char) PApplet.DOWN));

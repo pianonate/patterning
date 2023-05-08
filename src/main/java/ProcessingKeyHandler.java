@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ProcessingKeyHandler {
-    private final Map<Set<Integer>, ProcessingKeyCallback> keyCallbacks;
+    private final Map<Set<Integer>, KeyCallback> keyCallbacks;
 
     private final Set<Integer> pressedKeys;
 
@@ -21,7 +21,7 @@ public class ProcessingKeyHandler {
         processing.registerMethod("keyEvent", this);
     }
 
-    public void addKeyCallback(ProcessingKeyCallback callback) {
+    public void addKeyCallback(KeyCallback callback) {
         Set<Integer> keyCodes = callback.getKeyCodes();
         Set<Integer> duplicateKeyCodes = findDuplicateKeyCodes(keyCodes);
 
@@ -38,7 +38,7 @@ public class ProcessingKeyHandler {
     private Set<Integer> findDuplicateKeyCodes(Set<Integer> keyCodes) {
         Set<Integer> duplicateKeyCodes = new HashSet<>();
 
-        for (Map.Entry<Set<Integer>, ProcessingKeyCallback> entry : keyCallbacks.entrySet()) {
+        for (Map.Entry<Set<Integer>, KeyCallback> entry : keyCallbacks.entrySet()) {
             Set<Integer> existingKeyCodes = entry.getKey();
             for (Integer keyCode : keyCodes) {
                 if (existingKeyCodes.contains(keyCode)) {
@@ -56,7 +56,7 @@ public class ProcessingKeyHandler {
 
         int keyCode = event.getKeyCode();
 
-        for (ProcessingKeyCallback callback : keyCallbacks.values()) {
+        for (KeyCallback callback : keyCallbacks.values()) {
 
             boolean matched = callback.matches(event);
 
@@ -89,7 +89,7 @@ public class ProcessingKeyHandler {
     public String generateUsageText() {
         StringBuilder usageText = new StringBuilder("Key Usage:\n\n");
 
-        Set<ProcessingKeyCallback> processedCallbacks = new HashSet<>();
+        Set<KeyCallback> processedCallbacks = new HashSet<>();
 
         int maxKeysWidth = keyCallbacks.entrySet().stream()
                 .filter(e -> e.getValue().isValidForCurrentOS())
@@ -105,9 +105,9 @@ public class ProcessingKeyHandler {
                 })
                 .max().orElse(0);
 
-        for (Map.Entry<Set<Integer>, ProcessingKeyCallback> entry : keyCallbacks.entrySet()) {
+        for (Map.Entry<Set<Integer>, KeyCallback> entry : keyCallbacks.entrySet()) {
             Set<Integer> keyCodes = entry.getKey();
-            ProcessingKeyCallback callback = entry.getValue();
+            KeyCallback callback = entry.getValue();
 
             if (!callback.isValidForCurrentOS() || processedCallbacks.contains(callback)) {
                 continue;
@@ -132,6 +132,7 @@ public class ProcessingKeyHandler {
         return usageText.toString();
     }
 
+
     private String keyCodeToText(int keyCode, int modifiers) {
         StringBuilder keyTextBuilder = new StringBuilder();
 
@@ -142,10 +143,13 @@ public class ProcessingKeyHandler {
             keyTextBuilder.append("Ctrl+");
         }
 
-        if (keyCode == 32) {
-            keyTextBuilder.append("Space");
-        } else {
-            keyTextBuilder.append((char) keyCode);
+        switch (keyCode) {
+            case PApplet.UP -> keyTextBuilder.append("↑");
+            case PApplet.DOWN -> keyTextBuilder.append("↓");
+            case PApplet.LEFT -> keyTextBuilder.append("←");
+            case PApplet.RIGHT -> keyTextBuilder.append("→");
+            case 32 -> keyTextBuilder.append("Space");
+            default -> keyTextBuilder.append((char) keyCode);
         }
 
         return keyTextBuilder.toString();

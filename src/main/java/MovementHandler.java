@@ -20,7 +20,7 @@ public class MovementHandler {
 
         if (pressedKeys==null) return;
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             handleMovementKeys(pressedKeys);
         }
 
@@ -77,6 +77,7 @@ public class MovementHandler {
             }
         }
         drawer.move(moveX, moveY);
+        // System.out.println("moveX:" + moveX + "moveY: " + moveY);
         lastDirection = currentDirection;
     }
 

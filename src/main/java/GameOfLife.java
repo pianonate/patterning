@@ -15,22 +15,34 @@ import java.io.IOException;
 
 import java.math.BigInteger;
 import java.util.Set;
-import java.util.HashSet;
-
 
 /**
- * todo: with help - change ProcessingKeyCallback to work with KeyData key, modifiers,validOS - but make simple mechanisms to create one
+ * todo: create a test for LifeDrawer that allows you to know if it actually is improved
+ * todo: stop all throttling and try instead to use the complexCalculationHandler
+ * todo: move imagery around cached images into the ImageCacheEntry routine
+ * todo: binary bit array - clearing - too complicated - needs to be on automatic or you'll screw up
+ * todo: grid out the screen based on the pressed number key so you can see what level of the tree is that grid
+ * todo: add RLE parser tests that can double as tests for the app
+ * todo: clean up todo's
+ * todo: reorganize the code for cleanliness and testing with 4.0's help
+ * todo: click on node and it will tell you the information about it at the last selected grid level (or something) - mnaybe it recurses up to show info about all levels nearby
+ * todo: investigate making all sections of the screen build up from imageCacheEntries...with a LRU, shouldn't this be no problem?
+ * todo: nextgeneration as well as setstep need to have a throttle back mechanism
+ * todo: gracefully hahdle cell_width so that you can scale down to fitting something on screen again
+ *       without having to sacrifice the bs
+ * todo: with help - change KeyCallback to work with KeyData key, modifiers,validOS - but make simple mechanisms to create one
  * todo: show what level you have zoomed to using fade in face out text on screen
  * todo: same for rewinding
  * todo: what about drawing a box showing the edge of the universe (label it)
  * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width - make it a constant so that you
- * todo: fix the cell_width so it is a proper multiple of the window size
+ * todo: cache of Boolean array
+ *      of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
+ *          also should we have processing create the image offline and then show it?
  * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
  * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
- * todo: is it possible to
  * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
  * todo: move HUD to upper right with a panel with an expand/collapse
  * todo: display pasted in metadata in a HUD section
@@ -45,13 +57,12 @@ import java.util.HashSet;
  * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
+ *
  */
 public class GameOfLife extends PApplet {
 
     public static void main(String[] args) {
-
         PApplet.main("GameOfLife");
-        System.out.println("testing buildfirst");
     }
 
     private LifeUniverse life;
@@ -60,21 +71,21 @@ public class GameOfLife extends PApplet {
     private Set<Integer> pressedKeys;
     private MovementHandler movementHandler;
 
-    float last_mouse_x;
-    float last_mouse_y;
+    private FrameRateNotifier frameRateNotifier;
 
     float targetFrameRate = 30f;
-    float lowerFrameRateThreshold = 20f;
-    float higherFrameRateThreshold = 25f;
-    boolean generateNewGenerations = true;
+    private ThrottleController setStepThrottle = new ThrottleController("setStep",
+            20f,
+            25f,
+            1000 / (int) targetFrameRate);
 
-    int framesToSkip = 0;
-    int currentSkip = 0;
-    int scalingFactor = 0;
-    int recoveryThreshold = 1000 / (int) targetFrameRate; // in milliseconds
-    int bigPauseThreshold = 5000; // in milliseconds
-    int lastRecoveryTime;
+    private ThrottleController nextGenerationThrottle = new ThrottleController("nextGeneration",
+            5f,
+            15f,
+            1000 / (int) targetFrameRate);
 
+    float last_mouse_x;
+    float last_mouse_y;
 
     private HUDStringBuilder hudInfo;
     private CountdownText countdownText;
@@ -94,16 +105,22 @@ public class GameOfLife extends PApplet {
     private boolean displayBounds;
 
 
-    void setupPattern() {
+    void instantiateLifeForm(LifeForm newLife) {
 
         // todo: you have to set the step size here and in life.clearPattern() to 0
         // so... that's not encapsulated..
         this.targetStep = 0;
         life.setStep(0);
         life.clearPattern();
-        Bounds bounds = life.getBounds(lifeForm.field_x, lifeForm.field_y);
-        life.setupField(lifeForm.field_x, lifeForm.field_y, bounds);
+        Bounds bounds = life.getBounds(newLife.field_x, newLife.field_y);
+        life.setupField(newLife.field_x, newLife.field_y, bounds);
+
         drawer.fit_bounds(life.getRootBounds());
+        // this is tough to have to know - somehow we need to have the drawer
+        // know when newLife comes into existence so we don't have to
+        // remember to clear it's cache...
+        drawer.clearCache();
+
         life.saveRewindState();
     }
 
@@ -128,6 +145,10 @@ public class GameOfLife extends PApplet {
 
         // Set the window size
         size(width, height);
+
+        noSmooth();
+
+
     }
 
     public void setup() {
@@ -148,23 +169,27 @@ public class GameOfLife extends PApplet {
         this.drawer = new LifeDrawer(this, 4);
         this.movementHandler = new MovementHandler(this.drawer);
 
+        this.frameRateNotifier = new FrameRateNotifier();
+        frameRateNotifier.addListener(setStepThrottle);
+        frameRateNotifier.addListener(nextGenerationThrottle);
+
         this.fitted = false;
         this.targetStep = 0;
         this.displayBounds = false;
 
-
-       // KeyHandler keyHandler = new KeyHandler(this, life, drawer);
-
-
         this.hudInfo = new HUDStringBuilder();
 
         loadSavedWindowPositions();
+        prevWidth = width;
+        prevHeight = height;
 
         // good life was saved prior
         if (!(this.storedLife == null || this.storedLife.isEmpty())) {
             // invoke the logic you already have to reify this
             parseStoredLife();
         }
+
+
     }
 
 
@@ -245,8 +270,8 @@ public class GameOfLife extends PApplet {
 
         properties.setInt("x", frame.getX() - screenBounds.x);
         properties.setInt("y", frame.getY() - screenBounds.y);
-        properties.setInt("width", frame.getWidth());
-        properties.setInt("height", frame.getHeight());
+        properties.setInt("width", width);
+        properties.setInt("height", height);
         properties.setInt("screen", screenIndex);
         // oh baby - reify
         properties.setString("lifeForm", storedLife);
@@ -273,8 +298,6 @@ public class GameOfLife extends PApplet {
         // but for now, here it is. if you can get the window value correct you could put this
         // in the setupPattern method where it belongs
         if (!fitted) {
-            System.out.println("Initial Bounds: " + life.getRootBounds().toString());
-
             drawer.fit_bounds(life.getRootBounds());
             fitted = true;
         }
@@ -286,6 +309,9 @@ public class GameOfLife extends PApplet {
 
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (lifeForm != null) {
+
+            // notify all throttles (or any other code that needs the frameRate)
+            frameRateNotifier.notifyListeners(frameRate);
 
             goForwardInTime();
 
@@ -309,73 +335,30 @@ public class GameOfLife extends PApplet {
         drawHUD();
     }
 
-    // don't try increasing steps or invoking nextGeneration unless things are going fast enough
     private void goForwardInTime() {
         if (!running) return;
 
-        float currentFrameRate = frameRate;
-        int currentTime = millis();
-        int elapsedTime = currentTime - lastRecoveryTime;
-        int pauseFactor = elapsedTime >= bigPauseThreshold ? 25 : 5;
+        int step = life.step;
 
-        // Check if the current frame rate is below the lower threshold
-        if (currentFrameRate < lowerFrameRateThreshold) {
-            generateNewGenerations = false;
+        if (step != targetStep) {
 
-            if (elapsedTime >= recoveryThreshold) {
-                scalingFactor += pauseFactor;
-                framesToSkip += scalingFactor;
-                lastRecoveryTime = currentTime;
-            }
-
-            println("frameRate too slow: " + frameRate
-                    + " framesToSkip: " + framesToSkip
-                    + " currentSkip: " + currentSkip
-                    + " elapsedTime: " + elapsedTime
-                    + " recoveryThreshold: " + recoveryThreshold
-                    + " elapsedTime >= recoveryThreshold: " + (elapsedTime >= recoveryThreshold)
-            );
-
-        }
-
-        // Check if the current frame rate is above the higher threshold
-        if (currentFrameRate > higherFrameRateThreshold) {
-
-            scalingFactor = 0;
-            framesToSkip = 0;
-            lastRecoveryTime = currentTime;
-
-            if (!generateNewGenerations) {
-                println("frameRate fast enough again: " + frameRate + " framesToSkip: " + framesToSkip + " currentSkip: " + currentSkip);
-            }
-            generateNewGenerations = true;
-        }
-
-        if (currentSkip >= framesToSkip) {
-
-            // if (generateNewGenerations) {
-
-
-            // smooth steps - once per frame regardless of
-            // request rate from the keyhandler
-            // todo - somwhere on the screen show
-            //        fade in the target step and the current
-            //        step until they're one and the same and then
-            //        fade out
-            int step = life.step;
-            if (step != targetStep) {
+            if (setStepThrottle.shouldProceed()) {
+                // smooth steps - once per frame unless
+                //                throttling is preventing that
+                // todo - somwhere on the screen show
+                //        fade in the target step and the current
+                //        step until they're one and the same and then
+                //        fade out
                 step += (step < targetStep) ? 1 : -1;
                 life.setStep(step);
+                drawer.clearCache();
                 println("step updated to: " + step + " out of " + targetStep);
             }
-            currentSkip = 0;
-        } else {
-            // increase currentSkip until things are running fast enough
-            currentSkip += 1;
         }
 
-        life.nextGeneration();
-
+        if (nextGenerationThrottle.shouldProceed()) {
+            life.nextGeneration();
+        }
     }
 
     public void mousePressed() {
@@ -414,6 +397,7 @@ public class GameOfLife extends PApplet {
         Node root = life.root;
 
         hudInfo.addOrUpdate("fps", Math.round(frameRate));
+        hudInfo.addOrUpdate("cell", drawer.getCell_width());
         hudInfo.addOrUpdate("running", (running) ? "running" : "stopped");
 
         hudInfo.addOrUpdate("level: ", life.root.level);
@@ -474,9 +458,11 @@ public class GameOfLife extends PApplet {
             stop();
 
             Formats parser = new Formats();
-            lifeForm = parser.parseRLE(storedLife);
+            LifeForm newLife = parser.parseRLE(storedLife);
 
-            setupPattern();
+            instantiateLifeForm(newLife);
+
+            lifeForm = newLife;
 
             countdownText = new CountdownText(this, this::run, this::stop, "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
@@ -521,7 +507,7 @@ public class GameOfLife extends PApplet {
         System.out.println(keyHandler.generateUsageText());
     }
 
-    private final ProcessingKeyCallback callbackMovement = new KeyCallbackMovement() {
+    private final KeyCallback callbackMovement = new KeyCallbackMovement() {
         @Override
         public void onKeyEvent(KeyEvent event) {
 
@@ -546,7 +532,7 @@ public class GameOfLife extends PApplet {
 
 
     // Implement the getActionDescription() method for the zoom callback
-    private final ProcessingKeyCallback callbackZoomIn = new ProcessingKeyCallback(Set.of('+', '=')) {
+    private final KeyCallback callbackZoomIn = new KeyCallback(Set.of('+', '=')) {
         @Override
         public void onKeyEvent(KeyEvent event) {
             drawer.zoom_at(true, mouseX, mouseY);
@@ -558,7 +544,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackZoomOut = new ProcessingKeyCallback('-') {
+    private final KeyCallback callbackZoomOut = new KeyCallback('-') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             drawer.zoom_at(false, mouseX, mouseY);
@@ -570,7 +556,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackStepFaster = new ProcessingKeyCallback(']') {
+    private final KeyCallback callbackStepFaster = new KeyCallback(']') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             handleStep(true);
@@ -583,7 +569,7 @@ public class GameOfLife extends PApplet {
 
     };
 
-    private final ProcessingKeyCallback callbackStepSlower = new ProcessingKeyCallback('[') {
+    private final KeyCallback callbackStepSlower = new KeyCallback('[') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             handleStep(false);
@@ -608,7 +594,7 @@ public class GameOfLife extends PApplet {
 
     }
 
-    private final ProcessingKeyCallback callbackDisplayBounds = new ProcessingKeyCallback('b') {
+    private final KeyCallback callbackDisplayBounds = new KeyCallback('b') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             displayBounds = !displayBounds;
@@ -620,7 +606,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackCenterView = new ProcessingKeyCallback('c') {
+    private final KeyCallback callbackCenterView = new KeyCallback('c') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             drawer.center_view(life.getRootBounds());
@@ -632,7 +618,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackFitUniverseOnScreen = new ProcessingKeyCallback('f') {
+    private final KeyCallback callbackFitUniverseOnScreen = new KeyCallback('f') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             fitUniverseOnScreen();
@@ -648,7 +634,7 @@ public class GameOfLife extends PApplet {
         drawer.fit_bounds(life.getRootBounds());
     }
 
-    private final ProcessingKeyCallback callbackRewind = new ProcessingKeyCallback('r') {
+    private final KeyCallback callbackRewind = new KeyCallback('r') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             stop();
@@ -667,7 +653,7 @@ public class GameOfLife extends PApplet {
     };
 
 
-    private final ProcessingKeyCallback callbackPaste = new ProcessingKeyCallback('v', KeyEvent.META, ProcessingKeyCallback.MAC) {
+    private final KeyCallback callbackPaste = new KeyCallback('v', KeyEvent.META, KeyCallback.MAC) {
         @Override
         public void onKeyEvent(KeyEvent event) {
             pasteLifeForm();
@@ -679,7 +665,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackPasteWindows = new ProcessingKeyCallback('v', KeyEvent.CTRL, ProcessingKeyCallback.NON_MAC) {
+    private final KeyCallback callbackPasteWindows = new KeyCallback('v', KeyEvent.CTRL, KeyCallback.NON_MAC) {
         @Override
         public void onKeyEvent(KeyEvent event) {
             pasteLifeForm();
@@ -691,7 +677,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final ProcessingKeyCallback callbackPause = new ProcessingKeyCallback(' ') {
+    private final KeyCallback callbackPause = new KeyCallback(' ') {
         @Override
         public void onKeyEvent(KeyEvent event) {
             if (countdownText != null && countdownText.isCountingDown) {
