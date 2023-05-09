@@ -3,6 +3,7 @@
 
 import processing.core.PApplet;
 import processing.event.KeyEvent;
+import processing.core.PGraphics;
 
 import processing.data.JSONObject;
 
@@ -17,7 +18,7 @@ import java.math.BigInteger;
 import java.util.Set;
 
 /**
- * todo: create a test for LifeDrawer that allows you to know if it actually is improved
+ * todo: somewhere on the screen show fade in the target step and the current step until they're one and the same and then fade out
  * todo: stop all throttling and try instead to use the complexCalculationHandler
  * todo: move imagery around cached images into the ImageCacheEntry routine
  * todo: binary bit array - clearing - too complicated - needs to be on automatic or you'll screw up
@@ -57,8 +58,14 @@ import java.util.Set;
  * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
+ * todo: create a test for LifeDrawer that allows you to know if it actually is improved in performance
+ * todo: doubleclick to zoom
+ * todo: smooth zoom
+ * todo: click for info
+ * todo: directional big jump
  *
  */
+
 public class GameOfLife extends PApplet {
 
     public static void main(String[] args) {
@@ -72,6 +79,13 @@ public class GameOfLife extends PApplet {
     private MovementHandler movementHandler;
 
     private FrameRateNotifier frameRateNotifier;
+
+    PGraphics buffer;
+
+    ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
+
+    private int stepGuard = 0;
+    ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
 
     float targetFrameRate = 30f;
     private ThrottleController setStepThrottle = new ThrottleController("setStep",
@@ -148,7 +162,6 @@ public class GameOfLife extends PApplet {
 
         noSmooth();
 
-
     }
 
     public void setup() {
@@ -172,6 +185,17 @@ public class GameOfLife extends PApplet {
         this.frameRateNotifier = new FrameRateNotifier();
         frameRateNotifier.addListener(setStepThrottle);
         frameRateNotifier.addListener(nextGenerationThrottle);
+
+        buffer = createGraphics(width, height);
+
+        complexCalculationHandlerSetStep = new ComplexCalculationHandler<>((p, v) -> {
+            performComplexCalculationSetStep(p);
+            return null;
+        });
+        complexCalculationHandlerNextGeneration = new ComplexCalculationHandler<>((v1, v2) -> {
+            performComplexCalculationNextGeneration();
+            return null;
+        });
 
         this.fitted = false;
         this.targetStep = 0;
@@ -285,7 +309,7 @@ public class GameOfLife extends PApplet {
         if (prevWidth != width || prevHeight != height) {
             // moral equivalent of a resize
             drawer.surfaceResized(width, height);
-
+            buffer = createGraphics(width, height);
         }
         prevWidth = width;
         prevHeight = height;
@@ -305,60 +329,149 @@ public class GameOfLife extends PApplet {
 
     public void draw() {
 
-        background(255);
+        Bounds bounds = life.getRootBounds();
 
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
         if (lifeForm != null) {
 
             // notify all throttles (or any other code that needs the frameRate)
-            frameRateNotifier.notifyListeners(frameRate);
+            // frameRateNotifier.notifyListeners(frameRate);
 
-            goForwardInTime();
+            if (updatingLife())
+            {
+                image(buffer, 0, 0);
 
-            movementHandler.move(pressedKeys);
+                if (frameCount % 100 == 0 ) {
+                    if (complexCalculationHandlerSetStep.isCalculationInProgress())
+                        System.out.println("--->SetStep in progress");
+                    if (complexCalculationHandlerNextGeneration.isCalculationInProgress())
+                        System.out.println("---->NextGeneration in progress: " + frameCount);
+                }
+            } else {
+                buffer.beginDraw();
+                buffer.background(255);
 
-            // make it so
-            drawer.redraw(life.root);
+                movementHandler.move(pressedKeys);
 
-            if (displayBounds) {
-                drawer.draw_bounds(life.getRootBounds());
-            }
+                // make it so
+                drawer.redraw(life.root, buffer);
 
-            if (countdownText != null) {
-                countdownText.update();
-                countdownText.draw();
+                if (displayBounds) {
+                    drawer.draw_bounds(bounds, buffer);
+                }
+
+                // drawHUD is in this class - probably it would be better to put all drawing related items in
+                // the drawer, and then have it maintain its own buffer - esp. when reize events happen
+                drawHUD(bounds);
+
+                if (countdownText != null) {
+                    countdownText.update();
+                    countdownText.draw();
+                }
+
+                buffer.endDraw();
+
+                image(buffer, 0, 0);
+
             }
 
         }
 
-        // always draw HUD
-        drawHUD();
+        goForwardInTime();
+
+    }
+
+
+    // possibly this will help when returning from screensaver
+    public void focusGained() {
+        println("Focus gained");
+        redraw();
+    }
+
+   public void focusLost() {
+        println("Focus lost");
     }
 
     private void goForwardInTime() {
+
+        // don't start anything complex if we're not running
         if (!running) return;
 
-        int step = life.step;
-
-        if (step != targetStep) {
-
-            if (setStepThrottle.shouldProceed()) {
-                // smooth steps - once per frame unless
-                //                throttling is preventing that
-                // todo - somwhere on the screen show
-                //        fade in the target step and the current
-                //        step until they're one and the same and then
-                //        fade out
-                step += (step < targetStep) ? 1 : -1;
-                life.setStep(step);
-                drawer.clearCache();
-                println("step updated to: " + step + " out of " + targetStep);
-            }
+        if (shouldStartComplexCalculationSetStep()) {
+            int step = life.step;
+            step += (step < targetStep) ? 1 : -1;
+            complexCalculationHandlerSetStep.startCalculation(step, (p, v) -> onCalculationSetStepComplete(p));
         }
 
-        if (nextGenerationThrottle.shouldProceed()) {
-            life.nextGeneration();
+        if (shouldStartComplexCalculationNextGeneration()) {
+            complexCalculationHandlerNextGeneration.startCalculation(null, (v, result) -> onCalculationNextGenerationComplete());
         }
+    }
+
+    private void onCalculationNextGenerationComplete() {
+        //if (frameCount % 300 == 0)
+        //  System.out.println("nextGeneration complete " + frameCount);
+    }
+
+    private void onCalculationSetStepComplete(Integer step) {
+        if (life.step==step) {
+            println("step updated to: " + step + " out of " + targetStep);
+            stepGuard = 30; // always wait 30 between steps for smoother animation
+        }
+        else {
+            // todo: could you move this guard into complexcalculationhandler so that it keeps track
+            // of backoff interval when things don't work?
+            stepGuard = 60; // wit 60 if you've pushed it too much
+        }
+    }
+
+
+    private void performComplexCalculationSetStep(Integer step) {
+        life.setStep(step);
+        drawer.clearCache();
+    }
+
+    private void performComplexCalculationNextGeneration() {
+        life.nextGeneration();
+    }
+
+    // only start these if you're not running either one
+    private boolean shouldStartComplexCalculationNextGeneration() {
+
+        return !updatingLife();
+    }
+
+    private boolean updatingLife() {
+
+        // don't start if either of these calculations are currently running
+        boolean setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress();
+        boolean nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress();
+
+       /* if (setStepRunning)
+            println("setStep is running, wait");
+
+        if (nextGenerationRunning)
+            println("nextGeneration is running, wait"); */
+
+        return (nextGenerationRunning || setStepRunning);
+
+    }
+
+    private boolean shouldStartComplexCalculationSetStep() {
+        // stepGuard sets an amount of frames to wait until attempting to call
+        // set step again in case we've been too aggressive and have excced the leevl
+        // of the tree with our step requests
+        if (stepGuard > 0) {
+            stepGuard--;
+            if (stepGuard % 10==0)
+                System.out.println("stepGuard: " + stepGuard);
+
+            return false;
+        }
+
+        // if we're not running a complex task and we're expecting to advance forward in time:
+        return (!updatingLife() && (life.step < targetStep));
+
     }
 
     public void mousePressed() {
@@ -392,7 +505,8 @@ public class GameOfLife extends PApplet {
 
     }*/
 
-    private void drawHUD() {
+    private void drawHUD(Bounds bounds) {
+
 
         Node root = life.root;
 
@@ -400,7 +514,7 @@ public class GameOfLife extends PApplet {
         hudInfo.addOrUpdate("cell", drawer.getCell_width());
         hudInfo.addOrUpdate("running", (running) ? "running" : "stopped");
 
-        hudInfo.addOrUpdate("level: ", life.root.level);
+        hudInfo.addOrUpdate("level: ", root.level);
         BigInteger bigStep = new BigInteger("2").pow(life.step);
         hudInfo.addOrUpdate("step", bigStep);
         hudInfo.addOrUpdate("generation", life.generation);
@@ -408,23 +522,26 @@ public class GameOfLife extends PApplet {
         hudInfo.addOrUpdate("maxLoad", life.maxLoad);
         hudInfo.addOrUpdate("lastID", life.lastId);
 
-        textAlign(RIGHT, BOTTOM);
+        hudInfo.addOrUpdate("width", bounds.right.subtract(bounds.left));
+        hudInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top));
+
+        buffer.textAlign(RIGHT, BOTTOM);
         // use the default delimiter
         String hud = hudInfo.getFormattedString(frameCount, 12);
 
-        fill(0);
+        buffer.fill(0);
         float hudTextSize = 24;
-        textSize(hudTextSize);
+        buffer.textSize(hudTextSize);
 
         float hudMargin = 10;
 
-        while ((textWidth(hud) + (2 * hudMargin) > width) || ((textAscent() + textDescent()) + (2 * hudMargin) > height)) {
+        while ((buffer.textWidth(hud) + (2 * hudMargin) > buffer.width) || ((buffer.textAscent() + buffer.textDescent()) + (2 * hudMargin) > buffer.height)) {
             hudTextSize--;
             hudTextSize = max(hudTextSize, 1); // Prevent the textSize from going below 1
-            textSize(hudTextSize);
+            buffer.textSize(hudTextSize);
         }
 
-        text(hud, width - hudMargin, height - 5);
+        buffer.text(hud, buffer.width - hudMargin, buffer.height - 5);
 
     }
 
@@ -464,7 +581,7 @@ public class GameOfLife extends PApplet {
 
             lifeForm = newLife;
 
-            countdownText = new CountdownText(this, this::run, this::stop, "counting down - press space to begin immediately: ");
+            countdownText = new CountdownText(this, buffer, this::run, this::stop, "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
 
         } catch (NotLifeException e) {

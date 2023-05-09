@@ -1,45 +1,47 @@
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
-public class ComplexCalculationHandler<R> {
+public class ComplexCalculationHandler<P> {
     private boolean calculationInProgress = false;
-    private Consumer<R> callback;
-    private Supplier<R> calculationMethod;
+    private BiConsumer<P, Void> callback;
+    private BiFunction<P, Void, Void> calculationMethod;
+    private P parameter;
 
-    public ComplexCalculationHandler(Supplier<R> calculationMethod) {
+    public ComplexCalculationHandler(BiFunction<P, Void, Void> calculationMethod) {
         this.calculationMethod = calculationMethod;
     }
 
-    public void startCalculation(Consumer<R> callback) {
+    public void startCalculation(P parameter, BiConsumer<P, Void> callback) {
         if (calculationInProgress) {
             return;
         }
 
         calculationInProgress = true;
+        this.parameter = parameter;
         this.callback = callback;
-        new Thread(new ComplexCalculationTask(this::onCalculationComplete)).start();
+        new Thread(new ComplexCalculationTask((p, v) -> onCalculationComplete(p, v))).start();
     }
 
     public boolean isCalculationInProgress() {
         return calculationInProgress;
     }
 
-    private void onCalculationComplete(R result) {
+    private void onCalculationComplete(P parameter, Void result) {
         calculationInProgress = false;
-        callback.accept(result);
+        callback.accept(parameter, result);
     }
 
     private class ComplexCalculationTask implements Runnable {
-        private final Consumer<R> callback;
+        private final BiConsumer<P, Void> callback;
 
-        ComplexCalculationTask(Consumer<R> callback) {
+        ComplexCalculationTask(BiConsumer<P, Void> callback) {
             this.callback = callback;
         }
 
         @Override
         public void run() {
-            R result = calculationMethod.get();
-            callback.accept(result);
+            Void result = calculationMethod.apply(parameter, null);
+            callback.accept(parameter, result);
         }
     }
 }

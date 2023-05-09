@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public class LifeUniverse {
     private static final double LOAD_FACTOR = 0.95;
-    private static final int INITIAL_SIZE = 16;
+    private static final int INITIAL_SIZE = 24;
 
     // this is extremely large but can be reached when you reach a step size of 1024...
     // todo: figure out if there's a way to have an arbitrarily large size - the cache could expand
@@ -45,6 +45,10 @@ public class LifeUniverse {
     private HashMap<Integer, Node> hashmap;
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
+
+    // debugging
+    private long quickCacheHits = 0;
+    private long quickCacheMisses = 0;
 
 
     @SuppressWarnings("FieldMayBeFinal")
@@ -269,7 +273,7 @@ public class LifeUniverse {
     // Preserve the tree, but remove all cached
     // generations forward
     private void uncache(boolean alsoQuick) {
-        for (Node node : hashmap.values()) {
+       /* for (Node node : hashmap.values()) {
             if (node != null) {
                 node.cache = null;
 
@@ -279,7 +283,17 @@ public class LifeUniverse {
                     node.quick_cache = null;
                 }
             }
-        }
+        } */
+        hashmap.values().parallelStream().forEach(node -> {
+            if (node != null) {
+                node.cache = null;
+                node.clearBinaryBitArray();
+                node.hashmapNext = null;
+                if (alsoQuick) {
+                    node.quick_cache = null;
+                }
+            }
+        });
     }
 
     // return false if not in the hash map
@@ -505,6 +519,12 @@ public class LifeUniverse {
 
     public void setStep(int step) {
 
+        if (step > this.root.level - 2) {
+            System.out.println("root.level: " + root.level + " and step: " + step + " are too close, wait a minute");
+
+            step = root.level - 2;
+        }
+
         if (step != this.step) {
 
             this.step = step;
@@ -512,7 +532,6 @@ public class LifeUniverse {
             uncache(false);
 
             // todo: why did this originally exist - it seems empty trees are all the same
-            //       hmmm - uncommenting this seems to have fixed the nextgen issue... did it for real?
             emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
             level2Cache = new HashMap<>(0x10000);
         }
@@ -670,13 +689,9 @@ public class LifeUniverse {
         }
 
         try {
-            // todo: nodeQuickNextGeneration slows things down not to have it
-            //      but we also don't get into a trap of creating too many nodes before another gc happens
-            //      when rapidly recursing and creating too many nodes for the current hashmap size
-            //      triggering more garbageCollection calls and never breaking out of the loop
-            //      can you figure this out?
             if (this.step == node.level - 2) {
                 quickgen = 0;
+                // System.out.println("root.level: " + root.level + " step: " + this.step + " node.level: " + node.level);
                 return nodeQuickNextGeneration(node, 0);
             }
         } catch (IllegalStateException e) {
@@ -754,13 +769,17 @@ public class LifeUniverse {
 
         if (quickgen % 10000000 == 0) {
             System.out.printf("Step %d, Level %d, quickgen: %,d%n", step, node.level, quickgen);
+            System.out.printf("Cache hits: %,d, Cache misses: %,d, Hit ratio: %.2f%%%n", quickCacheHits, quickCacheMisses, (double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100);
             if (quickgen % 100000000 == 0) {
                 throw new IllegalStateException("quickgen count: " + quickgen);
             }
         }
 
         if (node.quick_cache != null) {
+            quickCacheHits++; // Increment the cache hit counter
             return node.quick_cache;
+        } else {
+            quickCacheMisses++;
         }
 
         if (node.level == 2) {

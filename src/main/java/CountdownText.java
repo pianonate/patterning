@@ -1,25 +1,26 @@
-import processing.core.PApplet;
+import processing.core.PApplet; // todo: could make this a static field on GameOfLife so we don't have to pass it around...
+import processing.core.PGraphics;
 
 public class CountdownText {
-    private final PApplet parent;
+    private final PGraphics buffer;
     String message;
     int textSize;
     int textColor;
     int fadeInDuration;
     int countdownFrom;
-    int currentCount;
+    long currentCount;
     boolean isCountingDown;
-    private int startTime;
+    private long startTime;
     int fadeValue;
     Runnable interruptMethod;
     Runnable runMethod;
 
-    CountdownText(PApplet parent, Runnable runMethod, Runnable interruptMethod, String message) {
-        this(parent, runMethod, interruptMethod, message, 30, 0xFF000000, 1500, 3);
+    CountdownText(PApplet parent, PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message) {
+        this(parent, buffer, runMethod, interruptMethod, message, 30, 0xFF000000, 1500, 3);
     }
 
-    CountdownText(PApplet parent, Runnable runMethod, Runnable interruptMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
-        this.parent = parent;
+    CountdownText(PApplet parent, PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
+        this.buffer = buffer;
         this.runMethod = runMethod;
         this.interruptMethod = interruptMethod;
         this.message = message;
@@ -34,18 +35,18 @@ public class CountdownText {
     }
 
     void startCountdown() {
-        startTime = parent.millis();
+        startTime = System.currentTimeMillis();
         isCountingDown = true;
     }
 
     void update() {
         if (isCountingDown) {
-            int elapsedTime = parent.millis() - startTime;
+            long elapsedTime = System.currentTimeMillis() - startTime;
             fadeValue = PApplet.constrain((int)PApplet.map(elapsedTime, 0, fadeInDuration, 0, 255), 0, 255);
 
             if (elapsedTime > fadeInDuration) {
-                int countdownElapsed = elapsedTime - fadeInDuration;
-                int newCount = countdownFrom - countdownElapsed / 1000;
+                long countdownElapsed = elapsedTime - fadeInDuration;
+                long newCount = countdownFrom - countdownElapsed / 1000;
 
                 if (newCount < currentCount) {
                     currentCount = newCount;
@@ -62,13 +63,13 @@ public class CountdownText {
 
     public void draw() {
         if (isCountingDown) {
-            parent.textAlign(PApplet.CENTER, PApplet.CENTER);
-            parent.textSize(textSize);
-            parent.fill(textColor, fadeValue);
+            buffer.textAlign(PApplet.CENTER, PApplet.CENTER);
+            buffer.textSize(textSize);
+            buffer.fill(textColor, fadeValue);
 
             // Display the message and the countdown number
             String displayText = message + " " + currentCount;
-            parent.text(displayText, parent.width / 2, parent.height / 2);
+            buffer.text(displayText, buffer.width / 2, buffer.height / 2);
         }
     }
 
