@@ -8,13 +8,14 @@ version '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
+    mavenLocal()
+
 }
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    implementation files('/Users/nmccoy96/Documents/Processing.app/Contents/Java/core/library/core.jar')
-    implementation files('/Users/nmccoy96/Documents/Processing/libraries/G4P/library/G4P.jar')
+    implementation 'com.processing:processing:4.2'
 }
 
 test {

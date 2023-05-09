@@ -4,6 +4,11 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+#vscode
+.vscode/
+bin/
+data/
+
 # mac OS
 .DS_Store
 
