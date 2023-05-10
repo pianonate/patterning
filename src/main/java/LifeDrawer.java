@@ -1,8 +1,8 @@
 import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.core.PImage;
 import processing.core.PGraphics;
 
-import java.awt.*;
 import java.math.BigInteger;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,6 +14,8 @@ import java.util.Map;
 
 class LifeDrawer {
 
+    boolean debugging = false;
+    boolean useImageCache = false;
 
     PApplet p;
     BigInteger canvas_offset_x = BigInteger.ZERO;
@@ -30,8 +32,6 @@ class LifeDrawer {
 
     private final int lifeDrawingBorder;
 
-    private long drawNodeRecursions;
-    private long lastDrawNodeRecursion;
 
     private ImageCache imageCache;
 
@@ -41,7 +41,6 @@ class LifeDrawer {
         this.canvas_width = p.width;
         this.canvas_height = p.height;
         this.lifeDrawingBorder = 50;
-        drawNodeRecursions = 0;
         this.imageCache = new ImageCache(p);
     }
 
@@ -62,16 +61,13 @@ class LifeDrawer {
 
     class ImageCache {
         private final PApplet pApplet;
-        private long hits;
-        private long misses;
         private final int cacheSize = 8000; // Set your desired cache size
         private final Map<Node, ImageCacheEntry> cache = new LRUCache<>(cacheSize);
         private boolean removeEldestMode = false;
 
         public ImageCache(PApplet pApplet) {
             this.pApplet = pApplet;
-            this.hits = 0;
-            this.misses = 0;
+
         }
 
         public void clearCache() {
@@ -85,8 +81,6 @@ class LifeDrawer {
             private boolean cached;
 
             private long retrievalCount;
-
-            private int combinedNodeCount;
 
             private ImageCacheEntry nw, ne, sw, se;
 
@@ -416,24 +410,11 @@ class LifeDrawer {
     // draw_node will draw whatever is visible of it that you want
     void redraw(Node node, PGraphics offscreenBuffer) {
         border_width = (int) (border_width_ratio * getCell_width());
-        drawNodeRecursions = 0;
 
         BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(BigDecimal.valueOf(getCell_width()), mc);
 
         DrawNodeContext ctx = new DrawNodeContext(offscreenBuffer);
         draw_node(node, size.multiply(BigDecimal.valueOf(2), mc), size.negate(), size.negate(), ctx);
-
-       //  draw_node(node, size, size.negate(), size.negate(), ctx);
-        // draw_node(node, ctx);
-
-       /* if (lastDrawNodeRecursion != drawNodeRecursions) {
-            System.out.println("drawNode Recursions: " + NumberFormat.getInstance().format(drawNodeRecursions)
-                    + " changed: " + ctx.changedDrawCount
-                    + " unchanged: " + ctx.unchangedDrawCount
-            );
-        }
-        */
-        lastDrawNodeRecursion = drawNodeRecursions;
 
     }
 
@@ -473,8 +454,6 @@ class LifeDrawer {
 
 
    private void draw_node(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
-
-        drawNodeRecursions++;
 
         if (node.population.equals(BigInteger.ZERO)) {
             return;
@@ -519,7 +498,7 @@ class LifeDrawer {
                 ctx.unchangedDrawCount++;
             }
 
-            if (!node.hasChanged() && node.level <= 4 // not new nodes
+            if (useImageCache && !node.hasChanged() && node.level <= 4 // not new nodes
                     && Math.pow(2, node.level) * getCell_width() <= Math.min(canvas_width, canvas_height) // can fit on screen
                     && (getCell_width() > Math.pow(2,-3)) // will work when cell_widths are small
                   // && (node.level < 8 )// todo: just as an insurance policy for now...
@@ -535,21 +514,18 @@ class LifeDrawer {
                         Math.round(cachedImage.width * getCell_width()),
                         Math.round(cachedImage.width * getCell_width()));
 
-                /* p.fill(node.level * 20, 255 - node.level * 20, 0);
-                p.rect(Math.round(leftWithOffset.floatValue()),
-                        Math.round(topWithOffset.floatValue()),
-                        Math.round(size.floatValue() * getCell_width()),
-                        Math.round(size.floatValue() * getCell_width()));*/
 
-                /*
+
+                if (debugging) {
+
                 if (( getCell_width() * Math.pow(2, node.level) ) > 16 ) {
 
                     p.fill(0, 125); // Black color with alpha value of 178
 
                     // Draw text with 70% opacity
                     p.textSize(16);
-                    p.textAlign(p.LEFT, p.TOP);
-                    String cacheString = (entry.cached) ? "cache" : "nocache";
+                    p.textAlign(PConstants.LEFT, PConstants.TOP);
+                    String cacheString = (entry.isCached()) ? "cache" : "nocache";
 
                     p.text("id: " + node.id + " node.level:" + node.level + " - " + cacheString, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()));
                     p.text("retrievals: " + entry.getRetrievalCount(),Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue())+20);
@@ -563,7 +539,8 @@ class LifeDrawer {
                 p.rect(Math.round(leftWithOffset.floatValue()),
                         Math.round(topWithOffset.floatValue()),
                         Math.round(cachedImage.width * getCell_width()),
-                        Math.round(cachedImage.width * getCell_width())); */
+                        Math.round(cachedImage.width * getCell_width())); 
+            }
 
 
             } else {

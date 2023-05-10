@@ -18,6 +18,7 @@ import java.math.BigInteger;
 import java.util.Set;
 
 /**
+ * todo: you can't rewind while there's a long operaation running - you'll have to queue it up
  * todo: somewhere on the screen show fade in the target step and the current step until they're one and the same and then fade out
  * todo: stop all throttling and try instead to use the complexCalculationHandler
  * todo: move imagery around cached images into the ImageCacheEntry routine
@@ -250,7 +251,6 @@ public class GameOfLife extends PApplet {
     }
 
     private Frame getFrame() {
-        Frame frame;
 
         // chatGPT thinks that this will only work with processing 4 so...
         // probably it would be helpful to have a non-processing mechanism
@@ -329,6 +329,7 @@ public class GameOfLife extends PApplet {
 
     public void draw() {
 
+
         Bounds bounds = life.getRootBounds();
 
         // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
@@ -338,20 +339,18 @@ public class GameOfLife extends PApplet {
             // frameRateNotifier.notifyListeners(frameRate);
 
             if (updatingLife())
-            {
+            {                
                 image(buffer, 0, 0);
-
-                if (frameCount % 100 == 0 ) {
-                    if (complexCalculationHandlerSetStep.isCalculationInProgress())
-                        System.out.println("--->SetStep in progress");
-                    if (complexCalculationHandlerNextGeneration.isCalculationInProgress())
-                        System.out.println("---->NextGeneration in progress: " + frameCount);
-                }
+ 
             } else {
                 buffer.beginDraw();
                 buffer.background(255);
 
                 movementHandler.move(pressedKeys);
+
+                // use this with LogPoints to tie how long redraw takes with and without bounds or with and without image cache (which was probably an unnecessaary optimization)
+                // final long startTime = System.nanoTime();
+
 
                 // make it so
                 drawer.redraw(life.root, buffer);
@@ -605,7 +604,7 @@ public class GameOfLife extends PApplet {
 
     private void setupKeyHandler() {
 
-        ProcessingKeyHandler keyHandler = new ProcessingKeyHandler(this);
+        KeyHandler keyHandler = new KeyHandler(this);
 
         keyHandler.addKeyCallback(callbackPause);
         keyHandler.addKeyCallback(callbackZoomIn);
@@ -782,7 +781,7 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    private final KeyCallback callbackPasteWindows = new KeyCallback('v', KeyEvent.CTRL, KeyCallback.NON_MAC) {
+    /* private final KeyCallback callbackPasteWindows = new KeyCallback('v', KeyEvent.CTRL, KeyCallback.NON_MAC) {
         @Override
         public void onKeyEvent(KeyEvent event) {
             pasteLifeForm();
@@ -792,7 +791,7 @@ public class GameOfLife extends PApplet {
         public String getUsageText() {
             return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms";
         }
-    };
+    }; */
 
     private final KeyCallback callbackPause = new KeyCallback(' ') {
         @Override

@@ -11,33 +11,28 @@ public class Bounds {
 
     private final float maxFloat = Float.MAX_VALUE;
     private final BigDecimal maxFloatAsDecimal = BigDecimal.valueOf(maxFloat);
+    
     private static long cacheHits = 0;
     private static long cacheMisses = 0;
 
     public Bounds(BigInteger top, BigInteger left, BigInteger bottom, BigInteger right) {
-        this(top, left);
+        this.top = top;
+        this.left = left;
         this.bottom = bottom;
         this.right = right;
     }
 
     public Bounds(BigDecimal top, BigDecimal left, BigDecimal bottom, BigDecimal right) {
+        this(top.toBigInteger(), left.toBigInteger(), bottom.toBigInteger(), right.toBigInteger());
         this.topDecimal = top;
         this.leftDecimal = left;
         this.bottomDecimal = bottom;
         this.rightDecimal = right;
-        this.top = top.toBigInteger();
-        this.left = left.toBigInteger();
-        this.bottom = bottom.toBigInteger();
-        this.right = right.toBigInteger();
     }
 
     public Bounds(BigInteger top, BigInteger left) {
-        this.top = top;
-        this.left = left;
-        this.bottom = top;
-        this.right = left;
+        this(top, left, top, left);
     }
-
 
 
     public Bounds getScreenBounds( float cellWidth, BigInteger canvasOffsetX, BigInteger canvasOffsetY) {
@@ -98,8 +93,12 @@ public class Bounds {
         return ((double) cacheHits) / totalRequests * 100;
     }
 
-    public BigDecimal leftToBigDecimal() {
-        return new BigDecimal(this.left);
+    private BigDecimal leftToBigDecimal() {
+      
+        if (this.leftDecimal == null) 
+            this.leftDecimal = new BigDecimal(this.left);
+
+        return leftDecimal;
     }
 
     public float leftToFloat() {
@@ -107,24 +106,36 @@ public class Bounds {
     }
 
 
-    public BigDecimal rightToBigDecimal() {
-        return new BigDecimal(this.right);
+    private BigDecimal rightToBigDecimal() {
+
+        if (this.rightDecimal == null);
+            this.rightDecimal = new BigDecimal(this.right);
+
+        return this.rightDecimal;
     }
 
     public float rightToFloat() {
         return (rightToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : right.floatValue();
     }
 
-    public BigDecimal topToBigDecimal() {
-        return new BigDecimal(this.top);
+    private BigDecimal topToBigDecimal() {
+
+        if (this.topDecimal==null) 
+            this.topDecimal= new BigDecimal(this.top);
+
+        return topDecimal;
     }
 
     public float topToFloat() {
         return (topToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : top.floatValue();
     }
 
-    public BigDecimal bottomToBigDecimal() {
-        return new BigDecimal(this.bottom);
+    private BigDecimal bottomToBigDecimal() {
+  
+        if (this.bottomDecimal==null)
+            this.bottomDecimal = new BigDecimal(this.bottom);
+
+        return bottomDecimal;
     }
 
     public float bottomToFloat() {
