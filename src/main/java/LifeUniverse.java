@@ -2,17 +2,171 @@ import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 
+/*
 
-// todo - dynamically allocate the empty tree cache size just like the hashmap
-//        if it reaches a size then increase it by a load factor and copy it to the new array
+* this wikipedia article talks about hash cacheing, superspeed memoization and representaton of the tree as well as manual garbage collection
+- better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
+- also: https://web.archive.org/web/20220131050938/https://jennyhasahat.github.io/hashlife.html
+
+
+* from chat gpt - i think that possibly what is going on in CreateTree is the hash ccaching and what is going on with the quick_cache is memoization
+
+ * Hash Caching in Hashlife:
+
+In Hashlife, each unique configuration of a quadtree node is hashed to generate a hash key. The hash key represents the state or configuration of the node.
+The hash key is used as a lookup in a hash table or cache, where the previously computed results are stored.
+If the result for a particular node configuration is found in the cache, it can be retrieved directly without recomputing it.
+Hash caching in Hashlife helps avoid redundant computations by reusing the results for previously encountered node configurations.
+
+Memoization in Hashlife:
+
+Hashlife employs memoization to store intermediate results of the simulation, specifically for the generations in between the power-of-two steps.
+During the simulation, when computing the next generation of a node, the algorithm checks if the result for that specific node and the current generation has already been memoized.
+If the result is found in the memoization cache, it can be retrieved directly without recomputing it.
+Memoization in Hashlife allows the algorithm to reuse the intermediate results for generations that have already been computed, avoiding redundant computations and significantly speeding up the simulation.
+
+ */
+
+
+/* 
+   to facilitate migration, create a Cache or HashMapManager and create tests for it that prove that it's working
+   including creating the two implementations and making sure that both return the same resuls
+
+  to migrate to a newHashMap that allows us to jettison hashmapNext and simplify the code, you can use this to compare
+ * This method should now work correctly with the linked list structure in the old hashmap. It iterates through the linked 
+ * list of nodes associated with each integer key and compares their populations with the corresponding NodeKey in the new hashmap. 
+ * If all nodes match and have equal populations, the method returns true.
+ * 
+ 
+ public boolean compareHashmaps(HashMap<Integer, Node> oldHashmap, HashMap<NodeKey, Node> newHashmap) {
+    int oldHashmapNodeCount = 0;
+    for (Map.Entry<Integer, Node> oldEntry : oldHashmap.entrySet()) {
+        Node oldNode = oldEntry.getValue();
+
+        while (oldNode != null) {
+            oldHashmapNodeCount++;
+
+            // Check if there's an equivalent NodeKey in the new hashmap
+            NodeKey keyToFind = new NodeKey(oldNode.nw, oldNode.ne, oldNode.sw, oldNode.se, oldEntry.getKey());
+            Node newNode = newHashmap.get(keyToFind);
+
+            // If there's no equivalent NodeKey or the populations are different, return false
+            if (newNode == null || !oldNode.population.equals(newNode.population)) {
+                return false;
+            }
+
+            oldNode = oldNode.hashmapNext;
+        }
+    }
+
+    return oldHashmapNodeCount == newHashmap.size();
+}
+
+use the following to make the new tree side by side with the old (probably use different name - like createTree new - and call it from within createTree)
+update names to use the new hashmap<NodeKey, Node>
+
+private Node createTree(Node nw, Node ne, Node sw, Node se) {
+    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
+    
+    // Create a key object to store the nodes and hash
+    NodeKey key = new NodeKey(nw, ne, sw, se, hash);
+    
+    // Check if the hashmap contains the key, if so return the corresponding node
+    if (hashmap.containsKey(key)) {
+        return hashmap.get(key);
+    }
+    
+    // If lastId exceeds maxLoad, garbageCollect and try again
+    // you can skip this bit until you've actually replaced the old one...
+    if (lastId > maxLoad) {
+        garbageCollect();
+        return createTree(nw, ne, sw, se);
+    }
+    
+    // Create a new node and put it in the hashmap
+    Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
+    hashmap.put(key, newNode);
+    
+    return newNode;
+}
+
+// Define NodeKey class
+class NodeKey {
+    Node nw, ne, sw, se;
+    int hash;
+
+    NodeKey(Node nw, Node ne, Node sw, Node se, int hash) {
+        this.nw = nw;
+        this.ne = ne;
+        this.sw = sw;
+        this.se = se;
+        this.hash = hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof NodeKey) {
+            NodeKey other = (NodeKey) obj;
+            return nw == other.nw && ne == other.ne && sw == other.sw && se == other.se;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
+    }
+}
+
+consider asking about using MurmurHash if you want fewer hash collisions to start
+
+also change level2 - you'll have to give it a new name
+
+public Node level2Setup(int start, int end, IntBuffer fieldX, IntBuffer fieldY) {
+    int set = 0, x, y;
+
+    for (int i = start; i <= end; i++) {
+        x = fieldX.get(i);
+        y = fieldY.get(i);
+
+        // interleave 2-bit x and y values
+        set |= 1 << (x & 1 | (y & 1 | x & 2) << 1 | (y & 2) << 2);
+    }
+
+    Node nw = level1Create(set);
+    Node ne = level1Create(set >> 4);
+    Node sw = level1Create(set >> 8);
+    Node se = level1Create(set >> 12);
+
+    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
+    NodeKey key = new NodeKey(nw, ne, sw, se, hash);
+
+    if (level2Cache.containsKey(key)) {
+        return level2Cache.get(key);
+    }
+
+    Node tree = createTree(nw, ne, sw, se, "level2setup");
+
+    level2Cache.put(key, tree);
+    return tree;
+}
+
+
+here's a hashmap insert 
+public void hashmapInsert(Node n) {
+    int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
+    NodeKey key = new NodeKey(n.nw, n.ne, n.sw, n.se, hash);
+    hashmap.put(key, n);
+}
+
+
+ */
 
 public class LifeUniverse {
     private static final double LOAD_FACTOR = 0.95;
     private static final int INITIAL_SIZE = 16;
 
-    // this is extremely large but can be reached when you reach a step size of 1024...
-    // todo: figure out if there's a way to have an arbitrarily large size - the cache could expand
-    //       what else is going wrong at this size?
+    // this is extremely large but can be maybe reached if you fix problems with nodeQuickNextGeneration
     private static final int EMPTY_TREE_CACHE_SIZE = 2048;
     private static final int HASHMAP_LIMIT = 30;
     private static final int MASK_LEFT = 1;
@@ -263,6 +417,31 @@ public class LifeUniverse {
     }
 
 
+    /*
+     * In the expandUniverse method, a new root node will be creaated at one level higher than the current root node
+     * surrounded by empty space, essentially making the universe double sized (on either dimension)
+     * 
+     * a new  subtree is created for each quadrant. Quadrants have a level one below
+     * the passed in node but createTree will combine that with the empty trees and create nodes at the same
+     * level as the input node.
+     * 
+     * then all 4 will be combined into a new, larger universe by the outside createTree which will return a new 
+     * node with the prior quadrants moved towards the center of the new tree - creating space at the edges for 
+     * additional growth
+     * 
+        Here's the process of creating the new root node with increased level:
+
+        Create an empty tree t with level node.level - 1.
+
+        Create new trees for each quadrant, with the original node's 
+        quadrants shifted to the corner and empty space added to the other corners.
+
+        Combine these new trees using the createTree method.
+
+       
+        So, the new root node will have a level one greater than the original root node, 
+        as it combines the new trees created with an extra level of hierarchy.
+     */
     private Node expandUniverse(Node node) {
         // System.out.println("expanding universe");
 
@@ -304,6 +483,8 @@ public class LifeUniverse {
     }
 
     // return false if not in the hash map
+    // which means it could be in the linked list associated with the hashmap
+
     public boolean inHashmap(Node n) {
 
         int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
@@ -317,6 +498,54 @@ public class LifeUniverse {
         }
 
         return false;
+    }
+
+    /*
+    The nodeHash method is called during garbage collection, and its main purpose is to ensure 
+    that all nodes in the given tree are present in the hashmap. It recursively traverses the 
+    tree and calls hashmapInsert to insert each node into the hashmap if it's not already there.
+
+    The inHashmap method checks if the node is already in the hashmap (including the linked 
+    list of nodes in case of hash collisions). If a node is already in the hashmap, the 
+    nodeHash method won't insert it again.
+
+    The hashmapInsert method is responsible for inserting a given node n into the hashmap. 
+    It first calculates the hash for the node and finds the corresponding entry in the hashmap. 
+    If there are any hash collisions, it follows the linked list (using the hashmapNext field) 
+    to the last node in the list and inserts the new node there.
+
+    So, in summary, the nodeHash method is responsible for ensuring that all nodes in a given 
+    tree are present in the hashmap during garbage collection. It does not repopulate a cleared 
+    hashmap with a tree, but rather ensures that the existing nodes are correctly inserted 
+    into the hashmap. The linked list resulting from hash collisions is maintained by the hashmapInsert method. 
+    */
+
+    // called only on garbageCollect
+    public void nodeHash(Node node) {
+        if (!this.inHashmap(node)) {
+            // Update the id. We have looked for an old id, as
+            // the hashmap has been cleared and ids have been
+            // reset, but this cannot be avoided without iterating
+            // the tree twice.
+            node.id = lastId++;
+            node.hashmapNext = null;
+
+            if (node.level > 1) {
+                nodeHash(node.nw);
+                nodeHash(node.ne);
+                nodeHash(node.sw);
+                nodeHash(node.se);
+
+                if (node.cache != null) {
+                    nodeHash(node.cache);
+                }
+                if (node.quick_cache != null) {
+                    nodeHash(node.quick_cache);
+                }
+            }
+
+            hashmapInsert(node);
+        }
     }
 
     // insert a node into the hashmap
@@ -378,16 +607,15 @@ public class LifeUniverse {
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
         this.level2Cache = new HashMap<>(0x10000);
 
-       /*for (int i = 0; i <= this.hashmapSize; i++)
-            this.hashmap.put(i, null); */
         hashmap.clear();
-
 
         this.root = this.emptyTree(3);
         this.generation = BigInteger.ZERO;
         this.step = 0;
     }
 
+
+    // this is just used when setting up the field initially unless I'm missing something
     public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
         if (fieldX.capacity() == 0) {
             return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
@@ -448,11 +676,17 @@ public class LifeUniverse {
     }
 
 
-    public void setupField(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
+    public void setupField(IntBuffer fieldX, IntBuffer fieldY) {
+        
+        Bounds bounds = getBounds(fieldX, fieldY);
         int level = getLevelFromBounds(bounds);
+        
         BigInteger offset = BigInteger.valueOf(2).pow(level - 1);
+        
         int count = fieldX.capacity();
+        
         moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
+        
         Node field = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
         root = field;
     }
@@ -537,14 +771,15 @@ public class LifeUniverse {
 
     public void setStep(int step) {
 
-        if (step > this.root.level - 2) {
+       /*  if (step > this.root.level - 1) {
             System.out.println("root.level: " + root.level + " and step: " + step + " are too close, wait a minute");
 
-            step = root.level - 2;
-        }
+            step = root.level - 1;
+        } */
 
         if (step != this.step) {
 
+            // logpoint: call# {String.format("%,7d", nextGenerationCalls)} setStep {String.format("%,3d", step)}
             this.step = step;
 
             uncache(false);
@@ -556,6 +791,7 @@ public class LifeUniverse {
 
     }
 
+    /*
     public void setRules(int s, int b) {
         if (this.rule_s != s || this.rule_b != b) {
             this.rule_s = s;
@@ -566,6 +802,7 @@ public class LifeUniverse {
             level2Cache = new HashMap<>(0x10000);
         }
     }
+    */
 
    /* private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean living) {
 
@@ -645,7 +882,7 @@ public class LifeUniverse {
     // create or search for a tree node given its children
     private Node createTree(Node nw, Node ne, Node sw, Node se, String caller) {
 
-    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
+        int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
         Node node = hashmap.get(hash);
         Node prev = null;
 
@@ -675,30 +912,51 @@ public class LifeUniverse {
     }
 
 
-
     public void nextGeneration() {
+
         Node root = this.root;
 
         //debugging
         nextGenerationCalls++;
         hashCollisions = 0;
 
-        while ((root.level <= this.step + 2) ||
+        // the following is a new mechanism to only expandUniverse as far as you need to
+        // and not just merely to match up to the current step size
+        // this seems to work but if it ever doesn't this might be the culprit and you have to go back to 
+        // this as the first line of the while below: 
+        // while ((root.level <= this.step + 2) ||
+
+        // Get the current Bounds object for live cells in root
+        Bounds bounds = getRootBounds();
+
+        // Calculate the maximum dimension of the live cells' bounding box
+        BigInteger width = bounds.right.subtract(bounds.left);
+        BigInteger height = bounds.bottom.subtract(bounds.top);
+        BigInteger maxDimension = width.max(height);
+
+        // Calculate the required universe size based on the maximum dimension
+        int requiredLevel = root.level;
+        BigInteger size = pow2(root.level + 1);
+        while (size.compareTo(maxDimension) < 0) {
+            requiredLevel++;
+            size = pow2(requiredLevel + 1);
+        }
+
+        // when we're not large enough to fit the bounds, or the tree needs to be
+        // repositioned towards the center, thenn expand universe until that's true
+        while (root.level < requiredLevel ||
                 !root.nw.population.equals(root.nw.se.se.population) ||
                 !root.ne.population.equals(root.ne.sw.sw.population) ||
                 !root.sw.population.equals(root.sw.ne.ne.population) ||
                 !root.se.population.equals(root.se.nw.nw.population)) {
             root = this.expandUniverse(root);
-        }
-
-        // Node maintains a per generation set of nodes that were newly created
+}
+           // Node maintains a per generation set of nodes that were newly created
         // clear them so the drawing routine can use unchnaged nodes as a key to a cache associated with their
         // drawing
         Node.clearChanged();
 
-        root = nodeNextGeneration(root);
-
-        this.root = root;
+        this.root = nodeNextGeneration(root);
 
         BigInteger generationIncrease = BigInteger.valueOf(2).pow(this.step);
 
@@ -750,36 +1008,17 @@ public class LifeUniverse {
         Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw, "nodeNextGeneration8");
         Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw, "nodeNextGeneration9");
 
-      /*  Node result = createTree(
-                nodeNextGeneration(createTree(n00, n01, n10, n11)),
-                nodeNextGeneration(createTree(n01, n02, n11, n12)),
-                nodeNextGeneration(createTree(n10, n11, n20, n21)),
-                nodeNextGeneration(createTree(n11, n12, n21, n22))
-        );*/
-
         Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11, "nodeNextGeneration10"));
         Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12, "nodeNextGeneration11"));
         Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21, "nodeNextGeneration12"));
         Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22, "nodeNextGeneration13"));
 
         Node result = createTree(newNW, newNE, newSW, newSE, "nodeNextGeneration14");
-/*
-        if (node.changed || newNW.changed || newNE.changed || newSW.changed || newSE.changed) {
-            System.out.println("re-used node already changed in this round - population + " + node.population.intValue());
-            if (node.population.equals(this.root.population)) {
-                System.out.println("root");
-            }
-        } */
 
         // cascade it up the tree
-       Node.addChanged(node);
+        Node.addChanged(node);
         // mark the new one changed
         Node.addChanged(result);
-        // mark children changed
-         //Node.addChanged(newNW);
-         //Node.addChanged(newNE);
-         //Node.addChanged(newSW);
-         //Node.addChanged(newSE);
 
         node.cache = result;
 
@@ -804,21 +1043,16 @@ public class LifeUniverse {
             return node.quick_cache = this.node_level2_next(node);
         }
 
-
-
-        if ((quickgen % 10000000) ==0) {
+        if ((quickgen % 1000000) ==0) {
             quickgen += 1 - 1 ;
         }
 
-        if (quickgen % 10000000 == 0) {
-            System.out.printf("Step %d, Level %d, quickgen: %,d%n", step, node.level, quickgen);
-            System.out.printf("Cache hits: %,d, Cache misses: %,d, Hit ratio: %.6f%%%n", quickCacheHits, quickCacheMisses, (double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100);
-            if (quickgen % 1000000000 == 0) {
-                throw new IllegalStateException("quickgen count: " + quickgen);
-            }
+        if (quickgen % 100000000 == 0) {
+            throw new IllegalStateException("quickgen count: " + quickgen);
         }
 
-        //call# {String.format("%,d", nextGenerationCalls)} count {quickgen} root hash:level {root.hashCode()}:{root.level} - depth:{depth} node hash:level {node.hashCode()}:{node.level} hits {String.format("%,d", quickCacheHits)}, misses {String.format("%,d", quickCacheMisses)} ratio {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
+        // logpoint for vscode
+        // lastId {String.format("%,9d", lastId)} - call# {String.format("%,6d", nextGenerationCalls)} - count {String.format("%,11d", quickgen)} - root hash:level {String.format("%10d",root.hashCode())}:{root.level} - recursion depth:{String.format("%2d", depth)} - node level {String.format("%2d",node.level)} - hits {String.format("%,10d", quickCacheHits)} misses {String.format("%,10d", quickCacheMisses)} ratio {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
 
         Node nw = node.nw;
         Node ne = node.ne;
@@ -846,32 +1080,7 @@ public class LifeUniverse {
         );
     }
 
-    public void nodeHash(Node node) {
-        if (!this.inHashmap(node)) {
-            // Update the id. We have looked for an old id, as
-            // the hashmap has been cleared and ids have been
-            // reset, but this cannot be avoided without iterating
-            // the tree twice.
-            node.id = lastId++;
-            node.hashmapNext = null;
 
-            if (node.level > 1) {
-                nodeHash(node.nw);
-                nodeHash(node.ne);
-                nodeHash(node.sw);
-                nodeHash(node.se);
-
-                if (node.cache != null) {
-                    nodeHash(node.cache);
-                }
-                if (node.quick_cache != null) {
-                    nodeHash(node.quick_cache);
-                }
-            }
-
-            hashmapInsert(node);
-        }
-    }
 
     private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds boundary) {
         if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
