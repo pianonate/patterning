@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 public class LifeUniverse {
     private static final double LOAD_FACTOR = 0.95;
-    private static final int INITIAL_SIZE = 24;
+    private static final int INITIAL_SIZE = 16;
 
     // this is extremely large but can be reached when you reach a step size of 1024...
     // todo: figure out if there's a way to have an arbitrarily large size - the cache could expand
@@ -19,6 +19,9 @@ public class LifeUniverse {
     private static final int MASK_TOP = 2;
     private static final int MASK_RIGHT = 4;
     private static final int MASK_BOTTOM = 8;
+
+    private long nextGenerationCalls = 0;
+    private long hashCollisions = 0;
 
     // todo: magic value that you can share with drawer to specify
     private static final BigInteger[] _powers = new BigInteger[EMPTY_TREE_CACHE_SIZE];
@@ -151,11 +154,14 @@ public class LifeUniverse {
                 (bitmask & 1) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 2) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 4) != 0 ? trueLeaf : falseLeaf,
-                (bitmask & 8) != 0 ? trueLeaf : falseLeaf
+                (bitmask & 8) != 0 ? trueLeaf : falseLeaf,
+                "level1Create"
         );
     }
 
-    private void setBit(BigInteger x, BigInteger y, boolean living) {
+    /* 
+    // these were used in the original to draw on screen - maybe you'll get there someday..
+     private void setBit(BigInteger x, BigInteger y, boolean living) {
         int level = getLevelFromBounds(new Bounds(y, x));
 
         if (living) {
@@ -181,7 +187,7 @@ public class LifeUniverse {
         } else {
             return nodeGetBit(root, x, y);
         }
-    }
+    } */
 
     public Bounds getRootBounds() {
         if (root.population.equals(BigInteger.ZERO)) {
@@ -251,7 +257,7 @@ public class LifeUniverse {
             t = emptyTree(level - 1);
         }
 
-        emptyTreeCache[level] = createTree(t, t, t, t);
+        emptyTreeCache[level] = createTree(t, t, t, t, "emptyTree");
 
         return emptyTreeCache[level];
     }
@@ -263,10 +269,11 @@ public class LifeUniverse {
         Node t = emptyTree(node.level - 1);
 
         return createTree(
-                createTree(t, t, t, node.nw),
-                createTree(t, t, node.ne, t),
-                createTree(t, node.sw, t, t),
-                createTree(node.se, t, t, t)
+                createTree(t, t, t, node.nw, "expandUniverse1"),
+                createTree(t, t, node.ne, t, "expandUniverse2"),
+                createTree(t, node.sw, t, t, "expandUniverse3"),
+                createTree(node.se, t, t, t, "expandUniverse4"), "expandUniverse5"
+                
         );
     }
 
@@ -298,6 +305,7 @@ public class LifeUniverse {
 
     // return false if not in the hash map
     public boolean inHashmap(Node n) {
+
         int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
         Node node = hashmap.get(hash);
 
@@ -341,10 +349,6 @@ public class LifeUniverse {
         maxLoad = (int) (hashmapSize * LOAD_FACTOR);
         hashmap.clear();
 
-      /* for (int i = 0; i <= hashmapSize; i++) {
-            this.hashmap.put(i, null);
-        }*/
-
         lastId = 4;
         nodeHash(root);
 
@@ -352,9 +356,18 @@ public class LifeUniverse {
         System.out.println("gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
     }
 
-    // the hash function used for the hashmap
-    int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
+    /* // the hash function used for the hashmap
+     int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
         return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
+    } */
+
+     int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
+        int result = 17;
+        result = 31 * result ^ nw_id;
+        result = 31 * result ^ ne_id;
+        result = 31 * result ^ sw_id;
+        result = 31 * result ^ se_id;
+        return result;
     }
 
     public void clearPattern() {
@@ -365,8 +378,10 @@ public class LifeUniverse {
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
         this.level2Cache = new HashMap<>(0x10000);
 
-        for (int i = 0; i <= this.hashmapSize; i++)
-            this.hashmap.put(i, null);
+       /*for (int i = 0; i <= this.hashmapSize; i++)
+            this.hashmap.put(i, null); */
+        hashmap.clear();
+
 
         this.root = this.emptyTree(3);
         this.generation = BigInteger.ZERO;
@@ -438,7 +453,8 @@ public class LifeUniverse {
         BigInteger offset = BigInteger.valueOf(2).pow(level - 1);
         int count = fieldX.capacity();
         moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
-        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
+        Node field = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
+        root = field;
     }
 
     public int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
@@ -486,7 +502,8 @@ public class LifeUniverse {
                 setupFieldRecurse(start, part2 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part2, part3 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part3, part4 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part4, end, fieldX, fieldY, level)
+                setupFieldRecurse(part4, end, fieldX, fieldY, level), 
+                "setupFieldRecurse"
         );
     }
 
@@ -509,7 +526,8 @@ public class LifeUniverse {
                 level1Create(set),
                 level1Create(set >> 4),
                 level1Create(set >> 8),
-                level1Create(set >> 12)
+                level1Create(set >> 12),
+                "level2setup"
         );
 
         level2Cache.put(set, tree);
@@ -538,7 +556,6 @@ public class LifeUniverse {
 
     }
 
-    @SuppressWarnings("unused")
     public void setRules(int s, int b) {
         if (this.rule_s != s || this.rule_b != b) {
             this.rule_s = s;
@@ -550,7 +567,7 @@ public class LifeUniverse {
         }
     }
 
-    private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean living) {
+   /* private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean living) {
 
         if (node.level == 0) {
             return living ? trueLeaf : falseLeaf;
@@ -602,7 +619,7 @@ public class LifeUniverse {
                 return nodeGetBit(node.se, x.subtract(offset), y.subtract(offset));
             }
         }
-    }
+    } */
 
 
     public Node node_level2_next(Node node) {
@@ -626,9 +643,9 @@ public class LifeUniverse {
     }
 
     // create or search for a tree node given its children
-    private Node createTree(Node nw, Node ne, Node sw, Node se) {
+    private Node createTree(Node nw, Node ne, Node sw, Node se, String caller) {
 
-        int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
+    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
         Node node = hashmap.get(hash);
         Node prev = null;
 
@@ -642,11 +659,13 @@ public class LifeUniverse {
 
         if (lastId > maxLoad) {
             garbageCollect();
-            return createTree(nw, ne, sw, se);
+            // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is returning a new tree because createTree was about to just make a new one but now it's calling itself recursively rather than just making a new node and returning it
+            return createTree(nw, ne, sw, se, "lastID > maxload createTree()" );
         }
 
         Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
         if (prev != null) {
+            hashCollisions++;
             prev.hashmapNext = newNode;
         } else {
             hashmap.put(hash, newNode);
@@ -659,6 +678,10 @@ public class LifeUniverse {
 
     public void nextGeneration() {
         Node root = this.root;
+
+        //debugging
+        nextGenerationCalls++;
+        hashCollisions = 0;
 
         while ((root.level <= this.step + 2) ||
                 !root.nw.population.equals(root.nw.se.se.population) ||
@@ -691,6 +714,8 @@ public class LifeUniverse {
         try {
             if (this.step == node.level - 2) {
                 quickgen = 0;
+                quickCacheHits = 0;
+                quickCacheMisses = 0;
                 // System.out.println("root.level: " + root.level + " step: " + this.step + " node.level: " + node.level);
                 return nodeQuickNextGeneration(node, 0);
             }
@@ -715,15 +740,15 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
-        Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw);
-        Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw);
-        Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw);
-        Node n10 = createTree(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw);
-        Node n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw);
-        Node n12 = createTree(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw);
-        Node n20 = createTree(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw);
-        Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw);
-        Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw);
+        Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw, "nodeNextGeneration1");
+        Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw, "nodeNextGeneration2");
+        Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw, "nodeNextGeneration3");
+        Node n10 = createTree(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw, "nodeNextGeneration4");
+        Node n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw, "nodeNextGeneration5");
+        Node n12 = createTree(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw, "nodeNextGeneration6");
+        Node n20 = createTree(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw, "nodeNextGeneration7");
+        Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw, "nodeNextGeneration8");
+        Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw, "nodeNextGeneration9");
 
       /*  Node result = createTree(
                 nodeNextGeneration(createTree(n00, n01, n10, n11)),
@@ -732,12 +757,12 @@ public class LifeUniverse {
                 nodeNextGeneration(createTree(n11, n12, n21, n22))
         );*/
 
-        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11));
-        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12));
-        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21));
-        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22));
+        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11, "nodeNextGeneration10"));
+        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12, "nodeNextGeneration11"));
+        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21, "nodeNextGeneration12"));
+        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22, "nodeNextGeneration13"));
 
-        Node result = createTree(newNW, newNE, newSW, newSE);
+        Node result = createTree(newNW, newNE, newSW, newSE, "nodeNextGeneration14");
 /*
         if (node.changed || newNW.changed || newNE.changed || newSW.changed || newSE.changed) {
             System.out.println("re-used node already changed in this round - population + " + node.population.intValue());
@@ -767,13 +792,6 @@ public class LifeUniverse {
     public Node nodeQuickNextGeneration(Node node, int depth) throws IllegalStateException {
         quickgen += 1;
 
-        if (quickgen % 10000000 == 0) {
-            System.out.printf("Step %d, Level %d, quickgen: %,d%n", step, node.level, quickgen);
-            System.out.printf("Cache hits: %,d, Cache misses: %,d, Hit ratio: %.2f%%%n", quickCacheHits, quickCacheMisses, (double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100);
-            if (quickgen % 100000000 == 0) {
-                throw new IllegalStateException("quickgen count: " + quickgen);
-            }
-        }
 
         if (node.quick_cache != null) {
             quickCacheHits++; // Increment the cache hit counter
@@ -786,9 +804,21 @@ public class LifeUniverse {
             return node.quick_cache = this.node_level2_next(node);
         }
 
-        if (depth > 500) {
-            System.out.println("nodeQuickNextGeneration depth: " + depth);
+
+
+        if ((quickgen % 10000000) ==0) {
+            quickgen += 1 - 1 ;
         }
+
+        if (quickgen % 10000000 == 0) {
+            System.out.printf("Step %d, Level %d, quickgen: %,d%n", step, node.level, quickgen);
+            System.out.printf("Cache hits: %,d, Cache misses: %,d, Hit ratio: %.6f%%%n", quickCacheHits, quickCacheMisses, (double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100);
+            if (quickgen % 1000000000 == 0) {
+                throw new IllegalStateException("quickgen count: " + quickgen);
+            }
+        }
+
+        //call# {String.format("%,d", nextGenerationCalls)} count {quickgen} root hash:level {root.hashCode()}:{root.level} - depth:{depth} node hash:level {node.hashCode()}:{node.level} hits {String.format("%,d", quickCacheHits)}, misses {String.format("%,d", quickCacheMisses)} ratio {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
 
         Node nw = node.nw;
         Node ne = node.ne;
@@ -798,20 +828,21 @@ public class LifeUniverse {
         depth = depth + 1;
 
         Node n00 = this.nodeQuickNextGeneration(nw, depth);
-        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw), depth);
+        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw, "nodeQuickNextGeneration 1"), depth);
         Node n02 = this.nodeQuickNextGeneration(ne, depth);
-        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne), depth);
-        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw), depth);
-        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne), depth);
+        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne, "nodeQuickNextGeneration 2"), depth);
+        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw, "nodeQuickNextGeneration 3"), depth);
+        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne, "nodeQuickNextGeneration 4"), depth);
         Node n20 = this.nodeQuickNextGeneration(sw, depth);
-        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw), depth);
+        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw, "nodeQuickNextGeneration 5"), depth);
         Node n22 = this.nodeQuickNextGeneration(se, depth);
 
         return node.quick_cache = this.createTree(
-                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11), depth),
-                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12), depth),
-                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21), depth),
-                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22), depth)
+                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11, "nodeQuickNextGeneration 6"), depth),
+                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12, "nodeQuickNextGeneration 7"), depth),
+                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21, "nodeQuickNextGeneration 8"), depth),
+                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22, "nodeQuickNextGeneration 9"), depth),
+                "nodeQuickNextGeneration10"
         );
     }
 
