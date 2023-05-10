@@ -127,8 +127,8 @@ public class GameOfLife extends PApplet {
         this.targetStep = 0;
         life.setStep(0);
         life.clearPattern();
-        Bounds bounds = life.getBounds(newLife.field_x, newLife.field_y);
-        life.setupField(newLife.field_x, newLife.field_y, bounds);
+
+        life.setupField(newLife.field_x, newLife.field_y);
 
         drawer.fit_bounds(life.getRootBounds());
         // this is tough to have to know - somehow we need to have the drawer
@@ -383,13 +383,11 @@ public class GameOfLife extends PApplet {
 
     // possibly this will help when returning from screensaver
     public void focusGained() {
-        println("Focus gained");
+        //println("Focus gained");
         redraw();
     }
 
-   public void focusLost() {
-        println("Focus lost");
-    }
+
 
     private void goForwardInTime() {
 
@@ -462,9 +460,6 @@ public class GameOfLife extends PApplet {
         // of the tree with our step requests
         if (stepGuard > 0) {
             stepGuard--;
-            if (stepGuard % 10==0)
-                System.out.println("stepGuard: " + stepGuard);
-
             return false;
         }
 
