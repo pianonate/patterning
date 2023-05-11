@@ -331,33 +331,41 @@ public class GameOfLife extends PApplet {
                 image(buffer, 0, 0);
  
             } else {
+                // todo: move these into lifeDrawer - why should they be here?
                 buffer.beginDraw();
                 buffer.background(255);
 
+                
+                // i don't like that movementHandler has to have a lifeDrawer instance but for now it can't be avoided
                 movementHandler.move(pressedKeys);
 
                 // use this with LogPoints to tie how long redraw takes with and without bounds or with and without image cache (which was probably an unnecessaary optimization)
                 // final long startTime = System.nanoTime();
 
 
-                // make it so
-                drawer.redraw(life.root, buffer);
-
+                // todo: move the displaybounds into the life drawer and simply
+                // notify it from the keycomand that it should do so rather than
+                // maintaining this state here
                 if (displayBounds) {
                     drawer.drawBounds(bounds, buffer);
                 }
+
+                // make it so
+                drawer.redraw(life.root, buffer);
+
 
                 // drawHUD is in this class - probably it would be better to put all drawing related items in
                 // the drawer, and then have it maintain its own buffer - esp. when reize events happen
                 drawHUD(bounds);
 
+                // another thing that the drawer shoudl handle
                 if (countdownText != null) {
                     countdownText.update();
                     countdownText.draw();
                 }
 
+                // and another thing the drawer shoud handle...
                 buffer.endDraw();
-
                 image(buffer, 0, 0);
 
             }
