@@ -2,14 +2,18 @@
 
 ## Install maven 
 I use homebrew so this gets you maven:
+
 <code>
 brew install maven
 </code>
+
 ##Install Gradle
 This project is currently using 8.1.1
-<pre><code>
+
+<code>
 brew install gradle
-</code></pre>
+</code>
+
 ##install java - i'm using jdk20
 <pre><code>
 brew install java
