@@ -476,7 +476,7 @@ public class LifeUniverse {
                 node.clearBinaryBitArray();
                 node.hashmapNext = null;
                 if (alsoQuick) {
-                    node.quick_cache = null;
+                    node.quickCache = null;
                 }
             }
         });
@@ -539,8 +539,8 @@ public class LifeUniverse {
                 if (node.cache != null) {
                     nodeHash(node.cache);
                 }
-                if (node.quick_cache != null) {
-                    nodeHash(node.quick_cache);
+                if (node.quickCache != null) {
+                    nodeHash(node.quickCache);
                 }
             }
 
@@ -987,10 +987,10 @@ public class LifeUniverse {
         // maybe this doesn't need to exist?
         // todo: see what happens when you have a blank canvas and use setbit...
         if (node.level == 2) {
-            if (node.quick_cache == null) {
-                node.quick_cache = node_level2_next(node);
+            if (node.quickCache == null) {
+                node.quickCache = node_level2_next(node);
             }
-            return node.quick_cache;
+            return node.quickCache;
         }
 
         Node nw = node.nw;
@@ -1032,15 +1032,15 @@ public class LifeUniverse {
         quickgen += 1;
 
 
-        if (node.quick_cache != null) {
+        if (node.quickCache != null) {
             quickCacheHits++; // Increment the cache hit counter
-            return node.quick_cache;
+            return node.quickCache;
         } else {
             quickCacheMisses++;
         }
 
         if (node.level == 2) {
-            return node.quick_cache = this.node_level2_next(node);
+            return node.quickCache = this.node_level2_next(node);
         }
 
         if ((quickgen % 1000000) ==0) {
@@ -1071,7 +1071,7 @@ public class LifeUniverse {
         Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw, "nodeQuickNextGeneration 5"), depth);
         Node n22 = this.nodeQuickNextGeneration(se, depth);
 
-        return node.quick_cache = this.createTree(
+        return node.quickCache = this.createTree(
                 this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11, "nodeQuickNextGeneration 6"), depth),
                 this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12, "nodeQuickNextGeneration 7"), depth),
                 this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21, "nodeQuickNextGeneration 8"), depth),

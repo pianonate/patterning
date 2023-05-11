@@ -35,7 +35,7 @@ public class Bounds {
     }
 
 
-    public Bounds getScreenBounds( float cellWidth, BigInteger canvasOffsetX, BigInteger canvasOffsetY) {
+    public Bounds getScreenBounds( float cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
 
         String cacheKey = generateCacheKey(this, cellWidth, canvasOffsetX, canvasOffsetY);
 
@@ -47,8 +47,8 @@ public class Bounds {
 
             BigDecimal cellWidthDecimal = BigDecimal.valueOf(cellWidth);
 
-            BigDecimal leftDecimal = this.leftToBigDecimal().multiply(cellWidthDecimal).add(new BigDecimal(canvasOffsetX));
-            BigDecimal topDecimal = this.topToBigDecimal().multiply(cellWidthDecimal).add(new BigDecimal(canvasOffsetY));
+            BigDecimal leftDecimal = this.leftToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetX);
+            BigDecimal topDecimal = this.topToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetY);
 
             BigDecimal rightDecimal = this.rightToBigDecimal()
                     .subtract(this.leftToBigDecimal())
@@ -75,7 +75,7 @@ public class Bounds {
         return cache.get(cacheKey);
     }
 
-    private String generateCacheKey(Bounds bounds, float cellWidth, BigInteger offsetX, BigInteger offsetY) {
+    private String generateCacheKey(Bounds bounds, float cellWidth, BigDecimal offsetX, BigDecimal offsetY) {
         return cellWidth + "_" + offsetX + "_" + offsetY + "_" + bounds.top + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right;
     }
 

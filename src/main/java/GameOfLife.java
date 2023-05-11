@@ -19,48 +19,72 @@ import java.util.Set;
 
 /**
  * todo: splash message if nothing loaded... otherwise it's a blank canvas
- * todo: you can't rewind while there's a long operaation running - you'll have to queue it up
- * todo: somewhere on the screen show fade in the target step and the current step until they're one and the same and then fade out
- * todo: stop all throttling and try instead to use the complexCalculationHandler
+ * todo: you can't rewind while there's a long operaation running - you'll have
+ * to queue it up
+ * todo: somewhere on the screen show fade in the target step and the current
+ * step until they're one and the same and then fade out
+ * todo: stop all throttling and try instead to use the
+ * complexCalculationHandler
  * todo: move imagery around cached images into the ImageCacheEntry routine
- * todo: binary bit array - clearing - too complicated - needs to be on automatic or you'll screw up
- * todo: grid out the screen based on the pressed number key so you can see what level of the tree is that grid
+ * todo: binary bit array - clearing - too complicated - needs to be on
+ * automatic or you'll screw up
+ * todo: grid out the screen based on the pressed number key so you can see what
+ * level of the tree is that grid
  * todo: add RLE parser tests that can double as tests for the app
  * todo: clean up todo's
  * todo: reorganize the code for cleanliness and testing with 4.0's help
- * todo: click on node and it will tell you the information about it at the last selected grid level (or something) - mnaybe it recurses up to show info about all levels nearby
- * todo: investigate making all sections of the screen build up from imageCacheEntries...with a LRU, shouldn't this be no problem?
- * todo: nextgeneration as well as setstep need to have a throttle back mechanism
- * todo: gracefully hahdle cell_width so that you can scale down to fitting something on screen again
- *       without having to sacrifice the bs
- * todo: with help - change KeyCallback to work with KeyData key, modifiers,validOS - but make simple mechanisms to create one
- * todo: show what level you have zoomed to using fade in face out text on screen
+ * todo: click on node and it will tell you the information about it at the last
+ * selected grid level (or something) - mnaybe it recurses up to show info about
+ * all levels nearby
+ * todo: investigate making all sections of the screen build up from
+ * imageCacheEntries...with a LRU, shouldn't this be no problem?
+ * todo: nextgeneration as well as setstep need to have a throttle back
+ * mechanism
+ * todo: gracefully hahdle cell_width so that you can scale down to fitting
+ * something on screen again
+ * without having to sacrifice the bs
+ * todo: with help - change KeyCallback to work with KeyData key,
+ * modifiers,validOS - but make simple mechanisms to create one
+ * todo: show what level you have zoomed to using fade in face out text on
+ * screen
  * todo: same for rewinding
  * todo: what about drawing a box showing the edge of the universe (label it)
- * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width - make it a constant so that you
+ * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width -
+ * make it a constant so that you
  * todo: cache of Boolean array
- *      of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
- *          also should we have processing create the image offline and then show it?
+ * of any unchanged node that has visibility on screen of what is visible and
+ * what are its bounds and blast that out to the screen
+ * also should we have processing create the image offline and then show it?
  * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
- * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
+ * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent
+ * class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
- * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
+ * todo: display keyboard shortcuts in a panel and allow for it to be moved
+ * around the screen
  * todo: move HUD to upper right with a panel with an expand/collapse
  * todo: display pasted in metadata in a HUD section
- * todo: smooth zoom - is that possible? seems to me it would have to be possible.
- * todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
+ * todo: smooth zoom - is that possible? seems to me it would have to be
+ * possible.
+ * todo: detect periodic stability - it seems that the lastID stops growing in
+ * the model - is that the detector?
  * todo: Add mc parser support
  * todo: do you need to manage the size of the hashmap?
- * todo: possibly simplification create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
- * todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on, you can see the details at a much higher zoom level
+ * todo: possibly simplification create an alternate implementation - extend the
+ * hashmap class and override resize method to capture the timing of the resize
+ * todo: here's what would be cool - zoom over a section - if your mouse is over
+ * a section of what's going on, you can see the details at a much higher zoom
+ * level
  * todo: load RLEs from a file
- * todo: save all pasted in valid RLEs in a folder.  check if it's already there and if it's different.
- * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
+ * todo: save all pasted in valid RLEs in a folder. check if it's already there
+ * and if it's different.
+ * todo: allow for creation and then saving as an RLE with associated metadata -
+ * from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
- * todo: create a test for LifeDrawer that allows you to know if it actually is improved in performance
+ * todo: create a test for LifeDrawer that allows you to know if it actually is
+ * improved in performance
  * todo: doubleclick to zoom
  * todo: smooth zoom
  * todo: click for info
@@ -120,7 +144,6 @@ public class GameOfLife extends PApplet {
     private int targetStep;
     private boolean displayBounds;
 
-
     void instantiateLifeForm(LifeForm newLife) {
 
         // todo: you have to set the step size here and in life.clearPattern() to 0
@@ -172,7 +195,8 @@ public class GameOfLife extends PApplet {
 
         surface.setResizable(true);
 
-        // "pre" will get invoked before draw - using this to manage window resizing as that's a useful thing to do only at that time
+        // "pre" will get invoked before draw - using this to manage window resizing as
+        // that's a useful thing to do only at that time
         registerMethod("pre", this);
 
         background(255);
@@ -214,9 +238,7 @@ public class GameOfLife extends PApplet {
             parseStoredLife();
         }
 
-
     }
-
 
     private void loadSavedWindowPositions() {
 
@@ -262,7 +284,6 @@ public class GameOfLife extends PApplet {
         return (Frame) comp;
     }
 
-
     // Override the exit() method to save window properties before closing
     @Override
     public void exit() {
@@ -276,7 +297,8 @@ public class GameOfLife extends PApplet {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice[] screens = ge.getScreenDevices();
 
-        // this took a lot of chatting with GPT 4.0 to finally land on something that would work
+        // this took a lot of chatting with GPT 4.0 to finally land on something that
+        // would work
         Frame frame = getFrame();
 
         // Find the screen where the window is located
@@ -317,31 +339,31 @@ public class GameOfLife extends PApplet {
 
     public void draw() {
 
-
         Bounds bounds = life.getRootBounds();
 
-        // result is null until a value has been passed in from a copy/paste or load of RLE (currently)
+        // result is null until a value has been passed in from a copy/paste or load of
+        // RLE (currently)
         if (lifeForm != null) {
 
             // notify all throttles (or any other code that needs the frameRate)
             // frameRateNotifier.notifyListeners(frameRate);
 
-            if (updatingLife())
-            {                
+            if (updatingLife()) {
                 image(buffer, 0, 0);
- 
+
             } else {
                 // todo: move these into lifeDrawer - why should they be here?
                 buffer.beginDraw();
                 buffer.background(255);
 
-                
-                // i don't like that movementHandler has to have a lifeDrawer instance but for now it can't be avoided
+                // i don't like that movementHandler has to have a lifeDrawer instance but for
+                // now it can't be avoided
                 movementHandler.move(pressedKeys);
 
-                // use this with LogPoints to tie how long redraw takes with and without bounds or with and without image cache (which was probably an unnecessaary optimization)
+                // use this with LogPoints to tie how long redraw takes with and without bounds
+                // or with and without image cache (which was probably an unnecessaary
+                // optimization)
                 // final long startTime = System.nanoTime();
-
 
                 // todo: move the displaybounds into the life drawer and simply
                 // notify it from the keycomand that it should do so rather than
@@ -353,9 +375,10 @@ public class GameOfLife extends PApplet {
                 // make it so
                 drawer.redraw(life.root, buffer);
 
-
-                // drawHUD is in this class - probably it would be better to put all drawing related items in
-                // the drawer, and then have it maintain its own buffer - esp. when reize events happen
+                // drawHUD is in this class - probably it would be better to put all drawing
+                // related items in
+                // the drawer, and then have it maintain its own buffer - esp. when reize events
+                // happen
                 drawHUD(bounds);
 
                 // another thing that the drawer shoudl handle
@@ -376,19 +399,17 @@ public class GameOfLife extends PApplet {
 
     }
 
-
     // possibly this will help when returning from screensaver
     public void focusGained() {
-        //println("Focus gained");
+        // println("Focus gained");
         redraw();
     }
-
-
 
     private void goForwardInTime() {
 
         // don't start anything complex if we're not running
-        if (!running) return;
+        if (!running)
+            return;
 
         if (shouldStartComplexCalculationSetStep()) {
             int step = life.step;
@@ -397,27 +418,27 @@ public class GameOfLife extends PApplet {
         }
 
         if (shouldStartComplexCalculationNextGeneration()) {
-            complexCalculationHandlerNextGeneration.startCalculation(null, (v, result) -> onCalculationNextGenerationComplete());
+            complexCalculationHandlerNextGeneration.startCalculation(null,
+                    (v, result) -> onCalculationNextGenerationComplete());
         }
     }
 
     private void onCalculationNextGenerationComplete() {
-        //if (frameCount % 300 == 0)
-        //  System.out.println("nextGeneration complete " + frameCount);
+        // if (frameCount % 300 == 0)
+        // System.out.println("nextGeneration complete " + frameCount);
     }
 
     private void onCalculationSetStepComplete(Integer step) {
-        if (life.step==step) {
+        if (life.step == step) {
             println("step updated to: " + step + " out of " + targetStep);
             stepGuard = 30; // always wait 30 between steps for smoother animation
-        }
-        else {
-            // todo: could you move this guard into complexcalculationhandler so that it keeps track
+        } else {
+            // todo: could you move this guard into complexcalculationhandler so that it
+            // keeps track
             // of backoff interval when things don't work?
             stepGuard = 60; // wit 60 if you've pushed it too much
         }
     }
-
 
     private void performComplexCalculationSetStep(Integer step) {
         life.setStep(step);
@@ -440,11 +461,13 @@ public class GameOfLife extends PApplet {
         boolean setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress();
         boolean nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress();
 
-       /* if (setStepRunning)
-            println("setStep is running, wait");
-
-        if (nextGenerationRunning)
-            println("nextGeneration is running, wait"); */
+        /*
+         * if (setStepRunning)
+         * println("setStep is running, wait");
+         * 
+         * if (nextGenerationRunning)
+         * println("nextGeneration is running, wait");
+         */
 
         return (nextGenerationRunning || setStepRunning);
 
@@ -459,13 +482,14 @@ public class GameOfLife extends PApplet {
             return false;
         }
 
-        // if we're not running a complex task and we're expecting to advance forward in time:
+        // if we're not running a complex task and we're expecting to advance forward in
+        // time:
         return (!updatingLife() && (life.step < targetStep));
 
     }
 
     public void mousePressed() {
-        //  if (stepSlider.hasFocus()) return;
+        // if (stepSlider.hasFocus()) return;
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
     }
@@ -479,7 +503,7 @@ public class GameOfLife extends PApplet {
     public void mouseDragged() {
         // turn off fit to window mode as we're dragging it and if 'f' is on it
         // will keep trying to bounce back
-        //if (stepSlider.hasFocus()) return;
+        // if (stepSlider.hasFocus()) return;
 
         float dx = Math.round(mouseX - last_mouse_x);
         float dy = Math.round(mouseY - last_mouse_y);
@@ -490,13 +514,14 @@ public class GameOfLife extends PApplet {
         last_mouse_y += dy;
     }
 
-   /* public void onSliderChange(int value) {
-        println("slider changed:" + value);
-
-    }*/
+    /*
+     * public void onSliderChange(int value) {
+     * println("slider changed:" + value);
+     * 
+     * }
+     */
 
     private void drawHUD(Bounds bounds) {
-
 
         Node root = life.root;
 
@@ -525,7 +550,8 @@ public class GameOfLife extends PApplet {
 
         float hudMargin = 10;
 
-        while ((buffer.textWidth(hud) + (2 * hudMargin) > buffer.width) || ((buffer.textAscent() + buffer.textDescent()) + (2 * hudMargin) > buffer.height)) {
+        while ((buffer.textWidth(hud) + (2 * hudMargin) > buffer.width)
+                || ((buffer.textAscent() + buffer.textDescent()) + (2 * hudMargin) > buffer.height)) {
             hudTextSize--;
             hudTextSize = max(hudTextSize, 1); // Prevent the textSize from going below 1
             buffer.textSize(hudTextSize);
@@ -567,7 +593,8 @@ public class GameOfLife extends PApplet {
 
             lifeForm = newLife;
 
-            countdownText = new CountdownText(this, buffer, this::run, this::stop, "counting down - press space to begin immediately: ");
+            countdownText = new CountdownText(this, buffer, this::run, this::stop,
+                    "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
 
         } catch (NotLifeException e) {
@@ -601,11 +628,11 @@ public class GameOfLife extends PApplet {
         keyHandler.addKeyCallback(callbackDisplayBounds);
         keyHandler.addKeyCallback(callbackCenterView);
         keyHandler.addKeyCallback(callbackFitUniverseOnScreen);
+        keyHandler.addKeyCallback(callbackUndoCenter);
         keyHandler.addKeyCallback(callbackRewind);
         keyHandler.addKeyCallback(callbackPaste);
 
         keyHandler.addKeyCallback(callbackMovement);
-
 
         System.out.println(keyHandler.generateUsageText());
     }
@@ -632,7 +659,6 @@ public class GameOfLife extends PApplet {
             return "use arrow keys to move the image around. hold down two keys to move diagonally";
         }
     };
-
 
     // Implement the getActionDescription() method for the zoom callback
     private final KeyCallback callbackZoomIn = new KeyCallback(Set.of('+', '=')) {
@@ -689,7 +715,8 @@ public class GameOfLife extends PApplet {
 
         int increment = (faster) ? 1 : -1;
 
-        if (this.targetStep + increment < 0) increment = 0;
+        if (this.targetStep + increment < 0)
+            increment = 0;
         this.targetStep += increment;
 
         String fasterOrSlower = (faster) ? "faster requested" : "slower requested";
@@ -712,12 +739,24 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackCenterView = new KeyCallback('c') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.center(life.getRootBounds(),false);
+            drawer.center(life.getRootBounds(), false);
         }
 
         @Override
         public String getUsageText() {
             return "center the view on the universe - regardless of its size";
+        }
+    };
+
+    private final KeyCallback callbackUndoCenter = new KeyCallback('u') {
+        @Override
+        public void onKeyEvent(KeyEvent event) {
+            drawer.undoCenter();
+        }
+
+        @Override
+        public String getUsageText() {
+            return "undo the last center or fit bounds to return to the last view";
         }
     };
 
@@ -743,8 +782,9 @@ public class GameOfLife extends PApplet {
             stop();
             life.restoreRewindState();
 
-            // todo: stop() also sets the targetStep to 0, feels as if this should be refactored...
-            //       wait until you bring spacebarhandler over - which i think also uses stop()
+            // todo: stop() also sets the targetStep to 0, feels as if this should be
+            // refactored...
+            // wait until you bring spacebarhandler over - which i think also uses stop()
             life.setStep(0);
             fitUniverseOnScreen();
         }
@@ -754,7 +794,6 @@ public class GameOfLife extends PApplet {
             return "rewind the current life form back to generation 0";
         }
     };
-
 
     private final KeyCallback callbackPaste = new KeyCallback('v', KeyEvent.META, KeyCallback.MAC) {
         @Override
@@ -768,17 +807,23 @@ public class GameOfLife extends PApplet {
         }
     };
 
-    /* private final KeyCallback callbackPasteWindows = new KeyCallback('v', KeyEvent.CTRL, KeyCallback.NON_MAC) {
-        @Override
-        public void onKeyEvent(KeyEvent event) {
-            pasteLifeForm();
-        }
-
-        @Override
-        public String getUsageText() {
-            return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms";
-        }
-    }; */
+    /*
+     * private final KeyCallback callbackPasteWindows = new KeyCallback('v',
+     * KeyEvent.CTRL, KeyCallback.NON_MAC) {
+     * 
+     * @Override
+     * public void onKeyEvent(KeyEvent event) {
+     * pasteLifeForm();
+     * }
+     * 
+     * @Override
+     * public String getUsageText() {
+     * return
+     * "paste a new lifeform into the app - currently only supports RLE encoded lifeforms"
+     * ;
+     * }
+     * };
+     */
 
     private final KeyCallback callbackPause = new KeyCallback(' ') {
         @Override
@@ -795,6 +840,5 @@ public class GameOfLife extends PApplet {
             return "press space to pause and unpause";
         }
     };
-
 
 }
