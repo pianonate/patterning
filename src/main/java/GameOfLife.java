@@ -344,7 +344,7 @@ public class GameOfLife extends PApplet {
                 drawer.redraw(life.root, buffer);
 
                 if (displayBounds) {
-                    drawer.draw_bounds(bounds, buffer);
+                    drawer.drawBounds(bounds, buffer);
                 }
 
                 // drawHUD is in this class - probably it would be better to put all drawing related items in
@@ -493,7 +493,7 @@ public class GameOfLife extends PApplet {
         Node root = life.root;
 
         hudInfo.addOrUpdate("fps", Math.round(frameRate));
-        hudInfo.addOrUpdate("cell", drawer.getCell_width());
+        hudInfo.addOrUpdate("cell", drawer.getCellWidth());
         hudInfo.addOrUpdate("running", (running) ? "running" : "stopped");
 
         hudInfo.addOrUpdate("level: ", root.level);
@@ -630,7 +630,7 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackZoomIn = new KeyCallback(Set.of('+', '=')) {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.zoom_at(true, mouseX, mouseY);
+            drawer.zoomXY(true, mouseX, mouseY);
         }
 
         @Override
@@ -642,7 +642,7 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackZoomOut = new KeyCallback('-') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.zoom_at(false, mouseX, mouseY);
+            drawer.zoomXY(false, mouseX, mouseY);
         }
 
         @Override
