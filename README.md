@@ -18,7 +18,7 @@ This project is currently using 8.1.1
 
 ## install Processing
 
-This project uses processing for animation.  You can download it here: [Link text](https://processing.org/download)
+This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
 ## make gradle aware of a local maven repo for the processing core.jar
 I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is referenceable in my build.gradle
