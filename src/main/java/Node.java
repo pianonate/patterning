@@ -29,11 +29,10 @@ public class Node {
     public int step;
 
     public Node cache = null;
-    public Node quick_cache = null;
+    public Node quickCache = null;
     public Node hashmapNext = null;
 
     private boolean[][] binaryBitArray;
-
 
     // falseLeaf, trueLeaf constructors
     public Node(int id, BigInteger population, int level) {
