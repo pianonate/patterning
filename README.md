@@ -7,6 +7,10 @@ https://copy.sh/life/examples/
 
 Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the white canvas of this app and then it will be off to the races.
 
+It will saev your last successfuly pasted lifeform but right now it's got a bug that keeps it from starting correctly. so you may have to exit and come back in.
+
+If you find something that you want to change, then make a pull request - i'd love to see what you do to improve this thing.
+
 ## try out the code in your own environment
 
 I use homebrew so this gets you maven:
