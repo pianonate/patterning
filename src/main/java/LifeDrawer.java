@@ -35,7 +35,7 @@ class LifeDrawer {
 
     LifeDrawer(PApplet p, float cell_width) {
         this.p = p;
-        this.setCell_width(cell_width);
+        this.setCellWidth(cell_width);
         this.canvas_width = p.width;
         this.canvas_height = p.height;
         this.imageCache = new ImageCache(p);
@@ -45,11 +45,11 @@ class LifeDrawer {
         this.imageCache.clearCache();
     }
 
-    public float getCell_width() {
+    public float getCellWidth() {
         return cell_width;
     }
 
-    public void setCell_width(float cell_width) {
+    public void setCellWidth(float cell_width) {
         // nearest power of two so that integer math can more easily work
         //int power = Math.round((float) (Math.log(cell_width) / Math.log(2)));
         //this.cell_width =  (float) Math.pow(2, power);
@@ -258,7 +258,7 @@ class LifeDrawer {
     }
 
 
-    void fill_square(PGraphics buffer, float x, float y, float size) {
+    void fillSquare(PGraphics buffer, float x, float y, float size) {
 
         float width = size - border_width;
         buffer.noStroke();
@@ -302,23 +302,23 @@ class LifeDrawer {
     }
 
     void zoom(boolean in, float x, float y) {
-        float previousCellWidth = getCell_width();
+        float previousCellWidth = getCellWidth();
 
         // Adjust cell width to align with grid
         if (in) {
-            setCell_width(getCell_width() * 2f);
+            setCellWidth(getCellWidth() * 2f);
         } else {
-            setCell_width(getCell_width() / 2f);
+            setCellWidth(getCellWidth() / 2f);
         }
 
         // Apply rounding conditionally based on a threshold
-        float threshold = 4.0f; // You can adjust this value based on your requirements
+      /*  float threshold = 4.0f; // You can adjust this value based on your requirements
         if (getCell_width() >= threshold) {
-            setCell_width(Math.round(getCell_width()));
-        }
+            setCellWidth(Math.round(getCell_width()));
+        } */
 
         // Calculate zoom factor
-        float zoomFactor = (float) getCell_width() / previousCellWidth;
+        float zoomFactor = (float) getCellWidth() / previousCellWidth;
 
         // Calculate the difference in canvas offset-s before and after zoom
         float offsetX = (1 - zoomFactor) * (x - canvas_offset_x.floatValue());
@@ -334,7 +334,7 @@ class LifeDrawer {
         canvas_offset_y = canvas_offset_y.add(BigInteger.valueOf(Math.round(offsetY)));
     }
 
-    void zoom_at(boolean in, float mouse_x, float mouse_y) {
+    void zoomXY(boolean in, float mouse_x, float mouse_y) {
         zoom(in, mouse_x, mouse_y);
     }
 
@@ -353,13 +353,12 @@ class LifeDrawer {
     
             BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
     
-            setCell_width(newCellSize.floatValue() *.9F);
+            setCellWidth(newCellSize.floatValue() *.9F);
 
-            int x=1;
         }
     
-        BigDecimal drawingWidth = patternWidth.multiply(BigDecimal.valueOf(getCell_width()));
-        BigDecimal drawingHeight = patternHeight.multiply(BigDecimal.valueOf(getCell_width()));
+        BigDecimal drawingWidth = patternWidth.multiply(BigDecimal.valueOf(getCellWidth()));
+        BigDecimal drawingHeight = patternHeight.multiply(BigDecimal.valueOf(getCellWidth()));
 
         BigDecimal offsetX;
         BigDecimal offsetY;
@@ -379,8 +378,8 @@ class LifeDrawer {
             BigDecimal halfDrawingHeight = drawingHeight.divide(new BigDecimal(2), mc); 
         
             // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-            offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(new BigDecimal(bounds.left).multiply(BigDecimal.valueOf(getCell_width())).negate());
-            offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(new BigDecimal(bounds.top).multiply(BigDecimal.valueOf(getCell_width())).negate());
+            offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(new BigDecimal(bounds.left).multiply(BigDecimal.valueOf(getCellWidth())).negate());
+            offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(new BigDecimal(bounds.top).multiply(BigDecimal.valueOf(getCellWidth())).negate());
         //}
         canvas_offset_x = offsetX.setScale(0, RoundingMode.HALF_UP).toBigInteger();
         canvas_offset_y = offsetY.setScale(0, RoundingMode.HALF_UP).toBigInteger();
@@ -390,9 +389,9 @@ class LifeDrawer {
     
     
 
-    void draw_bounds(Bounds bounds, PGraphics offscreenBuffer) {
+    void drawBounds(Bounds bounds, PGraphics offscreenBuffer) {
 
-        Bounds screenBounds = bounds.getScreenBounds(getCell_width(), canvas_offset_x, canvas_offset_y);
+        Bounds screenBounds = bounds.getScreenBounds(getCellWidth(), canvas_offset_x, canvas_offset_y);
 
         offscreenBuffer.noFill();
         offscreenBuffer.stroke(200);
@@ -403,12 +402,12 @@ class LifeDrawer {
     // thi work - the cell width times 2 ^ level will give you the size of the whole universe
     // draw_node will draw whatever is visible of it that you want
     void redraw(Node node, PGraphics offscreenBuffer) {
-        border_width = (int) (border_width_ratio * getCell_width());
+        border_width = (int) (border_width_ratio * getCellWidth());
 
-        BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(BigDecimal.valueOf(getCell_width()), mc);
+        BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(BigDecimal.valueOf(getCellWidth()), mc);
 
         DrawNodeContext ctx = new DrawNodeContext(offscreenBuffer);
-        draw_node(node, size.multiply(BigDecimal.valueOf(2), mc), size.negate(), size.negate(), ctx);
+        drawNode(node, size.multiply(BigDecimal.valueOf(2), mc), size.negate(), size.negate(), ctx);
 
     }
 
@@ -447,7 +446,7 @@ class LifeDrawer {
 
 
 
-   private void draw_node(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
+   private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
 
         if (node.population.equals(BigInteger.ZERO)) {
             return;
@@ -475,14 +474,14 @@ class LifeDrawer {
                 // System.out.println("node to small to fit - level: " + node.level + " left: " + left + ", top: " + top);
 
                 ctx.buffer.fill(cell_color);
-                fill_square(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), 1);
+                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), 1);
             }
         } else if (node.level == 0) {
             if (node.population.equals(BigInteger.ONE)) {
                //  System.out.println("Leaf Node 0, left: " + left + ", top: " + top);
 
                 ctx.buffer.fill(cell_color);
-                fill_square(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), getCell_width());
+                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), getCellWidth());
             }
         } else {
 
@@ -493,8 +492,8 @@ class LifeDrawer {
             }
 
             if (useImageCache && !node.hasChanged() && node.level <= 4 // not new nodes
-                    && Math.pow(2, node.level) * getCell_width() <= Math.min(canvas_width, canvas_height) // can fit on screen
-                    && (getCell_width() > Math.pow(2,-3)) // will work when cell_widths are small
+                    && Math.pow(2, node.level) * getCellWidth() <= Math.min(canvas_width, canvas_height) // can fit on screen
+                    && (getCellWidth() > Math.pow(2,-3)) // will work when cell_widths are small
                   // && (node.level < 8 )// todo: just as an insurance policy for now...
             )
             {
@@ -505,14 +504,14 @@ class LifeDrawer {
                 ctx.buffer.image(cachedImage,
                         Math.round(leftWithOffset.floatValue()),
                         Math.round(topWithOffset.floatValue()),
-                        Math.round(cachedImage.width * getCell_width()),
-                        Math.round(cachedImage.width * getCell_width()));
+                        Math.round(cachedImage.width * getCellWidth()),
+                        Math.round(cachedImage.width * getCellWidth()));
 
 
 
                 if (debugging) {
 
-                if (( getCell_width() * Math.pow(2, node.level) ) > 16 ) {
+                if ((getCellWidth() * Math.pow(2, node.level) ) > 16 ) {
 
                     p.fill(0, 125); // Black color with alpha value of 178
 
@@ -532,8 +531,8 @@ class LifeDrawer {
 
                 p.rect(Math.round(leftWithOffset.floatValue()),
                         Math.round(topWithOffset.floatValue()),
-                        Math.round(cachedImage.width * getCell_width()),
-                        Math.round(cachedImage.width * getCell_width())); 
+                        Math.round(cachedImage.width * getCellWidth()),
+                        Math.round(cachedImage.width * getCellWidth())); 
             }
 
 
@@ -543,10 +542,10 @@ class LifeDrawer {
                 BigDecimal leftHalfSize = left.add(halfSize);
                 BigDecimal topHalfSize = top.add(halfSize);
 
-                draw_node(node.nw, halfSize, left, top, ctx);
-                draw_node(node.ne, halfSize, leftHalfSize, top, ctx);
-                draw_node(node.sw, halfSize, left, topHalfSize, ctx);
-                draw_node(node.se, halfSize, leftHalfSize, topHalfSize, ctx);
+                drawNode(node.nw, halfSize, left, top, ctx);
+                drawNode(node.ne, halfSize, leftHalfSize, top, ctx);
+                drawNode(node.sw, halfSize, left, topHalfSize, ctx);
+                drawNode(node.se, halfSize, leftHalfSize, topHalfSize, ctx);
             }
         }
     }
