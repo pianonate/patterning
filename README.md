@@ -1,12 +1,12 @@
 # GameOfLife
 
-## Install maven 
+## install maven 
 I use homebrew so this gets you maven:
 
 <pre><code>brew install maven
 </code></pre>
 
-## Install Gradle
+## install gradle
 This project is currently using 8.1.1
 
 <pre><code>brew install gradle
@@ -16,7 +16,7 @@ This project is currently using 8.1.1
 <pre><code>brew install java
 </code></pre>
 
-## Install Processing
+## install Processing
 
 This project uses processing for animation.  You can download it here: [Link text](https://processing.org/download)
 
