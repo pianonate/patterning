@@ -7,19 +7,19 @@ I use homebrew so this gets you maven:
 brew install maven
 </code>
 
-##Install Gradle
+## Install Gradle
 This project is currently using 8.1.1
 
 <code>
 brew install gradle
 </code>
 
-##install java - i'm using jdk20
+## install java - i'm using jdk20
 <pre><code>
 brew install java
 </code></pre>
 
-##Install Processing
+## Install Processing
 
 This project uses processing for animation.  You can download it here: [Link text](https://processing.org/download)
 
