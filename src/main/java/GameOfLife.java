@@ -18,6 +18,7 @@ import java.math.BigInteger;
 import java.util.Set;
 
 /**
+ * todo: splash message if nothing loaded... otherwise it's a blank canvas
  * todo: you can't rewind while there's a long operaation running - you'll have to queue it up
  * todo: somewhere on the screen show fade in the target step and the current step until they're one and the same and then fade out
  * todo: stop all throttling and try instead to use the complexCalculationHandler
