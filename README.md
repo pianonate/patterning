@@ -2,9 +2,9 @@
 
 ## Install maven 
 I use homebrew so this gets you maven:
-<pre><code>
+<code>
 brew install maven
-</code></pre>
+</code>
 ##Install Gradle
 This project is currently using 8.1.1
 <pre><code>
