@@ -21,7 +21,7 @@ class LifeDrawer {
     BigInteger canvas_offset_x = BigInteger.ZERO;
     BigInteger canvas_offset_y = BigInteger.ZERO;
 
-    MathContext mc = new MathContext(400);
+    MathContext mc = new MathContext(5);
     int canvas_width;
     int canvas_height;
     int border_width;
@@ -29,8 +29,6 @@ class LifeDrawer {
     int background_color = 255;
     private float cell_width;
     float border_width_ratio = 0;
-
-    private final int lifeDrawingBorder;
 
 
     private ImageCache imageCache;
@@ -40,7 +38,6 @@ class LifeDrawer {
         this.setCell_width(cell_width);
         this.canvas_width = p.width;
         this.canvas_height = p.height;
-        this.lifeDrawingBorder = 50;
         this.imageCache = new ImageCache(p);
     }
 
@@ -54,8 +51,10 @@ class LifeDrawer {
 
     public void setCell_width(float cell_width) {
         // nearest power of two so that integer math can more easily work
-        int power = Math.round((float) (Math.log(cell_width) / Math.log(2)));
-        this.cell_width =  (float) Math.pow(2, power);
+        //int power = Math.round((float) (Math.log(cell_width) / Math.log(2)));
+        //this.cell_width =  (float) Math.pow(2, power);
+        this.cell_width = cell_width;
+
     }
 
 
@@ -339,62 +338,57 @@ class LifeDrawer {
         zoom(in, mouse_x, mouse_y);
     }
 
-    void center_view(Bounds bounds) {
 
+    public void center(Bounds bounds, boolean fitBounds) {
         BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left));
         BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top));
 
+        BigDecimal canvasWidth = new BigDecimal(canvas_width);
+        BigDecimal canvasHeight = new BigDecimal(canvas_height);
+    
+        if (fitBounds) {
+ 
+            BigDecimal widthRatio = (patternWidth.compareTo(BigDecimal.ZERO) > 0) ? canvasWidth.divide(patternWidth, mc) : BigDecimal.ONE;
+            BigDecimal heightRatio = (patternHeight.compareTo(BigDecimal.ZERO) > 0) ? canvasHeight.divide(patternHeight, mc) : BigDecimal.ONE;
+    
+            BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
+    
+            setCell_width(newCellSize.floatValue() *.9F);
+
+            int x=1;
+        }
+    
         BigDecimal drawingWidth = patternWidth.multiply(BigDecimal.valueOf(getCell_width()));
         BigDecimal drawingHeight = patternHeight.multiply(BigDecimal.valueOf(getCell_width()));
 
-        // Assuming canvas_width and canvas_height are int values representing the visible portion of the drawing
-        BigDecimal halfCanvasWidth = new BigDecimal(canvas_width).divide(new BigDecimal(2), mc);
-        BigDecimal halfCanvasHeight = new BigDecimal(canvas_height).divide(new BigDecimal(2), mc);
+        BigDecimal offsetX;
+        BigDecimal offsetY;
 
-        BigDecimal halfDrawingWidth = drawingWidth.divide(new BigDecimal(2), mc);
-        BigDecimal halfDrawingHeight = drawingHeight.divide(new BigDecimal(2), mc);
+       /* f if (fitBounds) {
 
-        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth);
-        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight);
-
-        canvas_offset_x = new BigInteger(String.valueOf(offsetX.intValue()));
-        canvas_offset_y = new BigInteger(String.valueOf(offsetY.intValue()));
-    }
-
-    public void fit_bounds(Bounds bounds) {
-
-        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left));
-        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top));
-
-        BigDecimal canvasWidthWithBorder = new BigDecimal(canvas_width - (lifeDrawingBorder));
-        BigDecimal canvasHeightWithBorder = new BigDecimal(canvas_height - (lifeDrawingBorder));
-
-        BigDecimal widthRatio = (patternWidth.compareTo(BigDecimal.ZERO) > 0) ? canvasWidthWithBorder.divide(patternWidth, mc) : BigDecimal.ONE;
-        BigDecimal heightRatio = (patternHeight.compareTo(BigDecimal.ZERO) > 0) ? canvasHeightWithBorder.divide(patternHeight, mc) : BigDecimal.ONE;
-
-        BigDecimal newCellSize = widthRatio.min(heightRatio).multiply(BigDecimal.valueOf(.8F));
-
-        // setCell_width(newCellSize.floatValue());
-        setCell_width(newCellSize.floatValue());
-
-        BigDecimal drawingWidth = patternWidth.multiply(newCellSize);
-        BigDecimal drawingHeight = patternHeight.multiply(newCellSize);
-
-        BigDecimal offsetX = canvasWidthWithBorder.subtract(drawingWidth).divide(BigDecimal.valueOf(2.0), RoundingMode.HALF_UP).add(new BigDecimal(lifeDrawingBorder));
-        BigDecimal offsetY = canvasHeightWithBorder.subtract(drawingHeight).divide(BigDecimal.valueOf(2.0), RoundingMode.HALF_UP).add(new BigDecimal(lifeDrawingBorder));
-
-
-        // i think given the offs can be calculated against a bounding box that is larger than a float
-        // you can'tx use the current updateCanvasOffsets (although you could make a version to pass in these BigDecimals)
-        // first make sure you have one.
+            // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
+            offsetX = canvasWidth.subtract(drawingWidth).divide(BigDecimal.valueOf(2.0), RoundingMode.HALF_UP).add(new BigDecimal(bounds.left).multiply(BigDecimal.valueOf(getCell_width())).negate());
+            offsetY = canvasHeight.subtract(drawingHeight).divide(BigDecimal.valueOf(2.0), RoundingMode.HALF_UP).add(new BigDecimal(bounds.top).multiply(BigDecimal.valueOf(getCell_width())).negate());
+        
+        } else { */
+    
+            BigDecimal halfCanvasWidth = new BigDecimal(canvas_width).divide(new BigDecimal(2), mc);
+            BigDecimal halfCanvasHeight = new BigDecimal(canvas_height).divide(new BigDecimal(2), mc);
+        
+            BigDecimal halfDrawingWidth = drawingWidth.divide(new BigDecimal(2), mc);
+            BigDecimal halfDrawingHeight = drawingHeight.divide(new BigDecimal(2), mc); 
+        
+            // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
+            offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(new BigDecimal(bounds.left).multiply(BigDecimal.valueOf(getCell_width())).negate());
+            offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(new BigDecimal(bounds.top).multiply(BigDecimal.valueOf(getCell_width())).negate());
+        //}
         canvas_offset_x = offsetX.setScale(0, RoundingMode.HALF_UP).toBigInteger();
         canvas_offset_y = offsetY.setScale(0, RoundingMode.HALF_UP).toBigInteger();
-
-        center_view(bounds);
-
-
-
     }
+    
+    
+    
+    
 
     void draw_bounds(Bounds bounds, PGraphics offscreenBuffer) {
 

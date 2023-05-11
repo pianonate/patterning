@@ -105,7 +105,7 @@ public class GameOfLife extends PApplet {
 
     private HUDStringBuilder hudInfo;
     private CountdownText countdownText;
-    private boolean running, fitted;
+    private boolean running;
     // todo: refactor result to have a more useful name
     private LifeForm lifeForm;
 
@@ -131,7 +131,7 @@ public class GameOfLife extends PApplet {
 
         life.setupField(newLife.field_x, newLife.field_y);
 
-        drawer.fit_bounds(life.getRootBounds());
+        drawer.center(life.getRootBounds(), true);
         // this is tough to have to know - somehow we need to have the drawer
         // know when newLife comes into existence so we don't have to
         // remember to clear it's cache...
@@ -199,7 +199,6 @@ public class GameOfLife extends PApplet {
             return null;
         });
 
-        this.fitted = false;
         this.targetStep = 0;
         this.displayBounds = false;
 
@@ -314,18 +313,6 @@ public class GameOfLife extends PApplet {
         }
         prevWidth = width;
         prevHeight = height;
-
-        // putting this here to not clutter the main draw as it should only happen at startup
-        // maybe because of loading saved window location it gets different height values from the
-        // first call to fit_bounds than after the app is launched
-        // so calling it once here makes sense
-        // there has to be a more elegant way to get the window value correct the first time
-        // but for now, here it is. if you can get the window value correct you could put this
-        // in the setupPattern method where it belongs
-        if (!fitted) {
-            drawer.fit_bounds(life.getRootBounds());
-            fitted = true;
-        }
     }
 
     public void draw() {
@@ -553,10 +540,6 @@ public class GameOfLife extends PApplet {
                 // parses and displays the lifeform
                 parseStoredLife();
 
-                // todo: it would be better if this could be called from setupPattern
-                // or parseStoredLife - it's a drag as this seems like duplication
-                // look at the comment in the pre method for more info
-                // drawer.fit_bounds(life.getRootBounds());
             }
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
@@ -721,7 +704,7 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackCenterView = new KeyCallback('c') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.center_view(life.getRootBounds());
+            drawer.center(life.getRootBounds(),false);
         }
 
         @Override
@@ -743,7 +726,7 @@ public class GameOfLife extends PApplet {
     };
 
     private void fitUniverseOnScreen() {
-        drawer.fit_bounds(life.getRootBounds());
+        drawer.center(life.getRootBounds(), true);
     }
 
     private final KeyCallback callbackRewind = new KeyCallback('r') {
