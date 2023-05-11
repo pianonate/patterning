@@ -1,6 +1,12 @@
 # GameOfLife
 This project is a java based visualizer of Conway's game of life. There's a way better version out there called golly, but this one is mine and i'm trying to learn things by working on it.
 
+There are many, many enhancements to make for this to be truly interesting. And a lot of debugging to do still. Once you clone this locally and can run it with java, right now it will just come up with a blank screen. You will get usage at the console.  You'll need to paste a valid RLE of a lifeform into it.  Many can be found here:
+
+https://copy.sh/life/examples/
+
+Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the white canvas of this app and then it will be off to the races.
+
 ## try out the code in your own environment
 
 I use homebrew so this gets you maven:
