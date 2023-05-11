@@ -44,5 +44,5 @@ After running that command you should see "BUILD SUCCESS" and you can check that
 At which point it will be set up to work with this gradle project
 
 ### update gradle properties
-because i'm not a gradle wonk, the hard lesson to learn when editing vscode and using its gradle extension was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what ihad installed with brew. You're probably an expert so you know all about this sort of thing
+because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what ihad installed with brew. You're probably an expert so you know all about this sort of thing
 
