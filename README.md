@@ -1,26 +1,28 @@
 # GameOfLife
+This project is a java based visualizer of Conway's game of life. There's a way better version out there called golly, but this one is mine and i'm trying to learn things by working on it.
 
-## install maven 
+## try out the code in your own environment
+
 I use homebrew so this gets you maven:
 
 <pre><code>brew install maven
 </code></pre>
 
-## install gradle
+### install gradle
 This project is currently using 8.1.1
 
 <pre><code>brew install gradle
 </code></pre>
 
-## install java - i'm using jdk20
+### install java - i'm using jdk20
 <pre><code>brew install java
 </code></pre>
 
-## install Processing
+### install Processing
 
 This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
-## make gradle aware of a local maven repo for the processing core.jar
+### make gradle aware of a local maven repo for the processing core.jar
 I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is referenceable in my build.gradle
 
 First, locate the core.jar that you downaloaded from processing.org so you can install into the local repo.  I copied my Processing.app to **/Applications** on my mac so my core.jar is located here:
