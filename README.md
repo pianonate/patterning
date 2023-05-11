@@ -3,10 +3,9 @@
 ## Install Maven 
 I use homebrew so that's
 
-<pre><code>```shell
+<code>
 brew install maven
-```
-</code></pre>
+</code>
 
 Install Gradle - i'm using 8.1.1
 
