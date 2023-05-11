@@ -23,7 +23,7 @@ This project uses processing for animation.  You can download it here: [processi
 ## make gradle aware of a local maven repo for the processing core.jar
 I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is referenceable in my build.gradle
 
-First, locate the core.jar that you downaloaded from processing.org so you can install into the local repo.  I copied my Processing.app to /Applications on my mac so my core.jar is located here:
+First, locate the core.jar that you downaloaded from processing.org so you can install into the local repo.  I copied my Processing.app to '/Applications' on my mac so my core.jar is located here:
 
 /Applications/Processing.app/Contents/Java/core/library/core.jar
 
