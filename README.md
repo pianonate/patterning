@@ -1,5 +1,5 @@
 # patterning
-This project is a java based visualizer of (to start) of John Conway's, game of life that he created in 1970. There's a way better version out there called golly, but this one is mine and i'm trying to learn things by working on it.  Right now, I'm learning, exploring and optimizing the hashlife algorithm, as well as java idioms.
+This project is a java based visualizer of (to start) of John Conway's, game of life that he created in 1970. There's a way better visualize out there called golly, which goes way beyond just the game of life, but this one is mine and I'm trying to learn things by working on it.  Right now, I'm learning, exploring and optimizing the hashlife algorithm, as well as java idioms.
 
 There are many, many enhancements to make for this to be truly interesting. And a lot of debugging to do still. If you clone this locally and run it with java, currently it will just come up with a blank screen. You will get usage at the console.  You'll need to paste a valid RLE of a lifeform into it.  Many can be found here:
 
