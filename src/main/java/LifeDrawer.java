@@ -25,19 +25,6 @@ class LifeDrawer {
     // despite all of that, i think it would be more simple to to change this code
     // to operate with all BigDecimals to avoid conversions
     private static final MathContext mc = new MathContext(10);
-    // if we're going to be operating in BigDecimal then we keep these that way so
-    // that calculations can be done without conversions until necessary
-    private final BigDecimal canvasWidth;
-
-    // this class operates on BigDecimals because the bounds of a drawing can be
-    // arbitrarily large
-
-    // to avoid conversion and rounding issues, we're going to change everything to
-    // operate in bigdecimal and only change it to float values when we need to
-    // output to screen
-    private BigDecimal canvasOffsetX = BigDecimal.ZERO;
-    private BigDecimal canvasOffsetY = BigDecimal.ZERO;
-    private final BigDecimal canvasHeight;
 
     LifeDrawer(PApplet p, float cellWidth) {
         this.p = p;
@@ -47,12 +34,26 @@ class LifeDrawer {
         this.imageCache = new ImageCache(p);
     }
 
+    // this class operates on BigDecimals because the bounds of a drawing can be
+    // arbitrarily large
+
+    // to avoid conversion and rounding issues, we're going to change everything to
+    // operate in bigdecimal and only change it to float values when we need to
+    // output to screen
+    private BigDecimal canvasOffsetX = BigDecimal.ZERO;
+    private BigDecimal canvasOffsetY = BigDecimal.ZERO;
+
+    // if we're going to be operating in BigDecimal then we keep these that way so
+    // that calculations can be done without conversions until necessary
+    private BigDecimal canvasWidth;
+    private BigDecimal canvasHeight;
+
     // todo: implement an actual borderwidth so you cdan see space between cells if
     // you wish
     int cellBorderWidth;
-    int cellColor = 0;
-    float cellBorderWidthRatio = 0;
+    int cellColor = 255;
     private CellWidth cellWidth;
+    float cellBorderWidthRatio = 0;
 
     private BigDecimal calcCenterOnResize(BigDecimal dimension, BigDecimal offset) {
         return (dimension.divide(BigTWO, mc)).subtract(offset);
@@ -66,10 +67,11 @@ class LifeDrawer {
     // around the center after
     public void surfaceResized(int newWidth, int newHeight) {
 
-        int currentWidth = canvasWidth.intValue();
-        int currentHeight = canvasHeight.intValue();
+        BigDecimal bigWidth = BigDecimal.valueOf(newWidth);
+        BigDecimal bigHeight = BigDecimal.valueOf(newHeight);
 
-        if (newWidth == currentWidth && newHeight == currentHeight) {
+
+        if (bigHeight.equals(canvasHeight) && bigWidth.equals(canvasWidth) ) {
             return;
         }
 
@@ -77,9 +79,13 @@ class LifeDrawer {
         BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
         BigDecimal centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY);
 
+        // Update the canvas size
+        canvasWidth = bigWidth;
+        canvasHeight = bigHeight;
+
         // Calculate the center of the visible portion after resizing
-        BigDecimal centerXAfter = calcCenterOnResize(new BigDecimal(newWidth), canvasOffsetX);
-        BigDecimal centerYAfter = calcCenterOnResize(new BigDecimal(newHeight), canvasOffsetY);
+        BigDecimal centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX);
+        BigDecimal centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY);
 
         // Calculate the difference in the visible portion's center
         BigDecimal offsetX = centerXAfter.subtract(centerXBefore);

@@ -15,11 +15,13 @@ public class CountdownText {
     Runnable interruptMethod;
     Runnable runMethod;
 
-    CountdownText(PApplet parent, PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message) {
-        this(parent, buffer, runMethod, interruptMethod, message, 30, 0xFF000000, 1500, 3);
+    // former
+    // 0xFF000000
+    CountdownText(PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message) {
+        this(buffer, runMethod, interruptMethod, message, 30, 0xFFFFFFFF, 1500, 3);
     }
 
-    CountdownText(PApplet parent, PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
+    private CountdownText(PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
         this.buffer = buffer;
         this.runMethod = runMethod;
         this.interruptMethod = interruptMethod;
@@ -61,17 +63,52 @@ public class CountdownText {
         }
     }
 
+/*    public void draw() {
+        if (isCountingDown) {
+            buffer.textAlign(PApplet.CENTER, PApplet.CENTER);
+            buffer.textSize(textSize);
+
+            int currentColor = buffer.lerpColor(0xff000000, 0xffffffff, fadeValue / 255.0f); // interpolate between black and white based on fadeValue
+            buffer.fill(currentColor);
+
+            // Display the message and the countdown number
+            String displayText = message + " " + currentCount;
+            buffer.text(displayText, buffer.width / 2.0F, buffer.height / 2.0F);
+        }
+    }*/
+
+    // todo - you got an updated algo to put a black border around the text so make sure that it tests against dense white drawings
+    // todo - make all of these color choices global constants on the main drawer (not Patterning as it will
+    //  have enough responsibilities and it extends PApplet anyway so that's a pain in arse to wade thorugh so much
+    // then make it so that this code adapts to whatever is chosen as the background color
     public void draw() {
         if (isCountingDown) {
             buffer.textAlign(PApplet.CENTER, PApplet.CENTER);
             buffer.textSize(textSize);
-            buffer.fill(textColor, fadeValue);
+
+            int currentColor = buffer.lerpColor(0xff000000, 0xffffffff, fadeValue/255.0f); // interpolate between black and white based on fadeValue
 
             // Display the message and the countdown number
             String displayText = message + " " + currentCount;
-            buffer.text(displayText, buffer.width / 2, buffer.height / 2);
+
+            // Draw black text slightly offset in each direction to create an outline effect
+            int outlineColor = 0xff000000; // black
+            float x = buffer.width / 2.0F;
+            float y = buffer.height / 2.0F;
+            float outlineOffset = 2.0F; // adjust this to change the thickness of the outline
+
+            buffer.fill(outlineColor);
+            buffer.text(displayText, x - outlineOffset, y - outlineOffset);
+            buffer.text(displayText, x + outlineOffset, y - outlineOffset);
+            buffer.text(displayText, x - outlineOffset, y + outlineOffset);
+            buffer.text(displayText, x + outlineOffset, y + outlineOffset);
+
+            // Draw the actual text in the calculated color
+            buffer.fill(currentColor);
+            buffer.text(displayText, x, y);
         }
     }
+
 
     public void interruptCountdown() {
         if (isCountingDown) {

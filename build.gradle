@@ -40,7 +40,7 @@ tasks.register('profile', JavaExec) {
 
 jar {
     manifest {
-        attributes "Main-Class": "GameOfLife"
+        attributes "Main-Class": "Patterning"
     }
 
     from {
@@ -49,7 +49,7 @@ jar {
 }
 
 application {
-    mainClassName = 'GameOfLife'
+    mainClassName = 'Patterning'
 }
 
 

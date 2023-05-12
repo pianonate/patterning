@@ -4,7 +4,7 @@ import java.util.function.BiFunction;
 public class ComplexCalculationHandler<P> {
     private boolean calculationInProgress = false;
     private BiConsumer<P, Void> callback;
-    private BiFunction<P, Void, Void> calculationMethod;
+    private final BiFunction<P, Void, Void> calculationMethod;
     private P parameter;
 
     public ComplexCalculationHandler(BiFunction<P, Void, Void> calculationMethod) {

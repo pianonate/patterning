@@ -108,8 +108,9 @@ public class Bounds {
 
     private BigDecimal rightToBigDecimal() {
 
-        if (this.rightDecimal == null);
+        if (this.rightDecimal == null) {
             this.rightDecimal = new BigDecimal(this.right);
+        }
 
         return this.rightDecimal;
     }

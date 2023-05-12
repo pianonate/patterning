@@ -1,5 +1,3 @@
-// import g4p_controls.G4P;
-// import g4p_controls.GCustomSlider;
 
 import processing.core.PApplet;
 import processing.event.KeyEvent;
@@ -24,7 +22,6 @@ import java.util.Set;
  * todo: put undo under command-z...also follow up on making ctrl-z, command-z be part of a
  *       combination key to the same keyhandler as right now it's not setup to work with different commands for the same thing
  *       on different OS's correctly
- * 
  * todo: somewhere on the screen show fade in the target step and the current
  *      step until they're one and the same and then fade out
  * todo: move imagery around cached images into the ImageCacheEntry routine
@@ -94,10 +91,10 @@ import java.util.Set;
  * 
  */
 
-public class GameOfLife extends PApplet {
+public class Patterning extends PApplet {
 
     public static void main(String[] args) {
-        PApplet.main("GameOfLife");
+        PApplet.main("Patterning");
     }
 
     private LifeUniverse life;
@@ -130,7 +127,7 @@ public class GameOfLife extends PApplet {
     private int prevWidth, prevHeight;
     // right now this is the only way that life gets into the game
     private String storedLife;
-    private static final String PROPERTY_FILE_NAME = "GameOfLife.json";
+    private static final String PROPERTY_FILE_NAME = "patterning_autosave.json";
 
     private int targetStep;
     private boolean displayBounds;
@@ -190,7 +187,7 @@ public class GameOfLife extends PApplet {
         // that's a useful thing to do only at that time
         registerMethod("pre", this);
 
-        background(255);
+        background(0);
 
         frameRate(targetFrameRate);
 
@@ -342,7 +339,7 @@ public class GameOfLife extends PApplet {
             } else {
                 // todo: move these into lifeDrawer - why should they be here?
                 buffer.beginDraw();
-                buffer.background(255);
+                buffer.background(0);
 
                 // i don't like that movementHandler has to have a lifeDrawer instance but for
                 // now it can't be avoided
@@ -412,8 +409,7 @@ public class GameOfLife extends PApplet {
     }
 
     private void onCalculationNextGenerationComplete() {
-        // if (frameCount % 300 == 0)
-        // System.out.println("nextGeneration complete " + frameCount);
+
     }
 
     private void onCalculationSetStepComplete(Integer step) {
@@ -531,7 +527,7 @@ public class GameOfLife extends PApplet {
         // use the default delimiter
         String hud = hudInfo.getFormattedString(frameCount, 12);
 
-        buffer.fill(0);
+        buffer.fill(255);
         float hudTextSize = 24;
         buffer.textSize(hudTextSize);
 
@@ -580,7 +576,7 @@ public class GameOfLife extends PApplet {
 
             lifeForm = newLife;
 
-            countdownText = new CountdownText(this, buffer, this::run, this::stop,
+            countdownText = new CountdownText(buffer, this::run, this::stop,
                     "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
 
@@ -633,13 +629,13 @@ public class GameOfLife extends PApplet {
         @Override
         public void move(Set<Integer> pressedKeys) {
             drawer.saveUndoState(); // before we get a lot more events
-            GameOfLife.this.pressedKeys = pressedKeys;
+            Patterning.this.pressedKeys = pressedKeys;
         }
 
         @Override
         public void stopMoving() {
-            GameOfLife.this.pressedKeys = null;
-            GameOfLife.this.movementHandler.stop();
+            Patterning.this.pressedKeys = null;
+            Patterning.this.movementHandler.stop();
         }
 
         @Override

@@ -170,8 +170,8 @@ public class LifeUniverse {
 
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
-    private int rule_b;
-    private int rule_s;
+    private final int rule_b;
+    private final int rule_s;
     public Node root;
     private Node rewind_state;
     public int step;
@@ -589,9 +589,6 @@ public class LifeUniverse {
         this.hashmap = new HashMap<>();
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
         this.level2Cache = new HashMap<>(0x10000);
-
-        hashmap.clear();
-
         this.root = this.emptyTree(3);
         this.generation = BigInteger.ZERO;
         this.step = 0;
@@ -675,7 +672,7 @@ public class LifeUniverse {
         root = field;
     }
 
-    public int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
+    private int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
         int i = start, j = end, swap;
 
         while (i <= j) {
@@ -1055,7 +1052,7 @@ public class LifeUniverse {
         }
 
         if ((quickgen % 1000000) == 0) {
-            quickgen += 1 - 1;
+            quickgen += 0;
         }
 
         // logpoint for vscode
