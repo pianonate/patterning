@@ -15,11 +15,8 @@ data/
 # Gradle files
 .gradle/
 build/
-gradle/
 
-# Gradle Wrapper files
-gradlew
-gradlew.bat
+
 
 # Files and directories for local use only
 /src/main/resources/

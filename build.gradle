@@ -26,15 +26,15 @@ run {
     jvmArgs = ["-XX:+UseZGC", '-verbose:gc', '-Xlog:gc' ]
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << '-Xlint:unchecked'
     options.deprecation = true
 }
 
-task profile(type: JavaExec) {
+tasks.register('profile', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    main = 'GameOfLife' // replace this with the fully qualified name of your main class
-    jvmArgs '-agentpath:/Applications/YourKit-Java-Profiler-2022.9.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000' // replace this with your actual profiling agent JVM arguments
+    jvmArgs '-agentpath:/Applications/YourKit-Java-Profiler-2022.9.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000'
+    // yourkit asked me to put this here
 }
 
 

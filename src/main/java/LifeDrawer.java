@@ -1,10 +1,10 @@
 import processing.core.PApplet;
 import processing.core.PConstants;
-import processing.core.PImage;
 import processing.core.PGraphics;
+import processing.core.PImage;
 
-import java.math.BigInteger;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,62 +13,11 @@ import java.util.Stack;
 
 class LifeDrawer {
 
-    private class CellWidth {
-        private float cellWidth;
-        private BigDecimal cellWidthBigDecimal;
+    private static final BigDecimal BigTWO = new BigDecimal(2);
+    private final Stack<CanvasState> previousStates = new Stack<>();
 
-        public CellWidth(float cellWidth) {
-            set(cellWidth);
-        }
-
-        public float get() {
-            return cellWidth;
-        }
-
-        public void set(float cellWidth) {
-            this.cellWidth = cellWidth;
-            this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
-        }
-
-        public BigDecimal getAsBigDecimal() {
-            return cellWidthBigDecimal;
-        }
-
-        public String toString() {
-            return "CellWidth{" + cellWidth + "}";
-        }
-
-    }
-
-    private class CanvasState {
-        private CellWidth cellWidth;
-        private BigDecimal canvasOffsetX;
-        private BigDecimal canvasOffsetY;
-    
-        public CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
-            this.cellWidth = new CellWidth(cellWidth.get());
-            this.canvasOffsetX = canvasOffsetX;
-            this.canvasOffsetY = canvasOffsetY;
-        }
-    
-        public CellWidth getCellWidth() {
-            return cellWidth;
-        }
-    
-        public BigDecimal getCanvasOffsetX() {
-            return canvasOffsetX;
-        }
-    
-        public BigDecimal getCanvasOffsetY() {
-            return canvasOffsetY;
-        }
-    }
-    
     private final PApplet p;
-    private Stack<CanvasState> previousStates = new Stack<>();
-
-    private boolean debugging = false;
-    private boolean useImageCache = false;
+    private final ImageCache imageCache;
 
     // for all of the conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
@@ -76,7 +25,9 @@ class LifeDrawer {
     // despite all of that, i think it would be more simple to to change this code
     // to operate with all BigDecimals to avoid conversions
     private static final MathContext mc = new MathContext(10);
-    private static BigDecimal BigTWO = new BigDecimal(2);
+    // if we're going to be operating in BigDecimal then we keep these that way so
+    // that calculations can be done without conversions until necessary
+    private final BigDecimal canvasWidth;
 
     // this class operates on BigDecimals because the bounds of a drawing can be
     // arbitrarily large
@@ -86,20 +37,7 @@ class LifeDrawer {
     // output to screen
     private BigDecimal canvasOffsetX = BigDecimal.ZERO;
     private BigDecimal canvasOffsetY = BigDecimal.ZERO;
-
-    // if we're going to be operating in BigDecimal then we keep these that way so
-    // that calculations can be done without conversions until necessary
-    private BigDecimal canvasWidth;
-    private BigDecimal canvasHeight;
-
-    // todo: implement an actual borderwidth so you cdan see space between cells if
-    // you wish
-    int cellBorderWidth;
-    int cellColor = 0;
-    private CellWidth cellWidth;
-    float cellBorderWidthRatio = 0;
-
-    private ImageCache imageCache;
+    private final BigDecimal canvasHeight;
 
     LifeDrawer(PApplet p, float cellWidth) {
         this.p = p;
@@ -109,225 +47,15 @@ class LifeDrawer {
         this.imageCache = new ImageCache(p);
     }
 
-    public float getCellWidth() {
-        return cellWidth.get();
-    }
-
-    // you probably don't need this nonsense after all...
-    public void clearCache() {
-        this.imageCache.clearCache();
-    }
-
-    class ImageCache {
-        private final PApplet pApplet;
-        private final int cacheSize = 8000; // Set your desired cache size
-        private final Map<Node, ImageCacheEntry> cache = new LRUCache<>(cacheSize);
-        private boolean removeEldestMode = false;
-
-        public ImageCache(PApplet pApplet) {
-            this.pApplet = pApplet;
-
-        }
-
-        public void clearCache() {
-            cache.clear();
-            removeEldestMode = false;
-        }
-
-        private class ImageCacheEntry {
-            private PImage image;
-
-            private boolean cached;
-
-            private long retrievalCount;
-
-            private ImageCacheEntry nw, ne, sw, se;
-
-            public ImageCacheEntry(PImage image) {
-                this(image, null, null, null, null);
-            }
-
-            public ImageCacheEntry(PImage image, ImageCacheEntry nw, ImageCacheEntry ne, ImageCacheEntry sw,
-                    ImageCacheEntry se) {
-                this.image = image;
-                this.retrievalCount = 0;
-                this.cached = false;
-                this.nw = nw;
-                this.ne = ne;
-                this.sw = sw;
-                this.se = se;
-            }
-
-            public PImage getImage() {
-                return image;
-            }
-
-            public boolean isCached() {
-                return cached;
-            }
-
-            public void incrementRetrievalCount() {
-                retrievalCount++;
-                cached = true;
-            }
-
-            public long getRetrievalCount() {
-                return retrievalCount;
-            }
-
-            public long getTotalRetrievalCount() {
-                long total = retrievalCount;
-                if (nw != null)
-                    total += nw.getTotalRetrievalCount();
-                if (ne != null)
-                    total += ne.getTotalRetrievalCount();
-                if (sw != null)
-                    total += sw.getTotalRetrievalCount();
-                if (se != null)
-                    total += se.getTotalRetrievalCount();
-                return total;
-            }
-
-            public int combinedNodeCount() {
-                int count = 1; // Counting itself
-
-                // Counting child nodes, if they exist
-                if (nw != null) {
-                    count += nw.combinedNodeCount();
-                }
-                if (ne != null) {
-                    count += ne.combinedNodeCount();
-                }
-                if (sw != null) {
-                    count += sw.combinedNodeCount();
-                }
-                if (se != null) {
-                    count += se.combinedNodeCount();
-                }
-
-                return count;
-            }
-
-        }
-
-        // todo: return from the cache an object that
-        // if it was cached and
-        // how many times this node representation- was retrieved from the cache
-        //
-        // LRUCache class
-        private class LRUCache<K, V> extends LinkedHashMap<K, ImageCacheEntry> {
-            private final int cacheSize;
-
-            public LRUCache(int cacheSize) {
-                super(cacheSize + 1, 1.0f, true); // Set accessOrder to true for LRU behavior
-                this.cacheSize = cacheSize;
-            }
-
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, ImageCacheEntry> eldest) {
-                boolean removeEldest = size() > cacheSize;
-
-                if (removeEldest) {
-                    if (!removeEldestMode) {
-                        System.out.println("Remove eldest mode at size(): " + size());
-                        removeEldestMode = true;
-                    }
-
-                    ImageCacheEntry entry = (ImageCacheEntry) eldest.getValue();
-                    PImage imageToDispose = entry.getImage();
-                    ((PGraphics) imageToDispose).dispose();
-                }
-
-                return removeEldest;
-            }
-
-        }
-
-        public ImageCacheEntry getImageCacheEntry(Node node) {
-
-            if (cache.containsKey(node)) {
-                ImageCacheEntry entry = cache.get(node);
-                entry.incrementRetrievalCount();
-                return entry;
-            }
-
-            if (node.level > 0) {
-                // Retrieve or generate ImageCacheEntries for child nodes
-                ImageCacheEntry nwEntry = getImageCacheEntry(node.nw);
-                ImageCacheEntry neEntry = getImageCacheEntry(node.ne);
-                ImageCacheEntry swEntry = getImageCacheEntry(node.sw);
-                ImageCacheEntry seEntry = getImageCacheEntry(node.se);
-
-                // Combine child images into a single image for the current node
-                PImage combinedImage = combineChildImages(
-                        nwEntry.getImage(), neEntry.getImage(),
-                        swEntry.getImage(), seEntry.getImage());
-
-                // Create a new ImageCacheEntry for the combined image
-                ImageCacheEntry combinedEntry = new ImageCacheEntry(combinedImage, nwEntry, neEntry, swEntry, seEntry);
-                cache.put(node, combinedEntry);
-                return combinedEntry;
-
-            } else { // leaf node entry - should only have to do this a few times
-                boolean[][] binaryBitArray = node.getBinaryBitArray();
-                PImage img = createBinaryBitArrayImage(binaryBitArray);
-                ImageCacheEntry entry = new ImageCacheEntry(img);
-                cache.put(node, entry);
-                return entry;
-            }
-        }
-
-        private PImage combineChildImages(PImage nwImage, PImage neImage, PImage swImage, PImage seImage) {
-            int childSize = nwImage.width;
-            int combinedSize = childSize * 2;
-
-            PGraphics combinedImage = pApplet.createGraphics(combinedSize, combinedSize);
-            combinedImage.beginDraw();
-
-            combinedImage.image(nwImage, 0, 0);
-            combinedImage.image(neImage, childSize, 0);
-            combinedImage.image(swImage, 0, childSize);
-            combinedImage.image(seImage, childSize, childSize);
-
-            combinedImage.endDraw();
-            return combinedImage;
-        }
-
-        private PImage createBinaryBitArrayImage(boolean[][] binaryBitArray) {
-            int rows = binaryBitArray.length;
-            int cols = rows; // it is squares here...
-
-            PGraphics img = pApplet.createGraphics(rows, cols);
-
-            img.beginDraw();
-            img.background(255, 255, 255, 0); // Transparent background
-            img.noStroke();
-            img.fill(cellColor);
-
-            for (int y = 0; y < rows; y++) {
-                for (int x = 0; x < cols; x++) {
-                    if (binaryBitArray[y][x]) {
-                        img.rect(x, y, 1, 1);
-                    }
-                }
-            }
-
-            img.endDraw();
-            return img;
-        }
-    }
-
-    private void fillSquare(PGraphics buffer, float x, float y, float size) {
-
-        float width = size - cellBorderWidth;
-        buffer.noStroke();
-        // p.fill(cell_color);
-        buffer.rect(x, y, width, width);
-
-    }
+    // todo: implement an actual borderwidth so you cdan see space between cells if
+    // you wish
+    int cellBorderWidth;
+    int cellColor = 0;
+    float cellBorderWidthRatio = 0;
+    private CellWidth cellWidth;
 
     private BigDecimal calcCenterOnResize(BigDecimal dimension, BigDecimal offset) {
-        return (dimension.divide(BigTWO)).subtract(offset);
+        return (dimension.divide(BigTWO, mc)).subtract(offset);
     }
 
     // formerly known as setSize()
@@ -336,43 +64,38 @@ class LifeDrawer {
     // without updating the cellsize - by getting the center before and then
     // centering
     // around the center after
-    public void surfaceResized(int width, int height) {
+    public void surfaceResized(int newWidth, int newHeight) {
 
-        BigDecimal bigWidth = BigDecimal.valueOf(width);
-        BigDecimal bigHeight = BigDecimal.valueOf(height);
+        int currentWidth = canvasWidth.intValue();
+        int currentHeight = canvasHeight.intValue();
 
-        if (bigWidth != canvasWidth || bigHeight != canvasHeight) {
-
-            // Calculate the center of the visible portion before resizing
-            BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
-            BigDecimal centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY);
-
-            // Update the canvas size
-            canvasWidth = bigWidth;
-            canvasHeight = bigHeight;
-
-            // Calculate the center of the visible portion after resizing
-            BigDecimal centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX);
-            BigDecimal centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY);
-
-            // Calculate the difference in the visible portion's center
-            BigDecimal offsetX = centerXAfter.subtract(centerXBefore);
-            BigDecimal offsetY = centerYAfter.subtract(centerYBefore);
-
-            updateCanvasOffsets(offsetX, offsetY);
+        if (newWidth == currentWidth && newHeight == currentHeight) {
+            return;
         }
 
+        // Calculate the center of the visible portion before resizing
+        BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
+        BigDecimal centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY);
+
+        // Calculate the center of the visible portion after resizing
+        BigDecimal centerXAfter = calcCenterOnResize(new BigDecimal(newWidth), canvasOffsetX);
+        BigDecimal centerYAfter = calcCenterOnResize(new BigDecimal(newHeight), canvasOffsetY);
+
+        // Calculate the difference in the visible portion's center
+        BigDecimal offsetX = centerXAfter.subtract(centerXBefore);
+        BigDecimal offsetY = centerYAfter.subtract(centerYBefore);
+
+        updateCanvasOffsets(offsetX, offsetY);
+
     }
 
-    // called when moves are invoked as there is some trickery in the move handler to move 
-    // multiple times on key presses and even more so as they are held down
-    // we just want to go back to the first one...
-    public void saveUndoState() {
-        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+    public float getCellWidth() {
+        return cellWidth.get();
     }
 
-    public void move(float dx, float dy) {
-        updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
+    // you probably don't need this nonsense after all...
+    public void clearCache() {
+        this.imageCache.clearCache();
     }
 
     public void zoom(boolean in, float x, float y) {
@@ -397,7 +120,7 @@ class LifeDrawer {
         }
 
         // Calculate zoom factor
-        float zoomFactor = (float) cellWidth.get() / previousCellWidth;
+        float zoomFactor = cellWidth.get() / previousCellWidth;
 
         // Calculate the difference in canvas offset-s before and after zoom
         float offsetX = (1 - zoomFactor) * (x - canvasOffsetX.floatValue());
@@ -406,6 +129,186 @@ class LifeDrawer {
         // Update canvas offsets
         updateCanvasOffsets(BigDecimal.valueOf(offsetX), BigDecimal.valueOf(offsetY));
 
+    }
+
+    private void fillSquare(PGraphics buffer, float x, float y, float size) {
+
+        float width = size - cellBorderWidth;
+        buffer.noStroke();
+        // p.fill(cell_color);
+        buffer.rect(x, y, width, width);
+
+    }
+
+    private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
+
+        if (node.population.equals(BigInteger.ZERO)) {
+            return;
+        }
+
+        BigDecimal leftWithOffset = left.add(ctx.canvasOffsetXDecimal);
+        BigDecimal topWithOffset = top.add(ctx.canvasOffsetYDecimal);
+        BigDecimal leftWithOffsetAndSize = leftWithOffset.add(size);
+        BigDecimal topWithOffsetAndSize = topWithOffset.add(size);
+
+        // no need to draw anything not visible on screen
+        if (leftWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
+                || topWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
+                || leftWithOffset.compareTo(ctx.canvasWidthDecimal) >= 0
+                || topWithOffset.compareTo(ctx.canvasHeightDecimal) >= 0) {
+            return;
+        }
+
+        // if we've recursed down to a very small size and the population exists,
+        // draw a unit square and be done
+        if (size.compareTo(BigDecimal.ONE) <= 0) {
+            if (node.population.compareTo(BigInteger.ZERO) > 0) {
+                ctx.buffer.fill(cellColor);
+                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
+                        1);
+            }
+        } else if (node.level == 0) {
+            if (node.population.equals(BigInteger.ONE)) {
+                ctx.buffer.fill(cellColor);
+                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
+                        cellWidth.get());
+            }
+        } else {
+
+            BigDecimal powResult = BigDecimal.valueOf(2).pow(node.level).multiply(cellWidth.getAsBigDecimal());
+            BigDecimal minCanvasDimension = canvasWidth.min(canvasHeight);
+
+            boolean fitsOnScreen = (powResult.compareTo(minCanvasDimension) <= 0);
+            boolean useImageCache = false;
+            boolean bypassRecursion = useImageCache
+                    && !node.hasChanged()
+                    && (node.level <= 4) // not new nodes
+                    && fitsOnScreen
+                    && (cellWidth.get() > Math.pow(2, -3)); // will work when cell_widths are small
+
+            if (bypassRecursion) {
+
+                ImageCache.ImageCacheEntry entry = imageCache.getImageCacheEntry(node);
+                PImage cachedImage = entry.getImage();
+
+                ctx.buffer.image(cachedImage,
+                        Math.round(leftWithOffset.floatValue()),
+                        Math.round(topWithOffset.floatValue()),
+                        Math.round(cachedImage.width * cellWidth.get()),
+                        Math.round(cachedImage.width * cellWidth.get()));
+
+                boolean debugging = false;
+                if (debugging) {
+
+                    if ((cellWidth.get() * Math.pow(2, node.level)) > 16) {
+
+                        p.fill(0, 125); // Black color with alpha value of 178
+
+                        // Draw text with 70% opacity
+                        p.textSize(16);
+                        p.textAlign(PConstants.LEFT, PConstants.TOP);
+                        String cacheString = (entry.isCached()) ? "cache" : "nocache";
+
+                        p.text("id: " + node.id + " node.level:" + node.level + " - " + cacheString,
+                                Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()));
+                        p.text("retrievals: " + entry.getRetrievalCount(), Math.round(leftWithOffset.floatValue()),
+                                Math.round(topWithOffset.floatValue()) + 20);
+                        p.text("nodes: " + entry.combinedNodeCount(), Math.round(leftWithOffset.floatValue()),
+                                Math.round(topWithOffset.floatValue()) + 40);
+                        p.text("total: " + entry.getTotalRetrievalCount(), Math.round(leftWithOffset.floatValue()),
+                                Math.round(topWithOffset.floatValue()) + 60);
+
+                    }
+
+                    p.fill(0, 5); // Black color with alpha value of 25
+                    p.stroke(1);
+
+                    p.rect(Math.round(leftWithOffset.floatValue()),
+                            Math.round(topWithOffset.floatValue()),
+                            Math.round(cachedImage.width * cellWidth.get()),
+                            Math.round(cachedImage.width * cellWidth.get()));
+                }
+
+            } else {
+
+                BigDecimal halfSize = ctx.getHalfSize(size);
+                BigDecimal leftHalfSize = left.add(halfSize);
+                BigDecimal topHalfSize = top.add(halfSize);
+
+                drawNode(node.nw, halfSize, left, top, ctx);
+                drawNode(node.ne, halfSize, leftHalfSize, top, ctx);
+                drawNode(node.sw, halfSize, left, topHalfSize, ctx);
+                drawNode(node.se, halfSize, leftHalfSize, topHalfSize, ctx);
+            }
+        }
+    }
+
+    // called when moves are invoked as there is some trickery in the move handler to move
+    // multiple times on key presses and even more so as they are held down
+    // we just want to go back to the first one...
+    public void saveUndoState() {
+        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+    }
+
+    public void move(float dx, float dy) {
+        updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
+    }
+
+    private static class CellWidth {
+        private float cellWidth;
+        private BigDecimal cellWidthBigDecimal;
+
+        public CellWidth(float cellWidth) {
+            setImpl(cellWidth);
+        }
+
+        public float get() {
+            return cellWidth;
+        }
+
+        // private impl created to log before/after
+        // without needing to log on class construction
+        public void set(float cellWidth) {
+            setImpl(cellWidth);
+        }
+
+        private void setImpl(float cellWidth) {
+            this.cellWidth = cellWidth;
+            this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
+        }
+
+        public BigDecimal getAsBigDecimal() {
+            return cellWidthBigDecimal;
+        }
+
+        public String toString() {
+            return "CellWidth{" + cellWidth + "}";
+        }
+
+    }
+
+    private static class CanvasState {
+        private final CellWidth cellWidth;
+        private final BigDecimal canvasOffsetX;
+        private final BigDecimal canvasOffsetY;
+
+        public CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
+            this.cellWidth = new CellWidth(cellWidth.get());
+            this.canvasOffsetX = canvasOffsetX;
+            this.canvasOffsetY = canvasOffsetY;
+        }
+
+        public CellWidth getCellWidth() {
+            return cellWidth;
+        }
+
+        public BigDecimal getCanvasOffsetX() {
+            return canvasOffsetX;
+        }
+
+        public BigDecimal getCanvasOffsetY() {
+            return canvasOffsetY;
+        }
     }
 
     private void updateCanvasOffsets(BigDecimal offsetX, BigDecimal offsetY) {
@@ -535,102 +438,201 @@ class LifeDrawer {
 
     }
 
-    private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
+    class ImageCache {
+        private final PApplet pApplet;
+        private final int cacheSize = 8000; // Set your desired cache size
+        private final Map<Node, ImageCacheEntry> cache = new LRUCache<>(cacheSize);
+        private boolean removeEldestMode = false;
 
-        if (node.population.equals(BigInteger.ZERO)) {
-            return;
+        public ImageCache(PApplet pApplet) {
+            this.pApplet = pApplet;
+
         }
 
-        BigDecimal leftWithOffset = left.add(ctx.canvasOffsetXDecimal);
-        BigDecimal topWithOffset = top.add(ctx.canvasOffsetYDecimal);
-        BigDecimal leftWithOffsetAndSize = leftWithOffset.add(size);
-        BigDecimal topWithOffsetAndSize = topWithOffset.add(size);
-
-        // no need to draw anything not visible on screen
-        if (leftWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
-                || topWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
-                || leftWithOffset.compareTo(ctx.canvasWidthDecimal) >= 0
-                || topWithOffset.compareTo(ctx.canvasHeightDecimal) >= 0) {
-            return;
+        public void clearCache() {
+            cache.clear();
+            removeEldestMode = false;
         }
 
-        // if we've recursed down to a very small size and the population exists,
-        // draw a unit square and be done
-        if (size.compareTo(BigDecimal.ONE) <= 0) {
-            if (node.population.compareTo(BigInteger.ZERO) > 0) {
-                ctx.buffer.fill(cellColor);
-                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
-                        1);
-            }
-        } else if (node.level == 0) {
-            if (node.population.equals(BigInteger.ONE)) {
-                ctx.buffer.fill(cellColor);
-                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
-                        cellWidth.get());
-            }
-        } else {
+        private PImage createBinaryBitArrayImage(boolean[][] binaryBitArray) {
+            int rows = binaryBitArray.length;
 
-            BigDecimal powResult = BigDecimal.valueOf(2).pow(node.level).multiply(cellWidth.getAsBigDecimal());
-            BigDecimal minCanvasDimension = canvasWidth.min(canvasHeight);
-            boolean fitsOnScreen = (powResult.compareTo(minCanvasDimension) <= 0);
+            PGraphics img = pApplet.createGraphics(rows, rows);
 
-            if (fitsOnScreen && useImageCache && !node.hasChanged() && node.level <= 4 // not new nodes
-                    && fitsOnScreen
-                    && (cellWidth.get() > Math.pow(2, -3)) // will work when cell_widths are small
-            // && (node.level < 8 )// todo: just as an insurance policy for now...
-            ) {
+            img.beginDraw();
+            img.background(255, 255, 255, 0); // Transparent background
+            img.noStroke();
+            img.fill(cellColor);
 
-                ImageCache.ImageCacheEntry entry = imageCache.getImageCacheEntry(node);
-                PImage cachedImage = entry.getImage();
-
-                ctx.buffer.image(cachedImage,
-                        Math.round(leftWithOffset.floatValue()),
-                        Math.round(topWithOffset.floatValue()),
-                        Math.round(cachedImage.width * cellWidth.get()),
-                        Math.round(cachedImage.width * cellWidth.get()));
-
-                if (debugging) {
-
-                    if ((cellWidth.get() * Math.pow(2, node.level)) > 16) {
-
-                        p.fill(0, 125); // Black color with alpha value of 178
-
-                        // Draw text with 70% opacity
-                        p.textSize(16);
-                        p.textAlign(PConstants.LEFT, PConstants.TOP);
-                        String cacheString = (entry.isCached()) ? "cache" : "nocache";
-
-                        p.text("id: " + node.id + " node.level:" + node.level + " - " + cacheString,
-                                Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()));
-                        p.text("retrievals: " + entry.getRetrievalCount(), Math.round(leftWithOffset.floatValue()),
-                                Math.round(topWithOffset.floatValue()) + 20);
-                        p.text("nodes: " + entry.combinedNodeCount(), Math.round(leftWithOffset.floatValue()),
-                                Math.round(topWithOffset.floatValue()) + 40);
-                        p.text("total: " + entry.getTotalRetrievalCount(), Math.round(leftWithOffset.floatValue()),
-                                Math.round(topWithOffset.floatValue()) + 60);
-
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < rows; x++) {
+                    if (binaryBitArray[y][x]) {
+                        img.rect(x, y, 1, 1);
                     }
+                }
+            }
 
-                    p.fill(0, 5); // Black color with alpha value of 25
-                    p.stroke(1);
+            img.endDraw();
+            return img;
+        }
 
-                    p.rect(Math.round(leftWithOffset.floatValue()),
-                            Math.round(topWithOffset.floatValue()),
-                            Math.round(cachedImage.width * cellWidth.get()),
-                            Math.round(cachedImage.width * cellWidth.get()));
+        public ImageCacheEntry getImageCacheEntry(Node node) {
+
+            if (cache.containsKey(node)) {
+                ImageCacheEntry entry = cache.get(node);
+                entry.incrementRetrievalCount();
+                return entry;
+            }
+
+            if (node.level > 0) {
+                // Retrieve or generate ImageCacheEntries for child nodes
+                ImageCacheEntry nwEntry = getImageCacheEntry(node.nw);
+                ImageCacheEntry neEntry = getImageCacheEntry(node.ne);
+                ImageCacheEntry swEntry = getImageCacheEntry(node.sw);
+                ImageCacheEntry seEntry = getImageCacheEntry(node.se);
+
+                // Combine child images into a single image for the current node
+                PImage combinedImage = combineChildImages(
+                        nwEntry.getImage(), neEntry.getImage(),
+                        swEntry.getImage(), seEntry.getImage());
+
+                // Create a new ImageCacheEntry for the combined image
+                ImageCacheEntry combinedEntry = new ImageCacheEntry(combinedImage, nwEntry, neEntry, swEntry, seEntry);
+                cache.put(node, combinedEntry);
+                return combinedEntry;
+
+            } else { // leaf node entry - should only have to do this a few times
+                boolean[][] binaryBitArray = node.getBinaryBitArray();
+                PImage img = createBinaryBitArrayImage(binaryBitArray);
+                ImageCacheEntry entry = new ImageCacheEntry(img);
+                cache.put(node, entry);
+                return entry;
+            }
+        }
+
+        private PImage combineChildImages(PImage nwImage, PImage neImage, PImage swImage, PImage seImage) {
+            int childSize = nwImage.width;
+            int combinedSize = childSize * 2;
+
+            PGraphics combinedImage = pApplet.createGraphics(combinedSize, combinedSize);
+            combinedImage.beginDraw();
+
+            combinedImage.image(nwImage, 0, 0);
+            combinedImage.image(neImage, childSize, 0);
+            combinedImage.image(swImage, 0, childSize);
+            combinedImage.image(seImage, childSize, childSize);
+
+            combinedImage.endDraw();
+            return combinedImage;
+        }
+
+        private class ImageCacheEntry {
+            private final PImage image;
+            private final ImageCacheEntry nw;
+            private final ImageCacheEntry ne;
+            private final ImageCacheEntry sw;
+            private final ImageCacheEntry se;
+            private boolean cached;
+            private long retrievalCount;
+
+            public ImageCacheEntry(PImage image) {
+                this(image, null, null, null, null);
+            }
+
+            public ImageCacheEntry(PImage image, ImageCacheEntry nw, ImageCacheEntry ne, ImageCacheEntry sw,
+                                   ImageCacheEntry se) {
+                this.image = image;
+                this.retrievalCount = 0;
+                this.cached = false;
+                this.nw = nw;
+                this.ne = ne;
+                this.sw = sw;
+                this.se = se;
+            }
+
+            public PImage getImage() {
+                return image;
+            }
+
+            public boolean isCached() {
+                return cached;
+            }
+
+            public void incrementRetrievalCount() {
+                retrievalCount++;
+                cached = true;
+            }
+
+            public long getRetrievalCount() {
+                return retrievalCount;
+            }
+
+            public long getTotalRetrievalCount() {
+                long total = retrievalCount;
+                if (nw != null)
+                    total += nw.getTotalRetrievalCount();
+                if (ne != null)
+                    total += ne.getTotalRetrievalCount();
+                if (sw != null)
+                    total += sw.getTotalRetrievalCount();
+                if (se != null)
+                    total += se.getTotalRetrievalCount();
+                return total;
+            }
+
+            public int combinedNodeCount() {
+                int count = 1; // Counting itself
+
+                // Counting child nodes, if they exist
+                if (nw != null) {
+                    count += nw.combinedNodeCount();
+                }
+                if (ne != null) {
+                    count += ne.combinedNodeCount();
+                }
+                if (sw != null) {
+                    count += sw.combinedNodeCount();
+                }
+                if (se != null) {
+                    count += se.combinedNodeCount();
                 }
 
-            } else {
-
-                BigDecimal halfSize = ctx.getHalfSize(size);
-                BigDecimal leftHalfSize = left.add(halfSize);
-                BigDecimal topHalfSize = top.add(halfSize);
-
-                drawNode(node.nw, halfSize, left, top, ctx);
-                drawNode(node.ne, halfSize, leftHalfSize, top, ctx);
-                drawNode(node.sw, halfSize, left, topHalfSize, ctx);
-                drawNode(node.se, halfSize, leftHalfSize, topHalfSize, ctx);
+                return count;
             }
+
+        }
+
+        // todo: return from the cache an object that
+        // if it was cached and
+        // how many times this node representation- was retrieved from the cache
+        //
+        // LRUCache class
+        private class LRUCache<K> extends LinkedHashMap<K, ImageCacheEntry> {
+            private final int cacheSize;
+
+            public LRUCache(int cacheSize) {
+                super(cacheSize + 1, 1.0f, true); // Set accessOrder to true for LRU behavior
+                this.cacheSize = cacheSize;
+            }
+
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<K, ImageCacheEntry> eldest) {
+                boolean removeEldest = size() > cacheSize;
+
+                if (removeEldest) {
+                    if (!removeEldestMode) {
+                        System.out.println("Remove eldest mode at size(): " + size());
+                        removeEldestMode = true;
+                    }
+
+                    ImageCacheEntry entry = eldest.getValue();
+                    PImage imageToDispose = entry.getImage();
+                    ((PGraphics) imageToDispose).dispose();
+                }
+
+                return removeEldest;
+            }
+
         }
     }
 
