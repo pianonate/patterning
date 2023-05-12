@@ -18,13 +18,15 @@ import java.math.BigInteger;
 import java.util.Set;
 
 /**
- * todo: splash message if nothing loaded... otherwise it's a blank canvas
+ * todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
  * todo: you can't rewind while there's a long operaation running - you'll have
  * to queue it up
+ * todo: put undo under command-z...also follow up on making ctrl-z, command-z be part of a
+ *       combination key to the same keyhandler as right now it's not setup to work with different commands for the same thing
+ *       on different OS's correctly
+ * 
  * todo: somewhere on the screen show fade in the target step and the current
- * step until they're one and the same and then fade out
- * todo: stop all throttling and try instead to use the
- * complexCalculationHandler
+ *      step until they're one and the same and then fade out
  * todo: move imagery around cached images into the ImageCacheEntry routine
  * todo: binary bit array - clearing - too complicated - needs to be on
  * automatic or you'll screw up
@@ -89,7 +91,7 @@ import java.util.Set;
  * todo: smooth zoom
  * todo: click for info
  * todo: directional big jump
- *
+ * 
  */
 
 public class GameOfLife extends PApplet {
@@ -104,8 +106,6 @@ public class GameOfLife extends PApplet {
     private Set<Integer> pressedKeys;
     private MovementHandler movementHandler;
 
-    private FrameRateNotifier frameRateNotifier;
-
     PGraphics buffer;
 
     ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
@@ -114,15 +114,6 @@ public class GameOfLife extends PApplet {
     ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
 
     float targetFrameRate = 30f;
-    private ThrottleController setStepThrottle = new ThrottleController("setStep",
-            20f,
-            25f,
-            1000 / (int) targetFrameRate);
-
-    private ThrottleController nextGenerationThrottle = new ThrottleController("nextGeneration",
-            5f,
-            15f,
-            1000 / (int) targetFrameRate);
 
     float last_mouse_x;
     float last_mouse_y;
@@ -154,7 +145,7 @@ public class GameOfLife extends PApplet {
 
         life.setupField(newLife.field_x, newLife.field_y);
 
-        drawer.center(life.getRootBounds(), true);
+        drawer.center(life.getRootBounds(), true, false);
         // this is tough to have to know - somehow we need to have the drawer
         // know when newLife comes into existence so we don't have to
         // remember to clear it's cache...
@@ -208,9 +199,6 @@ public class GameOfLife extends PApplet {
         this.drawer = new LifeDrawer(this, 4);
         this.movementHandler = new MovementHandler(this.drawer);
 
-        this.frameRateNotifier = new FrameRateNotifier();
-        frameRateNotifier.addListener(setStepThrottle);
-        frameRateNotifier.addListener(nextGenerationThrottle);
 
         buffer = createGraphics(width, height);
 
@@ -640,11 +628,12 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackMovement = new KeyCallbackMovement() {
         @Override
         public void onKeyEvent(KeyEvent event) {
-
+        
         }
 
         @Override
         public void move(Set<Integer> pressedKeys) {
+            drawer.saveUndoState(); // before we get a lot more events
             GameOfLife.this.pressedKeys = pressedKeys;
         }
 
@@ -739,7 +728,7 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackCenterView = new KeyCallback('c') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.center(life.getRootBounds(), false);
+            drawer.center(life.getRootBounds(), false, true);
         }
 
         @Override
@@ -751,7 +740,7 @@ public class GameOfLife extends PApplet {
     private final KeyCallback callbackUndoCenter = new KeyCallback('u') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            drawer.undoCenter();
+            drawer.undoMovement();
         }
 
         @Override
@@ -773,20 +762,23 @@ public class GameOfLife extends PApplet {
     };
 
     private void fitUniverseOnScreen() {
-        drawer.center(life.getRootBounds(), true);
+        drawer.center(life.getRootBounds(), true, true);
     }
 
     private final KeyCallback callbackRewind = new KeyCallback('r') {
         @Override
         public void onKeyEvent(KeyEvent event) {
+            // todo: make this threadsafe can't do this while setStep or nextGeneration are running
+            // does that mean it needs its own 'long running task'? 
+            // do we need a queue of them because we can't be checking all of those boolean states
+            // of things waiting to affect the LifeUniverse...
             stop();
             life.restoreRewindState();
-
-            // todo: stop() also sets the targetStep to 0, feels as if this should be
-            // refactored...
-            // wait until you bring spacebarhandler over - which i think also uses stop()
             life.setStep(0);
             fitUniverseOnScreen();
+            // fitUniverseOnScreen will create a save state but that's not why we're clearing
+            // there could be other undo states but it won't matter if we rewind so let's clear that out
+            drawer.clearUndo();
         }
 
         @Override

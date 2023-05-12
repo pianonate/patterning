@@ -9,6 +9,7 @@ import java.math.MathContext;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Stack;
 
 class LifeDrawer {
 
@@ -63,9 +64,8 @@ class LifeDrawer {
         }
     }
     
-
     private final PApplet p;
-    private CanvasState previousState;
+    private Stack<CanvasState> previousStates = new Stack<>();
 
     private boolean debugging = false;
     private boolean useImageCache = false;
@@ -73,7 +73,7 @@ class LifeDrawer {
     // for all of the conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
-    // despite all of taht, i think it would be more simple to to change this code
+    // despite all of that, i think it would be more simple to to change this code
     // to operate with all BigDecimals to avoid conversions
     private static final MathContext mc = new MathContext(10);
     private static BigDecimal BigTWO = new BigDecimal(2);
@@ -107,13 +107,11 @@ class LifeDrawer {
         this.canvasWidth = BigDecimal.valueOf(p.width);
         this.canvasHeight = BigDecimal.valueOf(p.height);
         this.imageCache = new ImageCache(p);
-        previousState = new CanvasState(this.cellWidth,canvasOffsetX, canvasOffsetY);
     }
 
     public float getCellWidth() {
         return cellWidth.get();
     }
-
 
     // you probably don't need this nonsense after all...
     public void clearCache() {
@@ -366,11 +364,20 @@ class LifeDrawer {
 
     }
 
+    // called when moves are invoked as there is some trickery in the move handler to move 
+    // multiple times on key presses and even more so as they are held down
+    // we just want to go back to the first one...
+    public void saveUndoState() {
+        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+    }
+
     public void move(float dx, float dy) {
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
     }
 
     public void zoom(boolean in, float x, float y) {
+
+        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
 
         float previousCellWidth = cellWidth.get();
 
@@ -415,15 +422,30 @@ class LifeDrawer {
          you would need to store all previous states, not just the last one. 
          You could use a Stack<CanvasState> for this purpose.
      */
-    public void undoCenter() {
-        cellWidth = previousState.getCellWidth();
-        canvasOffsetX = previousState.getCanvasOffsetX();
-        canvasOffsetY = previousState.getCanvasOffsetY();
+    public void undoMovement() {
+        if (!previousStates.empty()) {
+            CanvasState previous = previousStates.pop();
+
+            cellWidth = previous.getCellWidth();
+            canvasOffsetX = previous.getCanvasOffsetX();
+            canvasOffsetY = previous.getCanvasOffsetY();
+        } 
+
+        // if you want to float something on screen that says nothing more to pop you can
+        // or just make a nosie 
+        // or show some sparkles or something        
     }
 
-    public void center(Bounds bounds, boolean fitBounds) {
+    public void clearUndo() {
+        previousStates.clear();
+    }
 
-        previousState = new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY);
+    public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
+
+        
+        if (saveState) {
+            previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+        }
 
         BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left));
         BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top));
@@ -613,7 +635,7 @@ class LifeDrawer {
     }
 
     /*
-     * void draw_cell(int x, int y, boolean set) {
+     * void drawCell(int x, int y, boolean set) {
      * // todo: something is happening when you get to a step size at 1024
      * // you can go that large and because you are using a math context to do the
      * division
