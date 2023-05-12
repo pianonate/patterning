@@ -470,9 +470,8 @@ public class GameOfLife extends PApplet {
             return false;
         }
 
-        // if we're not running a complex task and we're expecting to advance forward in
-        // time:
-        return (!updatingLife() && (life.step < targetStep));
+        // if we're not running a complex task and we're expecting to change the step
+        return (!updatingLife() && (life.step != targetStep));
 
     }
 

@@ -27,7 +27,6 @@ Memoization in Hashlife allows the algorithm to reuse the intermediate results f
 
  */
 
-
 /* 
    to facilitate migration, create a Cache or HashMapManager and create tests for it that prove that it's working
    including creating the two implementations and making sure that both return the same resuls
@@ -120,45 +119,6 @@ class NodeKey {
 
 consider asking about using MurmurHash if you want fewer hash collisions to start
 
-also change level2 - you'll have to give it a new name
-
-public Node level2Setup(int start, int end, IntBuffer fieldX, IntBuffer fieldY) {
-    int set = 0, x, y;
-
-    for (int i = start; i <= end; i++) {
-        x = fieldX.get(i);
-        y = fieldY.get(i);
-
-        // interleave 2-bit x and y values
-        set |= 1 << (x & 1 | (y & 1 | x & 2) << 1 | (y & 2) << 2);
-    }
-
-    Node nw = level1Create(set);
-    Node ne = level1Create(set >> 4);
-    Node sw = level1Create(set >> 8);
-    Node se = level1Create(set >> 12);
-
-    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
-    NodeKey key = new NodeKey(nw, ne, sw, se, hash);
-
-    if (level2Cache.containsKey(key)) {
-        return level2Cache.get(key);
-    }
-
-    Node tree = createTree(nw, ne, sw, se, "level2setup");
-
-    level2Cache.put(key, tree);
-    return tree;
-}
-
-
-here's a hashmap insert 
-public void hashmapInsert(Node n) {
-    int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
-    NodeKey key = new NodeKey(n.nw, n.ne, n.sw, n.se, hash);
-    hashmap.put(key, n);
-}
-
 
  */
 
@@ -166,7 +126,8 @@ public class LifeUniverse {
     private static final double LOAD_FACTOR = 0.95;
     private static final int INITIAL_SIZE = 16;
 
-    // this is extremely large but can be maybe reached if you fix problems with nodeQuickNextGeneration
+    // this is extremely large but can be maybe reached if you fix problems with
+    // nodeQuickNextGeneration
     private static final int EMPTY_TREE_CACHE_SIZE = 2048;
     private static final int HASHMAP_LIMIT = 30;
     private static final int MASK_LEFT = 1;
@@ -206,7 +167,6 @@ public class LifeUniverse {
     // debugging
     private long quickCacheHits = 0;
     private long quickCacheMisses = 0;
-
 
     @SuppressWarnings("FieldMayBeFinal")
     private byte[] _bitcounts;
@@ -255,7 +215,8 @@ public class LifeUniverse {
         this._bitcounts[15] = 4;
 
         for (int i = 0x10; i < 0x758; i++) {
-            this._bitcounts[i] = (byte) (this._bitcounts[i & 0xF] + this._bitcounts[i >> 4 & 0xF] + this._bitcounts[i >> 8]);
+            this._bitcounts[i] = (byte) (this._bitcounts[i & 0xF] + this._bitcounts[i >> 4 & 0xF]
+                    + this._bitcounts[i >> 8]);
         }
 
         // current rule setting
@@ -293,11 +254,13 @@ public class LifeUniverse {
         garbageCollect();
     }
 
-    /* Note that Java doesn't have a bitwise logical shift operator
-     that preserves the sign bit like JavaScript (>>),
-     so we can use the unsigned right shift operator (>>>) instead.
-     However, since the _bitcounts array contains only positive values,
-     we can use the regular right shift operator (>>) instead without any issues.*/
+    /*
+     * Note that Java doesn't have a bitwise logical shift operator
+     * that preserves the sign bit like JavaScript (>>),
+     * so we can use the unsigned right shift operator (>>>) instead.
+     * However, since the _bitcounts array contains only positive values,
+     * we can use the regular right shift operator (>>) instead without any issues.
+     */
     public int evalMask(int bitmask) {
         int rule = ((bitmask & 32) != 0) ? this.rule_s : this.rule_b;
         return (rule >> this._bitcounts[bitmask & 0x757]) & 1;
@@ -309,39 +272,40 @@ public class LifeUniverse {
                 (bitmask & 2) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 4) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 8) != 0 ? trueLeaf : falseLeaf,
-                "level1Create"
-        );
+                "level1Create");
     }
 
-    /* 
-    // these were used in the original to draw on screen - maybe you'll get there someday..
-     private void setBit(BigInteger x, BigInteger y, boolean living) {
-        int level = getLevelFromBounds(new Bounds(y, x));
-
-        if (living) {
-            while (level > root.level) {
-                root = expandUniverse(root);
-            }
-        } else {
-            if (level > root.level) {
-                // no need to delete pixels outside the universe
-                return;
-            }
-        }
-
-        root = nodeSetBit(root, x, y, living);
-    }
-
-
-    public boolean getBit(BigInteger x, BigInteger y) {
-        int level = getLevelFromBounds(new Bounds(y, x));
-
-        if (level > root.level) {
-            return false;
-        } else {
-            return nodeGetBit(root, x, y);
-        }
-    } */
+    /*
+     * // these were used in the original to draw on screen - maybe you'll get there
+     * someday..
+     * private void setBit(BigInteger x, BigInteger y, boolean living) {
+     * int level = getLevelFromBounds(new Bounds(y, x));
+     * 
+     * if (living) {
+     * while (level > root.level) {
+     * root = expandUniverse(root);
+     * }
+     * } else {
+     * if (level > root.level) {
+     * // no need to delete pixels outside the universe
+     * return;
+     * }
+     * }
+     * 
+     * root = nodeSetBit(root, x, y, living);
+     * }
+     * 
+     * 
+     * public boolean getBit(BigInteger x, BigInteger y) {
+     * int level = getLevelFromBounds(new Bounds(y, x));
+     * 
+     * if (level > root.level) {
+     * return false;
+     * } else {
+     * return nodeGetBit(root, x, y);
+     * }
+     * }
+     */
 
     public Bounds getRootBounds() {
         if (root.population.equals(BigInteger.ZERO)) {
@@ -353,17 +317,17 @@ public class LifeUniverse {
         Bounds bounds = new Bounds(BigInteger.valueOf(Integer.MAX_VALUE), BigInteger.valueOf(Integer.MAX_VALUE),
                 BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MIN_VALUE));
 
-
         // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
         BigInteger offset = pow2(root.level - 1);
 
-        //System.out.println("Initial Bounds - Left: " + bounds.left + ", Right: " + bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
+        // System.out.println("Initial Bounds - Left: " + bounds.left + ", Right: " +
+        // bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
 
         nodeGetBoundary(root, offset.negate(), offset.negate(),
                 MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
 
-        //System.out.println("Final Bounds - Left: " + bounds.left + ", Right: " + bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
-
+        // System.out.println("Final Bounds - Left: " + bounds.left + ", Right: " +
+        // bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
 
         return bounds;
     }
@@ -386,7 +350,6 @@ public class LifeUniverse {
         bounds.bottom = bounds.bottom.add(offsetY);
     }
 
-
     public void moveField(IntBuffer fieldX, IntBuffer fieldY, int offsetX, int offsetY) {
         for (int i = 0; i < fieldX.capacity(); i++) {
             int x = fieldX.get(i);
@@ -396,7 +359,6 @@ public class LifeUniverse {
             fieldY.put(i, y + offsetY);
         }
     }
-
 
     private Node emptyTree(int level) {
         if (emptyTreeCache[level] != null) {
@@ -416,31 +378,36 @@ public class LifeUniverse {
         return emptyTreeCache[level];
     }
 
-
     /*
-     * In the expandUniverse method, a new root node will be creaated at one level higher than the current root node
-     * surrounded by empty space, essentially making the universe double sized (on either dimension)
+     * In the expandUniverse method, a new root node will be creaated at one level
+     * higher than the current root node
+     * surrounded by empty space, essentially making the universe double sized (on
+     * either dimension)
      * 
-     * a new  subtree is created for each quadrant. Quadrants have a level one below
-     * the passed in node but createTree will combine that with the empty trees and create nodes at the same
+     * a new subtree is created for each quadrant. Quadrants have a level one below
+     * the passed in node but createTree will combine that with the empty trees and
+     * create nodes at the same
      * level as the input node.
      * 
-     * then all 4 will be combined into a new, larger universe by the outside createTree which will return a new 
-     * node with the prior quadrants moved towards the center of the new tree - creating space at the edges for 
+     * then all 4 will be combined into a new, larger universe by the outside
+     * createTree which will return a new
+     * node with the prior quadrants moved towards the center of the new tree -
+     * creating space at the edges for
      * additional growth
      * 
-        Here's the process of creating the new root node with increased level:
-
-        Create an empty tree t with level node.level - 1.
-
-        Create new trees for each quadrant, with the original node's 
-        quadrants shifted to the corner and empty space added to the other corners.
-
-        Combine these new trees using the createTree method.
-
-       
-        So, the new root node will have a level one greater than the original root node, 
-        as it combines the new trees created with an extra level of hierarchy.
+     * Here's the process of creating the new root node with increased level:
+     * 
+     * Create an empty tree t with level node.level - 1.
+     * 
+     * Create new trees for each quadrant, with the original node's
+     * quadrants shifted to the corner and empty space added to the other corners.
+     * 
+     * Combine these new trees using the createTree method.
+     * 
+     * 
+     * So, the new root node will have a level one greater than the original root
+     * node,
+     * as it combines the new trees created with an extra level of hierarchy.
      */
     private Node expandUniverse(Node node) {
         // System.out.println("expanding universe");
@@ -452,24 +419,26 @@ public class LifeUniverse {
                 createTree(t, t, node.ne, t, "expandUniverse2"),
                 createTree(t, node.sw, t, t, "expandUniverse3"),
                 createTree(node.se, t, t, t, "expandUniverse4"), "expandUniverse5"
-                
+
         );
     }
 
     // Preserve the tree, but remove all cached
     // generations forward
     private void uncache(boolean alsoQuick) {
-       /* for (Node node : hashmap.values()) {
-            if (node != null) {
-                node.cache = null;
-
-                node.clearBinaryBitArray();
-                node.hashmapNext = null;
-                if (alsoQuick) {
-                    node.quick_cache = null;
-                }
-            }
-        } */
+        /*
+         * for (Node node : hashmap.values()) {
+         * if (node != null) {
+         * node.cache = null;
+         * 
+         * node.clearBinaryBitArray();
+         * node.hashmapNext = null;
+         * if (alsoQuick) {
+         * node.quick_cache = null;
+         * }
+         * }
+         * }
+         */
         hashmap.values().parallelStream().forEach(node -> {
             if (node != null) {
                 node.cache = null;
@@ -501,24 +470,36 @@ public class LifeUniverse {
     }
 
     /*
-    The nodeHash method is called during garbage collection, and its main purpose is to ensure 
-    that all nodes in the given tree are present in the hashmap. It recursively traverses the 
-    tree and calls hashmapInsert to insert each node into the hashmap if it's not already there.
-
-    The inHashmap method checks if the node is already in the hashmap (including the linked 
-    list of nodes in case of hash collisions). If a node is already in the hashmap, the 
-    nodeHash method won't insert it again.
-
-    The hashmapInsert method is responsible for inserting a given node n into the hashmap. 
-    It first calculates the hash for the node and finds the corresponding entry in the hashmap. 
-    If there are any hash collisions, it follows the linked list (using the hashmapNext field) 
-    to the last node in the list and inserts the new node there.
-
-    So, in summary, the nodeHash method is responsible for ensuring that all nodes in a given 
-    tree are present in the hashmap during garbage collection. It does not repopulate a cleared 
-    hashmap with a tree, but rather ensures that the existing nodes are correctly inserted 
-    into the hashmap. The linked list resulting from hash collisions is maintained by the hashmapInsert method. 
-    */
+     * The nodeHash method is called during garbage collection, and its main purpose
+     * is to ensure
+     * that all nodes in the given tree are present in the hashmap. It recursively
+     * traverses the
+     * tree and calls hashmapInsert to insert each node into the hashmap if it's not
+     * already there.
+     * 
+     * The inHashmap method checks if the node is already in the hashmap (including
+     * the linked
+     * list of nodes in case of hash collisions). If a node is already in the
+     * hashmap, the
+     * nodeHash method won't insert it again.
+     * 
+     * The hashmapInsert method is responsible for inserting a given node n into the
+     * hashmap.
+     * It first calculates the hash for the node and finds the corresponding entry
+     * in the hashmap.
+     * If there are any hash collisions, it follows the linked list (using the
+     * hashmapNext field)
+     * to the last node in the list and inserts the new node there.
+     * 
+     * So, in summary, the nodeHash method is responsible for ensuring that all
+     * nodes in a given
+     * tree are present in the hashmap during garbage collection. It does not
+     * repopulate a cleared
+     * hashmap with a tree, but rather ensures that the existing nodes are correctly
+     * inserted
+     * into the hashmap. The linked list resulting from hash collisions is
+     * maintained by the hashmapInsert method.
+     */
 
     // called only on garbageCollect
     public void nodeHash(Node node) {
@@ -566,7 +547,6 @@ public class LifeUniverse {
         }
     }
 
-
     public void garbageCollect() {
         long start = System.currentTimeMillis();
 
@@ -582,15 +562,18 @@ public class LifeUniverse {
         nodeHash(root);
 
         long end = System.currentTimeMillis();
-        System.out.println("gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
+        System.out.println(
+                "gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
     }
 
-    /* // the hash function used for the hashmap
-     int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
-        return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
-    } */
+    /*
+     * // the hash function used for the hashmap
+     * int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
+     * return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
+     * }
+     */
 
-     int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
+    int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
         int result = 17;
         result = 31 * result ^ nw_id;
         result = 31 * result ^ ne_id;
@@ -614,20 +597,23 @@ public class LifeUniverse {
         this.step = 0;
     }
 
-
-    // this is just used when setting up the field initially unless I'm missing something
+    // this is just used when setting up the field initially unless I'm missing
+    // something
     public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
         if (fieldX.capacity() == 0) {
             return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
         }
 
-        // this sets up a bounds that just has an initial top and bottom that are the same and left and right the same
-        // the RLEBuffer creates x and y to be the same size regardless of source width and height - it will make it
+        // this sets up a bounds that just has an initial top and bottom that are the
+        // same and left and right the same
+        // the RLEBuffer creates x and y to be the same size regardless of source width
+        // and height - it will make it
         // the size of the bounding box
         Bounds bounds = new Bounds(BigInteger.valueOf(fieldY.get(0)), BigInteger.valueOf(fieldX.get(0)));
         int len = fieldX.capacity();
 
-        // todo: pass in varied width and heights and look at the field size they actually generate
+        // todo: pass in varied width and heights and look at the field size they
+        // actually generate
         for (int i = 1; i < len; i++) {
             BigInteger x = BigInteger.valueOf(fieldX.get(i));
             BigInteger y = BigInteger.valueOf(fieldY.get(i));
@@ -648,10 +634,9 @@ public class LifeUniverse {
         return bounds;
     }
 
-
     public int getLevelFromBounds(Bounds bounds) {
         int max = 4;
-        String[] keys = {"top", "left", "bottom", "right"};
+        String[] keys = { "top", "left", "bottom", "right" };
 
         for (String key : keys) {
             BigInteger coordinate = BigInteger.ZERO;
@@ -675,18 +660,17 @@ public class LifeUniverse {
         return (int) Math.ceil(Math.log(max) / Math.log(2)) + 1;
     }
 
-
     public void setupField(IntBuffer fieldX, IntBuffer fieldY) {
-        
+
         Bounds bounds = getBounds(fieldX, fieldY);
         int level = getLevelFromBounds(bounds);
-        
+
         BigInteger offset = BigInteger.valueOf(2).pow(level - 1);
-        
+
         int count = fieldX.capacity();
-        
+
         moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
-        
+
         Node field = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
         root = field;
     }
@@ -736,9 +720,8 @@ public class LifeUniverse {
                 setupFieldRecurse(start, part2 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part2, part3 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part3, part4 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part4, end, fieldX, fieldY, level), 
-                "setupFieldRecurse"
-        );
+                setupFieldRecurse(part4, end, fieldX, fieldY, level),
+                "setupFieldRecurse");
     }
 
     public Node level2Setup(int start, int end, IntBuffer fieldX, IntBuffer fieldY) {
@@ -761,25 +744,27 @@ public class LifeUniverse {
                 level1Create(set >> 4),
                 level1Create(set >> 8),
                 level1Create(set >> 12),
-                "level2setup"
-        );
+                "level2setup");
 
         level2Cache.put(set, tree);
         return tree;
     }
 
-
     public void setStep(int step) {
 
-       /*  if (step > this.root.level - 1) {
-            System.out.println("root.level: " + root.level + " and step: " + step + " are too close, wait a minute");
-
-            step = root.level - 1;
-        } */
+        /*
+         * if (step > this.root.level - 1) {
+         * System.out.println("root.level: " + root.level + " and step: " + step +
+         * " are too close, wait a minute");
+         * 
+         * step = root.level - 1;
+         * }
+         */
 
         if (step != this.step) {
 
-            // logpoint: call# {String.format("%,7d", nextGenerationCalls)} setStep {String.format("%,3d", step)}
+            // logpoint: call# {String.format("%,7d", nextGenerationCalls)} setStep
+            // {String.format("%,3d", step)}
             this.step = step;
 
             uncache(false);
@@ -792,72 +777,74 @@ public class LifeUniverse {
     }
 
     /*
-    public void setRules(int s, int b) {
-        if (this.rule_s != s || this.rule_b != b) {
-            this.rule_s = s;
-            this.rule_b = b;
+     * public void setRules(int s, int b) {
+     * if (this.rule_s != s || this.rule_b != b) {
+     * this.rule_s = s;
+     * this.rule_b = b;
+     * 
+     * this.uncache(true);
+     * emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+     * level2Cache = new HashMap<>(0x10000);
+     * }
+     * }
+     */
 
-            this.uncache(true);
-            emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-            level2Cache = new HashMap<>(0x10000);
-        }
-    }
-    */
-
-   /* private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean living) {
-
-        if (node.level == 0) {
-            return living ? trueLeaf : falseLeaf;
-        }
-
-        BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
-
-        Node nw = node.nw, ne = node.ne, sw = node.sw, se = node.se;
-
-        if (x.compareTo(BigInteger.ZERO) < 0) {
-            if (y.compareTo(BigInteger.ZERO) < 0) {
-                nw = nodeSetBit(nw, x.add(offset), y.add(offset), living);
-            } else {
-                sw = nodeSetBit(sw, x.add(offset), y.subtract(offset), living);
-            }
-        } else {
-            if (y.compareTo(BigInteger.ZERO) < 0) {
-                ne = nodeSetBit(ne, x.subtract(offset), y.add(offset), living);
-            } else {
-                se = nodeSetBit(se, x.subtract(offset), y.subtract(offset), living);
-            }
-        }
-
-        return createTree(nw, ne, sw, se);
-    }
-
-    private boolean nodeGetBit(Node node, BigInteger x, BigInteger y) {
-        if (node.population.equals(BigInteger.ZERO)) {
-            return false;
-        }
-
-        if (node.level == 0) {
-            // other level 0 case is handled above
-            return true;
-        }
-
-        BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
-
-        if (x.compareTo(BigInteger.ZERO) < 0) {
-            if (y.compareTo(BigInteger.ZERO) < 0) {
-                return nodeGetBit(node.nw, x.add(offset), y.add(offset));
-            } else {
-                return nodeGetBit(node.sw, x.add(offset), y.subtract(offset));
-            }
-        } else {
-            if (y.compareTo(BigInteger.ZERO) < 0) {
-                return nodeGetBit(node.ne, x.subtract(offset), y.add(offset));
-            } else {
-                return nodeGetBit(node.se, x.subtract(offset), y.subtract(offset));
-            }
-        }
-    } */
-
+    /*
+     * private Node nodeSetBit(Node node, BigInteger x, BigInteger y, boolean
+     * living) {
+     * 
+     * if (node.level == 0) {
+     * return living ? trueLeaf : falseLeaf;
+     * }
+     * 
+     * BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
+     * 
+     * Node nw = node.nw, ne = node.ne, sw = node.sw, se = node.se;
+     * 
+     * if (x.compareTo(BigInteger.ZERO) < 0) {
+     * if (y.compareTo(BigInteger.ZERO) < 0) {
+     * nw = nodeSetBit(nw, x.add(offset), y.add(offset), living);
+     * } else {
+     * sw = nodeSetBit(sw, x.add(offset), y.subtract(offset), living);
+     * }
+     * } else {
+     * if (y.compareTo(BigInteger.ZERO) < 0) {
+     * ne = nodeSetBit(ne, x.subtract(offset), y.add(offset), living);
+     * } else {
+     * se = nodeSetBit(se, x.subtract(offset), y.subtract(offset), living);
+     * }
+     * }
+     * 
+     * return createTree(nw, ne, sw, se);
+     * }
+     * 
+     * private boolean nodeGetBit(Node node, BigInteger x, BigInteger y) {
+     * if (node.population.equals(BigInteger.ZERO)) {
+     * return false;
+     * }
+     * 
+     * if (node.level == 0) {
+     * // other level 0 case is handled above
+     * return true;
+     * }
+     * 
+     * BigInteger offset = node.level == 1 ? BigInteger.ZERO : pow2(node.level - 2);
+     * 
+     * if (x.compareTo(BigInteger.ZERO) < 0) {
+     * if (y.compareTo(BigInteger.ZERO) < 0) {
+     * return nodeGetBit(node.nw, x.add(offset), y.add(offset));
+     * } else {
+     * return nodeGetBit(node.sw, x.add(offset), y.subtract(offset));
+     * }
+     * } else {
+     * if (y.compareTo(BigInteger.ZERO) < 0) {
+     * return nodeGetBit(node.ne, x.subtract(offset), y.add(offset));
+     * } else {
+     * return nodeGetBit(node.se, x.subtract(offset), y.subtract(offset));
+     * }
+     * }
+     * }
+     */
 
     public Node node_level2_next(Node node) {
         Node nw = node.nw;
@@ -865,11 +852,14 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
-        BigInteger bitmask =
-                nw.nw.population.shiftLeft(15).or(nw.ne.population.shiftLeft(14)).or(ne.nw.population.shiftLeft(13)).or(ne.ne.population.shiftLeft(12))
-                        .or(nw.sw.population.shiftLeft(11)).or(nw.se.population.shiftLeft(10)).or(ne.sw.population.shiftLeft(9)).or(ne.se.population.shiftLeft(8))
-                        .or(sw.nw.population.shiftLeft(7)).or(sw.ne.population.shiftLeft(6)).or(se.nw.population.shiftLeft(5)).or(se.ne.population.shiftLeft(4))
-                        .or(sw.sw.population.shiftLeft(3)).or(sw.se.population.shiftLeft(2)).or(se.sw.population.shiftLeft(1)).or(se.se.population);
+        BigInteger bitmask = nw.nw.population.shiftLeft(15).or(nw.ne.population.shiftLeft(14))
+                .or(ne.nw.population.shiftLeft(13)).or(ne.ne.population.shiftLeft(12))
+                .or(nw.sw.population.shiftLeft(11)).or(nw.se.population.shiftLeft(10)).or(ne.sw.population.shiftLeft(9))
+                .or(ne.se.population.shiftLeft(8))
+                .or(sw.nw.population.shiftLeft(7)).or(sw.ne.population.shiftLeft(6)).or(se.nw.population.shiftLeft(5))
+                .or(se.ne.population.shiftLeft(4))
+                .or(sw.sw.population.shiftLeft(3)).or(sw.se.population.shiftLeft(2)).or(se.sw.population.shiftLeft(1))
+                .or(se.se.population);
 
         int result = evalMask(bitmask.shiftRight(5).intValue()) |
                 evalMask(bitmask.shiftRight(4).intValue()) << 1 |
@@ -896,8 +886,11 @@ public class LifeUniverse {
 
         if (lastId > maxLoad) {
             garbageCollect();
-            // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is returning a new tree because createTree was about to just make a new one but now it's calling itself recursively rather than just making a new node and returning it
-            return createTree(nw, ne, sw, se, "lastID > maxload createTree()" );
+            // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is
+            // returning a new tree because createTree was about to just make a new one but
+            // now it's calling itself recursively rather than just making a new node and
+            // returning it
+            return createTree(nw, ne, sw, se, "lastID > maxload createTree()");
         }
 
         Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
@@ -911,19 +904,19 @@ public class LifeUniverse {
         return newNode;
     }
 
-
     public void nextGeneration() {
 
         Node root = this.root;
 
-        //debugging
+        // debugging
         nextGenerationCalls++;
         hashCollisions = 0;
 
-        // the following is a new mechanism to only expandUniverse as far as you need to
+       /* // the following is a new mechanism to only expandUniverse as far as you need to
         // and not just merely to match up to the current step size
-        // this seems to work but if it ever doesn't this might be the culprit and you have to go back to 
-        // this as the first line of the while below: 
+        // this seems to work but if it ever doesn't this might be the culprit and you
+        // have to go back to
+        // this as the first line of the while below:
         // while ((root.level <= this.step + 2) ||
 
         // Get the current Bounds object for live cells in root
@@ -940,25 +933,49 @@ public class LifeUniverse {
         while (size.compareTo(maxDimension) < 0) {
             requiredLevel++;
             size = pow2(requiredLevel + 1);
-        }
+        }*
 
         // when we're not large enough to fit the bounds, or the tree needs to be
         // repositioned towards the center, thenn expand universe until that's true
-        while (root.level < requiredLevel ||
+        while (root.level < requiredLevel ||/
+        */
+
+
+        /* 
+         * so the above didn't work - chatGPT suggested the following:
+         * Your commented-out proposed optimization seems to be trying to calculate
+         *  the minimum required level of the root node based on the size of the bounding 
+         * box of the live cells. This could be a good optimization if the size of the live
+         *  area is typically much smaller than the size of the entire universe. However, 
+         * it's possible that this broke your algorithm because the level of the root node 
+         * ended up being too small for the number of generations you're trying to advance at once.
+
+            To create a test for this issue, you could create a pattern that grows
+             significantly over many generations, such as a glider gun in the Game of Life.
+              Then, you could create a test that steps this pattern forward by a large number
+               of generations and checks the resulting state against a known correct result.
+                This could help you figure out if the issue is with the size of the root node or with recentering the universe.
+         */
+
+
+         
+
+        while ( (root.level <= this.step + 2) || 
                 !root.nw.population.equals(root.nw.se.se.population) ||
                 !root.ne.population.equals(root.ne.sw.sw.population) ||
                 !root.sw.population.equals(root.sw.ne.ne.population) ||
                 !root.se.population.equals(root.se.nw.nw.population)) {
             root = this.expandUniverse(root);
-}
-           // Node maintains a per generation set of nodes that were newly created
-        // clear them so the drawing routine can use unchnaged nodes as a key to a cache associated with their
+        }
+        // Node maintains a per generation set of nodes that were newly created
+        // clear them so the drawing routine can use unchnaged nodes as a key to a cache
+        // associated with their
         // drawing
         Node.clearChanged();
 
         this.root = nodeNextGeneration(root);
 
-        BigInteger generationIncrease = BigInteger.valueOf(2).pow(this.step);
+        BigInteger generationIncrease = pow2(this.step); // BigInteger.valueOf(2).pow(this.step);
 
         this.generation = this.generation.add(generationIncrease);
     }
@@ -966,20 +983,16 @@ public class LifeUniverse {
     private Node nodeNextGeneration(Node node) {
 
         if (node.cache != null) {
-            return node.cache ;
+            return node.cache;
         }
 
-        try {
-            if (this.step == node.level - 2) {
-                quickgen = 0;
-                quickCacheHits = 0;
-                quickCacheMisses = 0;
-                // System.out.println("root.level: " + root.level + " step: " + this.step + " node.level: " + node.level);
-                return nodeQuickNextGeneration(node, 0);
-            }
-        } catch (IllegalStateException e) {
-            System.out.println("caught: " + e);
-            // just continue on if you're here as quickgen didn't work out...
+        if (this.step == node.level - 2) {
+            quickgen = 0;
+            quickCacheHits = 0;
+            quickCacheMisses = 0;
+            // System.out.println("root.level: " + root.level + " step: " + this.step + "
+            // node.level: " + node.level);
+            return nodeQuickNextGeneration(node, 0);
         }
 
         // right now i have seen a nodeNextGeneration where
@@ -1025,12 +1038,10 @@ public class LifeUniverse {
         return result;
     }
 
-
     private long quickgen;
 
     public Node nodeQuickNextGeneration(Node node, int depth) throws IllegalStateException {
         quickgen += 1;
-
 
         if (node.quickCache != null) {
             quickCacheHits++; // Increment the cache hit counter
@@ -1043,16 +1054,18 @@ public class LifeUniverse {
             return node.quickCache = this.node_level2_next(node);
         }
 
-        if ((quickgen % 1000000) ==0) {
-            quickgen += 1 - 1 ;
-        }
-
-        if (quickgen % 100000000 == 0) {
-            throw new IllegalStateException("quickgen count: " + quickgen);
+        if ((quickgen % 1000000) == 0) {
+            quickgen += 1 - 1;
         }
 
         // logpoint for vscode
-        // lastId {String.format("%,9d", lastId)} - call# {String.format("%,6d", nextGenerationCalls)} - count {String.format("%,11d", quickgen)} - root hash:level {String.format("%10d",root.hashCode())}:{root.level} - recursion depth:{String.format("%2d", depth)} - node level {String.format("%2d",node.level)} - hits {String.format("%,10d", quickCacheHits)} misses {String.format("%,10d", quickCacheMisses)} ratio {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
+        // lastId {String.format("%,9d", lastId)} - call# {String.format("%,6d",
+        // nextGenerationCalls)} - count {String.format("%,11d", quickgen)} - root
+        // hash:level {String.format("%10d",root.hashCode())}:{root.level} - recursion
+        // depth:{String.format("%2d", depth)} - node level
+        // {String.format("%2d",node.level)} - hits {String.format("%,10d",
+        // quickCacheHits)} misses {String.format("%,10d", quickCacheMisses)} ratio
+        // {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
 
         Node nw = node.nw;
         Node ne = node.ne;
@@ -1062,13 +1075,18 @@ public class LifeUniverse {
         depth = depth + 1;
 
         Node n00 = this.nodeQuickNextGeneration(nw, depth);
-        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw, "nodeQuickNextGeneration 1"), depth);
+        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw, "nodeQuickNextGeneration 1"),
+                depth);
         Node n02 = this.nodeQuickNextGeneration(ne, depth);
-        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne, "nodeQuickNextGeneration 2"), depth);
-        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw, "nodeQuickNextGeneration 3"), depth);
-        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne, "nodeQuickNextGeneration 4"), depth);
+        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne, "nodeQuickNextGeneration 2"),
+                depth);
+        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw, "nodeQuickNextGeneration 3"),
+                depth);
+        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne, "nodeQuickNextGeneration 4"),
+                depth);
         Node n20 = this.nodeQuickNextGeneration(sw, depth);
-        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw, "nodeQuickNextGeneration 5"), depth);
+        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw, "nodeQuickNextGeneration 5"),
+                depth);
         Node n22 = this.nodeQuickNextGeneration(se, depth);
 
         return node.quickCache = this.createTree(
@@ -1076,11 +1094,8 @@ public class LifeUniverse {
                 this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12, "nodeQuickNextGeneration 7"), depth),
                 this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21, "nodeQuickNextGeneration 8"), depth),
                 this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22, "nodeQuickNextGeneration 9"), depth),
-                "nodeQuickNextGeneration10"
-        );
+                "nodeQuickNextGeneration10");
     }
-
-
 
     private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds boundary) {
         if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
@@ -1104,8 +1119,10 @@ public class LifeUniverse {
             // BigInteger offset = BigInteger.valueOf(2).pow(node.level - 1);
             BigInteger offset = pow2(node.level - 1);
 
-            if (left.compareTo(boundary.left) >= 0 && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
-                    top.compareTo(boundary.top) >= 0 && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
+            if (left.compareTo(boundary.left) >= 0
+                    && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
+                    top.compareTo(boundary.top) >= 0
+                    && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
                 // this square is already inside the found boundary
                 return;
             }
