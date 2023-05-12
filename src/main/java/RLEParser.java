@@ -1,5 +1,4 @@
 import processing.core.PApplet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.regex.Pattern;
@@ -269,32 +268,5 @@ public class RLEParser {
 
     LifeForm getResult() {
         return lifeForm;
-    }
-}
-
-class LifeForm {
-
-    int width;
-    int height;
-    int rule_s;
-    int rule_b;
-    String title;
-    String author;
-    String rule;
-    ArrayList<String> comments;
-    String instructions;
-    IntBuffer field_x;
-    IntBuffer field_y;
-
-    LifeForm() {
-        width=0;
-        height=0;
-        rule_s=0;
-        rule_b=0;
-        rule="";
-        title="";
-        author="";
-        comments = new ArrayList<>();
-        instructions = "";
     }
 }

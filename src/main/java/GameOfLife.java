@@ -574,7 +574,7 @@ public class GameOfLife extends PApplet {
 
             stop();
 
-            Formats parser = new Formats();
+            LifeFormats parser = new LifeFormats();
             LifeForm newLife = parser.parseRLE(storedLife);
 
             instantiateLifeForm(newLife);
