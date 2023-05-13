@@ -1,9 +1,7 @@
-
 import processing.core.PApplet;
-import processing.event.KeyEvent;
 import processing.core.PGraphics;
-
 import processing.data.JSONObject;
+import processing.event.KeyEvent;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -11,87 +9,63 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.IOException;
-
 import java.math.BigInteger;
 import java.util.Set;
 
 /**
  * todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
- * todo: you can't rewind while there's a long operaation running - you'll have
- * to queue it up
+ * todo: magnifier over mouseX
+ * todo: smooth combination of zoom/center
+ * todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
+ * todo: now start testing
+ * todo: you can't rewind while there's a long operation running - you'll have to queue it up
  * todo: put undo under command-z...also follow up on making ctrl-z, command-z be part of a
- *       combination key to the same keyhandler as right now it's not setup to work with different commands for the same thing
+ *       combination key to the same KeyHandler as right now it's not setup to work with different commands for the same thing
  *       on different OS's correctly
  * todo: somewhere on the screen show fade in the target step and the current
  *      step until they're one and the same and then fade out
  * todo: move imagery around cached images into the ImageCacheEntry routine
- * todo: binary bit array - clearing - too complicated - needs to be on
- * automatic or you'll screw up
- * todo: grid out the screen based on the pressed number key so you can see what
- * level of the tree is that grid
+ * todo: binary bit array - clearing - too complicated - needs to be on automatic or you'll screw up
+ * todo: grid out the screen based on the pressed number key so you can see what level of the tree is that grid
  * todo: add RLE parser tests that can double as tests for the app
- * todo: clean up todo's
  * todo: reorganize the code for cleanliness and testing with 4.0's help
- * todo: click on node and it will tell you the information about it at the last
- * selected grid level (or something) - mnaybe it recurses up to show info about
- * all levels nearby
- * todo: investigate making all sections of the screen build up from
- * imageCacheEntries...with a LRU, shouldn't this be no problem?
- * todo: nextgeneration as well as setstep need to have a throttle back
- * mechanism
- * todo: gracefully hahdle cell_width so that you can scale down to fitting
- * something on screen again
- * without having to sacrifice the bs
- * todo: with help - change KeyCallback to work with KeyData key,
- * modifiers,validOS - but make simple mechanisms to create one
- * todo: show what level you have zoomed to using fade in face out text on
- * screen
+ * todo: click on node and it will tell you the information about it at the last selected grid level (or something) - mnaybe it recurses up to show info about all levels nearby
+ * todo: with help - change KeyCallback to work with KeyData key, modifiers,validOS - but make simple mechanisms to create one
+ * todo: show what level you have zoomed to using fade in face out text on screen
  * todo: same for rewinding
- * todo: what about drawing a box showing the edge of the universe (label it)
- * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width -
- * make it a constant so that you
- * todo: cache of Boolean array
- * of any unchanged node that has visibility on screen of what is visible and
- * what are its bounds and blast that out to the screen
- * also should we have processing create the image offline and then show it?
+ * todo: label bounding box with actual universe size in pixels and meters based on current cellSize - compare to what % of the known universe this would be in size
+ * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
+ * todo: cache of Boolean array of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
  * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
- * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent
- * class - maybe maybe... provide squeeze to zoom
+ * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
  * todo: is it possible to bind keyboard shortcuts to methods?
- * todo: display keyboard shortcuts in a panel and allow for it to be moved
- * around the screen
+ * todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
  * todo: move HUD to upper right with a panel with an expand/collapse
  * todo: display pasted in metadata in a HUD section
- * todo: smooth zoom - is that possible? seems to me it would have to be
- * possible.
- * todo: detect periodic stability - it seems that the lastID stops growing in
- * the model - is that the detector?
+ * todo: smooth zoom - is that possible? seems to me it would have to be possible.
+ * todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
  * todo: Add mc parser support
  * todo: do you need to manage the size of the hashmap?
- * todo: possibly simplification create an alternate implementation - extend the
- * hashmap class and override resize method to capture the timing of the resize
- * todo: here's what would be cool - zoom over a section - if your mouse is over
- * a section of what's going on, you can see the details at a much higher zoom
- * level
+ * todo: possibly simplification create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
+ * todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on, you can see the details at a much higher zoom level
  * todo: load RLEs from a file
- * todo: save all pasted in valid RLEs in a folder. check if it's already there
- * and if it's different.
- * todo: allow for creation and then saving as an RLE with associated metadata -
- * from the same place where you allow editing
+ * todo: save all pasted in valid RLEs in a folder. check if it's already there and if it's different.
+ * todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
  * todo: allow for rotating the images for visual appeal
  * todo: copy / paste selections
- * todo: create a test for LifeDrawer that allows you to know if it actually is
- * improved in performance
+ * todo: create a test for LifeDrawer that allows you to know if it actually is improved in performance
  * todo: doubleclick to zoom
  * todo: smooth zoom
  * todo: click for info
  * todo: directional big jump
- * 
+ * todo: file manager of RLEs
  */
 
 public class Patterning extends PApplet {
+
+    private static final char SHORTCUT_REWIND = 'r';
 
     public static void main(String[] args) {
         PApplet.main("Patterning");
@@ -169,6 +143,19 @@ public class Patterning extends PApplet {
             height = properties.getInt("height", height);
             this.storedLife = properties.getString("lifeForm", "");
         }
+
+        if (null==this.storedLife || this.storedLife.isEmpty()) {
+            // todo: refactor
+            ResourceReader r = new ResourceReader();
+            try {
+                this.storedLife  = r.getRandomResourceAsString("rle");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+
 
         // Set the window size
         size(width, height);
@@ -311,6 +298,8 @@ public class Patterning extends PApplet {
     }
 
     // guaranteed by processing to be called prior to the draw phase
+    // IDE doesn't see this as having a usage, but we know better
+    @SuppressWarnings("unused")
     public void pre() {
 
         if (prevWidth != width || prevHeight != height) {
@@ -448,7 +437,7 @@ public class Patterning extends PApplet {
         /*
          * if (setStepRunning)
          * println("setStep is running, wait");
-         * 
+         *
          * if (nextGenerationRunning)
          * println("nextGeneration is running, wait");
          */
@@ -500,7 +489,7 @@ public class Patterning extends PApplet {
     /*
      * public void onSliderChange(int value) {
      * println("slider changed:" + value);
-     * 
+     *
      * }
      */
 
@@ -623,7 +612,7 @@ public class Patterning extends PApplet {
     private final KeyCallback callbackMovement = new KeyCallbackMovement() {
         @Override
         public void onKeyEvent(KeyEvent event) {
-        
+
         }
 
         @Override
@@ -760,11 +749,11 @@ public class Patterning extends PApplet {
         drawer.center(life.getRootBounds(), true, true);
     }
 
-    private final KeyCallback callbackRewind = new KeyCallback('r') {
+    private final KeyCallback callbackRewind = new KeyCallback(SHORTCUT_REWIND) {
         @Override
         public void onKeyEvent(KeyEvent event) {
             // todo: make this threadsafe can't do this while setStep or nextGeneration are running
-            // does that mean it needs its own 'long running task'? 
+            // does that mean it needs its own 'long running task'?
             // do we need a queue of them because we can't be checking all of those boolean states
             // of things waiting to affect the LifeUniverse...
             stop();
@@ -797,12 +786,12 @@ public class Patterning extends PApplet {
     /*
      * private final KeyCallback callbackPasteWindows = new KeyCallback('v',
      * KeyEvent.CTRL, KeyCallback.NON_MAC) {
-     * 
+     *
      * @Override
      * public void onKeyEvent(KeyEvent event) {
      * pasteLifeForm();
      * }
-     * 
+     *
      * @Override
      * public String getUsageText() {
      * return
