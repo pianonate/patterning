@@ -117,14 +117,6 @@ class LifeDrawer {
             cellWidth.set(cellWidth.get() / 2f);
         }
 
-        // Apply rounding conditionally based on a threshold
-        // if it's larger than a pixel then we may see unintended gaps between cells
-        // so round them if they're over the 1 pixel threshold
-        float threshold = 1.0f;
-        if (cellWidth.get() >= threshold) {
-            cellWidth.set(Math.round(cellWidth.get()));
-        }
-
         // Calculate zoom factor
         float zoomFactor = cellWidth.get() / previousCellWidth;
 
@@ -143,6 +135,22 @@ class LifeDrawer {
         buffer.noStroke();
         // p.fill(cell_color);
         buffer.rect(x, y, width, width);
+
+        // todo, create a keyboard handler to display these values
+        //       or a mouse mode - it can be useful when debugging positioning information
+        // you'll be glad you did
+        if( false) {
+            buffer.fill(0xff000000);
+            buffer.textSize(11);
+            buffer.textAlign(p.LEFT, p.TOP);
+            buffer.text(String.valueOf((int) x) + ",  " + String.valueOf((int) y), x, y, width, width);
+            buffer.text(canvasWidth.toString() + ",  " + canvasHeight.toString(), x, y + 12, width, width);
+
+            buffer.text("size: " + String.valueOf(size), x, y + 24, width, width);
+
+            int nextPos = (int) x + (int) size;
+            buffer.text("next: " + String.valueOf(nextPos), x, y + 36, width, width);
+        }
 
     }
 
@@ -279,6 +287,15 @@ class LifeDrawer {
         }
 
         private void setImpl(float cellWidth) {
+
+            // Apply rounding conditionally based on a threshold
+            // if it's larger than a pixel then we may see unintended gaps between cells
+            // so round them if they're over the 1 pixel threshold
+            float threshold = 1.0f;
+            if (cellWidth >= threshold) {
+               cellWidth = Math.round(cellWidth);
+            }
+
             this.cellWidth = cellWidth;
             this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
         }
@@ -351,13 +368,14 @@ class LifeDrawer {
 
     public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
 
-        
+
         if (saveState) {
             previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
         }
 
-        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left));
-        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top));
+        // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
+        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE));
+        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
 
         if (fitBounds) {
 
@@ -369,12 +387,14 @@ class LifeDrawer {
 
             BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
 
-            cellWidth.set(newCellSize.floatValue() * .9F);
+           cellWidth.set(newCellSize.floatValue() * .9F);
 
         }
 
-        BigDecimal drawingWidth = patternWidth.multiply(cellWidth.getAsBigDecimal());
-        BigDecimal drawingHeight = patternHeight.multiply(cellWidth.getAsBigDecimal());
+        BigDecimal bigCell = cellWidth.getAsBigDecimal();
+
+        BigDecimal drawingWidth = patternWidth.multiply(bigCell);
+        BigDecimal drawingHeight = patternHeight.multiply(bigCell);
 
         BigDecimal halfCanvasWidth = canvasWidth.divide(BigTWO, mc);
         BigDecimal halfCanvasHeight = canvasHeight.divide(BigTWO, mc);
@@ -383,10 +403,8 @@ class LifeDrawer {
         BigDecimal halfDrawingHeight = drawingHeight.divide(BigTWO, mc);
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth)
-                .add(new BigDecimal(bounds.left).multiply(cellWidth.getAsBigDecimal()).negate());
-        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight)
-                .add(new BigDecimal(bounds.top).multiply(cellWidth.getAsBigDecimal()).negate());
+        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate());
+        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate());
 
         canvasOffsetX = offsetX;
         canvasOffsetY = offsetY; 
@@ -406,6 +424,7 @@ class LifeDrawer {
     // the cell width times 2 ^ level will give you the size of the whole universe
     // draws the screensize viewport on the universe
     public void redraw(Node node, PGraphics offscreenBuffer) {
+
         cellBorderWidth = (int) (cellBorderWidthRatio * cellWidth.get());
 
         BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);

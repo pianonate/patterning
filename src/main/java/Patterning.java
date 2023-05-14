@@ -13,11 +13,13 @@ import java.math.BigInteger;
 import java.util.Set;
 
 /**
+ * todo: notification that you have pasted followed by the countdown text instead of showing thestopped screen
  * todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
  * todo: magnifier over mouseX
  * todo: smooth combination of zoom/center
  * todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
  * todo: now start testing
+ * todo: move all drawing into LifeDrawer
  * todo: you can't rewind while there's a long operation running - you'll have to queue it up
  * todo: put undo under command-z...also follow up on making ctrl-z, command-z be part of a
  *       combination key to the same KeyHandler as right now it's not setup to work with different commands for the same thing
@@ -36,7 +38,6 @@ import java.util.Set;
  * todo: label bounding box with actual universe size in pixels and meters based on current cellSize - compare to what % of the known universe this would be in size
  * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
  * todo: cache of Boolean array of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
- * todo: notification that you have pasted followed by the countdown text
  * todo: single step mode
  * todo: out of memory error
  * todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
@@ -90,7 +91,7 @@ public class Patterning extends PApplet {
     float last_mouse_y;
 
     private HUDStringBuilder hudInfo;
-    private CountdownText countdownText;
+    private Countdown countdownText;
     private boolean running;
     // todo: refactor result to have a more useful name
     private LifeForm lifeForm;
@@ -355,9 +356,9 @@ public class Patterning extends PApplet {
                 // happen
                 drawHUD(bounds);
 
-                // another thing that the drawer shoudl handle
+                // another thing that the drawer shoudld handle
                 if (countdownText != null) {
-                    countdownText.update();
+                    // countdownText.update();
                     countdownText.draw();
                 }
 
@@ -565,8 +566,7 @@ public class Patterning extends PApplet {
 
             lifeForm = newLife;
 
-            countdownText = new CountdownText(buffer, this::run, this::stop,
-                    "counting down - press space to begin immediately: ");
+            countdownText = new Countdown(buffer, this::run, this::stop, "counting down - press space to begin immediately: ");
             countdownText.startCountdown();
 
         } catch (NotLifeException e) {
@@ -804,7 +804,7 @@ public class Patterning extends PApplet {
     private final KeyCallback callbackPause = new KeyCallback(' ') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            if (countdownText != null && countdownText.isCountingDown) {
+            if (countdownText != null/* && countdownText.isCountingDown */) {
                 countdownText.interruptCountdown();
             } else {
                 running = !running;

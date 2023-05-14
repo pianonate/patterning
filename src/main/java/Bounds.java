@@ -1,7 +1,7 @@
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Bounds {
     public BigInteger top, left, bottom, right;
@@ -93,7 +93,7 @@ public class Bounds {
         return ((double) cacheHits) / totalRequests * 100;
     }
 
-    private BigDecimal leftToBigDecimal() {
+    BigDecimal leftToBigDecimal() {
       
         if (this.leftDecimal == null) 
             this.leftDecimal = new BigDecimal(this.left);
@@ -106,7 +106,7 @@ public class Bounds {
     }
 
 
-    private BigDecimal rightToBigDecimal() {
+    BigDecimal rightToBigDecimal() {
 
         if (this.rightDecimal == null) {
             this.rightDecimal = new BigDecimal(this.right);
@@ -119,7 +119,7 @@ public class Bounds {
         return (rightToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : right.floatValue();
     }
 
-    private BigDecimal topToBigDecimal() {
+    BigDecimal topToBigDecimal() {
 
         if (this.topDecimal==null) 
             this.topDecimal= new BigDecimal(this.top);
@@ -131,7 +131,7 @@ public class Bounds {
         return (topToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : top.floatValue();
     }
 
-    private BigDecimal bottomToBigDecimal() {
+    BigDecimal bottomToBigDecimal() {
   
         if (this.bottomDecimal==null)
             this.bottomDecimal = new BigDecimal(this.bottom);
