@@ -2,6 +2,7 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 
 public class TextDisplay {
+
     protected final PGraphics buffer;
     protected String message;
     protected int textSize;
@@ -21,7 +22,7 @@ public class TextDisplay {
         TOP_RIGHT
     }
 
-    TextDisplay(PGraphics buffer, String message, Position position, int textSize, int textColor, int fadeInDuration) {
+    public TextDisplay(PGraphics buffer, String message, Position position, int textSize, int textColor, int fadeInDuration) {
         this.buffer = buffer;
         this.message = message;
         this.textSize = textSize;
@@ -71,6 +72,7 @@ public class TextDisplay {
             return;
         }
 
+        // used for fading in the text
         long elapsedTime = System.currentTimeMillis() - startTime;
         fadeValue = PApplet.constrain((int)PApplet.map(elapsedTime, 0, fadeInDuration, 0, 255), 0, 255);
 
@@ -81,13 +83,14 @@ public class TextDisplay {
 
         // Draw black text slightly offset in each direction to create an outline effect
         int outlineColor = 0xff000000; // black
-        float outlineOffset = 2.0F;
+        float outlineOffset = 1.0F;
 
         buffer.fill(outlineColor);
         buffer.text(message, x - outlineOffset, y - outlineOffset);
         buffer.text(message, x + outlineOffset, y - outlineOffset);
         buffer.text(message, x - outlineOffset, y + outlineOffset);
         buffer.text(message, x + outlineOffset, y + outlineOffset);
+
 
         // Draw the actual text in the calculated color
         buffer.fill(currentColor);

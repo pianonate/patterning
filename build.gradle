@@ -23,7 +23,7 @@ test {
 }
 
 run {
-    jvmArgs = ["-XX:+UseZGC", '-verbose:gc', '-Xlog:gc' ]
+    jvmArgs = ["-XX:+UseZGC"] // , '-verbose:gc', '-Xlog:gc' ]
 }
 
 tasks.withType(JavaCompile).configureEach {

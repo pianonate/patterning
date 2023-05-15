@@ -102,6 +102,7 @@ class LifeDrawer {
     // you probably don't need this nonsense after all...
     public void clearCache() {
         this.imageCache.clearCache();
+        this.previousStates.clear();
     }
 
     public void zoom(boolean in, float x, float y) {
@@ -407,7 +408,7 @@ class LifeDrawer {
         BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate());
 
         canvasOffsetX = offsetX;
-        canvasOffsetY = offsetY; 
+         canvasOffsetY = offsetY;
     }
 
     public void drawBounds(Bounds bounds, PGraphics offscreenBuffer) {

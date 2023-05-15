@@ -10,17 +10,21 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.util.Set;
 
-/**
- * todo: notification that you have pasted followed by the countdown text instead of showing thestopped screen
+/*
+ * Test approach - add unit tests if something fails
+ *               - add unit tests for anything that doesn't have a visible UX - but just when you're working on it
+ *               - i.e., if you're trying to change LifeUniverse, then add tests around what you are trying to change
+ *
+ * todo: rewind - put it on Command-R and make R for load random
+ * todo: notification that you have pasted with the name of the life form - above the countdown text and larger - with the name
  * todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
  * todo: magnifier over mouseX
  * todo: smooth combination of zoom/center
  * todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
- * todo: now start testing
  * todo: move all drawing into LifeDrawer
- * todo: you can't rewind while there's a long operation running - you'll have to queue it up
  * todo: put undo under command-z...also follow up on making ctrl-z, command-z be part of a
  *       combination key to the same KeyHandler as right now it's not setup to work with different commands for the same thing
  *       on different OS's correctly
@@ -34,7 +38,7 @@ import java.util.Set;
  * todo: click on node and it will tell you the information about it at the last selected grid level (or something) - mnaybe it recurses up to show info about all levels nearby
  * todo: with help - change KeyCallback to work with KeyData key, modifiers,validOS - but make simple mechanisms to create one
  * todo: show what level you have zoomed to using fade in face out text on screen
- * todo: same for rewinding
+ * todo: indicate you have just done a rewind
  * todo: label bounding box with actual universe size in pixels and meters based on current cellSize - compare to what % of the known universe this would be in size
  * todo: create the mc in LifeDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
  * todo: cache of Boolean array of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
@@ -66,12 +70,14 @@ import java.util.Set;
 
 public class Patterning extends PApplet {
 
-    private static final char SHORTCUT_REWIND = 'r';
+    private static final char SHORTCUT_REWIND = 'r'; // because this one is paired with Command
+    private static final char SHORTCUT_RANDOM_FILE = 'l';
 
     public static void main(String[] args) {
         PApplet.main("Patterning");
     }
 
+    // new instances onlycreated in instantiateLife to keep things simple
     private LifeUniverse life;
     private LifeDrawer drawer;
 
@@ -82,7 +88,6 @@ public class Patterning extends PApplet {
 
     ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
 
-    private int stepGuard = 0;
     ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
 
     float targetFrameRate = 30f;
@@ -93,7 +98,7 @@ public class Patterning extends PApplet {
     private HUDStringBuilder hudInfo;
     private Countdown countdownText;
     private boolean running;
-    // todo: refactor result to have a more useful name
+
     private LifeForm lifeForm;
 
     // private GCustomSlider stepSlider;
@@ -106,25 +111,6 @@ public class Patterning extends PApplet {
 
     private int targetStep;
     private boolean displayBounds;
-
-    void instantiateLifeForm(LifeForm newLife) {
-
-        // todo: you have to set the step size here and in life.clearPattern() to 0
-        // so... that's not encapsulated..
-        this.targetStep = 0;
-        life.setStep(0);
-        life.clearPattern();
-
-        life.setupField(newLife.field_x, newLife.field_y);
-
-        drawer.center(life.getRootBounds(), true, false);
-        // this is tough to have to know - somehow we need to have the drawer
-        // know when newLife comes into existence so we don't have to
-        // remember to clear it's cache...
-        drawer.clearCache();
-
-        life.saveRewindState();
-    }
 
     public void settings() {
         // on startup read the size from the json file
@@ -146,23 +132,24 @@ public class Patterning extends PApplet {
         }
 
         if (null==this.storedLife || this.storedLife.isEmpty()) {
-            // todo: refactor
-            ResourceReader r = new ResourceReader();
-            try {
-                this.storedLife  = r.getRandomResourceAsString("rle");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            getRandomLifeform();
         }
-
-
-
 
         // Set the window size
         size(width, height);
 
         noSmooth();
 
+    }
+
+    private void getRandomLifeform() {
+        // todo: do you need to instantiate every time?  maybe that's fine...
+        ResourceReader r = new ResourceReader();
+        try {
+            this.storedLife  = r.getRandomResourceAsString("rle");
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void setup() {
@@ -179,11 +166,8 @@ public class Patterning extends PApplet {
 
         frameRate(targetFrameRate);
 
-        // create a new LifeUniverse object with the given points
-        this.life = new LifeUniverse();
         this.drawer = new LifeDrawer(this, 4);
         this.movementHandler = new MovementHandler(this.drawer);
-
 
         buffer = createGraphics(width, height);
 
@@ -208,7 +192,7 @@ public class Patterning extends PApplet {
         // good life was saved prior
         if (!(this.storedLife == null || this.storedLife.isEmpty())) {
             // invoke the logic you already have to reify this
-            parseStoredLife();
+            instantiateLifeform();
         }
 
     }
@@ -324,6 +308,7 @@ public class Patterning extends PApplet {
             // frameRateNotifier.notifyListeners(frameRate);
 
             if (updatingLife()) {
+
                 image(buffer, 0, 0);
 
             } else {
@@ -357,7 +342,7 @@ public class Patterning extends PApplet {
                 drawHUD(bounds);
 
                 // another thing that the drawer shoudld handle
-                if (countdownText != null) {
+                if (countdownText.isDisplaying) {
                     // countdownText.update();
                     countdownText.draw();
                 }
@@ -390,28 +375,25 @@ public class Patterning extends PApplet {
             int step = life.step;
             step += (step < targetStep) ? 1 : -1;
             complexCalculationHandlerSetStep.startCalculation(step, (p, v) -> onCalculationSetStepComplete(p));
+            return;
         }
 
         if (shouldStartComplexCalculationNextGeneration()) {
-            complexCalculationHandlerNextGeneration.startCalculation(null,
-                    (v, result) -> onCalculationNextGenerationComplete());
+            complexCalculationHandlerNextGeneration.startCalculation(null, (v, result) -> onCalculationNextGenerationComplete());
         }
     }
 
     private void onCalculationNextGenerationComplete() {
-
+        // currently nothing on calculation complete - so maybe the complexcalculation handlers don't need to do anything
     }
 
     private void onCalculationSetStepComplete(Integer step) {
-        if (life.step == step) {
-            println("step updated to: " + step + " out of " + targetStep);
-            stepGuard = 30; // always wait 30 between steps for smoother animation
-        } else {
-            // todo: could you move this guard into complexcalculationhandler so that it
-            // keeps track
-            // of backoff interval when things don't work?
-            stepGuard = 60; // wit 60 if you've pushed it too much
-        }
+
+        // this one used to have an ending function but i got rid of it
+        // todo: determine whether we have any returns from complexCalculationHandlers...
+        // between this one and onCalculationNextGenerationComplete it demonstrates two ways
+        // that a result can be returned (or not) from a complex calculation
+        // but maybe we don't need them at all...
     }
 
     private void performComplexCalculationSetStep(Integer step) {
@@ -435,26 +417,11 @@ public class Patterning extends PApplet {
         boolean setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress();
         boolean nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress();
 
-        /*
-         * if (setStepRunning)
-         * println("setStep is running, wait");
-         *
-         * if (nextGenerationRunning)
-         * println("nextGeneration is running, wait");
-         */
-
         return (nextGenerationRunning || setStepRunning);
 
     }
 
     private boolean shouldStartComplexCalculationSetStep() {
-        // stepGuard sets an amount of frames to wait until attempting to call
-        // set step again in case we've been too aggressive and have excced the leevl
-        // of the tree with our step requests
-        if (stepGuard > 0) {
-            stepGuard--;
-            return false;
-        }
 
         // if we're not running a complex task and we're expecting to change the step
         return (!updatingLife() && (life.step != targetStep));
@@ -543,30 +510,44 @@ public class Patterning extends PApplet {
             // Check if the clipboard contains text data and then get it
             if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                 storedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
-
-                // parses and displays the lifeform
-                parseStoredLife();
-
+                instantiateLifeform();
             }
         } catch (UnsupportedFlavorException | IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void parseStoredLife() {
+    private void instantiateLifeform() {
 
         try {
 
             stop();
 
+            life = new LifeUniverse();
+
             LifeFormats parser = new LifeFormats();
             LifeForm newLife = parser.parseRLE(storedLife);
 
-            instantiateLifeForm(newLife);
+            // todo: you have to set the step size here and in life.clearPattern() to 0
+            // so... that's not encapsulated..
+            targetStep = 0;
+            life.setStep(0);
 
+            life.setupField(newLife.field_x, newLife.field_y);
+
+            Bounds bounds = life.getRootBounds();
+
+            drawer.center(bounds, true, false);
+
+            // this is tough to have to know - somehow we need to have the drawer
+            // know when newLife comes into existence so we don't have to
+            // remember to clear it's cache...
+            drawer.clearCache();
+
+            life.saveRewindState();
             lifeForm = newLife;
 
-            countdownText = new Countdown(buffer, this::run, this::stop, "counting down - press space to begin immediately: ");
+            countdownText = new Countdown(buffer, this::run, this::run, "counting down - press space to begin immediately");
             countdownText.startCountdown();
 
         } catch (NotLifeException e) {
@@ -601,6 +582,7 @@ public class Patterning extends PApplet {
         keyHandler.addKeyCallback(callbackCenterView);
         keyHandler.addKeyCallback(callbackFitUniverseOnScreen);
         keyHandler.addKeyCallback(callbackUndoCenter);
+        keyHandler.addKeyCallback(callbackRandomLife);
         keyHandler.addKeyCallback(callbackRewind);
         keyHandler.addKeyCallback(callbackPaste);
 
@@ -749,20 +731,10 @@ public class Patterning extends PApplet {
         drawer.center(life.getRootBounds(), true, true);
     }
 
-    private final KeyCallback callbackRewind = new KeyCallback(SHORTCUT_REWIND) {
+    private final KeyCallback callbackRewind = new KeyCallback(SHORTCUT_REWIND, KeyEvent.META, KeyCallback.MAC) {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            // todo: make this threadsafe can't do this while setStep or nextGeneration are running
-            // does that mean it needs its own 'long running task'?
-            // do we need a queue of them because we can't be checking all of those boolean states
-            // of things waiting to affect the LifeUniverse...
-            stop();
-            life.restoreRewindState();
-            life.setStep(0);
-            fitUniverseOnScreen();
-            // fitUniverseOnScreen will create a save state but that's not why we're clearing
-            // there could be other undo states but it won't matter if we rewind so let's clear that out
-            drawer.clearUndo();
+            destroyAndCreate(false);
         }
 
         @Override
@@ -770,6 +742,40 @@ public class Patterning extends PApplet {
             return "rewind the current life form back to generation 0";
         }
     };
+
+    private final KeyCallback callbackRandomLife = new KeyCallback(SHORTCUT_RANDOM_FILE) {
+        @Override
+        public void onKeyEvent(KeyEvent event) {
+
+            destroyAndCreate(true);
+
+        }
+
+        @Override
+        public String getUsageText() {
+            return "get a random life form from the built-in library";
+        }
+    };
+
+    // either bring us back to the start on the current life form
+    // or get a random one from the well...
+    private void destroyAndCreate(boolean random) {
+
+        ComplexCalculationHandler.lock();
+        try {
+
+            if (random) {
+                getRandomLifeform();
+            }
+
+            instantiateLifeform();
+
+        } finally {
+            ComplexCalculationHandler.unlock();
+        }
+
+    }
+
 
     private final KeyCallback callbackPaste = new KeyCallback('v', KeyEvent.META, KeyCallback.MAC) {
         @Override
@@ -782,6 +788,8 @@ public class Patterning extends PApplet {
             return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms";
         }
     };
+
+
 
     /*
      * private final KeyCallback callbackPasteWindows = new KeyCallback('v',
@@ -804,7 +812,7 @@ public class Patterning extends PApplet {
     private final KeyCallback callbackPause = new KeyCallback(' ') {
         @Override
         public void onKeyEvent(KeyEvent event) {
-            if (countdownText != null/* && countdownText.isCountingDown */) {
+            if (countdownText.isDisplaying) {
                 countdownText.interruptCountdown();
             } else {
                 running = !running;

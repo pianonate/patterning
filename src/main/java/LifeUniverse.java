@@ -237,7 +237,15 @@ public class LifeUniverse {
         this.trueLeaf = new Node(2, BigInteger.ONE, 0);
 
         // the final necessary setup bits
-        clearPattern();
+        this.lastId = 4;
+        this.hashmapSize = (1 << INITIAL_SIZE) - 1;
+        this.maxLoad = (int) (this.hashmapSize * LOAD_FACTOR);
+        this.hashmap = new HashMap<>();
+        this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+        this.level2Cache = new HashMap<>(0x10000);
+        this.root = this.emptyTree(3);
+        this.generation = BigInteger.ZERO;
+        this.step = 0;
     }
 
     // only called from main game
@@ -562,8 +570,8 @@ public class LifeUniverse {
         nodeHash(root);
 
         long end = System.currentTimeMillis();
-        System.out.println(
-                "gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
+      //  System.out.println(
+      //          "gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
     }
 
     /*
@@ -580,18 +588,6 @@ public class LifeUniverse {
         result = 31 * result ^ sw_id;
         result = 31 * result ^ se_id;
         return result;
-    }
-
-    public void clearPattern() {
-        this.lastId = 4;
-        this.hashmapSize = (1 << INITIAL_SIZE) - 1;
-        this.maxLoad = (int) (this.hashmapSize * LOAD_FACTOR);
-        this.hashmap = new HashMap<>();
-        this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-        this.level2Cache = new HashMap<>(0x10000);
-        this.root = this.emptyTree(3);
-        this.generation = BigInteger.ZERO;
-        this.step = 0;
     }
 
     // this is just used when setting up the field initially unless I'm missing
