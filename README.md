@@ -5,9 +5,9 @@ There are many, many enhancements to make for this to be truly interesting. And 
 
 https://copy.sh/life/examples/
 
-Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the white canvas of this app and then it will be off to the races.
+Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the white canvas of this app, and then it will be off to the races.
 
-It will saev your last successfuly pasted lifeform but right now it's got a bug that keeps it from starting correctly. so you may have to exit and come back in.
+It will save your last successfully pasted lifeform but right now it's got a bug that keeps it from starting correctly. so you may have to exit and come back in.
 
 If you find something that you want to change, then make a pull request - i'd love to see what you do to improve this thing.
 
@@ -33,9 +33,9 @@ This project is currently using 8.1.1
 This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
 ### make gradle aware of a local maven repo for the processing core.jar
-I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is referenceable in my build.gradle
+I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is reference able in my build.gradle
 
-First, locate the core.jar that you downaloaded from processing.org so you can install into the local repo.  I copied my Processing.app to **/Applications** on my mac so my core.jar is located here:
+First, locate the core.jar that you downloaded from processing.org, so you can install into the local repo.  I copied my Processing.app to **/Applications** on my Mac so my core.jar is located here:
 
 /Applications/Processing.app/Contents/Java/core/library/core.jar
 
@@ -54,5 +54,5 @@ After running that command you should see "BUILD SUCCESS" and you can check that
 At which point it will be set up to work with this gradle project
 
 ### update gradle properties
-because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what ihad installed with brew. You're probably an expert so you know all about this sort of thing
+because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i had installed with brew. You're probably an expert, so you know all about this sort of thing
 

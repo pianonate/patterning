@@ -1,9 +1,10 @@
 import processing.core.PApplet;
+
+import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import java.nio.IntBuffer;
+import java.util.regex.Pattern;
 
 public class RLEParser {
     final String METADATA_PREFIX = "#";
@@ -63,7 +64,7 @@ public class RLEParser {
                 // stay in a number until you're not in a number anymore
                 // once you leave the number you'll either be adding dead, alive or rows (y is the height - counts the rows)
                 if (inNumber) {
-                    // every position in a number multiplies it's place by 10 - clever
+                    // every position in a number multiplies its place by 10 - clever
                     count *= 10;
                     count += chr - '0';
                 } else {
@@ -210,12 +211,12 @@ public class RLEParser {
         return rule;
     }
 
-    public String rule2strRle(int ruleS, int ruleB) {
+/*    public String rule2strRle(int ruleS, int ruleB) {
         String rule = rule2str(ruleS, ruleB);
         String[] parts = rule.split("/");
         rule = "B" + parts[1] + "/S" + parts[0];
         return rule;
-    }
+    }*/
 
     public String rule2str(int ruleS, int ruleB) {
         StringBuilder rule = new StringBuilder();

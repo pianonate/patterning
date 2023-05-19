@@ -11,35 +11,34 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Stack;
 
-class LifeDrawer {
+class PatternDrawer {
 
     private static final BigDecimal BigTWO = new BigDecimal(2);
-    private final Stack<CanvasState> previousStates = new Stack<>();
+    private static final Stack<CanvasState> previousStates = new Stack<>();
+    private static final int DEFAULT_CELL_WIDTH = 4;
 
-    private final PApplet p;
+    private final PApplet processing;
     private final ImageCache imageCache;
 
-    // for all of the conversions, this needed to be a number larger than 5 for
+    private final HUDStringBuilder hudInfo;
+    private final MovementHandler movementHandler;
+
+    private Countdown countdownText;
+
+    private final TextDisplay startupText;
+
+
+    // for all conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
-    // despite all of that, i think it would be more simple to to change this code
-    // to operate with all BigDecimals to avoid conversions
     private static final MathContext mc = new MathContext(10);
 
-    LifeDrawer(PApplet p, float cellWidth) {
-        this.p = p;
-        this.cellWidth = new CellWidth(cellWidth);
-        this.canvasWidth = BigDecimal.valueOf(p.width);
-        this.canvasHeight = BigDecimal.valueOf(p.height);
-        this.imageCache = new ImageCache(p);
-    }
+    private PGraphics newBuffer;
 
-    // this class operates on BigDecimals because the bounds of a drawing can be
-    // arbitrarily large
+    private boolean drawBounds;
 
-    // to avoid conversion and rounding issues, we're going to change everything to
-    // operate in bigdecimal and only change it to float values when we need to
-    // output to screen
+    // this class operates on BigDecimals because the bounds of a drawing can be arbitrarily large
+
     private BigDecimal canvasOffsetX = BigDecimal.ZERO;
     private BigDecimal canvasOffsetY = BigDecimal.ZERO;
 
@@ -48,32 +47,75 @@ class LifeDrawer {
     private BigDecimal canvasWidth;
     private BigDecimal canvasHeight;
 
-    // todo: implement an actual borderwidth so you cdan see space between cells if
-    // you wish
+    // todo: implement an actual border width so you can see space between cells
     int cellBorderWidth;
-    int cellColor = 255;
+    final int cellColor = 255;
     private CellWidth cellWidth;
-    float cellBorderWidthRatio = 0;
+    final float cellBorderWidthRatio = 0;
+
+
+    PatternDrawer(PApplet pApplet) {
+        this.processing = pApplet;
+        this.cellWidth = new CellWidth(DEFAULT_CELL_WIDTH);
+        this.canvasWidth = BigDecimal.valueOf(pApplet.width);
+        this.canvasHeight = BigDecimal.valueOf(pApplet.height);
+        this.imageCache = new ImageCache(pApplet);
+        this.newBuffer = pApplet.createGraphics(pApplet.width, pApplet.height);
+        this.movementHandler = new MovementHandler(this);
+        this.drawBounds = false;
+        this.hudInfo = new HUDStringBuilder();
+        this.startupText = new TextDisplay(newBuffer, "Welcome to Patterning", TextDisplay.Position.TOP_CENTER, 40, 0xFFFFFFFF, 500);
+    }
+
+    public void toggleDrawBounds() {
+        drawBounds = !drawBounds;
+    }
 
     private BigDecimal calcCenterOnResize(BigDecimal dimension, BigDecimal offset) {
         return (dimension.divide(BigTWO, mc)).subtract(offset);
     }
 
+    public void displayBufferedImage() {
+        processing.image(newBuffer, 0, 0);
+    }
+
+    public void setupNewLife(Bounds bounds) {
+
+        center(bounds, true, false);
+
+        // clear image cache and previous states
+        clearCache();
+
+        countdownText = new Countdown(newBuffer, Patterning::run, "counting down - press space to begin immediately");
+        countdownText.startCountdown();
+
+    }
+
+    public void handlePause() {
+        if (countdownText.isDisplaying) {
+            countdownText.interruptCountdown();
+        } else {
+            Patterning.toggleRun();
+        }
+    }
+
     // formerly known as setSize()
     // make sure that when you resize it tries to show you the contents of the last
     // screen size
-    // without updating the cellsize - by getting the center before and then
+    // without updating the cell size - by getting the center before and then
     // centering
     // around the center after
+    @SuppressWarnings("SuspiciousNameCombination")
     public void surfaceResized(int newWidth, int newHeight) {
 
         BigDecimal bigWidth = BigDecimal.valueOf(newWidth);
         BigDecimal bigHeight = BigDecimal.valueOf(newHeight);
 
-
         if (bigHeight.equals(canvasHeight) && bigWidth.equals(canvasWidth) ) {
             return;
         }
+
+        newBuffer = processing.createGraphics(newWidth, newHeight);
 
         // Calculate the center of the visible portion before resizing
         BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
@@ -101,8 +143,8 @@ class LifeDrawer {
 
     // you probably don't need this nonsense after all...
     public void clearCache() {
-        this.imageCache.clearCache();
-        this.previousStates.clear();
+        imageCache.clearCache();
+        previousStates.clear();
     }
 
     public void zoom(boolean in, float x, float y) {
@@ -130,27 +172,27 @@ class LifeDrawer {
 
     }
 
-    private void fillSquare(PGraphics buffer, float x, float y, float size) {
+    @SuppressWarnings("SuspiciousNameCombination")
+    private void fillSquare(float x, float y, float size) {
 
         float width = size - cellBorderWidth;
-        buffer.noStroke();
-        // p.fill(cell_color);
-        buffer.rect(x, y, width, width);
+        newBuffer.noStroke();
+        newBuffer.rect(x, y, width, width);
 
         // todo, create a keyboard handler to display these values
         //       or a mouse mode - it can be useful when debugging positioning information
         // you'll be glad you did
         if( false) {
-            buffer.fill(0xff000000);
-            buffer.textSize(11);
-            buffer.textAlign(p.LEFT, p.TOP);
-            buffer.text(String.valueOf((int) x) + ",  " + String.valueOf((int) y), x, y, width, width);
-            buffer.text(canvasWidth.toString() + ",  " + canvasHeight.toString(), x, y + 12, width, width);
+            newBuffer.fill(0xff000000);
+            newBuffer.textSize(11);
+            newBuffer.textAlign(processing.LEFT, processing.TOP);
+            newBuffer.text((int) x + ",  " + (int) y, x, y, width, width);
+            newBuffer.text(canvasWidth.toString() + ",  " + canvasHeight.toString(), x, y + 12, width, width);
 
-            buffer.text("size: " + String.valueOf(size), x, y + 24, width, width);
+            newBuffer.text("size: " + size, x, y + 24, width, width);
 
             int nextPos = (int) x + (int) size;
-            buffer.text("next: " + String.valueOf(nextPos), x, y + 36, width, width);
+            newBuffer.text("next: " + nextPos, x, y + 36, width, width);
         }
 
     }
@@ -174,18 +216,18 @@ class LifeDrawer {
             return;
         }
 
-        // if we've recursed down to a very small size and the population exists,
+        // if we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size.compareTo(BigDecimal.ONE) <= 0) {
             if (node.population.compareTo(BigInteger.ZERO) > 0) {
-                ctx.buffer.fill(cellColor);
-                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
+                newBuffer.fill(cellColor);
+                fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
                         1);
             }
         } else if (node.level == 0) {
             if (node.population.equals(BigInteger.ONE)) {
-                ctx.buffer.fill(cellColor);
-                fillSquare(ctx.buffer, Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
+                newBuffer.fill(cellColor);
+                fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
                         cellWidth.get());
             }
         } else {
@@ -197,7 +239,7 @@ class LifeDrawer {
             boolean useImageCache = false;
             boolean bypassRecursion = useImageCache
                     && !node.hasChanged()
-                    && (node.level <= 4) // not new nodes
+                    && (node.level <= DEFAULT_CELL_WIDTH) // not new nodes
                     && fitsOnScreen
                     && (cellWidth.get() > Math.pow(2, -3)); // will work when cell_widths are small
 
@@ -206,7 +248,7 @@ class LifeDrawer {
                 ImageCache.ImageCacheEntry entry = imageCache.getImageCacheEntry(node);
                 PImage cachedImage = entry.getImage();
 
-                ctx.buffer.image(cachedImage,
+                newBuffer.image(cachedImage,
                         Math.round(leftWithOffset.floatValue()),
                         Math.round(topWithOffset.floatValue()),
                         Math.round(cachedImage.width * cellWidth.get()),
@@ -217,28 +259,28 @@ class LifeDrawer {
 
                     if ((cellWidth.get() * Math.pow(2, node.level)) > 16) {
 
-                        p.fill(0, 125); // Black color with alpha value of 178
+                        newBuffer.fill(0, 125); // Black color with alpha value of 178
 
                         // Draw text with 70% opacity
-                        p.textSize(16);
-                        p.textAlign(PConstants.LEFT, PConstants.TOP);
+                        newBuffer.textSize(16);
+                        newBuffer.textAlign(PConstants.LEFT, PConstants.TOP);
                         String cacheString = (entry.isCached()) ? "cache" : "nocache";
 
-                        p.text("id: " + node.id + " node.level:" + node.level + " - " + cacheString,
+                        newBuffer.text("id: " + node.id + " node.level:" + node.level + " - " + cacheString,
                                 Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()));
-                        p.text("retrievals: " + entry.getRetrievalCount(), Math.round(leftWithOffset.floatValue()),
+                        newBuffer.text("retrievals: " + entry.getRetrievalCount(), Math.round(leftWithOffset.floatValue()),
                                 Math.round(topWithOffset.floatValue()) + 20);
-                        p.text("nodes: " + entry.combinedNodeCount(), Math.round(leftWithOffset.floatValue()),
+                        newBuffer.text("nodes: " + entry.combinedNodeCount(), Math.round(leftWithOffset.floatValue()),
                                 Math.round(topWithOffset.floatValue()) + 40);
-                        p.text("total: " + entry.getTotalRetrievalCount(), Math.round(leftWithOffset.floatValue()),
+                        newBuffer.text("total: " + entry.getTotalRetrievalCount(), Math.round(leftWithOffset.floatValue()),
                                 Math.round(topWithOffset.floatValue()) + 60);
 
                     }
 
-                    p.fill(0, 5); // Black color with alpha value of 25
-                    p.stroke(1);
+                    newBuffer.fill(0, 5); // Black color with alpha value of 25
+                    newBuffer.stroke(1);
 
-                    p.rect(Math.round(leftWithOffset.floatValue()),
+                    newBuffer.rect(Math.round(leftWithOffset.floatValue()),
                             Math.round(topWithOffset.floatValue()),
                             Math.round(cachedImage.width * cellWidth.get()),
                             Math.round(cachedImage.width * cellWidth.get()));
@@ -311,29 +353,13 @@ class LifeDrawer {
 
     }
 
-    private static class CanvasState {
-        private final CellWidth cellWidth;
-        private final BigDecimal canvasOffsetX;
-        private final BigDecimal canvasOffsetY;
-
-        public CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
-            this.cellWidth = new CellWidth(cellWidth.get());
-            this.canvasOffsetX = canvasOffsetX;
-            this.canvasOffsetY = canvasOffsetY;
+    private record CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
+            private CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
+                this.cellWidth = new CellWidth(cellWidth.get());
+                this.canvasOffsetX = canvasOffsetX;
+                this.canvasOffsetY = canvasOffsetY;
+            }
         }
-
-        public CellWidth getCellWidth() {
-            return cellWidth;
-        }
-
-        public BigDecimal getCanvasOffsetX() {
-            return canvasOffsetX;
-        }
-
-        public BigDecimal getCanvasOffsetY() {
-            return canvasOffsetY;
-        }
-    }
 
     private void updateCanvasOffsets(BigDecimal offsetX, BigDecimal offsetY) {
         canvasOffsetX = canvasOffsetX.add(offsetX);
@@ -353,18 +379,14 @@ class LifeDrawer {
         if (!previousStates.empty()) {
             CanvasState previous = previousStates.pop();
 
-            cellWidth = previous.getCellWidth();
-            canvasOffsetX = previous.getCanvasOffsetX();
-            canvasOffsetY = previous.getCanvasOffsetY();
+            cellWidth = previous.cellWidth();
+            canvasOffsetX = previous.canvasOffsetX();
+            canvasOffsetY = previous.canvasOffsetY();
         } 
 
         // if you want to float something on screen that says nothing more to pop you can
-        // or just make a nosie 
+        // or just make a noise
         // or show some sparkles or something        
-    }
-
-    public void clearUndo() {
-        previousStates.clear();
     }
 
     public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
@@ -411,27 +433,93 @@ class LifeDrawer {
          canvasOffsetY = offsetY;
     }
 
-    public void drawBounds(Bounds bounds, PGraphics offscreenBuffer) {
+    public void drawBounds(Bounds bounds) {
 
+        if (!drawBounds) return;
+
+        // use the bounds of the "living" section of the universe to determine
+        // a visible boundary based on the current canvas offsets and cell size
         Bounds screenBounds = bounds.getScreenBounds(cellWidth.get(), canvasOffsetX, canvasOffsetY);
 
-        offscreenBuffer.noFill();
-        offscreenBuffer.stroke(200);
-        offscreenBuffer.strokeWeight(1);
-        offscreenBuffer.rect(screenBounds.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
+        newBuffer.noFill();
+        newBuffer.stroke(200);
+        newBuffer.strokeWeight(1);
+        newBuffer.rect(screenBounds.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
                 screenBounds.bottomToFloat());
     }
 
     // the cell width times 2 ^ level will give you the size of the whole universe
-    // draws the screensize viewport on the universe
-    public void redraw(Node node, PGraphics offscreenBuffer) {
+    // draws the screen size viewport on the universe
+    public void redraw(LifeUniverse life) {
+
+        newBuffer.beginDraw();
+        newBuffer.background(0);
+
+        Node node = life.root;
+        Bounds bounds = life.getRootBounds();
+
+        movementHandler.handleRequestedMovement();
 
         cellBorderWidth = (int) (cellBorderWidthRatio * cellWidth.get());
 
         BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);
 
-        DrawNodeContext ctx = new DrawNodeContext(offscreenBuffer);
+        DrawNodeContext ctx = new DrawNodeContext();
         drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate(), ctx);
+
+        drawBounds(bounds);
+
+        drawHUD(life, bounds);
+
+        // another thing that the drawer should handle
+        if (countdownText.isDisplaying) {
+            // countdownText.update();
+            countdownText.draw();
+        }
+
+        newBuffer.endDraw();
+
+        displayBufferedImage();
+
+
+    }
+
+    private void drawHUD(LifeUniverse life, Bounds bounds) {
+
+        Node root = life.root;
+
+        hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
+        hudInfo.addOrUpdate("cell", getCellWidth());
+        hudInfo.addOrUpdate("running", (Patterning.isRunning()) ? "running" : "stopped");
+
+        hudInfo.addOrUpdate("level: ", root.level);
+        hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));
+        hudInfo.addOrUpdate("generation", life.generation);
+        hudInfo.addOrUpdate("population", root.population);
+        hudInfo.addOrUpdate("maxLoad", life.maxLoad);
+        hudInfo.addOrUpdate("lastID", life.lastId);
+
+        hudInfo.addOrUpdate("width", bounds.right.subtract(bounds.left));
+        hudInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top));
+
+        newBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
+        // use the default delimiter
+        String hud = hudInfo.getFormattedString(processing.frameCount, 12);
+
+        newBuffer.fill(255);
+        float hudTextSize = 24;
+        newBuffer.textSize(hudTextSize);
+
+        float hudMargin = 10;
+
+        while ((newBuffer.textWidth(hud) + (2 * hudMargin) > newBuffer.width)
+                || ((newBuffer.textAscent() + newBuffer.textDescent()) + (2 * hudMargin) > newBuffer.height)) {
+            hudTextSize--;
+            hudTextSize =  Math.max(hudTextSize, 1); // Prevent the textSize from going below 1
+            newBuffer.textSize(hudTextSize);
+        }
+
+        newBuffer.text(hud, newBuffer.width - hudMargin, newBuffer.height - 5);
 
     }
 
@@ -444,14 +532,11 @@ class LifeDrawer {
 
         private final Map<BigDecimal, BigDecimal> halfSizeMap = new HashMap<>();
 
-        PGraphics buffer;
-
-        public DrawNodeContext(PGraphics offscreenBuffer) {
+        public DrawNodeContext() {
             this.canvasWidthDecimal = canvasWidth;
             this.canvasHeightDecimal = canvasHeight;
             this.canvasOffsetXDecimal = canvasOffsetX; // new BigDecimal(canvasOffsetX);
             this.canvasOffsetYDecimal = canvasOffsetY; // new BigDecimal(canvasOffsetY);
-            this.buffer = offscreenBuffer;
         }
 
         public BigDecimal getHalfSize(BigDecimal size) {
@@ -461,7 +546,6 @@ class LifeDrawer {
             }
             return halfSizeMap.get(size);
         }
-
     }
 
     class ImageCache {
@@ -661,41 +745,4 @@ class LifeDrawer {
 
         }
     }
-
-    /*
-     * void drawCell(int x, int y, boolean set) {
-     * // todo: something is happening when you get to a step size at 1024
-     * // you can go that large and because you are using a math context to do the
-     * division
-     * // everything seems to work but at step size of 1024, the drawing starts to
-     * go wonky
-     * // so can you... maybe keep everything in BigDecimal until you convert it
-     * somehow?
-     * // the initial size passed into draw_cell is the largest possible size of the
-     * drawing
-     * // based on the level - but that's so large it can't possibly matter. is
-     * there a way
-     * // to just keep track of the part of the drawing that is on screen and ask
-     * // the lifeUniverse to only give you that much of it without having to use
-     * all this recursion?
-     * // seems inefficient
-     * BigDecimal biCellWidth = new BigDecimal(getCell_width());
-     * BigDecimal biX = new BigDecimal(x).multiply(biCellWidth).add(new
-     * BigDecimal(canvas_offset_x));
-     * BigDecimal biY = new BigDecimal(y).multiply(biCellWidth).add(new
-     * BigDecimal(canvas_offset_y));
-     * float width = (float) Math.ceil(getCell_width()) - (int) (getCell_width() *
-     * border_width_ratio);
-     * 
-     * // todo: don't forget to use offscreenBuffer
-     * if (set) {
-     * p.fill(cell_color);
-     * } else {
-     * p.fill(background_color);
-     * }
-     * 
-     * p.noStroke();
-     * p.rect(biX.floatValue(), biY.floatValue(), width, width);
-     * }
-     */
 }

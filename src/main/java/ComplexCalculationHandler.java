@@ -34,7 +34,7 @@ public class ComplexCalculationHandler<P> {
             calculationInProgress = true;
             this.parameter = parameter;
             this.callback = callback;
-            new Thread(new ComplexCalculationTask((p, v) -> onCalculationComplete(p, v))).start();
+            new Thread(new ComplexCalculationTask(this::onCalculationComplete)).start();
         } finally {
             lock.unlock();
         }

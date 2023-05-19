@@ -4,12 +4,12 @@ import java.util.HashMap;
 
 /*
 
-* this wikipedia article talks about hash cacheing, superspeed memoization and representaton of the tree as well as manual garbage collection
+* this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
 - better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
 - also: https://web.archive.org/web/20220131050938/https://jennyhasahat.github.io/hashlife.html
 
 
-* from chat gpt - i think that possibly what is going on in CreateTree is the hash ccaching and what is going on with the quick_cache is memoization
+* from chat gpt - i think that possibly what is going on in CreateTree is the hash caching and what is going on with the quick_cache is memoization
 
  * Hash Caching in Hashlife:
 
@@ -29,7 +29,7 @@ Memoization in Hashlife allows the algorithm to reuse the intermediate results f
 
 /* 
    to facilitate migration, create a Cache or HashMapManager and create tests for it that prove that it's working
-   including creating the two implementations and making sure that both return the same resuls
+   including creating the two implementations and making sure that both return the same results
 
   to migrate to a newHashMap that allows us to jettison hashmapNext and simplify the code, you can use this to compare
  * This method should now work correctly with the linked list structure in the old hashmap. It iterates through the linked 
@@ -173,7 +173,6 @@ public class LifeUniverse {
     private final int rule_b;
     private final int rule_s;
     public Node root;
-    private Node rewind_state;
     public int step;
     public BigInteger generation;
 
@@ -181,21 +180,6 @@ public class LifeUniverse {
     private final Node trueLeaf;
 
     LifeUniverse() {
-        // last id for nodes
-        this.lastId = 0;
-
-        // Size of the hashmap.
-        // Always a power of 2 minus 1
-        this.hashmapSize = 0;
-
-        // Size when the next GC will happen
-        this.maxLoad = 0;
-
-        // the hashmap
-        this.hashmap = new HashMap<>();
-        this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-        this.level2Cache = new HashMap<>();
-
         this._bitcounts = new byte[0x758];
         this._bitcounts[0] = 0;
         this._bitcounts[1] = 1;
@@ -225,8 +209,6 @@ public class LifeUniverse {
 
         this.root = null;
 
-        this.rewind_state = null;
-
         // number of generations to calculate at one time, written as 2^n
         this.step = 0;
 
@@ -237,8 +219,14 @@ public class LifeUniverse {
         this.trueLeaf = new Node(2, BigInteger.ONE, 0);
 
         // the final necessary setup bits
+
+        // last id for nodes
         this.lastId = 4;
+
+        // Size of the hashmap - Always a power of 2 minus 1
         this.hashmapSize = (1 << INITIAL_SIZE) - 1;
+
+        // Size when the next GC will happen
         this.maxLoad = (int) (this.hashmapSize * LOAD_FACTOR);
         this.hashmap = new HashMap<>();
         this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
@@ -248,19 +236,6 @@ public class LifeUniverse {
         this.step = 0;
     }
 
-    // only called from main game
-    public void saveRewindState() {
-        rewind_state = root;
-    }
-
-    // only called from main game
-    public void restoreRewindState() {
-        generation = BigInteger.ZERO;
-        root = rewind_state;
-
-        // make sure to rebuild the hashmap, in case its size changed
-        garbageCollect();
-    }
 
     /*
      * Note that Java doesn't have a bitwise logical shift operator
@@ -285,7 +260,7 @@ public class LifeUniverse {
 
     /*
      * // these were used in the original to draw on screen - maybe you'll get there
-     * someday..
+     * someday...
      * private void setBit(BigInteger x, BigInteger y, boolean living) {
      * int level = getLevelFromBounds(new Bounds(y, x));
      * 
@@ -328,14 +303,8 @@ public class LifeUniverse {
         // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
         BigInteger offset = pow2(root.level - 1);
 
-        // System.out.println("Initial Bounds - Left: " + bounds.left + ", Right: " +
-        // bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
-
         nodeGetBoundary(root, offset.negate(), offset.negate(),
                 MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
-
-        // System.out.println("Final Bounds - Left: " + bounds.left + ", Right: " +
-        // bounds.right + ", Top: " + bounds.top + ", Bottom: " + bounds.bottom);
 
         return bounds;
     }
@@ -387,7 +356,7 @@ public class LifeUniverse {
     }
 
     /*
-     * In the expandUniverse method, a new root node will be creaated at one level
+     * In the expandUniverse method, a new root node will be created at one level
      * higher than the current root node
      * surrounded by empty space, essentially making the universe double sized (on
      * either dimension)
@@ -570,8 +539,7 @@ public class LifeUniverse {
         nodeHash(root);
 
         long end = System.currentTimeMillis();
-      //  System.out.println(
-      //          "gc millis: " + (end - start) + " size: " + hashmap.size() + " hashmap.capacity() " + hashmapSize + 1);
+
     }
 
     /*
@@ -664,8 +632,7 @@ public class LifeUniverse {
 
         moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
 
-        Node field = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
-        root = field;
+        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
     }
 
     private int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
@@ -880,7 +847,7 @@ public class LifeUniverse {
         if (lastId > maxLoad) {
             garbageCollect();
             // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is
-            // returning a new tree because createTree was about to just make a new one but
+            // returning a new tree because createTree was about to just make a new one, but
             // now it's calling itself recursively rather than just making a new node and
             // returning it
             return createTree(nw, ne, sw, se, "lastID > maxload createTree()");
@@ -907,8 +874,8 @@ public class LifeUniverse {
 
        /* // the following is a new mechanism to only expandUniverse as far as you need to
         // and not just merely to match up to the current step size
-        // this seems to work but if it ever doesn't this might be the culprit and you
-        // have to go back to
+        // this seems to work but if it ever doesn't this might be the culprit
+        // and you  have to go back to
         // this as the first line of the while below:
         // while ((root.level <= this.step + 2) ||
 
@@ -929,7 +896,7 @@ public class LifeUniverse {
         }*
 
         // when we're not large enough to fit the bounds, or the tree needs to be
-        // repositioned towards the center, thenn expand universe until that's true
+        // repositioned towards the center, then expand universe until that's true
         while (root.level < requiredLevel ||/
         */
 
@@ -961,7 +928,7 @@ public class LifeUniverse {
             root = this.expandUniverse(root);
         }
         // Node maintains a per generation set of nodes that were newly created
-        // clear them so the drawing routine can use unchnaged nodes as a key to a cache
+        // clear them so the drawing routine can use unchanged nodes as a key to a cache
         // associated with their
         // drawing
         Node.clearChanged();
@@ -1047,9 +1014,9 @@ public class LifeUniverse {
             return node.quickCache = this.node_level2_next(node);
         }
 
-        if ((quickgen % 1000000) == 0) {
+/*        if ((quickgen % 1000000) == 0) {
             quickgen += 0;
-        }
+        }*/
 
         // logpoint for vscode
         // lastId {String.format("%,9d", lastId)} - call# {String.format("%,6d",

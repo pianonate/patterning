@@ -1,5 +1,5 @@
-import java.util.ArrayList;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 
 
 // contains the results of a parsed lifeform
@@ -14,7 +14,7 @@ public class LifeForm {
     String title;
     String author;
     String rule;
-    ArrayList<String> comments;
+    final ArrayList<String> comments;
     String instructions;
     IntBuffer field_x;
     IntBuffer field_y;

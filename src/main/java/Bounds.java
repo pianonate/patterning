@@ -4,16 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Bounds {
-    public BigInteger top, left, bottom, right;
-    private BigDecimal topDecimal, leftDecimal, bottomDecimal, rightDecimal;
-
     private final static Map<String, Bounds> cache = new HashMap<>();
-
-    private final float maxFloat = Float.MAX_VALUE;
-    private final BigDecimal maxFloatAsDecimal = BigDecimal.valueOf(maxFloat);
-    
     private static long cacheHits = 0;
     private static long cacheMisses = 0;
+    private final float maxFloat = Float.MAX_VALUE;
+    private final BigDecimal maxFloatAsDecimal = BigDecimal.valueOf(maxFloat);
+    public BigInteger top, left, bottom, right;
+    private BigDecimal topDecimal, leftDecimal, bottomDecimal, rightDecimal;
 
     public Bounds(BigInteger top, BigInteger left, BigInteger bottom, BigInteger right) {
         this.top = top;
@@ -35,7 +32,7 @@ public class Bounds {
     }
 
 
-    public Bounds getScreenBounds( float cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
+    public Bounds getScreenBounds(float cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
 
         String cacheKey = generateCacheKey(this, cellWidth, canvasOffsetX, canvasOffsetY);
 
@@ -59,15 +56,7 @@ public class Bounds {
                     .multiply(cellWidthDecimal)
                     .add(cellWidthDecimal);
 
-            Bounds newBounds = new Bounds(topDecimal.toBigInteger(),
-                    leftDecimal.toBigInteger(),
-                    bottomDecimal.toBigInteger(),
-                    rightDecimal.toBigInteger());
-
-            newBounds.topDecimal = topDecimal;
-            newBounds.leftDecimal = leftDecimal;
-            newBounds.bottomDecimal = bottomDecimal;
-            newBounds.rightDecimal = rightDecimal;
+            Bounds newBounds = new Bounds(topDecimal, leftDecimal, bottomDecimal, rightDecimal);
 
             cache.put(cacheKey, newBounds);
         }
@@ -94,8 +83,8 @@ public class Bounds {
     }
 
     BigDecimal leftToBigDecimal() {
-      
-        if (this.leftDecimal == null) 
+
+        if (this.leftDecimal == null)
             this.leftDecimal = new BigDecimal(this.left);
 
         return leftDecimal;
@@ -121,8 +110,8 @@ public class Bounds {
 
     BigDecimal topToBigDecimal() {
 
-        if (this.topDecimal==null) 
-            this.topDecimal= new BigDecimal(this.top);
+        if (this.topDecimal == null)
+            this.topDecimal = new BigDecimal(this.top);
 
         return topDecimal;
     }
@@ -132,8 +121,8 @@ public class Bounds {
     }
 
     BigDecimal bottomToBigDecimal() {
-  
-        if (this.bottomDecimal==null)
+
+        if (this.bottomDecimal == null)
             this.bottomDecimal = new BigDecimal(this.bottom);
 
         return bottomDecimal;

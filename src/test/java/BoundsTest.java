@@ -3,15 +3,14 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BoundsTest {
     private Bounds bounds;
 
     @BeforeEach
     void setUp() {
-        bounds = new Bounds(BigInteger.valueOf(1), BigInteger.valueOf(2),
-                BigInteger.valueOf(3), BigInteger.valueOf(4));
+        bounds = new Bounds(BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3), BigInteger.valueOf(4));
     }
 
     @Test

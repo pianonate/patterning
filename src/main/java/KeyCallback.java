@@ -1,66 +1,74 @@
 import processing.event.KeyEvent;
 
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class KeyCallback {
-    public final static String MAC = "mac";
-    public final static String NON_MAC = "nonmac";
-    private final static String currentOS = System.getProperty("os.name").toLowerCase();
-    private final Set<Integer> keyCodes;
-    private final Integer modifiers;
-    private final String validOS;
+    private final Set<KeyCombo> keyCombos;
 
     public KeyCallback(char key) {
-        this(Set.of((int) Character.toUpperCase(key)), null, null);
+        this(new KeyCombo(key));
     }
 
+
+    /**
+     * Constructor for KeyCallback class that takes a Set of Characters.
+     * Each character is converted to its uppercase equivalent (if not already),
+     * cast to an integer ASCII value, and then used to create a new KeyCombo object.
+     * The resulting set of KeyCombo objects is assigned to the keyCombos field.
+     *
+     * @param keys A set of characters representing the keys
+     */
     public KeyCallback(Set<Character> keys) {
-        this(keys.stream().mapToInt(c -> (int) Character.toUpperCase(c)).boxed().collect(Collectors.toSet()), null, null);
+        keyCombos = keys.stream()
+                .mapToInt(c -> (int) c)
+                .mapToObj(KeyCombo::new)
+                .collect(Collectors.toSet());
     }
 
-    public KeyCallback(char key, Integer modifiers, String validOS) {
-        this(Set.of((int) Character.toUpperCase(key)), modifiers, validOS);
+    /**
+     * Constructor for KeyCallback class that takes a variable number of KeyCombo objects.
+     * The KeyCombo objects are converted into a List, then into a Set to ensure no duplicates,
+     * and finally assigned to the keyCombos field.
+     *
+     * @param keyCombos The variable number of KeyCombo objects
+     */
+    public KeyCallback(KeyCombo... keyCombos) {
+        this.keyCombos = new HashSet<>(Arrays.asList(keyCombos));
     }
 
-    private KeyCallback(Set<Integer> keys, Integer modifiers, String validOS) {
-        this.keyCodes = keys;
-        this.modifiers = modifiers != null ? modifiers : 0;
-        this.validOS = validOS;
-    }
 
-    public abstract void onKeyEvent(KeyEvent event);
+    public abstract void onKeyPress(KeyEvent event);
+
+    public void onKeyRelease(KeyEvent event) {
+        // do nothing by default
+    }
 
     public abstract String getUsageText();
 
-    public Set<Integer> getKeyCodes() {
-        return keyCodes;
-    }
-
-    public Integer getModifiers() {
-        return modifiers;
-    }
-
-    public String getValidOS() {
-        return validOS;
+    public Set<KeyCombo> getKeyCombos() {
+        return keyCombos;
     }
 
     public boolean matches(KeyEvent event) {
-        return getKeyCodes().contains(event.getKeyCode()) && event.getModifiers() == getModifiers() && isValidForCurrentOS();
+        return keyCombos.stream().anyMatch(kc -> kc.matches(event));
     }
 
+    // The isValidForCurrentOS() method is now a part of KeyCombo, so we don't need it here.
+    // However, if you still want to provide a way to check if any KeyCombo is valid for the current OS, you can add a method like this:
 
     public boolean isValidForCurrentOS() {
+        return keyCombos.stream().anyMatch(KeyCombo::isValidForCurrentOS);
+    }
 
-        if (validOS == null) {
-            return true;
-        }
-
-        if (validOS.equalsIgnoreCase(KeyCallback.MAC) && currentOS.contains(KeyCallback.MAC)) {
-            return true;
-        } else {
-            return validOS.equalsIgnoreCase(KeyCallback.NON_MAC) && !currentOS.contains(KeyCallback.MAC);
-        }
+    // used to calculate the maximum size to show for usage
+    public String getComboTexts() {
+        return keyCombos.stream()
+                .filter(KeyCombo::isValidForCurrentOS)
+                .map(KeyCombo::toString)
+                .collect(Collectors.joining(", "));
     }
 }
 

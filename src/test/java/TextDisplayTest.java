@@ -1,14 +1,10 @@
 import org.junit.jupiter.api.Test;
-import processing.core.PApplet;
 import processing.core.PGraphics;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 
 public class TextDisplayTest {
-
-    private PApplet sketch;
-    private PGraphics buffer;
 
     @Test
     public void testConstruction() {

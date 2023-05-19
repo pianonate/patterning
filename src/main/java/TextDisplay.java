@@ -5,9 +5,9 @@ public class TextDisplay {
 
     protected final PGraphics buffer;
     protected String message;
-    protected int textSize;
-    protected int textColor;
-    protected int fadeInDuration;
+    protected final int textSize;
+    protected final int textColor;
+    protected final int fadeInDuration;
     protected long startTime;
     protected int fadeValue;
     protected float x, y;
@@ -65,7 +65,7 @@ public class TextDisplay {
 
     // todo - you got an updated algo to put a black border around the text so make sure that it tests against dense white drawings
     // todo - make all of these color choices global constants on the main drawer (not Patterning as it will
-    //  have enough responsibilities and it extends PApplet anyway so that's a pain in arse to wade thorugh so much
+    //  have enough responsibilities and it extends PApplet anyway so that's a pain in arse to wade through so much
     // then make it so that this code adapts to whatever is chosen as the background color
     public void draw() {
         if (!isDisplaying) {

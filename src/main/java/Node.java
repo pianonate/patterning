@@ -23,10 +23,10 @@ public class Node {
     public Node se;
 
     public int id;
-    public int level;
-    public BigInteger population;
+    public final int level;
+    public final BigInteger population;
 
-    public int step;
+    public final int step;
 
     public Node cache = null;
     public Node quickCache = null;
@@ -86,7 +86,7 @@ public class Node {
         return count;
     }
 
-    // you have to make sure that you don't call this on a top level node or it will puke
+    // you have to make sure that you don't call this on a top level node - it will puke
     public boolean[][] getBinaryBitArray() {
 
         if (binaryBitArray==null) {

@@ -1,21 +1,23 @@
 import processing.core.PGraphics;
 
 public class Countdown extends TextDisplay {
+    private static final int FADE_IN_DURATION = 500;
+    private static final int COUNTDOWN_FROM = 3;
+    private static final int TEXT_COLOR = 0xFFFFFFFF;
+    private static final int TEXT_SIZE = 30;
     private final Runnable runMethod;
-    private final Runnable interruptMethod;
     private final int countdownFrom;
     private long currentCount;
 
     private final String initialMessage;  // new property to store the initial message
 
-    Countdown(PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message) {
+    Countdown(PGraphics buffer, Runnable runMethod, String message) {
         // Set default values for position, textSize, textColor, fadeInDuration, and countdownFrom
-        this(buffer, runMethod, interruptMethod, message, Position.CENTER, 30, 0xFFFFFFFF, 1500, 3);
+        this(buffer, runMethod, message, Position.CENTER, TEXT_SIZE, TEXT_COLOR, FADE_IN_DURATION, COUNTDOWN_FROM);
     }
-    Countdown(PGraphics buffer, Runnable runMethod, Runnable interruptMethod, String message, Position position, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
+    Countdown(PGraphics buffer, Runnable runMethod, String message, Position position, int textSize, int textColor, int fadeInDuration, int countdownFrom) {
         super(buffer, message, position, textSize, textColor, fadeInDuration);
         this.runMethod = runMethod;
-        this.interruptMethod = interruptMethod;
         this.countdownFrom = countdownFrom;
         this.currentCount = countdownFrom;
         this.initialMessage = message;
@@ -57,7 +59,7 @@ public class Countdown extends TextDisplay {
     public void interruptCountdown() {
         if (isDisplaying) {
             stopDisplay();
-            interruptMethod.run();
+            runMethod.run();
         }
     }
 }

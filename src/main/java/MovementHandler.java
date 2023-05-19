@@ -1,36 +1,37 @@
 import processing.core.PApplet;
+
 import java.util.Set;
 
 // this class exists merely to encapsulate movement handling as it is a bit complex
 // and i don't want to clutter the main class anymore than it already
 public class MovementHandler {
 
+    private final static Set<Integer> pressedKeys = KeyHandler.getPressedKeys();
+
     private int lastDirection = 0;
     private long lastIncreaseTime;
     private final float initialMoveAmount = 1;
     private float moveAmount = initialMoveAmount;
 
-    private final LifeDrawer drawer;
+    private final PatternDrawer drawer;
 
-    MovementHandler(LifeDrawer drawer) {
+    MovementHandler(PatternDrawer drawer) {
         this.drawer = drawer;
     }
 
-    public void move(Set<Integer> pressedKeys) {
+    public void handleRequestedMovement() {
 
-        if (pressedKeys==null) return;
-
-        for (int i = 0; i < 4; i++) {
-            handleMovementKeys(pressedKeys);
+        if (pressedKeys.size()==0) {
+            lastDirection = 0;
+            return;
         }
 
+        for (int i = 0; i < 4; i++) {
+            handleMovementKeys();
+        }
     }
 
-    public void stop() {
-        lastDirection = 0;
-    }
-
-    private void handleMovementKeys(Set<Integer> pressedKeys) {
+    private void handleMovementKeys() {
 
         float moveX = 0;
         float moveY = 0;
@@ -76,9 +77,11 @@ public class MovementHandler {
                 lastIncreaseTime = currentTime;
             }
         }
-        drawer.move(moveX, moveY);
-        // System.out.println("moveX:" + moveX + "moveY: " + moveY);
+
         lastDirection = currentDirection;
+
+        drawer.move(moveX, moveY);
+
     }
 
 }
