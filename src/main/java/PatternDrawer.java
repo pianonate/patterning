@@ -6,10 +6,7 @@ import processing.core.PImage;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 class PatternDrawer {
 
@@ -17,15 +14,58 @@ class PatternDrawer {
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private static final int DEFAULT_CELL_WIDTH = 4;
 
+    private static class CellWidth {
+        private static final float ONE_PIXEL_THRESHOLD = 1.0f;
+        private static final float ONE_DECIMAL_PLACE = 10.0F;
+        private float cellWidth;
+        private BigDecimal cellWidthBigDecimal;
+
+        public CellWidth(float cellWidth) {
+            setImpl(cellWidth);
+        }
+
+        public float get() {
+            return cellWidth;
+        }
+
+        // private impl created to log before/after
+        // without needing to log on class construction
+        public void set(float cellWidth) {
+            setImpl(cellWidth);
+        }
+
+        private void setImpl(float cellWidth) {
+
+            // Apply rounding conditionally based on a threshold
+            // if it's larger than a pixel then we may see unintended gaps between cells
+            // so round them if they're over the 1 pixel threshold
+            if (cellWidth >= ONE_PIXEL_THRESHOLD) {
+                cellWidth = Math.round(cellWidth * ONE_DECIMAL_PLACE) / ONE_DECIMAL_PLACE;
+            }
+
+            this.cellWidth = cellWidth;
+            this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
+        }
+
+        public BigDecimal getAsBigDecimal() {
+            return cellWidthBigDecimal;
+        }
+
+        public String toString() {
+            return "CellWidth{" + cellWidth + "}";
+        }
+
+    }
+
     private final PApplet processing;
     private final ImageCache imageCache;
 
     private final HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
 
-    private Countdown countdownText;
-
-    private final TextDisplay startupText;
+    private final List<TextDisplay> textDisplays = new ArrayList<>();
+    private final TextDisplay countdownText;
+    private final TextDisplay hudText;
 
 
     // for all conversions, this needed to be a number larger than 5 for
@@ -64,7 +104,29 @@ class PatternDrawer {
         this.movementHandler = new MovementHandler(this);
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
-        this.startupText = new TextDisplay(newBuffer, "Welcome to Patterning", TextDisplay.Position.TOP_CENTER, 40, 0xFFFFFFFF, 500);
+
+        countdownText = new TextDisplay.Builder("counting down - press space to begin immediately", TextDisplay.Position.CENTER)
+                .runMethod(Patterning::run)
+                .countdownFrom(3)
+                .build();
+
+        TextDisplay startupText = new TextDisplay.Builder("Welcome to Patterning", TextDisplay.Position.TOP_LEFT)
+                .textSize(60)
+                .fadeInDuration(1000)
+                .duration(5000)
+                .build();
+
+        hudText = new TextDisplay.Builder("HUD", TextDisplay.Position.BOTTOM_RIGHT)
+                .textSize(24)
+                .build();
+
+        textDisplays.add(countdownText);
+        textDisplays.add(startupText);
+        textDisplays.add(hudText);
+
+        startupText.startDisplay();
+        hudText.startDisplay();
+
     }
 
     public void toggleDrawBounds() {
@@ -86,7 +148,6 @@ class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        countdownText = new Countdown(newBuffer, Patterning::run, "counting down - press space to begin immediately");
         countdownText.startCountdown();
 
     }
@@ -311,48 +372,6 @@ class PatternDrawer {
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
     }
 
-    private static class CellWidth {
-        private float cellWidth;
-        private BigDecimal cellWidthBigDecimal;
-
-        public CellWidth(float cellWidth) {
-            setImpl(cellWidth);
-        }
-
-        public float get() {
-            return cellWidth;
-        }
-
-        // private impl created to log before/after
-        // without needing to log on class construction
-        public void set(float cellWidth) {
-            setImpl(cellWidth);
-        }
-
-        private void setImpl(float cellWidth) {
-
-            // Apply rounding conditionally based on a threshold
-            // if it's larger than a pixel then we may see unintended gaps between cells
-            // so round them if they're over the 1 pixel threshold
-            float threshold = 1.0f;
-            if (cellWidth >= threshold) {
-               cellWidth = Math.round(cellWidth);
-            }
-
-            this.cellWidth = cellWidth;
-            this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
-        }
-
-        public BigDecimal getAsBigDecimal() {
-            return cellWidthBigDecimal;
-        }
-
-        public String toString() {
-            return "CellWidth{" + cellWidth + "}";
-        }
-
-    }
-
     private record CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
             private CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
                 this.cellWidth = new CellWidth(cellWidth.get());
@@ -450,7 +469,8 @@ class PatternDrawer {
 
     // the cell width times 2 ^ level will give you the size of the whole universe
     // draws the screen size viewport on the universe
-    public void redraw(LifeUniverse life) {
+
+    public void draw(LifeUniverse life) {
 
         newBuffer.beginDraw();
         newBuffer.background(0);
@@ -469,12 +489,14 @@ class PatternDrawer {
 
         drawBounds(bounds);
 
-        drawHUD(life, bounds);
 
-        // another thing that the drawer should handle
-        if (countdownText.isDisplaying) {
-            // countdownText.update();
-            countdownText.draw();
+        String hudMessage = getHUDMessage(life, bounds);
+        hudText.setMessage(hudMessage);
+
+        //drawHUD(life, bounds);
+
+        for (TextDisplay display : textDisplays) {
+            display.draw(newBuffer);
         }
 
         newBuffer.endDraw();
@@ -484,8 +506,7 @@ class PatternDrawer {
 
     }
 
-    private void drawHUD(LifeUniverse life, Bounds bounds) {
-
+    private String getHUDMessage(LifeUniverse life, Bounds bounds) {
         Node root = life.root;
 
         hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
@@ -504,7 +525,12 @@ class PatternDrawer {
 
         newBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
         // use the default delimiter
-        String hud = hudInfo.getFormattedString(processing.frameCount, 12);
+        return hudInfo.getFormattedString(processing.frameCount, 12);
+    }
+
+    private void drawHUD(LifeUniverse life, Bounds bounds) {
+
+        String hud = getHUDMessage(life, bounds);
 
         newBuffer.fill(255);
         float hudTextSize = 24;

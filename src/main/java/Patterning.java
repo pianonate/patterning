@@ -12,7 +12,11 @@ import java.net.URISyntaxException;
 import java.util.stream.Stream;
 
 /*
- * todo: show lifeForm stats
+ * todo: noise (and maybe others) showing running:  https://gist.github.com/Bleuje/ae3662d67bea2e24092d64efe022ed4c
+ *       https://necessarydisorder.wordpress.com/2017/11/15/drawing-from-noise-and-then-making-animated-loopy-gifs-from-there/
+ *
+ * todo: autofit to screenf
+ * todo: show lifeForm stats in its slide out box
  * todo: notification that you have pasted with the name of the life form - above the countdown text and larger - with the name
  * todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
  * todo: magnifier over mouseX
@@ -282,7 +286,7 @@ public class Patterning extends PApplet {
 
         } else {
 
-            drawer.redraw(life);
+            drawer.draw(life);
 
         }
 
