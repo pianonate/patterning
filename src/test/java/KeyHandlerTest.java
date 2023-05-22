@@ -47,7 +47,7 @@ public class KeyHandlerTest {
         handler.addKeyCallback(callback3);
 
         Exception exception2 = assertThrows(IllegalArgumentException.class, () -> handler.addKeyCallback(callback4));
-        String expectedMessage2 = "The following key combos are already associated with another callback: Ctrl+B";
+        String expectedMessage2 = "The following key combos are already associated with another callback: ^B";
         assertTrue(exception2.getMessage().contains(expectedMessage2));
 
         // Duplicate KeyCallback with char, modifier and validOS
@@ -57,7 +57,7 @@ public class KeyHandlerTest {
         handler.addKeyCallback(callback5);
 
         Exception exception3 = assertThrows(IllegalArgumentException.class, () -> handler.addKeyCallback(callback6));
-        String expectedMessage3 = "The following key combos are already associated with another callback: Ctrl+C";
+        String expectedMessage3 = "The following key combos are already associated with another callback: ^C";
         assertTrue(exception3.getMessage().contains(expectedMessage3));
     }
 
@@ -120,7 +120,7 @@ public class KeyHandlerTest {
 
         KeyCallback keyCallback1 = new KeyCallback(keyCombo1) {
             @Override
-            public void onKeyPress(KeyEvent event) {
+            public void invokeFeature() {
                 // handle key event
             }
 
@@ -133,7 +133,7 @@ public class KeyHandlerTest {
 
         KeyCallback keyCallback2 = new KeyCallback(keyCombo2) {
             @Override
-            public void onKeyPress(KeyEvent event) {
+            public void invokeFeature() {
                 // handle key event
             }
 
@@ -146,7 +146,7 @@ public class KeyHandlerTest {
 
         KeyCallback keyCallback3 = new KeyCallback(keyCombo3) {
             @Override
-            public void onKeyPress(KeyEvent event) {
+            public void invokeFeature() {
                 // handle key event
             }
 
@@ -201,7 +201,7 @@ public class KeyHandlerTest {
                 new KeyCombo('C', KeyEvent.ALT, ValidOS.ANY)
         ) {
             @Override
-            public void onKeyPress(KeyEvent event) {
+            public void invokeFeature() {
 
             }
 
@@ -219,19 +219,19 @@ public class KeyHandlerTest {
         switch (os) {
 
             case ANY -> {
-                assertTrue(usageText.contains("Alt+C"));
-                assertFalse(usageText.contains("Cmd+C"));
-                assertFalse(usageText.contains("Ctrl+C"));
+                assertTrue(usageText.contains("⌥C"));
+                assertFalse(usageText.contains("⌘C"));
+                assertFalse(usageText.contains("^C"));
             }
             case MAC -> {
-                assertTrue(usageText.contains("Alt+C"));
-                assertTrue(usageText.contains("Cmd+C"));
-                assertFalse(usageText.contains("Ctrl+C"));
+                assertTrue(usageText.contains("⌥C"));
+                assertTrue(usageText.contains("⌘C"));
+                assertFalse(usageText.contains("^C"));
             }
             case NON_MAC -> {
-                assertTrue(usageText.contains("Alt+C"));
-                assertFalse(usageText.contains("Cmd+C"));
-                assertTrue(usageText.contains("Ctrl+C"));
+                assertTrue(usageText.contains("⌥C"));
+                assertFalse(usageText.contains("⌘C"));
+                assertTrue(usageText.contains("^C"));
             }
         }
     }

@@ -1,0 +1,66 @@
+todo: welcome text displays below controls
+todo: finish adding controls
+todo: implement frame slowing down and use the text to highlight the distinction
+todo: make controls continuously pressable and change color when you do
+      possibly this would stop generating future generations?  or not, if it can work smoothly
+todo: when you add move controls,it could be on a pop out panel but that gets tricky with all the hover text
+todo: controls display orange when they can't go any further
+todo: autofit to screenf
+todo: when you invoke a keyboard command associated with a control - highlight the control as if it had been clicked - highlight it for 500ms
+
+todo: debug when turing machine gets big - what is taking its time to display as it stops and starts a lot
+      to me it smells like garbage collection because you can speed it up substantially by reducing the number
+      of living cells on screen.  what objcts are involved to display all that on screen- certainly there is a bunch of
+      BigDecimal, BigInteger activity - which could be reduced if you simply output a 2d binary array and then blasted that to the screen
+      instead of the current mechanism. the challenge is that in order to understand how it maps to screen dimensions, you have to actually
+      use the bounds of the universe coupled with the cell size to drill into the viewport that's visible.  there has to be another way to
+      directly query to find the node corresponding to the visiblly displayed universe
+
+todo: debug maximum volatility gun - why is it that if you step very fast at the beginning (without clearing the undo cache), it loses coherence?
+todo: show lifeForm stats in its slide out box
+todo: notification that you have pasted with the name of the life form - above the countdown text and larger - with the name
+todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
+todo: magnifier over mouseX
+todo: smooth combination of zoom/center
+todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
+todo: move all drawing into PatternDrawer
+todo: somewhere on the screen show fade in the target step and the current
+     step until they're one and the same and then fade out
+todo: move imagery around cached images into the ImageCacheEntry routine
+todo: binary bit array - clearing - too complicated - needs to be on automatic or you'll screw up
+todo: grid out the screen based on the pressed number key so you can see what level of the tree is that grid
+todo: add RLE parser tests that can double as tests for the app
+todo: reorganize the code for cleanliness and testing with 4.0's help
+todo: click on node and it will tell you the information about it at the last selected grid level (or something)
+         - maybe it recurses up to show info about all levels nearby
+todo: show what level you have zoomed to using fade in face out text on screen
+todo: indicate you have just done a rewind
+todo: label bounding box with actual universe size in pixels and meters based on current cellSize - compare to what % of the known universe this would be in size
+todo: create the mc in PatternDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
+todo: cache of Boolean array of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
+todo: single step mode
+todo: out of memory error
+todo: use touch interface as it looks as if TOUCH is an enum in the KeyEvent class - maybe maybe... provide squeeze to zoom
+todo: is it possible to bind keyboard shortcuts to methods?
+todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
+todo: move HUD to upper right with a panel with an expand/collapse
+todo: display pasted in metadata in a HUD section
+todo: smooth zoom - is that possible? seems to me it would have to be possible.
+todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
+todo: Add mc parser support
+todo: do you need to manage the size of the hashmap?
+todo: possibly simplification create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
+todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on,
+        you can see the details at a much higher zoom level
+todo: save all pasted in valid RLEs in a folder. check if it's already there and if it's different.
+todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
+todo: allow for rotating the images for visual appeal
+todo: copy / paste selections
+todo: create a test for PatternDrawer that allows you to know if it actually is improved in performance
+todo: double click to zoom
+todo: smooth zoom
+todo: click for info
+todo: directional big jump
+todo: file manager of RLEs
+todo: undo mouse moves? would it make sense to people
+todo: paste logic - move to separate class to handle - just for the sake of keeping Patterning clean

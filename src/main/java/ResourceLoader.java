@@ -18,47 +18,58 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-public class ResourceReader {
-    private final ClassLoader classLoader;
-    private final Random random;
+public class ResourceLoader {
 
-    public ResourceReader() {
-        this.classLoader = getClass().getClassLoader();
-        this.random = new Random();
+    private ResourceLoader() {
+
     }
 
-    public String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
-        List<String> files = getResourceFiles(directoryName);
+/*    public static PImage loadImageFromStream(String resourceName) {
+        try {
+            InputStream stream = getResourceAsStream(resourceName);
+            BufferedImage bimg = ImageIO.read(stream);
+            PImage img = new PImage(bimg.getWidth(), bimg.getHeight(), PConstants.ARGB);
+            bimg.getRGB(0, 0, img.width, img.height, img.pixels, 0, img.width);
+            img.updatePixels();
+            return img;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static InputStream getResourceAsStream(String resourceName) throws IOException {
+        InputStream is = getClassLoader().getResourceAsStream(resourceName);
+        if (is == null) {
+            throw new IOException("Resource not found: " + resourceName);
+        }
+        return is;
+    }*/
+
+    public static String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
+        List<String> files = getResourceFilePaths(directoryName);
         if (files.isEmpty()) {
             throw new IOException("No files found in directory: " + directoryName);
         }
-        String randomFile = files.get(random.nextInt(files.size()));
+        String randomFile = files.get(new Random().nextInt(files.size()));
         return getResourceAsString(randomFile);
     }
 
-    /*         Enumeration<URL> resources = classLoader.getResources(directoryName);
-        while (resources.hasMoreElements()) {
-            URL resource = resources.nextElement();
-            // Process the resource
-            System.out.println("Resource: " + resource);
-        }
 
-        return filenames;*/
-
-    private List<String> getResourceFiles(String directoryName) throws IOException, URISyntaxException {
-        URL url = classLoader.getResource(directoryName);
+    private static List<String> getResourceFilePaths(String directoryName) throws IOException, URISyntaxException {
+        URL url = getClassLoader().getResource(directoryName);
         if (url == null) {
             throw new IOException("Directory not found: " + directoryName);
         }
 
         return switch (url.getProtocol()) {
-            case "jar" -> getResourceFilesFromJar(url, directoryName);
-            case "file" -> getResourceFilesFromFile(url, directoryName);
+            case "jar" -> getResourceFilePathsFromJar(url, directoryName);
+            case "file" -> getResourceFilePathsFromFileSystem(url, directoryName);
             default -> throw new IOException("Cannot list files for URL " + url);
         };
     }
 
-    private List<String> getResourceFilesFromJar(URL url, String directoryName) throws IOException {
+    private static List<String> getResourceFilePathsFromJar(URL url, String directoryName) throws IOException {
         String dirPath = url.getPath();
         String jarPath = dirPath.substring(5, dirPath.indexOf("!")); // strip out only the JAR file
         List<String> filenames = new ArrayList<>();
@@ -80,7 +91,7 @@ public class ResourceReader {
         return filenames;
     }
 
-    private List<String> getResourceFilesFromFile(URL url, String directoryName) throws IOException, URISyntaxException {
+    private static List<String> getResourceFilePathsFromFileSystem(URL url, String directoryName) throws IOException, URISyntaxException {
         Path dirPath = Paths.get(url.toURI());
         List<String> filenames = new ArrayList<>();
 
@@ -95,10 +106,8 @@ public class ResourceReader {
         return filenames;
     }
 
-
-
-    public String getResourceAsString(String resourceName) throws IOException {
-        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
+    private static String getResourceAsString(String resourceName) throws IOException {
+        try (InputStream is = getClassLoader().getResourceAsStream(resourceName)) {
             if (is == null) {
                 throw new IOException("Resource not found: " + resourceName);
             }
@@ -106,5 +115,9 @@ public class ResourceReader {
                 return reader.lines().collect(Collectors.joining("\n"));
             }
         }
+    }
+
+    private static ClassLoader getClassLoader() {
+        return ResourceLoader.class.getClassLoader();
     }
 }

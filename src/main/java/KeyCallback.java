@@ -8,10 +8,11 @@ import java.util.stream.Collectors;
 public abstract class KeyCallback {
     private final Set<KeyCombo> keyCombos;
 
+    private Control associatedControl = null;
+
     public KeyCallback(char key) {
         this(new KeyCombo(key));
     }
-
 
     /**
      * Constructor for KeyCallback class that takes a Set of Characters.
@@ -40,9 +41,9 @@ public abstract class KeyCallback {
     }
 
 
-    public abstract void onKeyPress(KeyEvent event);
+    public abstract void invokeFeature();
 
-    public void onKeyRelease(KeyEvent event) {
+    public void cleanupFeature() {
         // do nothing by default
     }
 
@@ -50,6 +51,12 @@ public abstract class KeyCallback {
 
     public Set<KeyCombo> getKeyCombos() {
         return keyCombos;
+    }
+
+    public Set<KeyCombo> getValidKeyCombosForCurrentOS() {
+        return keyCombos.stream()
+                .filter(KeyCombo::isValidForCurrentOS)
+                .collect(Collectors.toSet());
     }
 
     public boolean matches(KeyEvent event) {
@@ -69,6 +76,18 @@ public abstract class KeyCallback {
                 .filter(KeyCombo::isValidForCurrentOS)
                 .map(KeyCombo::toString)
                 .collect(Collectors.joining(", "));
+    }
+
+    public void setAssociatedControl(Control control) {
+        this.associatedControl = control;
+    }
+
+    public Control getAssociatedControl() {
+        return associatedControl;
+    }
+
+    public boolean hasAssociatedControl() {
+        return null!=associatedControl;
     }
 }
 

@@ -16,7 +16,6 @@ public class KeyHandler {
 
     public KeyHandler(PApplet processing) {
         this.keyCallbacks = new LinkedHashMap<>();
-       // this.pressedKeys = new HashSet<>();
         processing.registerMethod("keyEvent", this);
     }
 
@@ -59,13 +58,18 @@ public class KeyHandler {
 
                 if (event.getAction() == KeyEvent.PRESS) {
                     pressedKeys.add(keyCode);
-                    callback.onKeyPress(event);
+                    callback.invokeFeature();
 
+                   // some callbacks have an associated control with an  icon that gets switched out
+                   // to represent the current state - invoke it
+                   if (callback.hasAssociatedControl()) {
+                        callback.getAssociatedControl().toggleIcon();
+                    }
                 }
 
                 if (event.getAction() == KeyEvent.RELEASE) {
                     pressedKeys.remove(keyCode);
-                    callback.onKeyRelease(event);
+                    callback.cleanupFeature();
                 }
 
                 break;
@@ -73,34 +77,37 @@ public class KeyHandler {
         }
     }
 
-    public String getUsageText() {
-        StringBuilder usageText = new StringBuilder("Key Usage:\n\n");
+public String getUsageText() {
+    StringBuilder usageText = new StringBuilder("Key Usage:\n\n");
 
-        Set<KeyCallback> processedCallbacks = new HashSet<>();
+    Set<KeyCallback> processedCallbacks = new HashSet<>();
 
-        int maxKeysWidth = keyCallbacks.values().stream()
-                .filter(KeyCallback::isValidForCurrentOS)
-                .mapToInt(callback -> callback.getComboTexts().length())
-                .max().orElse(0);
-
-        for (KeyCallback callback : keyCallbacks.values()) {
-            // valid for OS and not already processed
-            if (!callback.isValidForCurrentOS() || processedCallbacks.contains(callback)) {
-                continue;
-            }
-
-            // Only include key combos that are valid for the current OS
-            String keysString = callback.getKeyCombos().stream()
-                    .filter(KeyCombo::isValidForCurrentOS)
+    int maxKeysWidth = keyCallbacks.values().stream()
+            .filter(KeyCallback::isValidForCurrentOS)
+            .mapToInt(callback -> callback.getValidKeyCombosForCurrentOS().stream()
                     .map(KeyCombo::toString)
-                    .collect(Collectors.joining(", "));
+                    .collect(Collectors.joining(", ")).length())
+            .max().orElse(0);
 
-            String usageDescription = callback.getUsageText();
-            usageText.append(String.format("%-" + (maxKeysWidth + 1) + "s: %s\n", keysString, usageDescription));
 
-            processedCallbacks.add(callback);
+    for (KeyCallback callback : keyCallbacks.values()) {
+        // valid for OS and not already processed
+        if (!callback.isValidForCurrentOS() || processedCallbacks.contains(callback)) {
+            continue;
         }
 
-        return usageText.toString();
+        // Only include key combos that are valid for the current OS
+        String keysString = callback.getValidKeyCombosForCurrentOS().stream()
+                .map(KeyCombo::toString)
+                .collect(Collectors.joining(", "));
+
+        String usageDescription = callback.getUsageText();
+        usageText.append(String.format("%-" + (maxKeysWidth + 1) + "s: %s\n", keysString, usageDescription));
+
+        processedCallbacks.add(callback);
     }
+
+    return usageText.toString();
+}
+
 }

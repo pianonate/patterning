@@ -1,5 +1,3 @@
-import processing.event.KeyEvent;
-
 import java.util.Set;
 
 class MockKeyCallback extends KeyCallback {
@@ -19,7 +17,7 @@ class MockKeyCallback extends KeyCallback {
     }
 
     @Override
-    public void onKeyPress(KeyEvent event) {
+    public void invokeFeature() {
         // no-op for this mock
         called = true;
 

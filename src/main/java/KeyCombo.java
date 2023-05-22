@@ -86,16 +86,16 @@ public class KeyCombo {
         StringBuilder keyTextBuilder = new StringBuilder();
 
         if ((modifiers & KeyEvent.META) != 0) {
-            keyTextBuilder.append("Cmd+");
+            keyTextBuilder.append("⌘");
         }
         if ((modifiers & KeyEvent.CTRL) != 0) {
-            keyTextBuilder.append("Ctrl+");
+            keyTextBuilder.append("^");
         }
         if ((modifiers & KeyEvent.SHIFT) != 0) {
-            keyTextBuilder.append("Shift+");
+            keyTextBuilder.append("↑");
         }
         if ((modifiers & KeyEvent.ALT) != 0) {
-            keyTextBuilder.append("Alt+");
+            keyTextBuilder.append("⌥");
         }
 
         switch (keyCode) {
