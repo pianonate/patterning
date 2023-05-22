@@ -180,12 +180,6 @@ public class ControlPanel implements Drawable, MouseEventReceiver {
             this.sizeToFit = false;
         }
 
-        public Builder addControl(String iconName, KeyCallback callback) throws IOException {
-            PImage icon = getIcon(iconName);
-            Control control = new Control(icon, this.controlSize, this.position, callback);
-            controls.add(control);
-            return this;
-        }
 
         private PImage getIcon(String iconName) {
             PImage icon = processing.loadImage("icon/" + iconName);
@@ -193,14 +187,34 @@ public class ControlPanel implements Drawable, MouseEventReceiver {
             return icon;
         }
 
+        public Builder addControl(String iconName,KeyCallback callback) throws IOException {
+            return addControlInternal(iconName, null, false, callback);
+        }
+
+        public Builder addControl(String iconName, boolean toggledControl, KeyCallback callback) throws IOException {
+            return addControlInternal(iconName, null, toggledControl, callback);
+        }
+
         public Builder addControl(String iconName, String toggledIconName, KeyCallback callback) throws IOException {
+            return addControlInternal(iconName, toggledIconName, false, callback);
+        }
+
+        private Builder addControlInternal(String iconName, String toggledIconName, boolean toggledControl, KeyCallback callback) throws IOException {
             PImage icon = getIcon(iconName);
-            PImage toggledIcon = getIcon(toggledIconName);
-            Control control = new Control(icon, toggledIcon, this.controlSize, this.position, callback);
-            callback.setAssociatedControl(control);
+            Control control;
+            if (null==toggledIconName)
+            {
+                control = new Control(icon, toggledControl, this.controlSize, this.position, callback);
+
+            } else {
+                PImage toggledIcon = getIcon(toggledIconName);
+                 control = new Control(icon, toggledIcon, toggledControl, this.controlSize, this.position, callback);
+            }
+            callback.addObserver(control);
             controls.add(control);
             return this;
         }
+
 
         public Builder sizeToFit(boolean sizeToFit) {
             this.sizeToFit = sizeToFit;

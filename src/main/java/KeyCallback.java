@@ -5,13 +5,27 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class KeyCallback {
+public abstract class KeyCallback implements KeyObservable {
     private final Set<KeyCombo> keyCombos;
-
-    private Control associatedControl = null;
 
     public KeyCallback(char key) {
         this(new KeyCombo(key));
+    }
+
+    private final Set<KeyObserver> keyObservers = new HashSet<>();
+
+    public void addObserver(KeyObserver o) {
+        keyObservers.add(o);
+    }
+
+    public void deleteObserver(KeyObserver o) {
+        keyObservers.remove(o);
+    }
+
+    public void notifyKeyObservers() {
+        for (KeyObserver keyObserver : keyObservers) {
+            keyObserver.notifyKeyPress(this, null);
+        }
     }
 
     /**
@@ -76,18 +90,6 @@ public abstract class KeyCallback {
                 .filter(KeyCombo::isValidForCurrentOS)
                 .map(KeyCombo::toString)
                 .collect(Collectors.joining(", "));
-    }
-
-    public void setAssociatedControl(Control control) {
-        this.associatedControl = control;
-    }
-
-    public Control getAssociatedControl() {
-        return associatedControl;
-    }
-
-    public boolean hasAssociatedControl() {
-        return null!=associatedControl;
     }
 }
 

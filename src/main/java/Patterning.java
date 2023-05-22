@@ -160,7 +160,7 @@ public class Patterning extends PApplet {
 
         @Override
         public String getUsageText() {
-            return "draw a rectangle around the part of the universe that is 'alive'";
+            return "draw a border around the part of the universe containing living cells'";
         }
     };
     private final KeyCallback callbackCenterView = new KeyCallback(SHORTCUT_CENTER) {
@@ -727,20 +727,25 @@ public class Patterning extends PApplet {
         try {
             // loading icons can generate an IOException if the file isn't there - which is problematic
             panelLeft = new ControlPanel.Builder(ControlPanel.PanelPosition.LEFT, this)
-                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
                     .addControl("zoomIn.png", callbackZoomInCenter)
                     .addControl("zoomOut.png", callbackZoomOutCenter)
+                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
+                    .addControl("center.png", callbackCenterView)
+                    .addControl("boundary.png", true,  callbackDisplayBounds)
                     .alignment(ControlPanel.PanelAlignment.CENTER)
                     .sizeToFit(true)
                     .build();
 
             // loading icons can generate an IOException if the file isn't there - which is problematic
             panelTop = new ControlPanel.Builder(ControlPanel.PanelPosition.TOP, this)
+                    .addControl("random.png",  callbackRandomLife)
                     .addControl("stepSlower.png", callbackStepSlower)
                     .addControl("drawSlower.png", callbackDrawSlower)
                     .addControl("pause.png", "play.png", callbackPause)
                     .addControl("drawFaster.png", callbackDrawFaster)
                     .addControl("stepFaster.png", callbackStepFaster)
+                    .addControl("rewind.png",  callbackRewind)
+                    .addControl("undo.png",  callbackUndoCenter)
                     .alignment(ControlPanel.PanelAlignment.CENTER)
                     .sizeToFit(true)
                     .build();

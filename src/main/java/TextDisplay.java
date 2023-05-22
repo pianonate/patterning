@@ -3,6 +3,7 @@ import processing.core.PGraphics;
 
 public class TextDisplay implements Drawable {
 
+    private static int OFFSET = 15;
     private static final int MARGIN = 10; // 10 pixel buffer for top positions
     private static final int UNSET_DURATION = -1;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
@@ -23,16 +24,17 @@ public class TextDisplay implements Drawable {
     protected boolean isDisplaying = false;
     private State state;
     private long transitionTime;
-    private long startTime;
     private int fadeValue;
-    private long currentCount;
-    private boolean isCountingDown = false;
+
     protected TextDisplay(TextDisplay.Builder builder) {
         this.message = builder.message;
         this.hAlign = builder.hAlign;
         this.vAlign = builder.vAlign;
         this.textSize = builder.textSize;
         this.textColor = builder.textColor;
+
+        this.duration = builder.duration;
+
         this.fadeInDuration = builder.fadeInDuration;
         this.fadeOutDuration = builder.fadeOutDuration;
         this.fadeValue = builder.fadeValue;
@@ -40,10 +42,8 @@ public class TextDisplay implements Drawable {
         // Countdown variables
         this.runMethod = builder.runMethod;
         this.countdownFrom = builder.countdownFrom;
-        this.currentCount = builder.countdownFrom;
         this.initialMessage = builder.message;
 
-        this.duration = builder.duration;
 
     }
 
@@ -63,13 +63,13 @@ public class TextDisplay implements Drawable {
 
         switch (this.hAlign) {
             case PApplet.LEFT -> {
-                x = 0;
+                x = OFFSET;
             }
             case PApplet.CENTER -> {
                 x = (float) buffer.width / 2;
             }
             case PApplet.RIGHT -> {
-                x = buffer.width;
+                x = buffer.width - OFFSET;
             }
         }
         switch (this.vAlign) {
@@ -123,8 +123,6 @@ public class TextDisplay implements Drawable {
 
     // Countdown methods
     public void startCountdown() {
-        isCountingDown = true;
-        currentCount = countdownFrom;
         setMessage(initialMessage);
         startDisplay();
     }
@@ -280,10 +278,6 @@ public class TextDisplay implements Drawable {
             transitionTime = System.currentTimeMillis();
         }
     }
-
-
-
-
 
     private class FadeOutState implements State {
         @Override

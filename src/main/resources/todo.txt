@@ -1,12 +1,10 @@
-todo: welcome text displays below controls
-todo: finish adding controls
-todo: implement frame slowing down and use the text to highlight the distinction
 todo: make controls continuously pressable and change color when you do
       possibly this would stop generating future generations?  or not, if it can work smoothly
 todo: when you add move controls,it could be on a pop out panel but that gets tricky with all the hover text
 todo: controls display orange when they can't go any further
 todo: autofit to screenf
 todo: when you invoke a keyboard command associated with a control - highlight the control as if it had been clicked - highlight it for 500ms
+todo: popout for movement controls - aligning to dimensions - sub conrolpanel...
 
 todo: debug when turing machine gets big - what is taking its time to display as it stops and starts a lot
       to me it smells like garbage collection because you can speed it up substantially by reducing the number

@@ -4,9 +4,12 @@ import processing.core.PImage;
 import processing.core.PVector;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.stream.Collectors;
 
-class Control implements Drawable {
+
+class Control implements Drawable, KeyObserver {
     private static final int CORNER_RADIUS = 10;
     private static final int TEXT_HEIGHT_BUFFER = 5;
     private static final int TEXT_WIDTH_BUFFER = 10;
@@ -14,13 +17,13 @@ class Control implements Drawable {
     private static final int HOVER_COLOR = 80;
     private static final int HOVER_TEXT_COLOR = 255;
     private static final int MOUSE_PRESSED_COLOR = 225;
+    private static final int HIGHLIGHT_SHORTCUT_KEY_INVOKED_DURATION = 1000;
 
     private final int size;
     private final ControlPanel.PanelPosition panelPosition;
     PImage icon;  // The PNG icon
-    PImage toggledIcon;
-    boolean toggled=false;
-
+    PImage toggledIcon; // right now only used with play / pause
+    boolean iconToggled = false;
     PImage currentIcon;
 
     KeyCallback callback;
@@ -30,12 +33,15 @@ class Control implements Drawable {
     boolean isHoveringPrevious = false;
     boolean isPressed = false;
     private PVector position;
+    private boolean highlight = false;
+    private boolean toggleControl = false;
 
-    Control(PImage icon, int size, ControlPanel.PanelPosition panelPosition, KeyCallback callback) throws IOException {
+    Control(PImage icon, boolean toggleControl, int size, ControlPanel.PanelPosition panelPosition, KeyCallback callback) throws IOException {
         this.icon = icon;
         this.size = size;
         this.currentIcon = icon;
         this.callback = callback;
+        this.toggleControl = toggleControl;
 
         String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
                 .map(KeyCombo::toString)
@@ -45,8 +51,8 @@ class Control implements Drawable {
         this.panelPosition = panelPosition;
     }
 
-    Control(PImage icon, PImage toggledIcon, int size, ControlPanel.PanelPosition panelPosition, KeyCallback callback) throws IOException {
-        this(icon, size, panelPosition, callback); // Call the existing constructor
+    Control(PImage icon, PImage toggledIcon, boolean toggleControl, int size, ControlPanel.PanelPosition panelPosition, KeyCallback callback) throws IOException {
+        this(icon, false, size, panelPosition, callback); // Call the existing constructor
         this.toggledIcon = toggledIcon; // Set the alternate icon
     }
 
@@ -87,22 +93,62 @@ class Control implements Drawable {
             toggleIcon();
         }
         this.isPressed = false;
+
+        if (toggleControl) {
+            highlight = !highlight;
+        }
     }
 
     void toggleIcon() {
-        currentIcon = (toggled) ? icon : toggledIcon;
-        toggled = !toggled;
+        currentIcon = (iconToggled) ? icon : toggledIcon;
+        iconToggled = !iconToggled;
     }
 
 
+    @Override
     public void draw(PGraphics buffer) {
         drawHovering(buffer);
         drawPressed(buffer);
         drawIcon(buffer);
     }
 
+    @Override
+    public void notifyKeyPress(KeyObservable o, Object arg) {
+        // here's where you do your thing when you've been observed
+
+
+        // this is just for the play button right now, which gets a different icon if invoked
+        if (toggledIcon !=null) {
+            toggleIcon();
+        }
+
+        // if you're the kind of control that is persistent, then you get to keep displaying
+        if (toggleControl) {
+            highlight = !highlight;
+        } else {
+            // if you're the type of control that is merely invoked by a keyboard mapping
+            // then highlight for a duration
+            // rock on
+            highlightForPeriod(HIGHLIGHT_SHORTCUT_KEY_INVOKED_DURATION);
+        }
+    }
+
+    private void highlightForPeriod(int duration) {
+        highlight = true;
+
+        new Timer().schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        highlight = false;
+                    }
+                },
+                duration
+        );
+    }
+
     private void drawPressed(PGraphics buffer) {
-        if (isPressed) {
+        if (isPressed || highlight) {
             drawControlHighlight(buffer, MOUSE_PRESSED_COLOR);
         }
     }

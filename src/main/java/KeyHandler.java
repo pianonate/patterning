@@ -60,11 +60,8 @@ public class KeyHandler {
                     pressedKeys.add(keyCode);
                     callback.invokeFeature();
 
-                   // some callbacks have an associated control with an  icon that gets switched out
-                   // to represent the current state - invoke it
-                   if (callback.hasAssociatedControl()) {
-                        callback.getAssociatedControl().toggleIcon();
-                    }
+                    callback.notifyKeyObservers();;
+
                 }
 
                 if (event.getAction() == KeyEvent.RELEASE) {

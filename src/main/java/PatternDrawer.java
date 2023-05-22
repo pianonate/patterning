@@ -1,5 +1,6 @@
 import processing.core.PApplet;
 import processing.core.PGraphics;
+import processing.core.PVector;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -25,13 +26,24 @@ class PatternDrawer {
     private final List<Drawable> drawables = new ArrayList<>();
     private final TextDisplay countdownText;
     private final TextDisplay hudText;
-    // todo: implement an actual border width so you can see space between cells
     float cellBorderWidth = 0.0F;
 
-    // this class operates on BigDecimals because the bounds of a drawing can be arbitrarily large
-    private PGraphics UXBuffer;
+    private PGraphics backgroundBuffer;
     private PGraphics lifeFormBuffer;
-    
+    private PGraphics UXBuffer;
+
+
+    // this is used because we now separate the drawing speed from the framerate
+    // so we may not draw an image every frame
+    // if we haven't drawn an image, we still want to be able to move and drag
+    // the image around so this allows us to keep track of the current position
+    // for the lifeFormBuffer and move that buffer around regardless of whether we've drawn an image
+    // whenever an image is drawn, ths PVector is reset to 0,0 to match the current image state
+    // it's a nifty way to handle things - just follow lifeFormPosition through the code
+    // to see what i'm talking about
+    PVector lifeFormPosition = new PVector(0,0);
+
+
     private boolean drawBounds;
     private BigDecimal canvasOffsetX = BigDecimal.ZERO;
     private BigDecimal canvasOffsetY = BigDecimal.ZERO;
@@ -57,6 +69,7 @@ class PatternDrawer {
         
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer= getBuffer();
+        this.backgroundBuffer = getBuffer();
         
         this.movementHandler = new MovementHandler(this);
         this.drawBounds = false;
@@ -104,11 +117,6 @@ class PatternDrawer {
         return (dimension.divide(BigTWO, mc)).subtract(offset);
     }
 
-    public void displayBufferedImage() {
-        processing.image(lifeFormBuffer,0,0);
-        processing.image(UXBuffer, 0, 0);
-    }
-
     public void setupNewLife(Bounds bounds) {
 
         center(bounds, true, false);
@@ -141,6 +149,7 @@ class PatternDrawer {
 
         UXBuffer = getBuffer();
         lifeFormBuffer = getBuffer();
+        backgroundBuffer = getBuffer();
 
         // Calculate the center of the visible portion before resizing
         BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
@@ -276,6 +285,7 @@ class PatternDrawer {
 
     public void move(float dx, float dy) {
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
+        lifeFormPosition.add(dx, dy);
     }
 
     private void updateCanvasOffsets(BigDecimal offsetX, BigDecimal offsetY) {
@@ -381,6 +391,10 @@ class PatternDrawer {
         // if we're not in the middle of updating, then
         // draw the newly updated universe
 
+        backgroundBuffer.beginDraw();
+        backgroundBuffer.background(0);
+        backgroundBuffer.endDraw();;
+
         UXBuffer.beginDraw();
         UXBuffer.clear();
 
@@ -399,12 +413,13 @@ class PatternDrawer {
 
         if (shouldDraw) {
             lifeFormBuffer.beginDraw();
-            lifeFormBuffer.background(0);
+            lifeFormBuffer.clear();
             BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);
             DrawNodeContext ctx = new DrawNodeContext();
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate(), ctx);
             drawBounds(bounds);
             lifeFormBuffer.endDraw();
+            lifeFormPosition.set(0, 0);
         }
 
         // make this threadsafe
@@ -417,7 +432,10 @@ class PatternDrawer {
 
         UXBuffer.endDraw();
 
-        displayBufferedImage();
+        processing.image(backgroundBuffer, 0,0);
+        processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
+        //processing.image(lifeFormBuffer,0,0);
+        processing.image(UXBuffer, 0, 0);
 
     }
 
