@@ -34,10 +34,9 @@ public class Patterning extends PApplet {
 
     private static boolean running;
     private static LifeUniverse life;
-
-    private DrawRateController drawRateController;
-
+    private static PApplet processing;
     private final List<MouseEventReceiver> mouseEventReceivers = new ArrayList<>();
+    private DrawRateController drawRateController;
     private final KeyCallback callbackDrawSlower = new KeyCallback(
             new KeyCombo(SHORTCUT_DRAW_FASTER, KeyEvent.SHIFT)
     ) {
@@ -56,7 +55,7 @@ public class Patterning extends PApplet {
 
         @Override
         public String getUsageText() {
-            return "slow the animation  down";
+            return "slow the animation down";
         }
     };
     private final KeyCallback callbackDrawFaster = new KeyCallback(SHORTCUT_DRAW_FASTER) {
@@ -120,7 +119,7 @@ public class Patterning extends PApplet {
     private final KeyCallback callbackZoomInCenter = new KeyCallback(SHORTCUT_ZOOM_CENTERED) {
         @Override
         public void invokeFeature() {
-            drawer.zoomXY(true, width / 2, height / 2);
+            drawer.zoomXY(true, (float) width / 2, (float) height / 2);
         }
 
         @Override
@@ -133,7 +132,7 @@ public class Patterning extends PApplet {
     ) {
         @Override
         public void invokeFeature() {
-            drawer.zoomXY(false, width / 2, height / 2);
+            drawer.zoomXY(false, (float) width / 2, (float) height / 2);
         }
 
         @Override
@@ -160,7 +159,7 @@ public class Patterning extends PApplet {
 
         @Override
         public String getUsageText() {
-            return "draw a border around the part of the universe containing living cells'";
+            return "draw a border around the part of the universe containing living cells";
         }
     };
     private final KeyCallback callbackCenterView = new KeyCallback(SHORTCUT_CENTER) {
@@ -175,7 +174,7 @@ public class Patterning extends PApplet {
             return "center the view on the universe - regardless of its size";
         }
     };
-    private final KeyCallback callbackUndoCenter = new KeyCallback(
+    private final KeyCallback callbackUndoMovement = new KeyCallback(
             new KeyCombo(SHORTCUT_UNDO, KeyEvent.META, ValidOS.MAC),
             new KeyCombo(SHORTCUT_UNDO, KeyEvent.CTRL, ValidOS.NON_MAC)
     ) {
@@ -188,7 +187,7 @@ public class Patterning extends PApplet {
         @SuppressWarnings("unused")
         @Override
         public String getUsageText() {
-            return "undo the last center or fit bounds to return to the last view";
+            return "undo various movement actions such as centering or fitting to screen";
         }
     };
     private final KeyCallback callbackFitUniverseOnScreen = new KeyCallback(SHORTCUT_FIT_UNIVERSE) {
@@ -227,38 +226,31 @@ public class Patterning extends PApplet {
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
     private boolean mousePressedOverReceiver = false;
-    // new instances only created in instantiateLife to keep things simple
-    // lifeForm not made local as it is intended to be used with display functions in the future
-    @SuppressWarnings("unused")
-    private LifeForm lifeForm;
     private String storedLife;
-
     private int targetStep;
     private final KeyCallback callbackStepFaster = new KeyCallback(SHORTCUT_STEP_FASTER) {
-        @SuppressWarnings("unused")
         @Override
         public void invokeFeature() {
             handleStep(true);
         }
 
-        @SuppressWarnings("unused")
+
         @Override
         public String getUsageText() {
-            return "double the generations per frame";
+            return "double the generations per draw";
         }
 
     };
     private final KeyCallback callbackStepSlower = new KeyCallback(SHORTCUT_STEP_SLOWER) {
-        @SuppressWarnings("unused")
+
         @Override
         public void invokeFeature() {
             handleStep(false);
         }
 
-        @SuppressWarnings("unused")
         @Override
         public String getUsageText() {
-            return "cut in half the generations per frame";
+            return "cut in half the generations per draw";
         }
 
     };
@@ -326,6 +318,10 @@ public class Patterning extends PApplet {
         return life;
     }
 
+    public static PApplet getProcessing() {
+        return processing;
+    }
+
     public static void main(String[] args) {
         PApplet.main("Patterning");
     }
@@ -372,13 +368,11 @@ public class Patterning extends PApplet {
 
         surface.setResizable(true);
 
+
         setupKeyHandler();
         List<ControlPanel> panels = getControlPanels();
 
         frameRate(DrawRateController.MAX_FRAME_RATE);
-
-        this.drawRateController = new DrawRateController();
-        this.drawer = new PatternDrawer(this, panels, drawRateController);
 
         this.targetStep = 0;
 
@@ -395,104 +389,26 @@ public class Patterning extends PApplet {
 
         loadSavedWindowPositions();
 
+
+        this.drawRateController = new DrawRateController();
+        this.drawer = new PatternDrawer(this, panels, drawRateController);
+
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform();
 
     }
 
-    private void loadSavedWindowPositions() {
-
-        JSONObject properties;
-        String propertiesFileName = PROPERTY_FILE_NAME;
-        File propertiesFile = new File(dataPath(propertiesFileName));
-
-        int x = 100, y = 100, screenIndex = 0;
-
-        if (propertiesFile.exists() && propertiesFile.length() > 0) {
-            // Load window position, and screen from JSON file
-            properties = loadJSONObject(dataPath(propertiesFileName));
-            x = properties.getInt("x", x);
-            y = properties.getInt("y", y);
-            screenIndex = properties.getInt("screen", screenIndex);
-        }
-
-        // Set the window location based on the screen index
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] screens = ge.getScreenDevices();
-        screenIndex = Math.min(screenIndex, screens.length - 1);
-        GraphicsDevice screen = screens[screenIndex];
-        Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
-        x = screenBounds.x + x;
-        y = screenBounds.y + y;
-
-        // use the chatGPT way to get a thing that can do you what you want
-        Frame frame = getFrame();
-
-        frame.setLocation(x, y);
-
-    }
-
-    private Frame getFrame() {
-
-        // chatGPT thinks that this will only work with processing 4 so...
-        // probably it would be helpful to have a non-processing mechanism
-        // you're also a little bit reliant on the processing environment so...
-        Component comp = (Component) getSurface().getNative();
-        while (!(comp instanceof Frame)) {
-            comp = comp.getParent();
-        }
-        return (Frame) comp;
-    }
-
-    // Override the exit() method to save window properties before closing
-    @Override
-    public void exit() {
-        saveWindowProperties();
-        super.exit();
-    }
-
-    private void saveWindowProperties() {
-        JSONObject properties = new JSONObject();
-
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] screens = ge.getScreenDevices();
-
-        // this took a lot of chatting with GPT 4.0 to finally land on something that
-        // would work
-        Frame frame = getFrame();
-
-        // Find the screen where the window is located
-        int screenIndex = 0;
-        for (int i = 0; i < screens.length; i++) {
-            GraphicsDevice screen = screens[i];
-            if (screen.getDefaultConfiguration().getBounds().contains(frame.getLocation())) {
-                screenIndex = i;
-                break;
-            }
-        }
-
-        GraphicsDevice screen = screens[screenIndex];
-        Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
-
-        properties.setInt("x", frame.getX() - screenBounds.x);
-        properties.setInt("y", frame.getY() - screenBounds.y);
-        properties.setInt("width", width);
-        properties.setInt("height", height);
-        properties.setInt("screen", screenIndex);
-        properties.setString("lifeForm", storedLife);
-
-        saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME));
-    }
-
     public void draw() {
+
+        if (null == processing) processing = this;
 
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
         drawRateController.adjustDrawRate();
 
-        boolean shouldDrawLifeForm = drawRateController.shouldDraw();
+        boolean shouldDrawLifeForm = drawRateController.shouldDraw()  && lifeIsThreadSafe();
 
         // goForwardIntime (below) requests a nextGeneartion and or a step change
         // both of which can take a while
@@ -502,7 +418,8 @@ public class Patterning extends PApplet {
         // and we tell the drawer whether it is still updatinglife since the last frame
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
-        drawer.draw(!updatingLife() && shouldDrawLifeForm);
+        drawer.draw(shouldDrawLifeForm);
+
 
         // as mentioned above - this runs on a separate thread
         // and we don't want it to go any faster than the draw rate throttling mechanism
@@ -510,19 +427,20 @@ public class Patterning extends PApplet {
             goForwardInTime();
         }
 
+
     }
 
-    // possibly this will help when returning from screensaver
-    // which had a problem that one time
-    public void focusGained() {
-        redraw();
+    private boolean lifeIsThreadSafe() {
+
+        // don't start if either of these calculations are currently running
+        boolean setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress();
+        boolean nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress();
+
+        return (!nextGenerationRunning && !setStepRunning);
+
     }
 
     private void goForwardInTime() {
-
-        // don't start anything complex if we're not running
-        if (!running)
-            return;
 
         if (shouldStartComplexCalculationSetStep()) {
             int step = life.step;
@@ -531,42 +449,26 @@ public class Patterning extends PApplet {
             return;
         }
 
+        // don't run generations if we're not running
+        if (!running)
+            return;
+
         if (shouldStartComplexCalculationNextGeneration()) {
             complexCalculationHandlerNextGeneration.startCalculation(null);
         }
     }
 
-    private void performComplexCalculationSetStep(Integer step) {
-        life.setStep(step);
-        // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
-        drawer.clearCache();
-    }
+    private boolean shouldStartComplexCalculationSetStep() {
 
-    private void performComplexCalculationNextGeneration() {
-        life.nextGeneration();
+        // if we're not running a complex task, and we're expecting to change the step
+        return (lifeIsThreadSafe() && (life.step != targetStep));
+
     }
 
     // only start these if you're not running either one
     private boolean shouldStartComplexCalculationNextGeneration() {
 
-        return !updatingLife();
-    }
-
-    private boolean updatingLife() {
-
-        // don't start if either of these calculations are currently running
-        boolean setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress();
-        boolean nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress();
-
-        return (nextGenerationRunning || setStepRunning);
-
-    }
-
-    private boolean shouldStartComplexCalculationSetStep() {
-
-        // if we're not running a complex task, and we're expecting to change the step
-        return (!updatingLife() && (life.step != targetStep));
-
+        return lifeIsThreadSafe();
     }
 
     public void mousePressed() {
@@ -612,24 +514,191 @@ public class Patterning extends PApplet {
         last_mouse_y += dy;
     }
 
-    public void mouseOver() {
+    // possibly this will help when returning from screensaver
+    // which had a problem that one time
+    public void focusGained() {
+        redraw();
+    }
+
+    // Override the exit() method to save window properties before closing
+    @Override
+    public void exit() {
+        saveWindowProperties();
+        super.exit();
+    }
+
+    private void saveWindowProperties() {
+        JSONObject properties = new JSONObject();
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+
+        // this took a lot of chatting with GPT 4.0 to finally land on something that
+        // would work
+        Frame frame = getFrame();
+
+        // Find the screen where the window is located
+        int screenIndex = 0;
+        for (int i = 0; i < screens.length; i++) {
+            GraphicsDevice screen = screens[i];
+            if (screen.getDefaultConfiguration().getBounds().contains(frame.getLocation())) {
+                screenIndex = i;
+                break;
+            }
+        }
+
+        GraphicsDevice screen = screens[screenIndex];
+        Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
+
+        properties.setInt("x", frame.getX() - screenBounds.x);
+        properties.setInt("y", frame.getY() - screenBounds.y);
+        properties.setInt("width", width);
+        properties.setInt("height", height);
+        properties.setInt("screen", screenIndex);
+        properties.setString("lifeForm", storedLife);
+
+        saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME));
+    }
+
+    private void setupKeyHandler() {
+
+        KeyHandler keyHandler = new KeyHandler(this);
+
+        // order matters - put them in the order you want them to show in getUsageText()
+        keyHandler.addKeyCallback(callbackPause);
+        keyHandler.addKeyCallback(callbackZoomIn);
+        keyHandler.addKeyCallback(callbackZoomInCenter);
+        keyHandler.addKeyCallback(callbackZoomOut);
+        keyHandler.addKeyCallback(callbackZoomOutCenter);
+        keyHandler.addKeyCallback(callbackStepFaster);
+        keyHandler.addKeyCallback(callbackStepSlower);
+        keyHandler.addKeyCallback(callbackDrawFaster);
+        keyHandler.addKeyCallback(callbackDrawSlower);
+        keyHandler.addKeyCallback(callbackDisplayBounds);
+        keyHandler.addKeyCallback(callbackCenterView);
+        keyHandler.addKeyCallback(callbackFitUniverseOnScreen);
+        keyHandler.addKeyCallback(callbackRandomLife);
+        keyHandler.addKeyCallback(callbackRewind);
+        keyHandler.addKeyCallback(callbackPaste);
+        keyHandler.addKeyCallback(callbackUndoMovement);
+        keyHandler.addKeyCallback(callbackMovement);
+
+        System.out.println(keyHandler.getUsageText());
 
     }
 
-    public void pasteLifeForm() {
+    // now set up control panels
+    public List<ControlPanel> getControlPanels() {
+
+       // ControlPanel panelLeft, panelTop, panelRight, panelBottom;
+        ControlPanel panelLeft, panelTop;
+
 
         try {
-            // Get the system clipboard
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            // loading icons can generate an IOException if the file isn't there - which is problematic
+            panelLeft = new ControlPanel.Builder(ControlPanel.PanelPosition.LEFT, this)
+                    .addControl("zoomIn.png", callbackZoomInCenter)
+                    .addControl("zoomOut.png", callbackZoomOutCenter)
+                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
+                    .addControl("center.png", callbackCenterView)
+                    .addControl("boundary.png", true, callbackDisplayBounds)
+                    .addControl("undo.png", callbackUndoMovement)
+                    .alignment(ControlPanel.PanelAlignment.CENTER)
+                    .sizeToFit(true)
+                    .build();
 
-            // Check if the clipboard contains text data and then get it
-            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
-                storedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
-                instantiateLifeform();
-            }
-        } catch (UnsupportedFlavorException | IOException e) {
-            e.printStackTrace();
+            // loading icons can generate an IOException if the file isn't there - which is problematic
+            panelTop = new ControlPanel.Builder(ControlPanel.PanelPosition.TOP, this)
+                    .addControl("random.png", callbackRandomLife)
+                    .addControl("stepSlower.png", callbackStepSlower)
+                    .addControl("drawSlower.png", callbackDrawSlower)
+                    .addControl("pause.png", "play.png", callbackPause)
+                    .addControl("drawFaster.png", callbackDrawFaster)
+                    .addControl("stepFaster.png", callbackStepFaster)
+                    .addControl("rewind.png", callbackRewind)
+                    .alignment(ControlPanel.PanelAlignment.CENTER)
+                    .sizeToFit(true)
+                    .build();
+
+/*            panelRight = new ControlPanel.Builder(ControlPanel.PanelPosition.RIGHT, this)
+                    .addControl("zoomIn.png", callbackZoomInCenter)
+                    .addControl("zoomOut.png", callbackZoomOutCenter)
+                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
+                    .addControl("center.png", callbackCenterView)
+                    .addControl("boundary.png", true, callbackDisplayBounds)
+                    .addControl("undo.png", callbackUndoMovement)
+                    .alignment(ControlPanel.PanelAlignment.CENTER)
+                    .sizeToFit(true)
+                    .build();
+
+            // loading icons can generate an IOException if the file isn't there - which is problematic
+            panelBottom = new ControlPanel.Builder(ControlPanel.PanelPosition.BOTTOM, this)
+                    .addControl("random.png", callbackRandomLife)
+                    .addControl("stepSlower.png", callbackStepSlower)
+                    .addControl("drawSlower.png", callbackDrawSlower)
+                    .addControl("pause.png", "play.png", callbackPause)
+                    .addControl("drawFaster.png", callbackDrawFaster)
+                    .addControl("stepFaster.png", callbackStepFaster)
+                    .addControl("rewind.png", callbackRewind)
+                    .alignment(ControlPanel.PanelAlignment.CENTER)
+                    .sizeToFit(true)
+                    .build();*/
+
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+
+        //List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop, panelRight, panelBottom);
+        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
+
+
+        mouseEventReceivers.addAll(panels);
+
+        return panels;
+    }
+
+    private void performComplexCalculationSetStep(Integer step) {
+        life.setStep(step);
+        // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
+        drawer.clearCache();
+    }
+
+    private void performComplexCalculationNextGeneration() {
+        life.nextGeneration();
+    }
+
+    private void loadSavedWindowPositions() {
+
+        JSONObject properties;
+        String propertiesFileName = PROPERTY_FILE_NAME;
+        File propertiesFile = new File(dataPath(propertiesFileName));
+
+        int x = 100, y = 100, screenIndex = 0;
+
+        if (propertiesFile.exists() && propertiesFile.length() > 0) {
+            // Load window position, and screen from JSON file
+            properties = loadJSONObject(dataPath(propertiesFileName));
+            x = properties.getInt("x", x);
+            y = properties.getInt("y", y);
+            screenIndex = properties.getInt("screen", screenIndex);
+        }
+
+        // Set the window location based on the screen index
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+        screenIndex = Math.min(screenIndex, screens.length - 1);
+        GraphicsDevice screen = screens[screenIndex];
+        Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
+        x = screenBounds.x + x;
+        y = screenBounds.y + y;
+
+        // use the chatGPT way to get a thing that can do you what you want
+        Frame frame = getFrame();
+
+        frame.setLocation(x, y);
+
     }
 
     private void instantiateLifeform() {
@@ -647,7 +716,8 @@ public class Patterning extends PApplet {
             life.setStep(0);
 
             life.setupField(newLife.field_x, newLife.field_y);
-            lifeForm = newLife;
+            // new instances only created in instantiateLife to keep things simple
+            // lifeForm not made local as it is intended to be used with display functions in the future
 
             drawer.setupNewLife(life.getRootBounds());
 
@@ -655,6 +725,38 @@ public class Patterning extends PApplet {
         } catch (NotLifeException e) {
             // todo: on failure you need to
             println("get a life - here's what failed:\n\n" + e.getMessage());
+        }
+    }
+
+    private Frame getFrame() {
+
+        // chatGPT thinks that this will only work with processing 4 so...
+        // probably it would be helpful to have a non-processing mechanism
+        // you're also a little bit reliant on the processing environment so...
+        Component comp = (Component) getSurface().getNative();
+        while (!(comp instanceof Frame)) {
+            comp = comp.getParent();
+        }
+        return (Frame) comp;
+    }
+
+    public void mouseOver() {
+
+    }
+
+    public void pasteLifeForm() {
+
+        try {
+            // Get the system clipboard
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+
+            // Check if the clipboard contains text data and then get it
+            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+                storedLife = (String) clipboard.getData(DataFlavor.stringFlavor);
+                instantiateLifeform();
+            }
+        } catch (UnsupportedFlavorException | IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -690,75 +792,6 @@ public class Patterning extends PApplet {
         } finally {
             ComplexCalculationHandler.unlock();
         }
-    }
-
-    private void setupKeyHandler() {
-
-        KeyHandler keyHandler = new KeyHandler(this);
-
-        // order matters - put them in the order you want them to show in getUsageText()
-        keyHandler.addKeyCallback(callbackPause);
-        keyHandler.addKeyCallback(callbackZoomIn);
-        keyHandler.addKeyCallback(callbackZoomInCenter);
-        keyHandler.addKeyCallback(callbackZoomOut);
-        keyHandler.addKeyCallback(callbackZoomOutCenter);
-        keyHandler.addKeyCallback(callbackStepFaster);
-        keyHandler.addKeyCallback(callbackStepSlower);
-        keyHandler.addKeyCallback(callbackDrawFaster);
-        keyHandler.addKeyCallback(callbackDrawSlower);
-        keyHandler.addKeyCallback(callbackDisplayBounds);
-        keyHandler.addKeyCallback(callbackCenterView);
-        keyHandler.addKeyCallback(callbackFitUniverseOnScreen);
-        keyHandler.addKeyCallback(callbackRandomLife);
-        keyHandler.addKeyCallback(callbackRewind);
-        keyHandler.addKeyCallback(callbackPaste);
-        keyHandler.addKeyCallback(callbackUndoCenter);
-        keyHandler.addKeyCallback(callbackMovement);
-
-        System.out.println(keyHandler.getUsageText());
-
-    }
-
-    // now set up control panels
-    public List<ControlPanel> getControlPanels() {
-
-        ControlPanel panelLeft, panelTop;
-
-        try {
-            // loading icons can generate an IOException if the file isn't there - which is problematic
-            panelLeft = new ControlPanel.Builder(ControlPanel.PanelPosition.LEFT, this)
-                    .addControl("zoomIn.png", callbackZoomInCenter)
-                    .addControl("zoomOut.png", callbackZoomOutCenter)
-                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
-                    .addControl("center.png", callbackCenterView)
-                    .addControl("boundary.png", true,  callbackDisplayBounds)
-                    .alignment(ControlPanel.PanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();
-
-            // loading icons can generate an IOException if the file isn't there - which is problematic
-            panelTop = new ControlPanel.Builder(ControlPanel.PanelPosition.TOP, this)
-                    .addControl("random.png",  callbackRandomLife)
-                    .addControl("stepSlower.png", callbackStepSlower)
-                    .addControl("drawSlower.png", callbackDrawSlower)
-                    .addControl("pause.png", "play.png", callbackPause)
-                    .addControl("drawFaster.png", callbackDrawFaster)
-                    .addControl("stepFaster.png", callbackStepFaster)
-                    .addControl("rewind.png",  callbackRewind)
-                    .addControl("undo.png",  callbackUndoCenter)
-                    .alignment(ControlPanel.PanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
-
-        mouseEventReceivers.addAll(panels);
-
-        return panels;
     }
 
 }

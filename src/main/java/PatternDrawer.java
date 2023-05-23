@@ -1,4 +1,5 @@
 import processing.core.PApplet;
+import processing.core.PFont;
 import processing.core.PGraphics;
 import processing.core.PVector;
 
@@ -8,6 +9,8 @@ import java.math.MathContext;
 import java.util.*;
 
 class PatternDrawer {
+
+    public static PFont font;
     private static final BigDecimal BigTWO = new BigDecimal(2);
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private static final int DEFAULT_CELL_WIDTH = 4;
@@ -55,9 +58,13 @@ class PatternDrawer {
     // used for resize detection
     private int prevWidth, prevHeight;
 
+
+
     private CellWidth cellWidth;
     PatternDrawer(PApplet pApplet, List<ControlPanel> panels, DrawRateController drawRateController) {
         this.processing = pApplet;
+
+        font = processing.createFont("Verdana",24);
 
         // initial height in case we resize
         prevWidth = pApplet.width;
@@ -66,7 +73,7 @@ class PatternDrawer {
         this.cellWidth = new CellWidth(DEFAULT_CELL_WIDTH);
         this.canvasWidth = BigDecimal.valueOf(pApplet.width);
         this.canvasHeight = BigDecimal.valueOf(pApplet.height);
-        
+
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer= getBuffer();
         this.backgroundBuffer = getBuffer();
@@ -284,6 +291,7 @@ class PatternDrawer {
     }
 
     public void move(float dx, float dy) {
+        saveUndoState();
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
         lifeFormPosition.add(dx, dy);
     }
@@ -379,7 +387,6 @@ class PatternDrawer {
 
     public void draw(boolean shouldDraw) {
 
-
         if (prevWidth != processing.width || prevHeight != processing.height) {
             // moral equivalent of a resize
             surfaceResized();
@@ -397,6 +404,7 @@ class PatternDrawer {
 
         UXBuffer.beginDraw();
         UXBuffer.clear();
+        UXBuffer.textFont(font);
 
 
         LifeUniverse life = Patterning.getLifeUniverse();

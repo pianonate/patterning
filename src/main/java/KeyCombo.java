@@ -12,6 +12,25 @@ enum ValidOS {
 
 public class KeyCombo {
     static ValidOS currentOS = determineCurrentOS();
+    private final int keyCode;
+    private final int modifiers;
+    private final ValidOS validOS;
+    public KeyCombo(int keyCode) {
+        this(keyCode, 0, ValidOS.ANY);
+    }
+    public KeyCombo(int keyCode, int modifiers, ValidOS validOS) {
+        this.keyCode = Character.isLowerCase(keyCode) ? Character.toUpperCase(keyCode) : keyCode;
+        this.modifiers = modifiers;
+        this.validOS = validOS;
+    }
+
+    public KeyCombo(int keyCode, int modifiers) {
+        this(keyCode, modifiers, ValidOS.ANY);
+    }
+
+    public KeyCombo(char keyCode, int modifiers) {
+        this(keyCode, modifiers, ValidOS.ANY);
+    }
 
     private static ValidOS determineCurrentOS() {
         String osName = System.getProperty("os.name").toLowerCase();
@@ -26,35 +45,6 @@ public class KeyCombo {
     static void setCurrentOS(ValidOS os) {
         currentOS = os;
     }
-    private final int keyCode;
-    private final int modifiers;
-    private final ValidOS validOS;
-
-    public KeyCombo(int keyCode) {
-        this(keyCode, 0, ValidOS.ANY);
-    }
-
-    public KeyCombo(int keyCode, int modifiers) {
-        this(keyCode, modifiers, ValidOS.ANY);
-    }
-
-    public KeyCombo(char keyCode, int modifiers) {
-        this(keyCode, modifiers, ValidOS.ANY);
-    }
-
-    public KeyCombo(int keyCode, int modifiers, ValidOS validOS) {
-        this.keyCode = Character.isLowerCase(keyCode) ? Character.toUpperCase(keyCode) : keyCode;
-        this.modifiers = modifiers;
-        this.validOS = validOS;
-    }
-
-    public int getKeyCode() {
-        return keyCode;
-    }
-
-    public int getModifiers() {
-        return modifiers;
-    }
 
     public ValidOS getValidOS() {
         return validOS;
@@ -67,6 +57,14 @@ public class KeyCombo {
                 isValidForCurrentOS();
     }
 
+    public int getKeyCode() {
+        return keyCode;
+    }
+
+    public int getModifiers() {
+        return modifiers;
+    }
+
     public boolean isValidForCurrentOS() {
 
         return switch (validOS) {
@@ -74,6 +72,21 @@ public class KeyCombo {
             case MAC -> currentOS == ValidOS.MAC;
             case NON_MAC -> currentOS == ValidOS.NON_MAC;
         };
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(keyCode, modifiers, validOS);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        KeyCombo keyCombo = (KeyCombo) o;
+        return keyCode == keyCombo.keyCode &&
+                modifiers == keyCombo.modifiers &&
+                validOS == keyCombo.validOS;
     }
 
     @Override
@@ -108,20 +121,5 @@ public class KeyCombo {
         }
 
         return keyTextBuilder.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        KeyCombo keyCombo = (KeyCombo) o;
-        return keyCode == keyCombo.keyCode &&
-                modifiers == keyCombo.modifiers &&
-                validOS == keyCombo.validOS;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(keyCode, modifiers, validOS);
     }
 }

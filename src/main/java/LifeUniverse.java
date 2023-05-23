@@ -1,7 +1,6 @@
 import java.math.BigInteger;
 import java.nio.IntBuffer;
 import java.util.HashMap;
-
 /*
 
 * this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
@@ -386,36 +385,30 @@ public class LifeUniverse {
      * node,
      * as it combines the new trees created with an extra level of hierarchy.
      */
+    private int lastLevel;
     private Node expandUniverse(Node node) {
         // System.out.println("expanding universe");
 
         Node t = emptyTree(node.level - 1);
+
+        lastLevel = node.level;
 
         return createTree(
                 createTree(t, t, t, node.nw, "expandUniverse1"),
                 createTree(t, t, node.ne, t, "expandUniverse2"),
                 createTree(t, node.sw, t, t, "expandUniverse3"),
                 createTree(node.se, t, t, t, "expandUniverse4"), "expandUniverse5"
-
         );
     }
 
     // Preserve the tree, but remove all cached
     // generations forward
+    // alsoQuick came from the original algorithm and was used when
+    // (I believe) that the rule set was changed.
+    // right now i don't know why it's otherwise okay to preserve
+    // need to think more about this
     private void uncache(boolean alsoQuick) {
-        /*
-         * for (Node node : hashmap.values()) {
-         * if (node != null) {
-         * node.cache = null;
-         * 
-         * node.clearBinaryBitArray();
-         * node.hashmapNext = null;
-         * if (alsoQuick) {
-         * node.quick_cache = null;
-         * }
-         * }
-         * }
-         */
+
         hashmap.values().parallelStream().forEach(node -> {
             if (node != null) {
                 node.cache = null;
@@ -712,19 +705,8 @@ public class LifeUniverse {
 
     public void setStep(int step) {
 
-        /*
-         * if (step > this.root.level - 1) {
-         * System.out.println("root.level: " + root.level + " and step: " + step +
-         * " are too close, wait a minute");
-         * 
-         * step = root.level - 1;
-         * }
-         */
+            if (step != this.step) {
 
-        if (step != this.step) {
-
-            // logpoint: call# {String.format("%,7d", nextGenerationCalls)} setStep
-            // {String.format("%,3d", step)}
             this.step = step;
 
             uncache(false);

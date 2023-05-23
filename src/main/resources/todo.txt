@@ -1,10 +1,15 @@
-todo: make controls continuously pressable and change color when you do
-      possibly this would stop generating future generations?  or not, if it can work smoothly
-todo: when you add move controls,it could be on a pop out panel but that gets tricky with all the hover text
+todo: instantiate the offscreen buffer for the control text panel in the constructor of a control so you don't have to ever recreate it
+      figure the best way to get the font object
+      generalize the animation into a utility class that can accept a pgraphic, and coordinates to reveal it or slide it out or whatever
+      basically a transition class that allows for directions and timing
+      from here you can then create a text panel that can slide out from an info control - the same way
+
+todo: handle displaying fractional frame rates better (do it on a text panel)
 todo: controls display orange when they can't go any further
 todo: autofit to screenf
 todo: when you invoke a keyboard command associated with a control - highlight the control as if it had been clicked - highlight it for 500ms
 todo: popout for movement controls - aligning to dimensions - sub conrolpanel...
+todo: make all icons the same size as the play controls...
 
 todo: debug when turing machine gets big - what is taking its time to display as it stops and starts a lot
       to me it smells like garbage collection because you can speed it up substantially by reducing the number
