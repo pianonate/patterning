@@ -1,3 +1,7 @@
+import actions.KeyCallback;
+import actions.KeyCombo;
+import actions.KeyHandler;
+import actions.ValidOS;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -31,7 +35,7 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackDuplicate() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Duplicate KeyCallback with single char
+        // Duplicate actions.KeyCallback with single char
         MockKeyCallback callback1 = new MockKeyCallback('A');
         MockKeyCallback callback2 = new MockKeyCallback('A');
         handler.addKeyCallback(callback1);
@@ -40,7 +44,7 @@ public class KeyHandlerTest {
         String expectedMessage1 = "The following key combos are already associated with another callback: A";
         assertTrue(exception1.getMessage().contains(expectedMessage1));
 
-        // Duplicate KeyCallback with char and modifier
+        // Duplicate actions.KeyCallback with char and modifier
         KeyCombo comboWithModifier = new KeyCombo('B', KeyEvent.CTRL);
         MockKeyCallback callback3 = new MockKeyCallback(comboWithModifier);
         MockKeyCallback callback4 = new MockKeyCallback(comboWithModifier);
@@ -50,7 +54,7 @@ public class KeyHandlerTest {
         String expectedMessage2 = "The following key combos are already associated with another callback: ^B";
         assertTrue(exception2.getMessage().contains(expectedMessage2));
 
-        // Duplicate KeyCallback with char, modifier and validOS
+        // Duplicate actions.KeyCallback with char, modifier and validOS
         KeyCombo comboWithModifierAndOS = new KeyCombo('C', KeyEvent.CTRL, ValidOS.NON_MAC);
         MockKeyCallback callback5 = new MockKeyCallback(comboWithModifierAndOS);
         MockKeyCallback callback6 = new MockKeyCallback(comboWithModifierAndOS);
@@ -65,12 +69,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithDifferentModifiers() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a KeyCallback with 'A' and CTRL modifier
+        // Adding a actions.KeyCallback with 'A' and CTRL modifier
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a KeyCallback with 'A' and SHIFT modifier
+        // Adding a actions.KeyCallback with 'A' and SHIFT modifier
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.SHIFT);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -80,12 +84,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithSameCharModifierDifferentOS() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a KeyCallback with 'A', CTRL modifier and Windows OS
+        // Adding a actions.KeyCallback with 'A', CTRL modifier and Windows OS
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.NON_MAC);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a KeyCallback with 'A', CTRL modifier and macOS
+        // Adding a actions.KeyCallback with 'A', CTRL modifier and macOS
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.MAC);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -95,12 +99,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithSameCharDifferentModifierSameOS() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a KeyCallback with 'A', CTRL modifier and Windows OS
+        // Adding a actions.KeyCallback with 'A', CTRL modifier and Windows OS
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.NON_MAC);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a KeyCallback with 'A', SHIFT modifier and Windows OS
+        // Adding a actions.KeyCallback with 'A', SHIFT modifier and Windows OS
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.SHIFT, ValidOS.NON_MAC);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -194,7 +198,7 @@ public class KeyHandlerTest {
 
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Create a KeyCallback with two KeyCombos, one valid for Mac, another valid for Non-Mac.
+        // Create a actions.KeyCallback with two KeyCombos, one valid for Mac, another valid for Non-Mac.
         KeyCallback callback = new KeyCallback(
                 new KeyCombo('C', KeyEvent.META, ValidOS.MAC),
                 new KeyCombo('C', KeyEvent.CTRL, ValidOS.NON_MAC),

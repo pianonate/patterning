@@ -1,3 +1,6 @@
+import actions.KeyCallback;
+import actions.KeyCombo;
+
 import java.util.Set;
 
 class MockKeyCallback extends KeyCallback {

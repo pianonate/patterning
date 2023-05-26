@@ -1,3 +1,5 @@
+import actions.KeyCombo;
+import actions.ValidOS;
 import org.junit.jupiter.api.Test;
 import processing.event.KeyEvent;
 

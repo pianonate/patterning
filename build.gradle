@@ -45,7 +45,7 @@ tasks.register('profile', JavaExec) {
 
 jar {
     manifest {
-        attributes "Main-Class": "Patterning"
+        attributes "Main-Class": "patterning.Patterning"
     }
 
     from {
@@ -54,7 +54,7 @@ jar {
 }
 
 application {
-    mainClassName = 'Patterning'
+    mainClassName = 'patterning.Patterning'
 }
 
 

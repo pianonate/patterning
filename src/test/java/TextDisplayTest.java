@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.Test;
 import processing.core.PApplet;
 import processing.core.PGraphics;
+import ux.TextPanel;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -9,7 +10,7 @@ public class TextDisplayTest {
 
     @Test
     public void testConstruction() {
-        TextDisplay display = new TextDisplay.Builder("Test", PApplet.CENTER, PApplet.CENTER)
+        TextPanel display = new TextPanel.Builder("Test", PApplet.CENTER, PApplet.CENTER)
                 .textSize(12)
                 .textColor(0x00FFFFFF)
                 .fadeInDuration(1000)
@@ -20,7 +21,7 @@ public class TextDisplayTest {
     @Test
     public void testDisplayMessage() {
         PGraphics buffer = new PGraphics();
-        TextDisplay display = new TextDisplay.Builder("Test", PApplet.CENTER, PApplet.CENTER)
+        TextPanel display = new TextPanel.Builder("Test", PApplet.CENTER, PApplet.CENTER)
                 .textSize(12)
                 .textColor(0x00FFFFFF)
                 .fadeInDuration(1000)
@@ -33,7 +34,7 @@ public class TextDisplayTest {
 
     @Test
     public void testStartDisplay() {
-        TextDisplay display = new TextDisplay.Builder("Test",PApplet.CENTER, PApplet.CENTER)
+        TextPanel display = new TextPanel.Builder("Test",PApplet.CENTER, PApplet.CENTER)
                 .textSize(12)
                 .textColor(0x00FFFFFF)
                 .fadeInDuration(1000)

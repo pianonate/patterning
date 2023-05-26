@@ -1,3 +1,5 @@
+import actions.KeyCombo;
+import actions.ValidOS;
 import org.junit.jupiter.api.Test;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
@@ -35,7 +37,7 @@ public class KeyCallbackTest {
         assertTrue(callback.getKeyCombos().containsAll(Set.of(kc1, kc2, kc3)));
     }
 
-    // Test for KeyCallback matches() method
+    // Test for actions.KeyCallback matches() method
     @Test
     public void testKeyCallbackMatches() {
         MockKeyCallback callback = new MockKeyCallback('A');
@@ -47,7 +49,7 @@ public class KeyCallbackTest {
         assertFalse(callback.matches(event));
     }
 
-    // Test for KeyCallback isValidForCurrentOS() method
+    // Test for actions.KeyCallback isValidForCurrentOS() method
     @Test
     public void testKeyCallbackIsValidForCurrentOS() {
         MockKeyCallback callback = new MockKeyCallback(new KeyCombo('A', 0, ValidOS.MAC));
