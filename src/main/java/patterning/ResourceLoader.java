@@ -26,28 +26,6 @@ public class ResourceLoader {
 
     }
 
-/*    public static PImage loadImageFromStream(String resourceName) {
-        try {
-            InputStream stream = getResourceAsStream(resourceName);
-            BufferedImage bimg = ImageIO.read(stream);
-            PImage img = new PImage(bimg.getWidth(), bimg.getHeight(), PConstants.ARGB);
-            bimg.getRGB(0, 0, img.width, img.height, img.pixels, 0, img.width);
-            img.updatePixels();
-            return img;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static InputStream getResourceAsStream(String resourceName) throws IOException {
-        InputStream is = getClassLoader().getResourceAsStream(resourceName);
-        if (is == null) {
-            throw new IOException("Resource not found: " + resourceName);
-        }
-        return is;
-    }*/
-
     public static String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
         List<String> files = getResourceFilePaths(directoryName);
         if (files.isEmpty()) {

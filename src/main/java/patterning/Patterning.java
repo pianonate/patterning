@@ -297,9 +297,9 @@ public class Patterning extends PApplet {
         @Override
         public void invokeFeature() {
             if (toggled)
-                UXTheme.getInstance().setTheme(UXThemeType.DEFAULT);
+                UXThemeManager.getInstance().setTheme(UXThemeType.DEFAULT);
             else
-                UXTheme.getInstance().setTheme(UXThemeType.DARK);
+                UXThemeManager.getInstance().setTheme(UXThemeType.DARK);
 
             toggled = !toggled;
         }
@@ -425,7 +425,6 @@ public class Patterning extends PApplet {
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform();
-
     }
 
     public void draw() {
@@ -614,21 +613,16 @@ public class Patterning extends PApplet {
 
     public Panel getTestControl() {
 
-        Panel controlPanel = new Panel(RIGHT, CENTER);
+        UXThemeManager theme = UXThemeManager.getInstance();
+        Control control1 = new Control.Builder(callbackZoomInCenter, "zoomIn.png", theme.getControlSize()).build();
+        Control control2 = new Control.Builder(callbackZoomOutCenter, "zoomOut.png",theme.getControlSize()).build();
 
-        UXTheme theme = UXTheme.getInstance();
-        Control control1 = new Control(callbackZoomInCenter, "zoomIn.png", theme.getControlSize());
-        // mouseEventReceivers.add(control1);
-
-        Control control2 = new Control(callbackZoomOutCenter, "zoomOut.png",theme.getControlSize());
-        // mouseEventReceivers.add(control2);
-
-        controlPanel.addChildPanel(control1);
-        controlPanel.addChildPanel(control2);
-
-        controlPanel.setOrientation(Panel.Orientation.VERTICAL);
-
-        return controlPanel;
+        return new ContainerPanel.Builder(Panel.HAlign.RIGHT, Panel.VAlign.CENTER)
+                .addPanel(control1)
+                .addPanel(control2)
+                .setOrientation(ContainerPanel.Orientation.VERTICAL)
+                .setTransition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
+                .build();
     }
 
     // now set up control panels
@@ -789,9 +783,6 @@ public class Patterning extends PApplet {
         return (Frame) comp;
     }
 
-    public void mouseOver() {
-
-    }
 
     public void pasteLifeForm() {
 
@@ -816,9 +807,6 @@ public class Patterning extends PApplet {
         if (this.targetStep + increment < 0)
             increment = 0;
         this.targetStep += increment;
-
-        String fasterOrSlower = (faster) ? "faster requested" : "slower requested";
-
     }
 
     private void fitUniverseOnScreen() {

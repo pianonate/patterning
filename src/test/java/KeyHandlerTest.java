@@ -69,12 +69,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithDifferentModifiers() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a actions.KeyCallback with 'A' and CTRL modifier
+        // Adding actions.KeyCallback with 'A' and CTRL modifier
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a actions.KeyCallback with 'A' and SHIFT modifier
+        // Adding actions.KeyCallback with 'A' and SHIFT modifier
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.SHIFT);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -84,12 +84,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithSameCharModifierDifferentOS() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a actions.KeyCallback with 'A', CTRL modifier and Windows OS
+        // Adding actions.KeyCallback with 'A', CTRL modifier and Windows OS
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.NON_MAC);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a actions.KeyCallback with 'A', CTRL modifier and macOS
+        // Adding actions.KeyCallback with 'A', CTRL modifier and macOS
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.MAC);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -99,12 +99,12 @@ public class KeyHandlerTest {
     public void testAddKeyCallbackWithSameCharDifferentModifierSameOS() {
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Adding a actions.KeyCallback with 'A', CTRL modifier and Windows OS
+        // Adding actions.KeyCallback with 'A', CTRL modifier and Windows OS
         KeyCombo combo1 = new KeyCombo('A', KeyEvent.CTRL, ValidOS.NON_MAC);
         MockKeyCallback callback1 = new MockKeyCallback(combo1);
         handler.addKeyCallback(callback1);
 
-        // Adding a actions.KeyCallback with 'A', SHIFT modifier and Windows OS
+        // Adding actions.KeyCallback with 'A', SHIFT modifier and Windows OS
         KeyCombo combo2 = new KeyCombo('A', KeyEvent.SHIFT, ValidOS.NON_MAC);
         MockKeyCallback callback2 = new MockKeyCallback(combo2);
         handler.addKeyCallback(callback2); // This should not throw an exception
@@ -168,8 +168,6 @@ public class KeyHandlerTest {
         // Usage text should only contain key combos that are valid for current OS
         String usageText = handler.getUsageText();
 
-        boolean isMac = KeyCombo.currentOS== ValidOS.MAC;
-
         switch (os) {
 
             case ANY -> {
@@ -198,7 +196,7 @@ public class KeyHandlerTest {
 
         KeyHandler handler = new KeyHandler(mockPApplet);
 
-        // Create a actions.KeyCallback with two KeyCombos, one valid for Mac, another valid for Non-Mac.
+        // Create actions.KeyCallback with two KeyCombos, one valid for Mac, another valid for Non-Mac.
         KeyCallback callback = new KeyCallback(
                 new KeyCombo('C', KeyEvent.META, ValidOS.MAC),
                 new KeyCombo('C', KeyEvent.CTRL, ValidOS.NON_MAC),

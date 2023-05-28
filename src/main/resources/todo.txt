@@ -1,39 +1,51 @@
 
-todo: next up - make a TextPanel subclass of Panel that can wordwrap it's text that is passed in from instantiating
+todo: next up - make TextPanel wordwrap it's text that is passed in from instantiating
                 in Control constructor (I think) and then it should just draw itself and use the parent Transition capability
                 that would be invoked by setting it up on the Control
+                1. wordwrap - test at an arbitraray x,y, width, height - how can you make that obvious as a child of panel?
+                2. test making it with a background color and a corner radius on the background.  controls have background colors and highligths that have radiuses but i don't think that's a generic capability for Panels to be highlighted, just controls.  but panels should have an optional radius as well as background color
+                3. test that the textPanel can also have a transition applied
+                4. fade in and fade out are transitions but only on the text itself, but a panel can have a transition
+                   applied to it as well - how do you construct them commonly?  If a Panel has a transition such as fade
+                   in and fade out, then it should be able to apply that to its children as well - so that the text can
+                   just take advantage of the same transition amount (I think)
 
-todo: encapsulate lifeForm drawing into a drawer that can receive and manage mouse events on itself so they
+todo: get rid or Patterning.getInstance() on control by only creating its icon on first draw - after the panelBuffer for
+      the control has been created and is not null
+todo: when you finally get rid of OldControl, you can get rid of Patterning.getInstance() as it's the only thing using it
+todo: cleanup any use of font that is not using the one on UXTheme
+todo: encapsulate lifeForm drawing into a Panel which can receive and manage mouse events on itself so they
       can 'capture' the mouse events and release it in an intuitive way for the code
+
 
 todo: should KeyHandler become a KeyEventManager just like MouseEventManager - as a Singleton with the similar pattern
 
 todo: an align panel should allow also for a TextPanel or an information radiator-
 todo: max DPS shouldn't exceed frameRate
 todo: DPS should increase by stepped values - can it be an algorithm or just a table?
-todo: maximumvolatiiygun - why does it change the offset sometimes at very high generation speed
+todo: maximum volatility gun - why does it change the offset sometimes at very high generation speed
 todo: figure the best way to get the font object
-todo: create a text panel that can slide out from an info oldControl - same as a hovertext, but when it's invoked
-      the hovertext goes away and the panel slides out - even if you're hovering, while the panel is being shown
+todo: create a text panel that can slide out from an info oldControl - same as a hover text, but when it's invoked
+      the hover text goes away and the panel slides out - even if you're hovering, while the panel is being shown
       hovering is disallowed until you close the panel with by clicking on its close.
-      the panel shoudl be draggable
+      the panel should be draggable
 
  todo: continue moving drawable stuff into UXConstants and UXDarkConstants (as appropriate)
 
 todo: handle displaying fractional frame rates better (do it on a text panel)
 todo: oldControl display orange when they can't go any further
-todo: autofit to screenf
+todo: autofit to screen
 todo: when you invoke a keyboard command associated with a oldControl - highlight the oldControl as if it had been clicked - highlight it for 500ms
-todo: popout for movement oldControl - aligning to dimensions - sub conrolpanel...
+todo: popout for movement oldControl - aligning to dimensions - sub control panel...
 todo: make all icons the same size as the play oldControl...
 
 todo: debug when turing machine gets big - what is taking its time to display as it stops and starts a lot
       to me it smells like garbage collection because you can speed it up substantially by reducing the number
-      of living cells on screen.  what objcts are involved to display all that on screen- certainly there is a bunch of
+      of living cells on screen.  what objects are involved to display all that on screen- certainly there is a bunch of
       BigDecimal, BigInteger activity - which could be reduced if you simply output a 2d binary array and then blasted that to the screen
       instead of the current mechanism. the challenge is that in order to understand how it maps to screen dimensions, you have to actually
       use the bounds of the universe coupled with the cell size to drill into the viewport that's visible.  there has to be another way to
-      directly query to find the node corresponding to the visiblly displayed universe
+      directly query to find the node corresponding to the visibly displayed universe
 
 todo: debug maximum volatility gun - why is it that if you step very fast at the beginning (without clearing the undo cache), it loses coherence? (haven't been able to recently reproduce this - is it because it's running on its own thread? or steps are being handled better?
 todo: show lifeForm stats in its slide out box

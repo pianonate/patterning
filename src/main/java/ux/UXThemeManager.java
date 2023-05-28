@@ -1,14 +1,18 @@
 package ux;
 
-public class UXTheme {
-    private static UXTheme instance = null;
+public class UXThemeManager {
+    private static UXThemeManager instance = null;
 
     // sizes
     private int controlSize;
     private int controlHighlightCornerRadius;
-    private int hoverTextSize;
+    private int defaultTextMargin;
+
+    private float defaultTextSize;
+
+    private float hoverTextSize;
     private int hoverTextMaxWidth;
-    private int hoverTextBuffer;
+    private int hoverTextMargin;
 
     // colors
     private int backGroundColor;
@@ -28,15 +32,12 @@ public class UXTheme {
     private long longTransitionDuration;
     private long shortTransitionDuration;
 
-    private UXTheme() {
-        setTheme(UXThemeType.DARK);  // Default theme
-    }
+    // names
+    private String fontName;
+    private String iconPath;
 
-    public static UXTheme getInstance() {
-        if (instance == null) {
-            instance = new UXTheme();
-        }
-        return instance;
+    private UXThemeManager() {
+        setTheme(UXThemeType.DARK);  // Default theme
     }
 
     public void setTheme(UXThemeType newTheme) {
@@ -45,9 +46,11 @@ public class UXTheme {
         // sizes and radii
         controlSize = themeConstants.getControlSize();
         controlHighlightCornerRadius = themeConstants.getControlHighlightCornerRadius();
+        defaultTextMargin = themeConstants.getDefaultTextMargin();
+        defaultTextSize = themeConstants.getDefaultTextSize();
         hoverTextSize = themeConstants.getHoverTextSize();
         hoverTextMaxWidth = themeConstants.getHoverTextMaxWidth();
-        hoverTextBuffer = themeConstants.getHoverTextBuffer();
+        hoverTextMargin = themeConstants.getHoverTextMargin();
 
 
         // colors
@@ -65,20 +68,51 @@ public class UXTheme {
         longTransitionDuration = themeConstants.getLongTransitionDuration();
         shortTransitionDuration = themeConstants.getShortTransitionDuration();
 
+        // strings
+        fontName = themeConstants.getFontName();
+        iconPath = themeConstants.getIconPath();
+
+    }
+
+    public static UXThemeManager getInstance() {
+        if (instance == null) {
+            instance = new UXThemeManager();
+        }
+        return instance;
     }
 
     // sizes
+
     public int getControlSize() {
         return controlSize;
     }
+
     public int getControlHighlightCornerRadius() {
         return controlHighlightCornerRadius;
     }
-    public int getHoverTextBuffer() {return hoverTextBuffer;}
-    public int getHoverTextMaxWidth() {return hoverTextMaxWidth;}
-    public int getHoverTextSize() {return hoverTextSize;}
+
+    public int getDefaultTextMargin() {
+        return defaultTextMargin;
+    }
+    public float getDefaultTextSize() {
+        return defaultTextSize;
+    }
+
+
+    public int getHoverTextMargin() {
+        return hoverTextMargin;
+    }
+
+    public int getHoverTextMaxWidth() {
+        return hoverTextMaxWidth;
+    }
+
+    public float getHoverTextSize() {
+        return hoverTextSize;
+    }
 
     // colors
+
     public int getBackGroundColor() {
         return backGroundColor;
     }
@@ -94,7 +128,10 @@ public class UXTheme {
     public int getControlHighlightColor() {
         return controlHighlightColor;
     }
-    public int getControlMousePressedColor() { return controlMousePressedColor;}
+
+    public int getControlMousePressedColor() {
+        return controlMousePressedColor;
+    }
 
     public int getDefaultPanelColor() {
         return defaultPanelColor;
@@ -104,19 +141,31 @@ public class UXTheme {
         return textColor;
     }
 
-    public int getTextColorStart() {return textColorStart;}
+    public int getTextColorStart() {
+        return textColorStart;
+    }
 
     // durations
 
     public int getControlHighlightDuration() {
         return controlHighlightDuration;
     }
+
     public long getLongTransitionDuration() {
         return longTransitionDuration;
     }
 
     public long getShortTransitionDuration() {
         return shortTransitionDuration;
+    }
+
+    // names
+    public String getFontName() {
+        return fontName;
+    }
+
+    public String getIconPath() {
+        return iconPath;
     }
 }
 

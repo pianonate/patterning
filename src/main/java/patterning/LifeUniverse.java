@@ -361,32 +361,33 @@ public class LifeUniverse {
      * higher than the current root node
      * surrounded by empty space, essentially making the universe double sized (on
      * either dimension)
-     * 
+     *
      * a new subtree is created for each quadrant. Quadrants have a level one below
      * the passed in node but createTree will combine that with the empty trees and
      * create nodes at the same
      * level as the input node.
-     * 
+     *
      * then all 4 will be combined into a new, larger universe by the outside
      * createTree which will return a new
      * node with the prior quadrants moved towards the center of the new tree -
      * creating space at the edges for
      * additional growth
-     * 
+     *
      * Here's the process of creating the new root node with increased level:
-     * 
+     *
      * Create an empty tree t with level node.level - 1.
-     * 
+     *
      * Create new trees for each quadrant, with the original node's
      * quadrants shifted to the corner and empty space added to the other corners.
-     * 
+     *
      * Combine these new trees using the createTree method.
-     * 
-     * 
+     *
+     *
      * So, the new root node will have a level one greater than the original root
      * node,
      * as it combines the new trees created with an extra level of hierarchy.
      */
+
     private int lastLevel;
     private Node expandUniverse(Node node) {
         // System.out.println("expanding universe");
@@ -859,7 +860,7 @@ public class LifeUniverse {
        /* // the following is a new mechanism to only expandUniverse as far as you need to
         // and not just merely to match up to the current step size
         // this seems to work but if it ever doesn't this might be the culprit
-        // and you  have to go back to
+        // you  have to go back to
         // this as the first line of the while below:
         // while ((root.level <= this.step + 2) ||
 
@@ -998,18 +999,6 @@ public class LifeUniverse {
             return node.quickCache = this.node_level2_next(node);
         }
 
-/*        if ((quickgen % 1000000) == 0) {
-            quickgen += 0;
-        }*/
-
-        // logpoint for vscode
-        // lastId {String.format("%,9d", lastId)} - call# {String.format("%,6d",
-        // nextGenerationCalls)} - count {String.format("%,11d", quickgen)} - root
-        // hash:level {String.format("%10d",root.hashCode())}:{root.level} - recursion
-        // depth:{String.format("%2d", depth)} - node level
-        // {String.format("%2d",node.level)} - hits {String.format("%,10d",
-        // quickCacheHits)} misses {String.format("%,10d", quickCacheMisses)} ratio
-        // {(double) quickCacheHits / (quickCacheHits + quickCacheMisses) * 100}
 
         Node nw = node.nw;
         Node ne = node.ne;

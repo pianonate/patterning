@@ -95,6 +95,38 @@ class OldControl implements Drawable, KeyObserver {
         drawIcon(buffer);
     }
 
+    private List<String> wrapText(String text, PGraphics buffer) {
+        List<String> words = new ArrayList<>(Arrays.asList(text.split(" ")));
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+
+        while (!words.isEmpty()) {
+            String word = words.get(0);
+            if (word.startsWith("(shortcut:")) {
+                if (words.size() > 1 && buffer.textWidth(line + word + " " + words.get(1)) < OldControl.HOVER_TEXT_MAX_WIDTH) {
+                    line.append(word).append(" ").append(words.get(1)).append(" ");
+                    words.remove(0);
+                    words.remove(0);
+                } else {
+                    lines.add(line.toString());
+                    line = new StringBuilder();
+                }
+            } else if (buffer.textWidth(line + word) < OldControl.HOVER_TEXT_MAX_WIDTH) {
+                line.append(word).append(" ");
+                words.remove(0);
+            } else {
+                lines.add(line.toString());
+                line = new StringBuilder();
+            }
+        }
+
+        if (line.length() > 0) {
+            lines.add(line.toString());
+        }
+
+        return lines;
+    }
+
     private void makeHoverBuffer(PGraphics buffer) {
 
         buffer.textSize(HOVER_TEXT_SIZE);
@@ -104,6 +136,7 @@ class OldControl implements Drawable, KeyObserver {
         float textWidth = lines.stream().map(buffer::textWidth).max(Float::compare).orElse(0f) + (TEXT_WIDTH_BUFFER * 2);
 
         // Create the off-screen buffer
+        // createGraphics doesn't inherit the font of the parent.  it's a damn shame
         hoverBuffer = buffer.parent.createGraphics((int) textWidth, (int) textHeight);
         hoverBuffer.beginDraw();
         hoverBuffer.clear();
@@ -130,10 +163,7 @@ class OldControl implements Drawable, KeyObserver {
             case BOTTOM -> Transition.TransitionDirection.UP;
         };
 
-
-
         hoverTransition = new Transition(hoverBuffer, direction, Transition.TransitionType.SLIDE);
-
     }
 
     private void drawHovering(PGraphics buffer) {
@@ -173,38 +203,6 @@ class OldControl implements Drawable, KeyObserver {
         float x = position.x + (float) (size - currentIcon.width) / 2;
         float y = position.y + (float) (size - currentIcon.height) / 2;
         buffer.image(currentIcon, x, y);
-    }
-
-    private List<String> wrapText(String text, PGraphics buffer) {
-        List<String> words = new ArrayList<>(Arrays.asList(text.split(" ")));
-        List<String> lines = new ArrayList<>();
-        StringBuilder line = new StringBuilder();
-
-        while (!words.isEmpty()) {
-            String word = words.get(0);
-            if (word.startsWith("(shortcut:")) {
-                if (words.size() > 1 && buffer.textWidth(line + word + " " + words.get(1)) < OldControl.HOVER_TEXT_MAX_WIDTH) {
-                    line.append(word).append(" ").append(words.get(1)).append(" ");
-                    words.remove(0);
-                    words.remove(0);
-                } else {
-                    lines.add(line.toString());
-                    line = new StringBuilder();
-                }
-            } else if (buffer.textWidth(line + word) < OldControl.HOVER_TEXT_MAX_WIDTH) {
-                line.append(word).append(" ");
-                words.remove(0);
-            } else {
-                lines.add(line.toString());
-                line = new StringBuilder();
-            }
-        }
-
-        if (line.length() > 0) {
-            lines.add(line.toString());
-        }
-
-        return lines;
     }
 
     private void drawControlHighlight(PGraphics buffer, int color) {

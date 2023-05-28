@@ -2,17 +2,25 @@ package ux;
 
 public class UXConstants {
 
-    UXConstants() {};
+    UXConstants() {}
 
     // sizes
     int getControlSize() {
-        return 55;
+        return 35;
     }
     int getControlHighlightCornerRadius() {
         return 10;
     }
 
-    int getHoverTextBuffer() {
+    int getDefaultTextMargin() {
+        return 5;
+    }
+
+    float getDefaultTextSize() {
+        return 30F;
+    }
+
+    int getHoverTextMargin() {
         return 5;
     }
 
@@ -20,7 +28,7 @@ public class UXConstants {
         return 225;
     }
 
-    int getHoverTextSize() {
+    float getHoverTextSize() {
         return 14;
     }
 
@@ -65,6 +73,15 @@ public class UXConstants {
 
     long getShortTransitionDuration() {
         return 300;
+    }
+
+    // names
+    String getFontName() {
+        return "Verdana";
+    }
+
+    String getIconPath() {
+        return "icon/";
     }
 
 }

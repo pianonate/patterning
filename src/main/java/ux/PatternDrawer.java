@@ -13,51 +13,46 @@ import processing.core.PVector;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 public class PatternDrawer {
 
-    private final PanelTester panelTester;
-    private final Panel testControlPanel;
-
-    UXTheme theme = UXTheme.getInstance();
-
-    public static PFont font;
     private static final MathContext mc = new MathContext(10);
-
     private static final BigDecimal BigTWO = new BigDecimal(2);
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private static final int DEFAULT_CELL_WIDTH = 4;
+    public static PFont font;
+    final float cellBorderWidthRatio = .05F;
+    private final PanelTester panelTester;
+    private final Panel testControlPanel;
     // for all conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
-
-    final float cellBorderWidthRatio = .05F;
     private final PApplet processing;
-
     private final DrawRateController drawRateController;
-
     private final HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
-    private final List<Drawable> drawables = new ArrayList<>();
-    private final TextPanel countdownText;
+    //private final List<Drawable> drawables = new ArrayList<>();
+    private final DrawableManager drawables = DrawableManager.getInstance();
+    private TextPanel countdownText;
     private final TextPanel hudText;
+    UXThemeManager theme = UXThemeManager.getInstance();
     float cellBorderWidth = 0.0F;
-    private PGraphics backgroundBuffer;
-    private PGraphics lifeFormBuffer;
-    private PGraphics UXBuffer;
-
-
     // this is used because we now separate the drawing speed from the framerate
-    // so we may not draw an image every frame
+    // we may not draw an image every frame
     // if we haven't drawn an image, we still want to be able to move and drag
     // the image around so this allows us to keep track of the current position
     // for the lifeFormBuffer and move that buffer around regardless of whether we've drawn an image
     // whenever an image is drawn, ths PVector is reset to 0,0 to match the current image state
     // it's a nifty way to handle things - just follow lifeFormPosition through the code
     // to see what i'm talking about
-    PVector lifeFormPosition = new PVector(0,0);
-
+    PVector lifeFormPosition = new PVector(0, 0);
+    private PGraphics backgroundBuffer;
+    private PGraphics lifeFormBuffer;
+    private PGraphics UXBuffer;
     private boolean drawBounds;
     private BigDecimal canvasOffsetX = BigDecimal.ZERO;
     private BigDecimal canvasOffsetY = BigDecimal.ZERO;
@@ -71,14 +66,18 @@ public class PatternDrawer {
 
 
     private CellWidth cellWidth;
+
     public PatternDrawer(PApplet pApplet, List<OldControlPanel> panels, DrawRateController drawRateController) {
 
         this.processing = pApplet;
-        panelTester = new PanelTester(processing);
-        Patterning patterning = (Patterning) processing;
-        testControlPanel = patterning.getTestControl();
+        panelTester = new PanelTester();
 
-        font = processing.createFont("Verdana",24);
+        Patterning patterning = (Patterning) processing;
+
+        testControlPanel = patterning.getTestControl();
+        drawables.addDrawable(testControlPanel);
+
+        font = processing.createFont("Verdana", 24);
 
         // initial height in case we resize
         prevWidth = pApplet.width;
@@ -89,38 +88,29 @@ public class PatternDrawer {
         this.canvasHeight = BigDecimal.valueOf(pApplet.height);
 
         this.UXBuffer = getBuffer();
-        this.lifeFormBuffer= getBuffer();
+        this.lifeFormBuffer = getBuffer();
         this.backgroundBuffer = getBuffer();
-        
+
         this.movementHandler = new MovementHandler(this);
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
 
-        countdownText = new TextPanel.Builder("counting down - press space to begin immediately", PApplet.CENTER, PApplet.CENTER)
-                .runMethod(Patterning::run)
-                .fadeInDuration(2000)
-                .countdownFrom(3)
-                .build();
-
-        TextPanel startupText = new TextPanel.Builder("patterning", PApplet.RIGHT, PApplet.TOP)
+        TextPanel startupText = new TextPanel.Builder("patterning".toUpperCase(), Panel.HAlign.RIGHT, Panel.VAlign.TOP)
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
-                .duration(4000)
+                .displayDuration(4000)
                 .build();
 
-        hudText = new TextPanel.Builder("HUD", PApplet.RIGHT, PApplet.BOTTOM)
+        hudText = new TextPanel.Builder("HUD", Panel.HAlign.RIGHT, Panel.VAlign.BOTTOM)
                 .textSize(24)
                 .build();
 
         drawables.addAll(panels);
 
-        drawables.add(countdownText);
-        drawables.add(startupText);
-        drawables.add(hudText);
+        drawables.addDrawable(startupText);
+        drawables.addDrawable(hudText);
 
-        startupText.startDisplay();
-        hudText.startDisplay();
 
         this.drawRateController = drawRateController;
 
@@ -147,19 +137,82 @@ public class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        countdownText.startCountdown();
+        countdownText = new TextPanel.Builder("counting down - press space to begin immediately", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
+                .runMethod(Patterning::run)
+                .fadeInDuration(2000)
+                .countdownFrom(3)
+                .build();
+        drawables.addDrawable(countdownText);
+
+        // countdownText.startCountdown();
 
     }
 
+    public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
+
+
+        if (saveState) {
+            saveUndoState();
+        }
+
+        // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
+        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE));
+        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
+
+        if (fitBounds) {
+
+            BigDecimal widthRatio = (patternWidth.compareTo(BigDecimal.ZERO) > 0) ? canvasWidth.divide(patternWidth, mc)
+                    : BigDecimal.ONE;
+            BigDecimal heightRatio = (patternHeight.compareTo(BigDecimal.ZERO) > 0)
+                    ? canvasHeight.divide(patternHeight, mc)
+                    : BigDecimal.ONE;
+
+            BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
+
+            cellWidth.set(newCellSize.floatValue() * .9F);
+
+        }
+
+        BigDecimal bigCell = cellWidth.getAsBigDecimal();
+
+        BigDecimal drawingWidth = patternWidth.multiply(bigCell);
+        BigDecimal drawingHeight = patternHeight.multiply(bigCell);
+
+        BigDecimal halfCanvasWidth = canvasWidth.divide(BigTWO, mc);
+        BigDecimal halfCanvasHeight = canvasHeight.divide(BigTWO, mc);
+
+        BigDecimal halfDrawingWidth = drawingWidth.divide(BigTWO, mc);
+        BigDecimal halfDrawingHeight = drawingHeight.divide(BigTWO, mc);
+
+        // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
+        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate());
+        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate());
+
+        canvasOffsetX = offsetX;
+        canvasOffsetY = offsetY;
+    }
+
+    public void clearCache() {
+        previousStates.clear();
+    }
+
+    // called when moves are invoked as there is some trickery in the move handler to move
+    // multiple times on key presses and even more so as they are held down
+    // we just want to go back to the first one...
+    public void saveUndoState() {
+        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+    }
+
     public void handlePause() {
-        if (countdownText.isDisplaying) {
+
+        if (drawables.isManaging(countdownText)) {
             countdownText.interruptCountdown();
         } else {
             Patterning.toggleRun();
         }
     }
 
-    private void surfaceResized() {
+    private void windowResized() {
 
         BigDecimal bigWidth = BigDecimal.valueOf(processing.width);
         BigDecimal bigHeight = BigDecimal.valueOf(processing.height);
@@ -168,8 +221,7 @@ public class PatternDrawer {
             return;
         }
 
-        testControlPanel.updatePanelSizes();
-
+        // create new buffers
         UXBuffer = getBuffer();
         lifeFormBuffer = getBuffer();
         backgroundBuffer = getBuffer();
@@ -194,36 +246,8 @@ public class PatternDrawer {
 
     }
 
-    public void clearCache() {
-        previousStates.clear();
-    }
-
     public float getCellWidth() {
         return cellWidth.get();
-    }
-
-    public void zoom(boolean in, float x, float y) {
-        saveUndoState();
-
-        float previousCellWidth = cellWidth.get();
-
-        // Adjust cell width to align with grid
-        if (in) {
-            cellWidth.set(previousCellWidth * 2f);
-        } else {
-            cellWidth.set(previousCellWidth / 2f);
-        }
-
-        // Calculate zoom factor
-        float zoomFactor = cellWidth.get() / previousCellWidth;
-
-        // Calculate the difference in canvas offset-s before and after zoom
-        float offsetX = (1 - zoomFactor) * (x - canvasOffsetX.floatValue());
-        float offsetY = (1 - zoomFactor) * (y - canvasOffsetY.floatValue());
-
-        // Update canvas offsets
-        updateCanvasOffsets(BigDecimal.valueOf(offsetX), BigDecimal.valueOf(offsetY));
-
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
@@ -298,13 +322,6 @@ public class PatternDrawer {
         }
     }
 
-    // called when moves are invoked as there is some trickery in the move handler to move
-    // multiple times on key presses and even more so as they are held down
-    // we just want to go back to the first one...
-    public void saveUndoState() {
-        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
-    }
-
     public void move(float dx, float dy) {
         saveUndoState();
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
@@ -318,6 +335,30 @@ public class PatternDrawer {
 
     public void zoomXY(boolean in, float x, float y) {
         zoom(in, x, y);
+    }
+
+    public void zoom(boolean in, float x, float y) {
+        saveUndoState();
+
+        float previousCellWidth = cellWidth.get();
+
+        // Adjust cell width to align with grid
+        if (in) {
+            cellWidth.set(previousCellWidth * 2f);
+        } else {
+            cellWidth.set(previousCellWidth / 2f);
+        }
+
+        // Calculate zoom factor
+        float zoomFactor = cellWidth.get() / previousCellWidth;
+
+        // Calculate the difference in canvas offset-s before and after zoom
+        float offsetX = (1 - zoomFactor) * (x - canvasOffsetX.floatValue());
+        float offsetY = (1 - zoomFactor) * (y - canvasOffsetY.floatValue());
+
+        // Update canvas offsets
+        updateCanvasOffsets(BigDecimal.valueOf(offsetX), BigDecimal.valueOf(offsetY));
+
     }
 
     /*
@@ -337,50 +378,6 @@ public class PatternDrawer {
         // if you want to float something on screen that says nothing more to pop you can
         // or just make a noise
         // or show some sparkles or something
-    }
-
-    public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
-
-
-        if (saveState) {
-           saveUndoState();
-        }
-
-        // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE));
-        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
-
-        if (fitBounds) {
-
-            BigDecimal widthRatio = (patternWidth.compareTo(BigDecimal.ZERO) > 0) ? canvasWidth.divide(patternWidth, mc)
-                    : BigDecimal.ONE;
-            BigDecimal heightRatio = (patternHeight.compareTo(BigDecimal.ZERO) > 0)
-                    ? canvasHeight.divide(patternHeight, mc)
-                    : BigDecimal.ONE;
-
-            BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
-
-            cellWidth.set(newCellSize.floatValue() * .9F);
-
-        }
-
-        BigDecimal bigCell = cellWidth.getAsBigDecimal();
-
-        BigDecimal drawingWidth = patternWidth.multiply(bigCell);
-        BigDecimal drawingHeight = patternHeight.multiply(bigCell);
-
-        BigDecimal halfCanvasWidth = canvasWidth.divide(BigTWO, mc);
-        BigDecimal halfCanvasHeight = canvasHeight.divide(BigTWO, mc);
-
-        BigDecimal halfDrawingWidth = drawingWidth.divide(BigTWO, mc);
-        BigDecimal halfDrawingHeight = drawingHeight.divide(BigTWO, mc);
-
-        // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate());
-        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate());
-
-        canvasOffsetX = offsetX;
-        canvasOffsetY = offsetY;
     }
 
     public void drawBounds(Bounds bounds) {
@@ -405,7 +402,7 @@ public class PatternDrawer {
 
         if (prevWidth != processing.width || prevHeight != processing.height) {
             // moral equivalent of a resize
-            surfaceResized();
+            windowResized();
         }
 
         prevWidth = processing.width;
@@ -416,14 +413,11 @@ public class PatternDrawer {
 
         backgroundBuffer.beginDraw();
         backgroundBuffer.background(theme.getBackGroundColor());
-        backgroundBuffer.endDraw();;
+        backgroundBuffer.endDraw();
 
         UXBuffer.beginDraw();
         UXBuffer.clear();
         UXBuffer.textFont(font);
-
-        //panelTester.draw(UXBuffer);
-        testControlPanel.draw(UXBuffer);
 
         LifeUniverse life = Patterning.getLifeUniverse();
         // make this threadsafe
@@ -449,13 +443,11 @@ public class PatternDrawer {
         String hudMessage = getHUDMessage(life, bounds);
         hudText.setMessage(hudMessage);
 
-        for (Drawable drawable : drawables) {
-            drawable.draw(UXBuffer);
-        }
+        drawables.drawAll(UXBuffer);
 
         UXBuffer.endDraw();
 
-        processing.image(backgroundBuffer, 0,0);
+        processing.image(backgroundBuffer, 0, 0);
         processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
         //processing.image(lifeFormBuffer,0,0);
         processing.image(UXBuffer, 0, 0);
@@ -470,7 +462,7 @@ public class PatternDrawer {
         hudInfo.addOrUpdate("cell", getCellWidth());
         hudInfo.addOrUpdate("running", (Patterning.isRunning()) ? "running" : "stopped");
 
-        hudInfo.addOrUpdate("level: ", root.level);
+        hudInfo.addOrUpdate("level ", root.level);
         hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));
         hudInfo.addOrUpdate("generation", life.generation);
         hudInfo.addOrUpdate("population", root.population);
@@ -498,16 +490,6 @@ public class PatternDrawer {
             setImpl(cellWidth);
         }
 
-        public float get() {
-            return cellWidth;
-        }
-
-        // private impl created to log before/after
-        // without needing to log on class construction
-        public void set(float cellWidth) {
-            setImpl(cellWidth);
-        }
-
         private void setImpl(float cellWidth) {
 
             // Apply rounding conditionally based on a threshold
@@ -519,6 +501,16 @@ public class PatternDrawer {
 
             this.cellWidth = cellWidth;
             this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
+        }
+
+        public float get() {
+            return cellWidth;
+        }
+
+        // private impl created to log before/after
+        // without needing to log on class construction
+        public void set(float cellWidth) {
+            setImpl(cellWidth);
         }
 
         public BigDecimal getAsBigDecimal() {

@@ -2,7 +2,6 @@ package ux;
 
 import actions.*;
 import patterning.Patterning;
-import processing.core.PGraphics;
 import processing.core.PImage;
 
 import java.util.Timer;
@@ -10,32 +9,37 @@ import java.util.TimerTask;
 
 
 public class Control extends Panel implements KeyObserver, MouseEventReceiver {
+
+    private static final UXThemeManager theme = UXThemeManager.getInstance();
     private final KeyCallback callback;
     private final int size;
     boolean isHighlightFromKeypress = false;
     private PImage icon;
 
-    public Control(KeyCallback callback, String iconName, int size) {
-        super(0, 0, size, size);
-        super.setFill(UXTheme.getInstance().getControlColor());
-        super.setSubclassDraw(this::controlDrawer);
+    protected Control(Builder builder) {
+        super(builder);
+
+        this.callback = builder.callback;
+        this.size = builder.size;
+
+        setFill(theme.getControlColor());
         callback.addObserver(this);
         MouseEventManager.getInstance().addReceiver(this);
-        this.size = size;
-        this.callback = callback;
-        setIcon(iconName);
+
+        setIcon(builder.iconName);
     }
 
-    public void controlDrawer(PGraphics buffer) {
+    @Override
+    protected void panelSubclassDraw() {
         mouseHover(isMouseOverMe());
-        drawHover(buffer);
-        drawPressed(buffer);
-        drawIcon(buffer);
+        drawHover();
+        drawPressed();
+        drawIcon();
     }
 
-    private void drawHover(PGraphics buffer) {
+    private void drawHover() {
         if (isHovering) {
-            drawControlHighlight(buffer, UXTheme.getInstance().getControlHighlightColor());
+            drawControlHighlight(theme.getControlHighlightColor());
         }
     }
 
@@ -52,29 +56,29 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
 
     private void setIcon(String iconName) {
-        PImage icon = Patterning.getInstance().loadImage("icon/" + iconName);
+        PImage icon = Patterning.getInstance().loadImage(theme.getIconPath() + iconName);
         icon.resize(width - 5, height - 5);
         this.icon = icon;
     }
 
-    private void drawPressed(PGraphics buffer) {
+    private void drawPressed() {
         if (isPressed || isHighlightFromKeypress) {
-            drawControlHighlight(buffer, UXTheme.getInstance().getControlMousePressedColor());
+            drawControlHighlight(theme.getControlMousePressedColor());
         }
     }
 
-    private void drawIcon(PGraphics buffer) {
+    private void drawIcon() {
         float x = (float) (width - icon.width) / 2;
         float y = (float) (height - icon.height) / 2;
-        buffer.image(icon, x, y);
+        panelBuffer.image(icon, x, y);
     }
 
-    private void drawControlHighlight(PGraphics buffer, int color) {
+    private void drawControlHighlight(int color) {
         // highlight the control with a semi-transparent rect
-        buffer.fill(color); // Semi-transparent gray
+        panelBuffer.fill(color); // Semi-transparent gray
         float roundedRectSize = size;
         // Rounded rectangle with radius
-        buffer.rect(0,0, roundedRectSize, roundedRectSize, UXTheme.getInstance().getControlHighlightCornerRadius());
+        panelBuffer.rect(0,0, roundedRectSize, roundedRectSize, theme.getControlHighlightCornerRadius());
     }
 
     @Override
@@ -92,18 +96,58 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                         isHighlightFromKeypress = false;
                     }
                 },
-                UXTheme.getInstance().getControlHighlightDuration()
+                theme.getControlHighlightDuration()
         );
     }
 
     @Override
-    public void onMousePressed() {  super.onMousePressed();}
-
+    public void onMousePressed() {
+        super.onMousePressed();
+    }
     @Override
     public void onMouseReleased() {
         super.onMouseReleased();  // Calls Panel's onMouseReleased
         if (isMouseOverMe()) {
             callback.invokeFeature();  // Specific to Control
+        }
+    }
+/*
+    @Override
+    public void onMousePressed() {
+        if (isMouseOverMe()) {
+            super.onMousePressed();
+        }
+    }
+
+    @Override
+    public void onMouseReleased() {
+        if (isMouseOverMe()) {
+            super.onMouseReleased();
+            callback.invokeFeature();
+        }
+    }*/
+
+
+    public static class Builder extends Panel.Builder<Builder> {
+        private final KeyCallback callback;
+        private final String iconName;
+        private final int size;
+
+        public Builder(KeyCallback callback, String iconName, int size) {
+            super(0,0,size,size);
+            this.callback = callback;
+            this.iconName = iconName;
+            this.size = size;
+        }
+
+        @Override
+        public Builder self() {
+            return this;
+        }
+
+        @Override
+        public Control build() {
+            return new Control(this);
         }
     }
 

@@ -30,7 +30,7 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
         this.position = builder.position;
         this.alignment = builder.alignment;
         this.sizeToFit = builder.sizeToFit;
-        this.controlSize =  UXTheme.getInstance().getControlSize();
+        this.controlSize =  UXThemeManager.getInstance().getControlSize();
 
     }
 
@@ -135,7 +135,7 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
 
     private boolean isMouseOverControl(OldControl c) {
         PVector controlPosition = c.getPosition(); // This method needs to exist in your oldControls.OldControl class
-        int controlSize = UXTheme.getInstance().getControlSize();
+        int controlSize = UXThemeManager.getInstance().getControlSize();
 
         try {
             PApplet processing = Patterning.getInstance();
@@ -169,7 +169,7 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
         protected OldPanelAlignment alignment;
         protected List<OldControl> oldControls;
 
-        private static final int controlSize = UXTheme.getInstance().getControlSize();
+        private static final int controlSize = UXThemeManager.getInstance().getControlSize();
         protected boolean sizeToFit;
 
         public Builder(OldPanelPosition position) {
