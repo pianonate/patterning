@@ -169,7 +169,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         panelBuffer.pushStyle();
 
         panelBuffer.fill(fill);
-        //panelBuffer.fill(0x80FFFFFF); // debugging ghost panel
+        // panelBuffer.fill(0xFFFF0000); // debugging ghost panel
         panelBuffer.noStroke();
 
         panelBuffer.clear();
@@ -191,6 +191,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
         if (transitionAble) {
             transition.transition(parentBuffer, position.x, position.y);
+
         } else {
             parentBuffer.image(panelBuffer, position.x, position.y);
         }
@@ -218,36 +219,6 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
         setPosition(posX, posY);
     }
-
-/*    public void addChildPanel(Panel child) {
-        this.childPanels.add(child);
-        child.parentPanel = this;
-        updateParentPanelSize();
-    }
-
-    public void setOrientation(Orientation orientation) {
-        this.orientation = orientation;
-        updateParentPanelSize();
-    }
-
-    private void updateParentPanelSize() {
-        int totalWidth = 0, totalHeight = 0;
-        for (Panel child : childPanels) {
-            if (this.orientation == Orientation.HORIZONTAL) {
-                child.setPosition(totalWidth, 0);
-                totalWidth += child.width;
-                totalHeight = Math.max(totalHeight, child.height);
-            } else { // Orientation.VERTICAL
-                child.setPosition(0, totalHeight);
-                totalHeight += child.height;
-                totalWidth = Math.max(totalWidth, child.width);
-            }
-        }
-
-        // Update parent size
-        this.width = totalWidth;
-        this.height = totalHeight;
-    }*/
 
     private PVector getEffectivePosition() {
         // used when a Panel contains other Panels

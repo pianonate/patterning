@@ -13,13 +13,13 @@ public class PanelTester {
         createAlignPanel(Panel.HAlign.CENTER, Panel.VAlign.BOTTOM, 0xAA00FF00, Transition.TransitionDirection.RIGHT);
         createAlignPanel(Panel.HAlign.RIGHT, Panel.VAlign.BOTTOM, 0xAA00FF00, Transition.TransitionDirection.LEFT);
 
-        TextPanel testText = new TextPanel.Builder("Test Texting", TextPanel.HAlign.LEFT, TextPanel.VAlign.TOP)
-                .textSize(40)
-                .setTransition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, 1000)
+        TextPanelWordWrap testText = new TextPanelWordWrap.Builder("expando", Panel.HAlign.LEFT, Panel.VAlign.TOP)
+                .textSize(80)
+                 .setTransition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.EXPANDO, 1000)
+                .displayDuration(3000)
                 .build();
 
         DrawableManager.getInstance().addDrawable(testText);
-
     }
 
     private void createAlignPanel(Panel.HAlign hAlign, Panel.VAlign vAlign, int color, Transition.TransitionDirection direction) {
@@ -31,7 +31,7 @@ public class PanelTester {
                 .setTransition(direction, Transition.TransitionType.SLIDE, theme.getLongTransitionDuration())
                 .build();
 
-       // DrawableManager.getInstance().addDrawable(panel);
+      //  DrawableManager.getInstance().addDrawable(panel);
 
     }
 

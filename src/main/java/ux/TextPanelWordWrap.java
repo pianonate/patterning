@@ -4,8 +4,9 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 
 import java.util.*;
+import java.util.function.IntSupplier;
 
-public class TextPanel extends Panel implements Drawable {
+public class TextPanelWordWrap extends Panel implements Drawable {
 
     private final static UXThemeManager theme = UXThemeManager.getInstance();
     private final static DrawableManager drawableManager = DrawableManager.getInstance();
@@ -13,6 +14,9 @@ public class TextPanel extends Panel implements Drawable {
     private final int textMargin = theme.getDefaultTextMargin();
     private final int doubleTextMargin = textMargin * 2;
     private final float textSize;
+
+    private final OptionalInt wordWrapWidth;
+    private final Optional<IntSupplier> wordWrapWidthSupplier;
     private final OptionalInt fadeInDuration;
     private final OptionalInt fadeOutDuration;
     private final OptionalLong displayDuration; // long to compare to System.currentTimeMillis()
@@ -29,15 +33,18 @@ public class TextPanel extends Panel implements Drawable {
     private long transitionTime;
     private int fadeValue;
 
-    protected TextPanel(TextPanel.Builder builder) {
+    protected TextPanelWordWrap(TextPanelWordWrap.Builder builder) {
         super(builder);
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
         // super(builder.hAlign, builder.vAlign);
 
         this.message = builder.message;
+        this.lastMessage = builder.message;
 
         this.textSize = builder.textSize;
+        this.wordWrapWidth = builder.wordWrapWidth;
+        this.wordWrapWidthSupplier = builder.wordWrapWidthSupplier;
 
         this.displayDuration = builder.displayDuration;
 
@@ -48,6 +55,8 @@ public class TextPanel extends Panel implements Drawable {
         this.runMethod = builder.runMethod;
         this.countdownFrom = builder.countdownFrom;
         this.initialMessage = builder.message;
+
+        // this.setFill(0xFFFF0000);
 
         // automatically start the display unless we're a countdown
         // which needs to be manually invoked by the caller...
@@ -74,89 +83,128 @@ public class TextPanel extends Panel implements Drawable {
         this.message = message;
     }
 
-    private List<String> wrapText(PGraphics buffer) {
-        List<String> words = new ArrayList<>(Arrays.asList(message.split(" ")));
+
+    private OptionalInt getWordWrapWidth() {
+        if (wordWrapWidth.isPresent()) {
+            return wordWrapWidth;
+        } else
+            return wordWrapWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).orElseGet(OptionalInt::empty);
+    }
+
+    private List<String> wrapText(String theMessage, PGraphics buffer) {
+        List<String> words = new ArrayList<>(Arrays.asList(theMessage.split(" ")));
         List<String> lines = new ArrayList<>();
         StringBuilder line = new StringBuilder();
 
-        if (buffer.textWidth(message) <= 255) {
-            lines.add(message);
+        OptionalInt wordWrapValue = getWordWrapWidth();
+
+        if (wordWrapValue.isEmpty()) {
+            lines.add(theMessage);
             return lines;
         }
 
         while (!words.isEmpty()) {
             String word = words.get(0);
-            if (buffer.textWidth(line + word) < 255) {
+            float prospectiveLineWidth = buffer.textWidth(line + word);
+
+            // If the word alone is wider than the wordWrapWidth, it should be put on its own line
+            if (prospectiveLineWidth > wordWrapValue.getAsInt() && line.length() == 0) {
                 line.append(word).append(" ");
                 words.remove(0);
-            } else {
-                lines.add(line.toString());
+            }
+            // Otherwise, if it fits with the current line, add it to the line
+            else if (prospectiveLineWidth <= wordWrapValue.getAsInt()) {
+                line.append(word).append(" ");
+                words.remove(0);
+            }
+            // If it doesn't fit, move to the next line
+            else {
+                lines.add(line.toString().trim());
                 line = new StringBuilder();
             }
         }
 
         if (line.length() > 0) {
-            lines.add(line.toString());
+            lines.add(line.toString().trim());
         }
 
         return lines;
     }
 
+    // used to make sure that a long line will fit on the screen at this size
+    private float getAdjustedTextSize(PGraphics parentBuffer, List<String> lines, float startingSize) {
+        // inherently we can have word wrapped text so make sure that we find the longest line to get the width
+        float adjustedTextSize = startingSize;
+        String longestLine = "";
+
+        // Determine the longest line
+        for (String line : lines) {
+            if(parentBuffer.textWidth(line) > parentBuffer.textWidth(longestLine)) {
+                longestLine = line;
+            }
+        }
+
+        // fit within the width minus a margin
+        while ((parentBuffer.textWidth(longestLine) > (parentBuffer.width - doubleTextMargin))
+                || ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))) {
+            adjustedTextSize -= .01; // smooth baby
+            adjustedTextSize = Math.max(adjustedTextSize, 1); // Prevent the textSize from going below 1
+            parentBuffer.textSize(adjustedTextSize);
+        }
+        return adjustedTextSize;
+    }
+
     @Override
     protected PGraphics getPanelBuffer(PGraphics parentBuffer) {
-
         parentBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
-
-       // parentBuffer.textSize(textSize);
 
         String testMessage = (countdownFrom.isPresent()) ?
                 getCountdownMessage(countdownFrom.getAsInt()) : message;
 
-        // the original buffer passed in to textDisplay is created with whatever font
-        // is on PApplet (the default font is Verdana, 12pt)
+        // ensure that the text size is set to the correct value for the wrapping exercise
+        setFont(parentBuffer, textSize);
 
-        // todo: see if this is a bug - i.e., maybe you should just set it to the font that you want
-        // then run this and see if you fix the PATTERNING issue
-        float adjustedTextSize = getAdjustedTextSize(parentBuffer, testMessage, textSize);
+        // Always wrap the text, even if it results in a single line
+        List<String> lines = wrapText(testMessage, parentBuffer);
 
-        width = (int) Math.ceil(parentBuffer.textWidth(testMessage) + doubleTextMargin);
-        height = (int) Math.ceil(parentBuffer.textAscent() + parentBuffer.textDescent() + textMargin);
+        // Adjust the text size if it exceeds the bounds of the screen
+        float adjustedTextSize = getAdjustedTextSize(parentBuffer, lines, textSize);
 
-        PGraphics textBuffer = parentBuffer.parent.createGraphics(width + doubleTextMargin, height);
+        // Compute the maximum width and total height of all lines.
+        float maxWidth = 0;
+        float totalHeight = 0;
+        for (String line : lines) {
+            if(parentBuffer.textWidth(line) > maxWidth) {
+                maxWidth = parentBuffer.textWidth(line);
+            }
+            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent();
+        }
+
+        // Adjust the width and height according to the size of the wrapped text
+        width = (int) Math.ceil(maxWidth + doubleTextMargin);
+        height = (int) Math.ceil(totalHeight + textMargin);
+
+        PGraphics textBuffer = parentBuffer.parent.createGraphics(width, height);
 
         // set the font for this PGraphics as it will not change
         textBuffer.beginDraw();
         textBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
         setFont(textBuffer, adjustedTextSize);
-        textBuffer.textSize(adjustedTextSize);
 
         textBuffer.endDraw();
 
         return textBuffer;
     }
 
+
     // for sizes to be correctly calculated, the font must be the same
     // on both the parent and the new textBuffer
     // necessary because createGraphics doesn't inherit the font from the parent
     private void setFont(PGraphics buffer, float textSize) {
         buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
+        buffer.textSize(textSize);
     }
 
-
-    private float getAdjustedTextSize(PGraphics parentBuffer, String testMessage, float startingSize) {
-
-        float adjustedTextSize = startingSize;
-        setFont(parentBuffer, startingSize);
-
-        while ((parentBuffer.textWidth(testMessage) > (parentBuffer.width - doubleTextMargin))
-                || ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))) {
-            adjustedTextSize -= .01; // smooth baby
-            adjustedTextSize = Math.max(adjustedTextSize, 1); // Prevent the textSize from going below 1
-            parentBuffer.textSize(adjustedTextSize);
-        }
-
-        return adjustedTextSize;
-    }
 
     @Override
     protected boolean shouldGetPanelBuffer(PGraphics parentBuffer) {
@@ -174,7 +222,6 @@ public class TextPanel extends Panel implements Drawable {
         return resized;
     }
 
-    @Override
     protected void panelSubclassDraw() {
 
         // used for fading in the text and the various states
@@ -192,15 +239,22 @@ public class TextPanel extends Panel implements Drawable {
         // Draw black text slightly offset in each direction to create an outline effect
         float outlineOffset = 1.0F;
 
-        panelBuffer.fill(outlineColor);
-        panelBuffer.text(message, textMargin - outlineOffset,  - outlineOffset);
-        panelBuffer.text(message, textMargin + outlineOffset,  - outlineOffset);
+        List<String> lines = wrapText(message, panelBuffer);
 
-        // Draw the actual text in the calculated color
-        panelBuffer.fill(currentColor);
-        panelBuffer.text(message, textMargin, 0);
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            float y = (panelBuffer.textAscent() + panelBuffer.textDescent() ) * i;
 
+            panelBuffer.fill(outlineColor);
+            panelBuffer.text(line, textMargin - outlineOffset, y - outlineOffset);
+            panelBuffer.text(line, textMargin + outlineOffset, y - outlineOffset);
+
+            // Draw the actual text in the calculated color
+            panelBuffer.fill(currentColor);
+            panelBuffer.text(line, textMargin, y);
+        }
     }
+
 
     private String getCountdownMessage(long count) {
         return initialMessage + ": " + count;
@@ -234,6 +288,9 @@ public class TextPanel extends Panel implements Drawable {
         // Countdown variables
         private OptionalInt countdownFrom = OptionalInt.empty();
 
+        private OptionalInt wordWrapWidth = OptionalInt.empty();
+        private Optional<IntSupplier> wordWrapWidthSupplier = Optional.empty();
+
         private Runnable runMethod;
 
         public Builder(String message, HAlign hAlign, VAlign vAlign) {
@@ -261,6 +318,20 @@ public class TextPanel extends Panel implements Drawable {
             return this;
         }
 
+        public Builder wordWrapWidth(int wordWrapWidth) {
+            this.wordWrapWidth = OptionalInt.of(wordWrapWidth);
+            if (wordWrapWidthSupplier.isPresent())
+                throw new IllegalStateException("Cannot set both wordWrapWidth and wordWrapWidthSupplier");
+            return this;
+        }
+
+        public Builder wordWrapWidth(Optional<IntSupplier> wordWrapWidth) {
+            wordWrapWidthSupplier = wordWrapWidth;
+            if (this.wordWrapWidth.isPresent())
+                throw new IllegalStateException("Cannot set both wordWrapWidth and wordWrapWidthSupplier");
+            return this;
+        }
+
         public Builder runMethod(Runnable runMethod) {
             this.runMethod = runMethod;
             return this;
@@ -277,8 +348,8 @@ public class TextPanel extends Panel implements Drawable {
         }
 
         @Override
-        public TextPanel build() {
-            return new TextPanel(this);
+        public TextPanelWordWrap build() {
+            return new TextPanelWordWrap (this);
         }
     }
 

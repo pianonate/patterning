@@ -1,4 +1,3 @@
-
 todo: next up - make TextPanel wordwrap it's text that is passed in from instantiating
                 in Control constructor (I think) and then it should just draw itself and use the parent Transition capability
                 that would be invoked by setting it up on the Control
@@ -21,7 +20,6 @@ todo: encapsulate lifeForm drawing into a Panel which can receive and manage mou
 todo: should KeyHandler become a KeyEventManager just like MouseEventManager - as a Singleton with the similar pattern
 
 todo: an align panel should allow also for a TextPanel or an information radiator-
-todo: max DPS shouldn't exceed frameRate
 todo: DPS should increase by stepped values - can it be an algorithm or just a table?
 todo: maximum volatility gun - why does it change the offset sometimes at very high generation speed
 todo: figure the best way to get the font object

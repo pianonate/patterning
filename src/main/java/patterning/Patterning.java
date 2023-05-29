@@ -434,7 +434,7 @@ public class Patterning extends PApplet {
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
-        drawRateController.adjustDrawRate();
+        drawRateController.adjustDrawRate(frameRate);
 
         boolean shouldDrawLifeForm = drawRateController.shouldDraw()  && lifeIsThreadSafe();
 

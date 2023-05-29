@@ -9,6 +9,8 @@ public class DrawRateController {
     private float currentDrawRate;
     private float drawCounter;
 
+    private float currentFrameRate;
+
     // this is used by PApplet in patterning.Patterning class - it's also used here
     // as a limit to the maximum draw rate which can't happen faster than the max
     // frame rate, n'est-ce pas?
@@ -20,11 +22,11 @@ public class DrawRateController {
     }
 
     public void updateTargetDrawRate(float newDrawRate) {
-        this.targetDrawRate = PApplet.constrain(newDrawRate, 1/MAX_FRAME_RATE, MAX_FRAME_RATE);
+        this.targetDrawRate = PApplet.constrain(newDrawRate, 1/currentFrameRate, currentFrameRate);
     }
 
     public boolean shouldDraw() {
-        drawCounter += currentDrawRate / MAX_FRAME_RATE;
+        drawCounter += currentDrawRate / currentFrameRate;
         if (drawCounter >= 1.0) {
             drawCounter--;
             return true;
@@ -36,12 +38,14 @@ public class DrawRateController {
         return currentDrawRate;
     }
 
-    public void adjustDrawRate() {
+    public void adjustDrawRate(float frameRate) {
+        this.currentFrameRate = frameRate; // Update the current frame rate
         if (currentDrawRate < targetDrawRate) {
             currentDrawRate += DRAW_RATE_INCREMENT; // Increment step
         } else if (currentDrawRate > targetDrawRate) {
             currentDrawRate -= DRAW_RATE_INCREMENT; // Decrement step
         }
-        currentDrawRate = PApplet.constrain(currentDrawRate, 1/MAX_FRAME_RATE, MAX_FRAME_RATE);
+        currentDrawRate = PApplet.constrain(currentDrawRate, 1/currentFrameRate, currentFrameRate);
     }
+
 }

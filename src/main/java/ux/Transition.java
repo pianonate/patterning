@@ -90,12 +90,9 @@ public class Transition {
             case DOWN -> {
                 int visibleHeight = (int) (this.panelBuffer.height * animationProgress);
                 int revealPointY = (int) (y);
-
                 PImage visiblePart = this.panelBuffer.get(0, this.panelBuffer.height - visibleHeight, this.panelBuffer.width, visibleHeight);
                 UXBuffer.image(visiblePart, x, revealPointY);
             }
-
-
         }
     }
 
