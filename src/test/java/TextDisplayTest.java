@@ -1,6 +1,6 @@
 import org.junit.jupiter.api.Test;
 import ux.Panel;
-import ux.TextPanelWordWrap;
+import ux.TextPanel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -10,7 +10,7 @@ public class TextDisplayTest {
 
     @Test
     public void testConstruction() {
-        TextPanelWordWrap display = new TextPanelWordWrap.Builder("Test", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
+        TextPanel display = new TextPanel.Builder("Test", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
                 .textSize(12)
                 .fadeInDuration(1000)
                 .build();
@@ -19,7 +19,7 @@ public class TextDisplayTest {
 
     @Test
     public void testDisplayMessage() {
-        TextPanelWordWrap display = new TextPanelWordWrap.Builder("Test", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
+        TextPanel display = new TextPanel.Builder("Test", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
                 .textSize(12)
                 .fadeInDuration(1000)
                 .build();

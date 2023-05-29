@@ -34,8 +34,8 @@ public class PatternDrawer {
     private final MovementHandler movementHandler;
     //private final List<Drawable> drawables = new ArrayList<>();
     private final DrawableManager drawables = DrawableManager.getInstance();
-    private TextPanelWordWrap countdownText;
-    private final TextPanelWordWrap hudText;
+    private TextPanel countdownText;
+    private final TextPanel hudText;
     UXThemeManager theme = UXThemeManager.getInstance();
     float cellBorderWidth = 0.0F;
     // this is used because we now separate the drawing speed from the framerate
@@ -92,14 +92,14 @@ public class PatternDrawer {
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
 
-        TextPanelWordWrap startupText = new TextPanelWordWrap.Builder("patterning".toUpperCase(), Panel.HAlign.RIGHT, Panel.VAlign.TOP)
+        TextPanel startupText = new TextPanel.Builder("patterning".toUpperCase(), Panel.HAlign.RIGHT, Panel.VAlign.TOP)
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
                 .displayDuration(4000)
                 .build();
 
-        hudText = new TextPanelWordWrap.Builder("HUD", Panel.HAlign.RIGHT, Panel.VAlign.BOTTOM)
+        hudText = new TextPanel.Builder("HUD", Panel.HAlign.RIGHT, Panel.VAlign.BOTTOM)
                 .textSize(24)
                 .build();
 
@@ -138,7 +138,7 @@ public class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        countdownText = new TextPanelWordWrap.Builder("counting down - press space to begin immediately", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
+        countdownText = new TextPanel.Builder("counting down - press space to begin immediately", Panel.HAlign.CENTER, Panel.VAlign.CENTER)
                 .runMethod(Patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)

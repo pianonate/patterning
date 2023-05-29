@@ -6,7 +6,7 @@ import processing.core.PGraphics;
 import java.util.*;
 import java.util.function.IntSupplier;
 
-public class TextPanelWordWrap extends Panel implements Drawable {
+public class TextPanel extends Panel implements Drawable {
 
     private final static UXThemeManager theme = UXThemeManager.getInstance();
     private final static DrawableManager drawableManager = DrawableManager.getInstance();
@@ -33,7 +33,7 @@ public class TextPanelWordWrap extends Panel implements Drawable {
     private long transitionTime;
     private int fadeValue;
 
-    protected TextPanelWordWrap(TextPanelWordWrap.Builder builder) {
+    protected TextPanel(TextPanel.Builder builder) {
         super(builder);
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
@@ -348,8 +348,8 @@ public class TextPanelWordWrap extends Panel implements Drawable {
         }
 
         @Override
-        public TextPanelWordWrap build() {
-            return new TextPanelWordWrap (this);
+        public TextPanel build() {
+            return new TextPanel(this);
         }
     }
 

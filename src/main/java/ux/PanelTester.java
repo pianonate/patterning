@@ -13,7 +13,7 @@ public class PanelTester {
         createAlignPanel(Panel.HAlign.CENTER, Panel.VAlign.BOTTOM, 0xAA00FF00, Transition.TransitionDirection.RIGHT);
         createAlignPanel(Panel.HAlign.RIGHT, Panel.VAlign.BOTTOM, 0xAA00FF00, Transition.TransitionDirection.LEFT);
 
-        TextPanelWordWrap testText = new TextPanelWordWrap.Builder("expando", Panel.HAlign.LEFT, Panel.VAlign.TOP)
+        TextPanel testText = new TextPanel.Builder("expando", Panel.HAlign.LEFT, Panel.VAlign.TOP)
                 .textSize(80)
                  .setTransition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.EXPANDO, 1000)
                 .displayDuration(3000)
