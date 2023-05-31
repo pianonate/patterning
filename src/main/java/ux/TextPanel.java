@@ -43,7 +43,7 @@ public class TextPanel extends Panel implements Drawable {
 
     private State state;
 
-    private boolean underConstruction = true;
+    private final boolean underConstruction;
 
     protected TextPanel(TextPanel.Builder builder) {
         super(builder);
@@ -260,29 +260,11 @@ public class TextPanel extends Panel implements Drawable {
         // a ux.TextPanel can advance through
         state.update();
 
-
         updatePanelBuffer(graphicsSupplier.get(), shouldUpdatePanelBuffer());
 
         updateTextSize();
 
         drawMultiLineText();
-
-        //panelBuffer.textAlign(this.hAlign.toPApplet(), this.vAlign.toPApplet());
-
-/*        for (int i = 0; i < messageLines.size(); i++) {
-            String line = messageLines.get(i);
-            float y = (panelBuffer.textAscent() + panelBuffer.textDescent() ) * i;
-
-            if (outline) {
-                panelBuffer.fill(outlineColor);
-                panelBuffer.text(line, textMargin - outlineOffset, y - outlineOffset);
-                panelBuffer.text(line, textMargin + outlineOffset, y - outlineOffset);
-            }
-
-            // Draw the actual text in the calculated color
-            panelBuffer.fill(currentColor);
-            panelBuffer.text(line, textMargin, y);
-        }*/
     }
 
     void drawMultiLineText() {

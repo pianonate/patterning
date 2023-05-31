@@ -5,19 +5,24 @@ import processing.core.PGraphics;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ContainerPanel extends Panel {
+public abstract class ContainerPanel extends Panel {
 
     private final List<Panel> childPanels;
     private final Orientation orientation;
 
     protected ContainerPanel(Builder builder) {
         super(builder);
+
         this.childPanels = new ArrayList<>(builder.childPanels);
+
+        if (childPanels.isEmpty()) {
+            throw new IllegalStateException("ContainerPanel must have at least one child panel");
+        }
 
         // Set parent panel for each child
         for (Panel child : childPanels) {
             // child panels need special handling to orient themselves to this container Panel
-            // rather than the UXBUffer, which is the more common case...
+            // rather than the UXBuffer, which is the more common case...
             child.parentPanel = this;
             child.graphicsSupplier = this::getContainerPanelBuffer;
         }
@@ -61,37 +66,35 @@ public class ContainerPanel extends Panel {
         }
     }
 
-    public static class Builder extends Panel.Builder<Builder> {
-        private Orientation orientation = Orientation.HORIZONTAL;
+    // public abstract static class Builder extends Panel.Builder<Builder> {
+    public abstract static class Builder<P extends Builder<P>> extends Panel.Builder<P> {
+
         private final List<Panel> childPanels = new ArrayList<>();
+        protected Orientation orientation = Orientation.HORIZONTAL;
 
         // Constructor for aligned Panel with default dimensions (0, 0)
         // addPanel will update the actual dimensions
         public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
             super(graphicsSupplier, alignHorizontal, vAlign);
         }
-        public Builder setOrientation(Orientation orientation) {
+
+        protected Builder setOrientation(Orientation orientation) {
             this.orientation = orientation;
             return this;
         }
 
-        public Builder addPanel(Panel child) {
+        protected Builder addPanel(Panel child) {
             this.childPanels.add(child);
             return this;
         }
 
         @Override
-        protected Builder self() {
-            return this;
+        protected P self() {
+            return (P) this;
         }
 
-        @Override
-        public ContainerPanel build() {
-            if (childPanels.isEmpty()) {
-                throw new IllegalStateException("ContainerPanel must have at least one child panel");
-            }
-            return new ContainerPanel(this);
-        }
+        public abstract ContainerPanel build();
+
     }
 }
 

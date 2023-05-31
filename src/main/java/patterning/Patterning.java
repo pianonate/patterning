@@ -623,15 +623,14 @@ public class Patterning extends PApplet {
 
     public Panel getTestControl(PGraphicsSupplier graphicsSupplier) {
 
-        UXThemeManager theme = UXThemeManager.getInstance();
-        Control control1 = new Control.Builder(graphicsSupplier, callbackZoomInCenter, "zoomIn.png", theme.getControlSize()).build();
-        Control control2 = new Control.Builder(graphicsSupplier, callbackZoomOutCenter, "zoomOut.png",theme.getControlSize()).build();
-
-        return new ContainerPanel.Builder(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-                .addPanel(control1)
-                .addPanel(control2)
-                .setOrientation(Orientation.VERTICAL)
+        return new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.CENTER)
                 .transition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
+                .setOrientation(Orientation.VERTICAL)
+                .addControl("zoomIn.png", callbackZoomInCenter)
+                .addControl("zoomOut.png", callbackZoomOutCenter)
+                .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
+                .addControl("center.png", callbackCenterView)
+                .addControl("undo.png", callbackUndoMovement)
                 .build();
     }
 

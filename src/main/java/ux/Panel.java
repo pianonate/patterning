@@ -242,7 +242,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
     public static abstract class Builder<T extends Builder<T>> {
 
-        private PGraphicsSupplier graphicsSupplier;
+        protected final PGraphicsSupplier graphicsSupplier;
         private int x;
         private int y;
         private int width;
