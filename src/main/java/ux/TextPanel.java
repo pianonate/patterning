@@ -2,6 +2,7 @@ package ux;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;
+import processing.core.PVector;
 
 import java.util.*;
 import java.util.function.IntSupplier;
@@ -11,14 +12,18 @@ public class TextPanel extends Panel implements Drawable {
     private final static UXThemeManager theme = UXThemeManager.getInstance();
     private final static DrawableManager drawableManager = DrawableManager.getInstance();
 
+    // sizes
     private final int textMargin = theme.getDefaultTextMargin();
     private final int doubleTextMargin = textMargin * 2;
     private final float textSize;
 
+    // optional capabilities
     private final OptionalInt wordWrapWidth;
     private final Optional<IntSupplier> wordWrapWidthSupplier;
     private final OptionalInt fadeInDuration;
     private final OptionalInt fadeOutDuration;
+    private long transitionTime;
+    private int fadeValue;
     private final OptionalLong displayDuration; // long to compare to System.currentTimeMillis()
 
     // text countdown variables
@@ -26,21 +31,23 @@ public class TextPanel extends Panel implements Drawable {
     private final Runnable runMethod;
     private final String initialMessage;
 
-    // non-countdown variables
+    // the message
     public String message;
     public String lastMessage;
+
+    public final boolean outline;
+
     private State state;
-    private long transitionTime;
-    private int fadeValue;
 
     protected TextPanel(TextPanel.Builder builder) {
         super(builder);
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
-        // super(builder.hAlign, builder.vAlign);
+        // super(builder.alignHorizontal, builder.vAlign);
 
         this.message = builder.message;
         this.lastMessage = builder.message;
+        this.outline = builder.outline;
 
         this.textSize = builder.textSize;
         this.wordWrapWidth = builder.wordWrapWidth;
@@ -147,7 +154,7 @@ public class TextPanel extends Panel implements Drawable {
         // fit within the width minus a margin
         while ((parentBuffer.textWidth(longestLine) > (parentBuffer.width - doubleTextMargin))
                 || ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))) {
-            adjustedTextSize -= .01; // smooth baby
+            adjustedTextSize -= .05; // smooth baby
             adjustedTextSize = Math.max(adjustedTextSize, 1); // Prevent the textSize from going below 1
             parentBuffer.textSize(adjustedTextSize);
         }
@@ -245,9 +252,11 @@ public class TextPanel extends Panel implements Drawable {
             String line = lines.get(i);
             float y = (panelBuffer.textAscent() + panelBuffer.textDescent() ) * i;
 
-            panelBuffer.fill(outlineColor);
-            panelBuffer.text(line, textMargin - outlineOffset, y - outlineOffset);
-            panelBuffer.text(line, textMargin + outlineOffset, y - outlineOffset);
+            if (outline) {
+                panelBuffer.fill(outlineColor);
+                panelBuffer.text(line, textMargin - outlineOffset, y - outlineOffset);
+                panelBuffer.text(line, textMargin + outlineOffset, y - outlineOffset);
+            }
 
             // Draw the actual text in the calculated color
             panelBuffer.fill(currentColor);
@@ -267,12 +276,13 @@ public class TextPanel extends Panel implements Drawable {
     }
 
     private void removeFromDrawableList() {
-        drawableManager.requestRemoval(this);
+        drawableManager.remove(this);
     }
 
     private interface State {
         void update();
 
+        @SuppressWarnings("unused")
         void transition();
     }
 
@@ -280,6 +290,7 @@ public class TextPanel extends Panel implements Drawable {
 
         private static final UXThemeManager theme = UXThemeManager.getInstance();
         private final String message;
+        private  boolean outline = true;
         private float textSize = theme.getDefaultTextSize();
         private OptionalInt fadeInDuration = OptionalInt.empty();
         private OptionalInt fadeOutDuration = OptionalInt.empty();
@@ -293,8 +304,13 @@ public class TextPanel extends Panel implements Drawable {
 
         private Runnable runMethod;
 
-        public Builder(String message, HAlign hAlign, VAlign vAlign) {
-            super(hAlign, vAlign);
+        public Builder(PGraphicsSupplier graphicsSupplier, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            super(graphicsSupplier, alignHorizontal, vAlign);
+            this.message = message;
+        }
+
+        public Builder(PGraphicsSupplier graphicsSupplier, String message,PVector position) {
+            super(graphicsSupplier, position);
             this.message = message;
         }
 
@@ -339,6 +355,11 @@ public class TextPanel extends Panel implements Drawable {
 
         public Builder displayDuration(long displayDuration) {
             this.displayDuration = OptionalLong.of(displayDuration);
+            return this;
+        }
+
+        public Builder outline(boolean outline) {
+            this.outline = outline;
             return this;
         }
 

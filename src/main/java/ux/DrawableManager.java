@@ -8,11 +8,13 @@ import java.util.List;
 public class DrawableManager {
     private static DrawableManager instance;
     private final List<Drawable> drawables;
+    private final List<Drawable> toBeAdded;
 
     private final List<Drawable> toBeRemoved;
 
     private DrawableManager() {
         drawables = new ArrayList<>();
+        toBeAdded = new ArrayList<>();
         toBeRemoved = new ArrayList<>();
     }
 
@@ -23,18 +25,22 @@ public class DrawableManager {
         return instance;
     }
 
-    public void addDrawable(Drawable drawable) {
-        drawables.add(drawable);
+    public void add(Drawable drawable) {
+        toBeAdded.add(drawable);
+    }
+    public void addAll(List<? extends Drawable> drawables) {
+        this.toBeAdded.addAll(drawables);
     }
 
-    public void addAll(List<? extends Drawable> drawables) {
-        this.drawables.addAll(drawables);
-    }
 
     public void drawAll(PGraphics buffer) {
         for (Drawable drawable : drawables) {
-            drawable.draw(buffer);
+            // drawable.draw(buffer);
+            drawable.draw();
         }
+        // Add all drawables that need to be added
+        drawables.addAll(toBeAdded);
+        toBeAdded.clear();
         // clean up drawables that need to be removed
         drawables.removeAll(toBeRemoved);
         toBeRemoved.clear();
@@ -43,7 +49,8 @@ public class DrawableManager {
     public boolean isManaging(Drawable drawable) {
         return drawables.contains(drawable);
     }
-    public void requestRemoval(Drawable drawable) {
+
+    public void remove(Drawable drawable) {
         toBeRemoved.add(drawable);
     }
 }

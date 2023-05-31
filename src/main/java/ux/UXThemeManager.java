@@ -10,8 +10,8 @@ public class UXThemeManager {
 
     private float defaultTextSize;
 
-    private float hoverTextSize;
-    private int hoverTextMaxWidth;
+    private int hoverTextSize;
+    private int hoverTextWidth;
     private int hoverTextMargin;
 
     // colors
@@ -49,9 +49,8 @@ public class UXThemeManager {
         defaultTextMargin = themeConstants.getDefaultTextMargin();
         defaultTextSize = themeConstants.getDefaultTextSize();
         hoverTextSize = themeConstants.getHoverTextSize();
-        hoverTextMaxWidth = themeConstants.getHoverTextMaxWidth();
+        hoverTextWidth = themeConstants.getHoverTextMaxWidth();
         hoverTextMargin = themeConstants.getHoverTextMargin();
-
 
         // colors
         backGroundColor = themeConstants.getBackgroundColor();
@@ -103,11 +102,11 @@ public class UXThemeManager {
         return hoverTextMargin;
     }
 
-    public int getHoverTextMaxWidth() {
-        return hoverTextMaxWidth;
+    public int getHoverTextWidth() {
+        return hoverTextWidth;
     }
 
-    public float getHoverTextSize() {
+    public int getHoverTextSize() {
         return hoverTextSize;
     }
 

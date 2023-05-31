@@ -12,7 +12,7 @@ import processing.core.PVector;
 import java.util.*;
 import java.util.stream.Collectors;
 
-class OldControl implements Drawable, KeyObserver {
+class OldControl implements  KeyObserver {
     private static final int CORNER_RADIUS = 10;
     private static final int TEXT_HEIGHT_BUFFER = 5;
     private static final int TEXT_WIDTH_BUFFER = 10;
@@ -84,9 +84,8 @@ class OldControl implements Drawable, KeyObserver {
         this.isPressed = false;
     }
 
-
-    @Override
     public void draw(PGraphics buffer) {
+    //public void draw() {
         if (null == hoverBuffer) {
             makeHoverBuffer(buffer);
         }

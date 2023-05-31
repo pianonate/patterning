@@ -1,5 +1,7 @@
 package actions;
 
+import ux.DrawRateManager;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,27 +45,14 @@ public class MouseEventManager {
             }
 
             receiver.onMousePressed();
+
         }
     }
-/*
-    public void onMousePressed(int mouseX, int mouseY) {
-        mousePressedOverAny = false;
-        pressedReceiver = null;
-
-        for (MouseEventReceiver receiver : mouseEventReceivers) {
-            if (receiver.mousePressedOverMe()) {
-                mousePressedOverAny = true;
-                pressedReceiver = receiver;
-                receiver.onMousePressed();
-                break; // stop checking after the first one that processes the event
-            }
-        }
-    }*/
-
 
     public void onMouseReleased() {
         if (pressedReceiver != null) {
             pressedReceiver.onMouseReleased();
+            DrawRateManager.getInstance().drawImmediately();
             pressedReceiver = null;
         }
     }

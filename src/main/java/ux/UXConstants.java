@@ -28,7 +28,7 @@ public class UXConstants {
         return 225;
     }
 
-    float getHoverTextSize() {
+    int getHoverTextSize() {
         return 14;
     }
 

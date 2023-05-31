@@ -2,6 +2,7 @@ package actions;
 
 import processing.core.PApplet;
 import processing.event.KeyEvent;
+import ux.DrawRateManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,9 +62,8 @@ public class KeyHandler {
                 if (event.getAction() == KeyEvent.PRESS) {
                     pressedKeys.add(keyCode);
                     callback.invokeFeature();
-
                     callback.notifyKeyObservers();;
-
+                    DrawRateManager.getInstance().drawImmediately();
                 }
 
                 if (event.getAction() == KeyEvent.RELEASE) {

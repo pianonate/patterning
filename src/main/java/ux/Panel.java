@@ -7,42 +7,19 @@ import processing.core.PGraphics;
 import processing.core.PVector;
 
 import java.awt.*;
+import java.util.OptionalInt;
 
 
 public abstract class Panel implements Drawable, MouseEventReceiver {
 
-    public enum HAlign {
-        LEFT, CENTER, RIGHT;
-
-        public int toPApplet() {
-            return switch (this) {
-                case LEFT -> PApplet.LEFT;
-                case CENTER -> PApplet.CENTER;
-                case RIGHT -> PApplet.RIGHT;
-            };
-        }
-    }
-
-    public enum VAlign {
-        TOP, CENTER, BOTTOM;
-
-        public int toPApplet() {
-            return switch (this) {
-                case TOP -> PApplet.TOP;
-                case CENTER -> PApplet.CENTER;
-                case BOTTOM -> PApplet.BOTTOM;
-            };
-        }
-    }
-
     protected Panel parentPanel;
-
+    protected PGraphicsSupplier graphicsSupplier;
 
     // size & positioning
     protected PVector position;
     protected int width, height;
 
-    private int fill;
+    protected int fill;
 
     boolean resized = false;
     private int lastUXWidth;
@@ -77,13 +54,13 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     }
 
     // alignment
-    private boolean alignAble;
-    protected HAlign hAlign;
-    protected VAlign vAlign;
+    protected final boolean alignAble;
+    protected AlignHorizontal alignHorizontal;
+    protected AlignVertical vAlign;
 
     // transition
-    private boolean transitionAble;
-    private Transition transition;
+    protected boolean transitionAble;
+    protected Transition transition;
     private Transition.TransitionDirection transitionDirection;
     private Transition.TransitionType transitionType;
     private long transitionDuration;
@@ -91,14 +68,18 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     // image buffers and callbacks
     protected PGraphics panelBuffer;
 
+    protected final OptionalInt radius;
+
    protected Panel(Builder<?> builder) {
 
        setPosition(builder.x,builder.y);
+       this.graphicsSupplier = builder.graphicsSupplier;
        this.width = builder.width;
        this.height = builder.height;
-       this.hAlign = builder.hAlign;
+       this.radius = builder.radius;
+       this.alignHorizontal = builder.alignHorizontal;
        this.vAlign = builder.vAlign;
-       this.alignAble = (hAlign != null && vAlign != null);
+       this.alignAble = (alignHorizontal != null && vAlign != null);
        this.fill = builder.fill;
        this.transitionDirection = builder.transitionDirection;
        this.transitionType = builder.transitionType;
@@ -114,16 +95,11 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         position.y = y;
     }
 
-/*    public void setAlignment(HAlign hAlign, VAlign vAlign) {
-        this.hAlign = hAlign;
-        this.vAlign = vAlign;
-        this.alignAble = true;
-    }*/
-
     public void setFill(int fill) {
         this.fill = fill;
     }
 
+    @SuppressWarnings("unused")
     public void setTransition(Transition.TransitionDirection direction, Transition.TransitionType type, long duration) {
         this.transitionDirection = direction;
         this.transitionType = type;
@@ -132,14 +108,14 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     }
 
     protected PGraphics getPanelBuffer(PGraphics parentBuffer) {
-        return parentBuffer.parent.createGraphics(this.width, this.height);
+       return parentBuffer.parent.createGraphics(this.width, this.height);
     }
 
     protected boolean shouldGetPanelBuffer(PGraphics parentBuffer) {
         return (this.panelBuffer == null);
     }
 
-    private void updateResized(PGraphics parentBuffer) {
+    protected void updateResized(PGraphics parentBuffer) {
         if (parentBuffer.width != this.lastUXWidth || parentBuffer.height != this.lastUXHeight) {
             this.lastUXWidth = parentBuffer.width;
             this.lastUXHeight = parentBuffer.height;
@@ -149,11 +125,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         }
     }
 
-    @Override
-    public void draw(PGraphics parentBuffer) {
-
-        parentBuffer.pushStyle();
-
+    protected void setupFirstDraw(PGraphics parentBuffer) {
         if (shouldGetPanelBuffer(parentBuffer)) {
             panelBuffer = getPanelBuffer(parentBuffer);
             lastUXWidth = parentBuffer.width;
@@ -162,6 +134,17 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
                 transition = new Transition(panelBuffer, transitionDirection, transitionType, transitionDuration);
             }
         }
+    }
+
+    @Override
+    //public void draw(PGraphics parentBuffer) {
+    public void draw() {
+
+        PGraphics parentBuffer = graphicsSupplier.get();
+
+        parentBuffer.pushStyle();
+
+        setupFirstDraw(parentBuffer);
 
         updateResized(parentBuffer);
 
@@ -180,7 +163,11 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         }
 
         // output the background Rect for this panel
-        panelBuffer.rect(0, 0, width, height);
+        if (radius.isPresent()) {
+            panelBuffer.rect(0, 0, width, height, radius.getAsInt());
+        } else {
+            panelBuffer.rect(0, 0, width, height);
+        }
 
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw();
@@ -189,23 +176,21 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
         panelBuffer.endDraw();
 
+        parentBuffer.popStyle();
+
         if (transitionAble) {
             transition.transition(parentBuffer, position.x, position.y);
-
         } else {
             parentBuffer.image(panelBuffer, position.x, position.y);
         }
 
-        parentBuffer.popStyle();
     }
 
-    protected void panelSubclassDraw() {
+    protected abstract void panelSubclassDraw();
 
-    }
-
-    private void updateAlignment(PGraphics buffer) {
+    protected void updateAlignment(PGraphics buffer) {
         int posX = 0, posY = 0;
-        switch (hAlign) {
+        switch (alignHorizontal) {
             // case PApplet.LEFT -> posX = 0;
             case CENTER -> posX = (buffer.width - width) / 2;
             case RIGHT -> posX = buffer.width - width;
@@ -221,7 +206,8 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     }
 
     private PVector getEffectivePosition() {
-        // used when a Panel contains other Panels
+        // used in isMouseOverMe when a Panel contains other Panels
+        // can walk up the hierarchy if you have nested panels
         if (parentPanel != null) {
             return new PVector(position.x + parentPanel.getEffectivePosition().x,
                     position.y + parentPanel.getEffectivePosition().y);
@@ -263,75 +249,86 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     }
 
     public static abstract class Builder<T extends Builder<T>> {
+
+        private PGraphicsSupplier graphicsSupplier;
         private int x;
         private int y;
         private int width;
         private int height;
-        private HAlign hAlign;
-        private VAlign vAlign;
+        private AlignHorizontal alignHorizontal;
+        private AlignVertical vAlign;
         private int fill = UXThemeManager.getInstance().getDefaultPanelColor();
         private Transition.TransitionDirection transitionDirection;
         private Transition.TransitionType transitionType;
         private long transitionDuration;
 
-        // Constructor for explicitly positioned Panel
-        public Builder(int x, int y, int width, int height) {
-            setPosition(x, y);
-            setWidth(width);
-            setHeight(height);
+        private OptionalInt radius = OptionalInt.empty();
+
+
+        // used by Control
+        public Builder(PGraphicsSupplier graphicsSupplier, int width, int height) {
+            setRect(0, 0, width, height); // parent positioned
+            this.graphicsSupplier = graphicsSupplier;
         }
 
-        // Constructor for aligned Panel with given width and height
-        public Builder(HAlign hAlign, VAlign vAlign, int width, int height) {
-            setPosition(0, 0);
-            setAlignment(hAlign, vAlign);
-            setWidth(width);
-            setHeight(height);
+        // used by TextPanel for explicitly positioned text
+        public Builder(PGraphicsSupplier graphicsSupplier, PVector position) {
+            setRect((int) position.x, (int) position.y, 0, 0); // parent positioned
+            this.graphicsSupplier = graphicsSupplier;
         }
 
-        // Constructor for aligned Panel with default dimensions (0, 0)
-        public Builder(HAlign hAlign, VAlign vAlign) {
-            setPosition(0, 0);
-            setAlignment(hAlign, vAlign);
-            setWidth(0);
-            setHeight(0);
+        // used by BasicPanel for demonstration purposes
+        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
+            setRect(0, 0, width, height); // we're only using BasicPanel to show that panels are useful...
+            setAlignment(alignHorizontal, vAlign);
+            this.graphicsSupplier = graphicsSupplier;
+
         }
 
-        private T setPosition(int x, int y) {
+        //  ContainerPanel and TextPanel are often alignHorizontal / vAlign able
+        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            setRect(0, 0, 0, 0 ); // Containers and text, so far, only need to be aligned around the screen
+            setAlignment(alignHorizontal, vAlign);
+            this.graphicsSupplier = graphicsSupplier;
+        }
+
+        // full explicit positioning example - so far i don't think i have one of these
+        public Builder(PGraphicsSupplier graphicsSupplier, int x, int y, int width, int height) {
+            setRect(x, y, width, height);
+            this.graphicsSupplier = graphicsSupplier;
+        }
+
+        private void setRect(int x, int y, int width, int height) {
             this.x = x;
             this.y = y;
-            return self();
-        }
-
-        private T setWidth(int width) {
             this.width = width;
-            return self();
-        }
-
-        private T setHeight(int height) {
             this.height = height;
-            return self();
         }
 
-        private T setAlignment(HAlign hAlign, VAlign vAlign) {
-            this.hAlign = hAlign;
+        private void setAlignment(AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            this.alignHorizontal = alignHorizontal;
             this.vAlign = vAlign;
-            return self();
         }
 
-        public T setFill(int fill) {
+        public T fill(int fill) {
             this.fill = fill;
             return self();
         }
 
-        public T setTransition(Transition.TransitionDirection direction, Transition.TransitionType type, long duration) {
+        public T transition(Transition.TransitionDirection direction, Transition.TransitionType type, long duration) {
             this.transitionDirection = direction;
             this.transitionType = type;
             this.transitionDuration = duration;
             return self();
         }
 
+        public T radius(int radius) {
+            this.radius = OptionalInt.of(radius);
+            return self();
+        }
+
         // Method to allow subclass builders to return "this" correctly
+        @SuppressWarnings("unchecked")
         protected T self() {
             return (T) this;
         }

@@ -13,8 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OldControlPanel implements Drawable, MouseEventReceiver {
-
+public class OldControlPanel implements MouseEventReceiver {
     public static final int FILL_ALPHA = 200;
     private static final int CONTROL_COLOR = 40;
     private final List<OldControl> oldControls;
@@ -57,7 +56,6 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
         }
     }
 
-    @Override
     public void draw(PGraphics buffer) {
         // Determine the width and height based on the position.
         int width = (position == OldPanelPosition.LEFT || position == OldPanelPosition.RIGHT) ? controlSize : getLongestDimension(buffer.width);
@@ -104,11 +102,12 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
 
         for (OldControl c : oldControls) {
             c.mouseHover(isMouseOverControl(c));
+            /// c.draw(buffer);
             c.draw(buffer);
         }
 
         buffer.popStyle();
-    }
+   }
 
     private void arrangeControls(float startX, float startY) {
         float x = startX, y = startY;
@@ -165,6 +164,7 @@ public class OldControlPanel implements Drawable, MouseEventReceiver {
     }
 
     public static class Builder {
+        protected PGraphicsSupplier graphicsSupplier;
         protected OldPanelPosition position;
         protected OldPanelAlignment alignment;
         protected List<OldControl> oldControls;

@@ -1,11 +1,12 @@
 package ux;
 
 import actions.*;
-import patterning.Patterning;
 import processing.core.PImage;
+import processing.core.PVector;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 
 public class Control extends Panel implements KeyObserver, MouseEventReceiver {
@@ -14,7 +15,12 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     private final KeyCallback callback;
     private final int size;
     boolean isHighlightFromKeypress = false;
-    private PImage icon;
+    private  PImage icon;
+    private final String iconName;
+    private TextPanel hoverTextPanel;
+    private String hoverMessage;
+
+    private int hoverTextWidth = UXThemeManager.getInstance().getHoverTextSize();
 
     protected Control(Builder builder) {
         super(builder);
@@ -25,12 +31,33 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         setFill(theme.getControlColor());
         callback.addObserver(this);
         MouseEventManager.getInstance().addReceiver(this);
+        this.iconName = builder.iconName;
 
-        setIcon(builder.iconName);
     }
 
-    @Override
+    // at time of construction, the control doesn't have information about its parent
+    // so instantiate the hover text on first use
+    private void firstDrawSetup() {
+        if (icon != null) {
+            return;
+        }
+
+        PImage icon = panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+        icon.resize(width - 5, height - 5);
+        this.icon = icon;
+
+        String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
+                .map(KeyCombo::toString)
+                .collect(Collectors.joining(", "));
+
+        hoverMessage = callback.getUsageText() + " (shortcut: " + keyCombos + ")";
+
+    }
+
     protected void panelSubclassDraw() {
+
+        firstDrawSetup();
+
         mouseHover(isMouseOverMe());
         drawHover();
         drawPressed();
@@ -38,9 +65,71 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
 
     private void drawHover() {
+
         if (isHovering) {
             drawControlHighlight(theme.getControlHighlightColor());
+            if (null==hoverTextPanel) {
+                hoverTextPanel = getHoverTextPanel();
+                DrawableManager.getInstance().add(hoverTextPanel);
+            }
+        } else {
+            if (null!=hoverTextPanel) {
+                DrawableManager.getInstance().remove(hoverTextPanel);
+                hoverTextPanel = null;
+            }
         }
+    }
+
+    private TextPanel getHoverTextPanel() {
+        int margin = theme.getHoverTextMargin();
+        int hoverTextWidth = theme.getHoverTextWidth();
+
+        int hoverX = 0, hoverY = 0;
+        Transition.TransitionDirection transitionDirection = null;
+
+        switch (parentPanel.alignHorizontal) {
+            case LEFT -> {
+                hoverX = (int) parentPanel.position.x + size + margin;
+                hoverY = (int) (parentPanel.position.y + position.y);
+                transitionDirection = Transition.TransitionDirection.RIGHT;
+            }
+            case CENTER -> {
+                hoverX = (int) (parentPanel.position.x + position.x);
+                switch (parentPanel.vAlign) {
+                    case TOP, CENTER -> {
+                        hoverY = (int) parentPanel.position.y + size + margin;
+                        transitionDirection = Transition.TransitionDirection.DOWN;
+                    }
+                    case BOTTOM -> {
+                        hoverY = (int) parentPanel.position.y - margin;
+                        transitionDirection = Transition.TransitionDirection.UP;
+                    }
+                }
+            }
+            case RIGHT -> {
+                hoverX = (int) parentPanel.position.x - margin - hoverTextWidth;
+                hoverY = (int) (parentPanel.position.y + position.y);
+                transitionDirection = Transition.TransitionDirection.LEFT;
+            }
+        }
+
+       // return new TextPanel.Builder(hoverMessage, this.parentPanel.alignHorizontal, this.parentPanel.vAlign)
+
+        // the Control parentPanel is a ContainerPanel that has a graphic supplier of the UXBuffer
+        // we can't use the Control graphicsProvider as it is provided by the ContainerPanel so that the
+        // Control draws itself within the ContainerPanel
+        //
+        // instead we pass the hover text the parent ContainerPanel's graphicsSupplier which comes from
+        // PatternDrawer, i.e., the UXBuffer itself - otherwise the hover text would try to draw itself within the control
+        // at a microscopic size
+        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY) )
+                .fill(theme.getControlHighlightColor())
+                .textSize(theme.getHoverTextSize())
+                .wordWrapWidth(hoverTextWidth)
+                .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
+                .radius(theme.getControlHighlightCornerRadius())
+                .outline(false)
+                .build();
     }
 
     void mouseHover(boolean isHovering) {
@@ -53,12 +142,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             this.isHovering = isHovering;
             isHoveringPrevious = isHovering;
         }
-    }
-
-    private void setIcon(String iconName) {
-        PImage icon = Patterning.getInstance().loadImage(theme.getIconPath() + iconName);
-        icon.resize(width - 5, height - 5);
-        this.icon = icon;
     }
 
     private void drawPressed() {
@@ -106,35 +189,18 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
     @Override
     public void onMouseReleased() {
-        super.onMouseReleased();  // Calls Panel's onMouseReleased
+        super.onMouseReleased(); // Calls Panel's onMouseReleased
         if (isMouseOverMe()) {
             callback.invokeFeature();  // Specific to Control
         }
     }
-/*
-    @Override
-    public void onMousePressed() {
-        if (isMouseOverMe()) {
-            super.onMousePressed();
-        }
-    }
-
-    @Override
-    public void onMouseReleased() {
-        if (isMouseOverMe()) {
-            super.onMouseReleased();
-            callback.invokeFeature();
-        }
-    }*/
-
-
     public static class Builder extends Panel.Builder<Builder> {
         private final KeyCallback callback;
         private final String iconName;
         private final int size;
 
-        public Builder(KeyCallback callback, String iconName, int size) {
-            super(0,0,size,size);
+        public Builder(PGraphicsSupplier graphicsSupplier, KeyCallback callback, String iconName, int size) {
+            super(graphicsSupplier, size, size);
             this.callback = callback;
             this.iconName = iconName;
             this.size = size;

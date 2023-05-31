@@ -1,8 +1,60 @@
+you are in the middle of adding PGraphicsSupplier
+* get rid of all old commented calls around parentBuffer
+* move setupFirstDraw into constructor and make sure that works case by case
+
+.addPanel - should actually be .addControl as standalone controls are not a thing
+and it's okay if you mix and match adding things?  why not?  solve that problem later if it is a problem
+when you do this then get rid of this code in container and just construct the control appropriately
+        for (Panel child : childPanels) {
+            // child panels need special handling to orient themselves to this container Panel
+            // rather than the UXBuffer, which is the more common case...
+            child.parentPanel = this;
+            child.graphicsSupplier = this::getContainerPanelBuffer;
+        }
+
+=====
+
+
+the text panel recreating every time it changes size is not working - so instead, just make it the screen width
+ and pass in the ability to calculate the current screen size as you did for the wordwrap
+ and then in order to have it not exceed - you have to run adjustedTextWidth each time - but only when it changes
+
+ i think the thing to do is to simply set the desired dimensions of a TextPanel and then size the font to fit it at start - and then check if the text has changed or the size has changed and then size the text to fit
+
+ position the text using the same alignment as was used when creating it and if there is no alignment then TOP, LEFT
+
+ this avoids the excessive calculation of the HUDText that you have been experiencing
+
+==============
+
+make a KeyCallbackBuilder to make it easier to read the creation of these beasts
+also make KeyHandler use Builder so that intellij doesn't think you have duplicated code
+
+===============
+
+back the fuck up - pass along a method::methodName that provides the UXBuffer PGraphics that is current such as the new PGraphics getUXBuffer(); - or parent buffers for newly created children.
+
+then all of these beasts will always return the current PGraphics - you might want to create an interface if you're
+going to use more than one so they all have to conform...
+
+then you don't have to go through the complexity of setting up your buffer the first time you get a draw
+
+and draw methods don't have to pass around PGraphics buffers either...
+
+==============
+
+after that to debug the positioning of the text panels created by your new control,
+
+create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels that each contain a left aligned name and right aligned value
+
+you can display the information radiators anywhere on screen as they'll have a title window and - ideally you can reposition them and also close them
+=============
+
 todo: next up - make TextPanel wordwrap it's text that is passed in from instantiating
                 in Control constructor (I think) and then it should just draw itself and use the parent Transition capability
                 that would be invoked by setting it up on the Control
-                1. wordwrap - test at an arbitraray x,y, width, height - how can you make that obvious as a child of panel?
-                2. test making it with a background color and a corner radius on the background.  controls have background colors and highligths that have radiuses but i don't think that's a generic capability for Panels to be highlighted, just controls.  but panels should have an optional radius as well as background color
+                1. wordwrap - test at an arbitrary x,y, width, height - how can you make that obvious as a child of panel?
+                2. test making it with a background color and a corner radius on the background.  controls have background colors and highlights that have radii but i don't think that's a generic capability for Panels to be highlighted, just controls.  but panels should have an optional radius as well as background color
                 3. test that the textPanel can also have a transition applied
                 4. fade in and fade out are transitions but only on the text itself, but a panel can have a transition
                    applied to it as well - how do you construct them commonly?  If a Panel has a transition such as fade
@@ -16,8 +68,9 @@ todo: cleanup any use of font that is not using the one on UXTheme
 todo: encapsulate lifeForm drawing into a Panel which can receive and manage mouse events on itself so they
       can 'capture' the mouse events and release it in an intuitive way for the code
 
-
 todo: should KeyHandler become a KeyEventManager just like MouseEventManager - as a Singleton with the similar pattern
+
+todo: should we use futures instead of ComplexCalculationHandler?  it's a little more complicated but it's more standard and it's more flexible - you can cancel a future and you can get a result from it - and you can get a result from it with a timeout - which is what you want for the ComplexCalculationHandler
 
 todo: an align panel should allow also for a TextPanel or an information radiator-
 todo: DPS should increase by stepped values - can it be an algorithm or just a table?
@@ -93,3 +146,4 @@ todo: directional big jump
 todo: file manager of RLEs
 todo: undo mouse moves? would it make sense to people
 todo: paste logic - move to separate class to handle - just for the sake of keeping patterning.Patterning clean
+OCTREE: https://github.com/thwegene/OCT/tree/master

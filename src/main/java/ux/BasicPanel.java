@@ -5,19 +5,20 @@ public class BasicPanel extends Panel {
         super(builder);
     }
 
-    public static class Builder extends Panel.Builder<Builder> {
-  /*      public Builder(int x, int y, int width, int height) {
-            super(x, y, width, height);
-        }*/
+    @Override
+    protected void panelSubclassDraw() {
+        ;
+    }
 
-        public Builder(HAlign hAlign, VAlign vAlign, int width, int height) {
-            super(hAlign, vAlign, width, height);
+    public static class Builder extends Panel.Builder<Builder> {
+
+        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
+            super(graphicsSupplier, alignHorizontal, vAlign, width, height);
         }
 
-   /*     public Builder(HAlign hAlign, VAlign vAlign) {
-            super(hAlign, vAlign);
-        }*/
-
+        public Builder(PGraphicsSupplier graphicsSupplier, int x, int y, int width, int height) {
+            super(graphicsSupplier, x, y, width, height);
+        }
         @Override
         public BasicPanel build() {
             return new BasicPanel(this);

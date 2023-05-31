@@ -43,13 +43,13 @@ public class Patterning extends PApplet {
     private static boolean running;
     private static LifeUniverse life;
     private static PApplet processing;
-    private DrawRateController drawRateController;
+    private DrawRateManager drawRateManager;
     private final KeyCallback callbackDrawSlower = new KeyCallback(
             new KeyCombo(SHORTCUT_DRAW_FASTER, KeyEvent.SHIFT)
     ) {
         @Override
         public void invokeFeature() {
-            float current = drawRateController.getCurrentDrawRate();
+            float current = drawRateManager.getCurrentDrawRate();
 
             float slowdownBy;
             if (current > 10) slowdownBy = 5;
@@ -57,7 +57,7 @@ public class Patterning extends PApplet {
             else if (current > 1) slowdownBy = 1;
             else slowdownBy = .1F;
 
-            drawRateController.updateTargetDrawRate(current - slowdownBy);
+            drawRateManager.updateTargetDrawRate(current - slowdownBy);
         }
 
         @Override
@@ -69,8 +69,8 @@ public class Patterning extends PApplet {
         @Override
         public void invokeFeature() {
 
-            float current = drawRateController.getCurrentDrawRate();
-            drawRateController.updateTargetDrawRate((int) current + 5);
+            float current = drawRateManager.getCurrentDrawRate();
+            drawRateManager.updateTargetDrawRate((int) current + 5);
 
         }
 
@@ -399,9 +399,8 @@ public class Patterning extends PApplet {
 
 
         setupKeyHandler();
-        List<OldControlPanel> panels = getControlPanels();
 
-        frameRate(DrawRateController.MAX_FRAME_RATE);
+        frameRate(DrawRateManager.MAX_FRAME_RATE);
 
         this.targetStep = 0;
 
@@ -419,8 +418,11 @@ public class Patterning extends PApplet {
         loadSavedWindowPositions();
 
 
-        this.drawRateController = new DrawRateController();
-        this.drawer = new PatternDrawer(this, panels, drawRateController);
+        this.drawRateManager = DrawRateManager.getInstance();
+        List<OldControlPanel> panels = getControlPanels();
+
+        this.drawer = new PatternDrawer(this, drawRateManager, panels);
+
 
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
@@ -434,9 +436,11 @@ public class Patterning extends PApplet {
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
-        drawRateController.adjustDrawRate(frameRate);
+        drawRateManager.adjustDrawRate(frameRate);
 
-        boolean shouldDrawLifeForm = drawRateController.shouldDraw()  && lifeIsThreadSafe();
+        boolean shouldDraw = drawRateManager.shouldDraw();
+
+        boolean shouldDrawLifeForm = shouldDraw && lifeIsThreadSafe();
 
         // goForwardInTime (below) requests a nextGeneration and or a step change
         // both of which can take a while
@@ -446,11 +450,15 @@ public class Patterning extends PApplet {
         // and we tell the drawer whether it is still updating life since the last frame
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
+
+        long start = System.nanoTime();
         drawer.draw(shouldDrawLifeForm);
+        long end = System.nanoTime();
+
 
         // as mentioned above - this runs on a separate thread
         // and we don't want it to go any faster than the draw rate throttling mechanism
-        if (shouldDrawLifeForm) {
+        if (shouldDraw) {
             goForwardInTime();
         }
 
@@ -611,17 +619,17 @@ public class Patterning extends PApplet {
 
     }
 
-    public Panel getTestControl() {
+    public Panel getTestControl(PGraphicsSupplier graphicsSupplier) {
 
         UXThemeManager theme = UXThemeManager.getInstance();
-        Control control1 = new Control.Builder(callbackZoomInCenter, "zoomIn.png", theme.getControlSize()).build();
-        Control control2 = new Control.Builder(callbackZoomOutCenter, "zoomOut.png",theme.getControlSize()).build();
+        Control control1 = new Control.Builder(graphicsSupplier, callbackZoomInCenter, "zoomIn.png", theme.getControlSize()).build();
+        Control control2 = new Control.Builder(graphicsSupplier, callbackZoomOutCenter, "zoomOut.png",theme.getControlSize()).build();
 
-        return new ContainerPanel.Builder(Panel.HAlign.RIGHT, Panel.VAlign.CENTER)
+        return new ContainerPanel.Builder(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.CENTER)
                 .addPanel(control1)
                 .addPanel(control2)
                 .setOrientation(ContainerPanel.Orientation.VERTICAL)
-                .setTransition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
+                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
                 .build();
     }
 
