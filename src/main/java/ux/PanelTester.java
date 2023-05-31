@@ -14,9 +14,9 @@ public class PanelTester {
         createAlignPanel(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.BOTTOM, 0xAA00FF00, Transition.TransitionDirection.LEFT);
 
         TextPanel testText = new TextPanel.Builder(graphicsSupplier,"expando", AlignHorizontal.LEFT, AlignVertical.TOP)
-                .textSize(80)
-                 .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.EXPANDO, 1000)
-                .displayDuration(3000)
+                .textSize(50)
+                .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.EXPANDO, 1000)
+                .displayDuration(20000)
                 .build();
 
         DrawableManager.getInstance().add(testText);
@@ -30,8 +30,7 @@ public class PanelTester {
                 .fill(color)
                 .transition(direction, Transition.TransitionType.SLIDE, theme.getLongTransitionDuration())
                 .build();
-
-       // DrawableManager.getInstance().add(panel);
+        DrawableManager.getInstance().add(panel);
 
     }
 

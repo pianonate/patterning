@@ -1,9 +1,6 @@
-you are in the middle of adding PGraphicsSupplier
-* get rid of all old commented calls around parentBuffer
-* move setupFirstDraw into constructor and make sure that works case by case
+ContainerPanel - make abstract and then subclass to create a ControlPanel, InformationRadiator, etc.
 
 .addPanel - should actually be .addControl as standalone controls are not a thing
-and it's okay if you mix and match adding things?  why not?  solve that problem later if it is a problem
 when you do this then get rid of this code in container and just construct the control appropriately
         for (Panel child : childPanels) {
             // child panels need special handling to orient themselves to this container Panel
@@ -12,18 +9,10 @@ when you do this then get rid of this code in container and just construct the c
             child.graphicsSupplier = this::getContainerPanelBuffer;
         }
 
-=====
+set the width and height of the ContainerPanel in the builder then so that Panel has it on construction and you don't have to
+    do a redundant call to getPanelBuffer() in the constructor of ContainerPanel
 
-
-the text panel recreating every time it changes size is not working - so instead, just make it the screen width
- and pass in the ability to calculate the current screen size as you did for the wordwrap
- and then in order to have it not exceed - you have to run adjustedTextWidth each time - but only when it changes
-
- i think the thing to do is to simply set the desired dimensions of a TextPanel and then size the font to fit it at start - and then check if the text has changed or the size has changed and then size the text to fit
-
- position the text using the same alignment as was used when creating it and if there is no alignment then TOP, LEFT
-
- this avoids the excessive calculation of the HUDText that you have been experiencing
+make Control work the slide outs - may need to create a multi-line information radiator to display
 
 ==============
 

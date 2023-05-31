@@ -421,12 +421,14 @@ public class Patterning extends PApplet {
         this.drawRateManager = DrawRateManager.getInstance();
         List<OldControlPanel> panels = getControlPanels();
 
-        this.drawer = new PatternDrawer(this, drawRateManager, panels);
 
+        this.drawer = new PatternDrawer(this, drawRateManager, panels);
 
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform();
+
+
     }
 
     public void draw() {
@@ -628,7 +630,7 @@ public class Patterning extends PApplet {
         return new ContainerPanel.Builder(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.CENTER)
                 .addPanel(control1)
                 .addPanel(control2)
-                .setOrientation(ContainerPanel.Orientation.VERTICAL)
+                .setOrientation(Orientation.VERTICAL)
                 .transition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
                 .build();
     }
@@ -767,10 +769,11 @@ public class Patterning extends PApplet {
             life.setStep(0);
 
             life.setupField(newLife.field_x, newLife.field_y);
+
             // new instances only created in instantiateLife to keep things simple
             // lifeForm not made local as it is intended to be used with display functions in the future
 
-            drawer.setupNewLife(life.getRootBounds());
+            drawer.setupNewLife(life);
 
 
         } catch (NotLifeException e) {

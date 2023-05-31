@@ -7,11 +7,6 @@ import java.util.List;
 
 public class ContainerPanel extends Panel {
 
-    // child panels
-    public enum Orientation {
-        HORIZONTAL, VERTICAL
-    }
-
     private final List<Panel> childPanels;
     private final Orientation orientation;
 
@@ -29,6 +24,10 @@ public class ContainerPanel extends Panel {
 
         this.orientation = builder.orientation;
         updatePanelSize();
+
+        // Panel's create an initial buffer for their children to draw into
+        // however in some cases the child doesn't have a size until
+        panelBuffer = getPanelBuffer(graphicsSupplier.get());
     }
 
     private PGraphics getContainerPanelBuffer() {

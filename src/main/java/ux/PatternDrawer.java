@@ -30,12 +30,12 @@ public class PatternDrawer {
     // which caused cells to appear outside the bounds
     private final PApplet processing;
     private final DrawRateManager drawRateManager;
-    private final HUDStringBuilder hudInfo;
+    private HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
     //private final List<Drawable> drawables = new ArrayList<>();
     private final DrawableManager drawables = DrawableManager.getInstance();
     private TextPanel countdownText;
-    private final TextPanel hudText;
+    private TextPanel hudText;
     UXThemeManager theme = UXThemeManager.getInstance();
     float cellBorderWidth = 0.0F;
 
@@ -70,6 +70,8 @@ public class PatternDrawer {
         this.processing = pApplet;
         this.drawRateManager = drawRateManager;
         this.panels = panels;
+        this.UXBuffer = getBuffer();
+        this.lifeFormBuffer = getBuffer();
 
         PanelTester panelTester = new PanelTester(this::getUXBuffer);
 
@@ -88,9 +90,6 @@ public class PatternDrawer {
         this.canvasWidth = BigDecimal.valueOf(pApplet.width);
         this.canvasHeight = BigDecimal.valueOf(pApplet.height);
 
-        this.UXBuffer = getBuffer();
-        this.lifeFormBuffer = getBuffer();
-
         this.movementHandler = new MovementHandler(this);
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
@@ -99,15 +98,10 @@ public class PatternDrawer {
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
-                .displayDuration(4000)
-                .build();
-
-        hudText = new TextPanel.Builder(this::getUXBuffer, "HUD", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
-                .textSize(24)
+                .displayDuration(20000)
                 .build();
 
         drawables.add(startupText);
-        drawables.add(hudText);
 
     }
 
@@ -127,7 +121,9 @@ public class PatternDrawer {
         return (dimension.divide(BigTWO, mc)).subtract(offset);
     }
 
-    public void setupNewLife(Bounds bounds) {
+    public void setupNewLife(LifeUniverse life) {
+
+        Bounds bounds = life.getRootBounds();
 
         center(bounds, true, false);
 
@@ -144,10 +140,17 @@ public class PatternDrawer {
                 .runMethod(Patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .wordWrapWidth(Optional.of(() -> canvasWidth.intValue() / 2))
+                .textWidth(Optional.of(() -> canvasWidth.intValue() / 2))
+                .wrap()
                 .textSize(24)
                 .build();
         drawables.add(countdownText);
+
+        hudText = new TextPanel.Builder(this::getUXBuffer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+                .textSize(24)
+                .textWidth(Optional.of(() -> canvasWidth.intValue()))
+                .build();
+        drawables.add(hudText);
     }
 
     public void center(Bounds bounds, boolean fitBounds, boolean saveState) {

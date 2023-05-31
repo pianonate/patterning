@@ -162,7 +162,7 @@ class OldControl implements  KeyObserver {
             case BOTTOM -> Transition.TransitionDirection.UP;
         };
 
-        hoverTransition = new Transition(hoverBuffer, direction, Transition.TransitionType.SLIDE);
+        hoverTransition = new Transition(direction, Transition.TransitionType.SLIDE);
     }
 
     private void drawHovering(PGraphics buffer) {
@@ -180,7 +180,7 @@ class OldControl implements  KeyObserver {
                 case BOTTOM -> hoverRectY = position.y - HOVER_TEXT_DISTANCE;
             }
 
-            hoverTransition.transition(buffer, hoverRectX, hoverRectY);
+            hoverTransition.transition(buffer, hoverBuffer, hoverRectX, hoverRectY);
         } else {
             hoverTransition.reset();
         }

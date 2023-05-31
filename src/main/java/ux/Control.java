@@ -87,7 +87,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         int hoverX = 0, hoverY = 0;
         Transition.TransitionDirection transitionDirection = null;
 
-        switch (parentPanel.alignHorizontal) {
+        switch (parentPanel.hAlign) {
             case LEFT -> {
                 hoverX = (int) parentPanel.position.x + size + margin;
                 hoverY = (int) (parentPanel.position.y + position.y);
@@ -122,10 +122,10 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         // instead we pass the hover text the parent ContainerPanel's graphicsSupplier which comes from
         // PatternDrawer, i.e., the UXBuffer itself - otherwise the hover text would try to draw itself within the control
         // at a microscopic size
-        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY) )
+        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY))
                 .fill(theme.getControlHighlightColor())
                 .textSize(theme.getHoverTextSize())
-                .wordWrapWidth(hoverTextWidth)
+                .textWidth(hoverTextWidth)
                 .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
                 .radius(theme.getControlHighlightCornerRadius())
                 .outline(false)
