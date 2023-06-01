@@ -32,9 +32,12 @@ public class UXThemeManager {
     private long longTransitionDuration;
     private long shortTransitionDuration;
 
-    // names
+    // strings
     private String fontName;
     private String iconPath;
+
+    private String shortcutParenStart;
+    private String shortcutParenEnd;
 
     private UXThemeManager() {
         setTheme(UXThemeType.DARK);  // Default theme
@@ -70,6 +73,8 @@ public class UXThemeManager {
         // strings
         fontName = themeConstants.getFontName();
         iconPath = themeConstants.getIconPath();
+        shortcutParenStart = themeConstants.getShortcutParenStart();
+        shortcutParenEnd = themeConstants.getShortcutParenEnd();
 
     }
 
@@ -162,9 +167,14 @@ public class UXThemeManager {
     public String getFontName() {
         return fontName;
     }
-
     public String getIconPath() {
         return iconPath;
+    }
+    public String getShortcutParenStart() {
+        return shortcutParenStart;
+    }
+    public String getShortcutParenEnd() {
+        return shortcutParenEnd;
     }
 }
 

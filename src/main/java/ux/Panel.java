@@ -61,6 +61,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         if (transitionAble) {
             transition = new Transition(graphicsSupplier, transitionDirection, transitionType, transitionDuration);
         }
+
     }
 
     protected void setPosition(int x, int y) {
@@ -203,7 +204,6 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
             // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
             PApplet processing = parentPanel.panelBuffer.parent;
 
-
             // our Patterning class extends Processing so we can use it here also
             Patterning patterning = (Patterning) processing;
             if (patterning.draggingDrawing) {
@@ -222,8 +222,8 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
             PVector effectivePosition = getEffectivePosition();
 
-            return mouseX >= effectivePosition.x && mouseX <= effectivePosition.x + width &&
-                    mouseY >= effectivePosition.y && mouseY <= effectivePosition.y + height;
+            return mouseX >= effectivePosition.x && mouseX < effectivePosition.x + width &&
+                    mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height;
 
         } catch (Exception e) {
             return false;

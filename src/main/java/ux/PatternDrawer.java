@@ -6,7 +6,6 @@ import patterning.LifeUniverse;
 import patterning.Node;
 import patterning.Patterning;
 import processing.core.PApplet;
-import processing.core.PFont;
 import processing.core.PGraphics;
 import processing.core.PVector;
 
@@ -14,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
+import java.util.function.Function;
 
 public class PatternDrawer {
 
@@ -22,22 +22,23 @@ public class PatternDrawer {
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private CellWidth cellWidth;
     final float cellBorderWidthRatio = .05F;
+    float cellBorderWidth = 0.0F;
 
     private static final int DEFAULT_CELL_WIDTH = 4;
-    public static PFont font;
+
     // for all conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
     private final PApplet processing;
     private final DrawRateManager drawRateManager;
-    private HUDStringBuilder hudInfo;
+    private final HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
-    //private final List<Drawable> drawables = new ArrayList<>();
+
+    // ain't no way to do drawing without a singleton drawables manager
     private final DrawableManager drawables = DrawableManager.getInstance();
     private TextPanel countdownText;
     private TextPanel hudText;
     UXThemeManager theme = UXThemeManager.getInstance();
-    float cellBorderWidth = 0.0F;
 
     // this is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
@@ -63,23 +64,34 @@ public class PatternDrawer {
 
 
     public PatternDrawer(PApplet pApplet,
-                         DrawRateManager drawRateManager) {
+                         DrawRateManager drawRateManager,
+                         Function<PGraphicsSupplier, List<ControlPanel>> getControlPanelsMethod) {
 
         this.processing = pApplet;
         this.drawRateManager = drawRateManager;
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
 
-        PanelTester panelTester = new PanelTester(this::getUXBuffer);
+        PanelTester.makeSomePanels(this::getUXBuffer, false, true);
 
         Patterning patterning = (Patterning) processing;
 
-        List<ControlPanel> panels = patterning.getControlPanels(this::getUXBuffer);
+        // the passed in method reference is made type safe through
+        // through using Function<PGraphicsSupplier, List<ControlPanel>> which tells it what argument to take
+        // and what the return type will be when it is invoked
+        // java really is into its bookkeeping
+        //
+        // anyway, the tomfoolery is so that control panels have access to all their keycallbacks
+        // and PatternDrawer has access to the getUXBuffer needed by controls to always have the latest
+        // post-resize UXBuffer
+        //
+        // just one way to do it but it does work.  another way might be to have been to pass
+        // lists of controls into this method and then having all the control panels constructed over here
+        // six of one half a dozen of the other
+        List<ControlPanel> panels = getControlPanelsMethod.apply(this::getUXBuffer);
         drawables.addAll(panels);
 
-        font = processing.createFont("Verdana", 24);
-
-        // initial height in case we resize
+        // resize trackers
         prevWidth = pApplet.width;
         prevHeight = pApplet.height;
 
@@ -95,9 +107,8 @@ public class PatternDrawer {
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
-                .displayDuration(20000)
+                .displayDuration(5000)
                 .build();
-
         drawables.add(startupText);
 
     }
@@ -128,8 +139,8 @@ public class PatternDrawer {
             drawables.remove(countdownText);
         }
 
-        // todo: on maximum volatility gun, not clearing the previousStates when doing a setStep seems to cause it to freak out
-        // see if that's causal
+        // todo: on maximum volatility gun, not clearing the previousStates when doing a setStep seems to cause it to freak out - see if that's causal
+
         // clear image cache and previous states
         clearCache();
 
@@ -142,6 +153,10 @@ public class PatternDrawer {
                 .textSize(24)
                 .build();
         drawables.add(countdownText);
+
+        if (null!=hudText) {
+            drawables.remove(hudText);
+        }
 
         hudText = new TextPanel.Builder(this::getUXBuffer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
@@ -420,7 +435,6 @@ public class PatternDrawer {
 
         UXBuffer.beginDraw();
         UXBuffer.clear();
-        UXBuffer.textFont(font);
 
         LifeUniverse life = Patterning.getLifeUniverse();
         // make this threadsafe

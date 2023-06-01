@@ -11,36 +11,29 @@ public class TextPanel extends Panel implements Drawable {
 
     private final static UXThemeManager theme = UXThemeManager.getInstance();
     private final static DrawableManager drawableManager = DrawableManager.getInstance();
-
+    public final boolean outline;
     // sizes
     private final int textMargin = theme.getDefaultTextMargin();
     private final int doubleTextMargin = textMargin * 2;
     private final float textSize;
-
     // optional capabilities
     private final OptionalInt textWidth;
     private final Optional<IntSupplier> textWidthSupplier;
-
     private final boolean wrap;
     private final OptionalInt fadeInDuration;
     private final OptionalInt fadeOutDuration;
-    private long transitionTime;
-    private int fadeValue;
     private final OptionalLong displayDuration; // long to compare to System.currentTimeMillis()
-
     // text countdown variables
     private final OptionalInt countdownFrom;
     private final Runnable runMethod;
     private final String initialMessage;
-
+    private final boolean keepKeyboardShortcutTogether;
+    private long transitionTime;
+    private int fadeValue;
     // the message
     private String message;
     private String lastMessage;
-
     private List<String> messageLines;
-
-    public final boolean outline;
-
     private State state;
 
     protected TextPanel(TextPanel.Builder builder) {
@@ -51,6 +44,9 @@ public class TextPanel extends Panel implements Drawable {
 
         this.message = builder.message;
         this.lastMessage = builder.message;
+
+        // just for keyboard shortcuts for now
+        this.keepKeyboardShortcutTogether = builder.keepKeyboardShortcutTogether;
         this.outline = builder.outline;
 
         this.textSize = builder.textSize;
@@ -100,17 +96,76 @@ public class TextPanel extends Panel implements Drawable {
         this.transitionTime = System.currentTimeMillis(); // start displaying immediately
     }
 
+    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {
+
+        // ensure that the text size is set to the correct value for the wrapping exercise
+        setFont(parentBuffer, textSize);
+
+        String testMessage = (countdownFrom.isPresent()) ?
+                getCountdownMessage(countdownFrom.getAsInt()) : message;
+
+        messageLines = wrapText(testMessage, parentBuffer);
+
+
+        // Adjust the text size if it exceeds the bounds of the screen
+        float adjustedTextSize = getAdjustedTextSize(parentBuffer, this.messageLines, textSize);
+
+        // Compute the maximum width and total height of all lines in case there is
+        // word wrapping
+        float maxWidth = 0;
+        float totalHeight = 0;
+        for (String line : this.messageLines) {
+            if (parentBuffer.textWidth(line) > maxWidth) {
+                maxWidth = parentBuffer.textWidth(line);
+            }
+            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent();
+        }
+
+        width = (int) Math.ceil(maxWidth + doubleTextMargin);
+
+        // Adjust the width and height according to the size of the wrapped text
+        height = (int) Math.ceil(totalHeight + textMargin);
+
+
+        PGraphics textBuffer = parentBuffer.parent.createGraphics(width, height);
+
+        // set the font for this PGraphics as it will not change
+        textBuffer.beginDraw();
+        //textBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
+        setFont(textBuffer, adjustedTextSize);
+
+        textBuffer.endDraw();
+
+        return textBuffer;
+    }
+
     public void setMessage(String message) {
         lastMessage = this.message;
         this.message = message;
     }
 
+    // for sizes to be correctly calculated, the font must be the same
+    // on both the parent and the new textBuffer
+    // necessary because createGraphics doesn't inherit the font from the parent
+    private void setFont(PGraphics buffer, float textSize) {
 
-    private OptionalInt getTextWidth() {
-        if (textWidth.isPresent()) {
-            return textWidth;
-        } else
-            return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).orElseGet(OptionalInt::empty);
+        try {
+            setFontActual(buffer, textSize);
+        } catch (Exception e) {
+            // hack because i don't want to pass around a boolean just to see if
+            // we're in original initialization or are creating a new text buffer while
+            // things are running
+            // during initial program construction, UXBuffers are not being drawn
+            // they are being drawn at all other times so both mechanisms are used
+            // in the future you could create some kind of record where PGraphicsSupplier tells you whether it's in draw or not...
+            buffer.beginDraw();
+            setFontActual(buffer, textSize);
+            buffer.endDraw();
+        }
+    }
+
+    private String getCountdownMessage(long count) {
+        return initialMessage + ": " + count;
     }
 
     private List<String> wrapText(String theMessage, PGraphics buffer) {
@@ -144,6 +199,19 @@ public class TextPanel extends Panel implements Drawable {
                 lines.add(line.toString().trim());
                 line = new StringBuilder();
             }
+
+            if (keepKeyboardShortcutTogether) {
+                // Check if there are exactly two words remaining and they don't fit on the current line
+                if (words.size() == 2 && buffer.textWidth(line.toString() + words.get(0) + " " + words.get(1)) > textWidthValue.getAsInt()) {
+                    // Add the current line to the lines list
+                    lines.add(line.toString().trim());
+                    line = new StringBuilder();
+
+                    // Add the last word to the new line
+                    line.append(words.get(0)).append(" ");
+                    words.remove(0);
+                }
+            }
         }
 
         if (line.length() > 0) {
@@ -156,12 +224,15 @@ public class TextPanel extends Panel implements Drawable {
     // used to make sure that a long line will fit on the screen at this size
     private float getAdjustedTextSize(PGraphics parentBuffer, List<String> lines, float startingSize) {
         // inherently we can have word wrapped text so make sure that we find the longest line to get the width
+
+        parentBuffer.textSize(startingSize);
+
         float adjustedTextSize = startingSize;
         String longestLine = "";
 
         // Determine the longest line
         for (String line : lines) {
-            if(parentBuffer.textWidth(line) > parentBuffer.textWidth(longestLine)) {
+            if (parentBuffer.textWidth(line) > parentBuffer.textWidth(longestLine)) {
                 longestLine = line;
             }
         }
@@ -176,102 +247,40 @@ public class TextPanel extends Panel implements Drawable {
         return adjustedTextSize;
     }
 
-    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {
-
-        //parentBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
-
-        // ensure that the text size is set to the correct value for the wrapping exercise
-        setFont(parentBuffer, textSize);
-
-
-        String testMessage = (countdownFrom.isPresent()) ?
-                getCountdownMessage(countdownFrom.getAsInt()) : message;
-
-        messageLines = wrapText(testMessage, parentBuffer);
-
-
-        // Adjust the text size if it exceeds the bounds of the screen
-        float adjustedTextSize = getAdjustedTextSize(parentBuffer, this.messageLines, textSize);
-
-        // Compute the maximum width and total height of all lines in case there is
-        // word wrapping
-        float maxWidth = 0;
-        float totalHeight = 0;
-        for (String line : this.messageLines) {
-            if(parentBuffer.textWidth(line) > maxWidth) {
-                maxWidth = parentBuffer.textWidth(line);
-            }
-            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent();
-        }
-
-        OptionalInt textWidthValue = getTextWidth();
-        if (textWidthValue.isPresent())
-            width = textWidthValue.getAsInt();
-        else
-            width = (int) Math.ceil(maxWidth + doubleTextMargin);
-
-        // Adjust the width and height according to the size of the wrapped text
-        height = (int) Math.ceil(totalHeight + textMargin);
-
-        PGraphics textBuffer = parentBuffer.parent.createGraphics(width, height);
-
-        // set the font for this PGraphics as it will not change
-        textBuffer.beginDraw();
-        //textBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
-        setFont(textBuffer, adjustedTextSize);
-
-        textBuffer.endDraw();
-
-        return textBuffer;
-    }
-
-
-    // for sizes to be correctly calculated, the font must be the same
-    // on both the parent and the new textBuffer
-    // necessary because createGraphics doesn't inherit the font from the parent
-    private void setFont(PGraphics buffer, float textSize) {
-
-        try {
-            setFontActual(buffer, textSize);
-        } catch (Exception e) {
-            // hack because i don't want to pass around a boolean just to see if
-            // we're in original initialization or are creating a new text buffer while
-            // things are running
-            // during initial program construction, UXBuffers are not being drawn
-            // they are being drawn at all other times so both mechanisms are used
-            // in the future you could create some kind of record where PGraphicsSupplier tells you whether it's in draw or not...
-            buffer.beginDraw();
-            setFontActual(buffer, textSize);
-            buffer.endDraw();
-        }
-    }
-
     private void setFontActual(PGraphics buffer, float textSize) {
         buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
         buffer.textSize(textSize);
     }
 
-    private void updateTextSize(){
-
-        if (!Objects.equals(lastMessage, message)) {
-
-            messageLines = wrapText(message, graphicsSupplier.get());
-            setFont(panelBuffer, getAdjustedTextSize(graphicsSupplier.get(), messageLines, textSize));
-        }
+    private OptionalInt getTextWidth() {
+        if (textWidth.isPresent()) {
+            return textWidth;
+        } else
+            return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).orElseGet(OptionalInt::empty);
     }
 
     private boolean shouldUpdatePanelBuffer() {
         return resized && textWidthSupplier.isPresent();
     }
+
     protected void panelSubclassDraw() {
 
         // used for fading in the text and the various states
         // a ux.TextPanel can advance through
         state.update();
 
-        updatePanelBuffer(graphicsSupplier.get(), shouldUpdatePanelBuffer());
+        // we update the size of the buffer containing the text
+        // if we've resized && there is a supplier of an integer telling us the size of the text can change
+        // for example the countdown text is half the screen width so we want to give it a new buffer
+        boolean shouldUpdate = resized && textWidthSupplier.isPresent();
+        updatePanelBuffer(graphicsSupplier.get(), shouldUpdate);
 
-        updateTextSize();
+        // and if the test actually changed - or in the case of updating the buffer size on resize
+        // let's update the word wrapping and font size
+        if (!Objects.equals(lastMessage, message) || shouldUpdate) {
+            messageLines = wrapText(message, graphicsSupplier.get());
+            setFont(panelBuffer, getAdjustedTextSize(graphicsSupplier.get(), messageLines, textSize));
+        }
 
         drawMultiLineText();
     }
@@ -293,7 +302,7 @@ public class TextPanel extends Panel implements Drawable {
 
         // Determine where to start drawing the text based on the alignment
         float x = margin;
-        float y=0;
+        float y = 0;
 
 
         switch (hAlign) {
@@ -330,12 +339,6 @@ public class TextPanel extends Panel implements Drawable {
         panelBuffer.endDraw();
     }
 
-
-
-    private String getCountdownMessage(long count) {
-        return initialMessage + ": " + count;
-    }
-
     public void interruptCountdown() {
         if (runMethod != null) runMethod.run();
 
@@ -357,7 +360,7 @@ public class TextPanel extends Panel implements Drawable {
 
         private static final UXThemeManager theme = UXThemeManager.getInstance();
         private final String message;
-        private  boolean outline = true;
+        private boolean outline = true;
         private boolean wrap = false;
         private float textSize = theme.getDefaultTextSize();
         private OptionalInt fadeInDuration = OptionalInt.empty();
@@ -371,6 +374,7 @@ public class TextPanel extends Panel implements Drawable {
         private Optional<IntSupplier> textWidthSupplier = Optional.empty();
 
         private Runnable runMethod;
+        private boolean keepKeyboardShortcutTogether = false;
 
         public Builder(PGraphicsSupplier graphicsSupplier, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
             super(graphicsSupplier, alignHorizontal, vAlign);
@@ -418,6 +422,11 @@ public class TextPanel extends Panel implements Drawable {
 
         public Builder wrap() {
             this.wrap = true;
+            return this;
+        }
+
+        public Builder keepShortCutTogether() {
+            this.keepKeyboardShortcutTogether = true;
             return this;
         }
 

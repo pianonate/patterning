@@ -18,12 +18,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class Patterning extends PApplet {
-
-    private static PApplet instance;
-    public static PApplet getInstance() {
-        return instance;
-    }
-
     private static final char SHORTCUT_CENTER = 'c';
     private static final char SHORTCUT_DISPLAY_BOUNDS = 'b';
     private static final char SHORTCUT_FIT_UNIVERSE = 'f';
@@ -392,8 +386,6 @@ public class Patterning extends PApplet {
 
     public void setup() {
 
-        instance = this;
-
         surface.setResizable(true);
 
 
@@ -418,7 +410,7 @@ public class Patterning extends PApplet {
 
         this.drawRateManager = DrawRateManager.getInstance();
 
-        this.drawer = new PatternDrawer(this, drawRateManager);
+        this.drawer = new PatternDrawer(this, drawRateManager, this::getControlPanels);
 
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
@@ -614,7 +606,7 @@ public class Patterning extends PApplet {
 
     }
 
-    public List<ControlPanel> getControlPanels(PGraphicsSupplier graphicsSupplier) {
+    private List<ControlPanel> getControlPanels(PGraphicsSupplier graphicsSupplier) {
         ControlPanel panelLeft, panelTop;
 
         panelLeft = new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.LEFT, AlignVertical.CENTER)

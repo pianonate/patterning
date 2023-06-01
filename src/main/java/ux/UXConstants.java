@@ -74,14 +74,19 @@ public class UXConstants {
     long getShortTransitionDuration() {
         return 300;
     }
-
     // names
     String getFontName() {
         return "Verdana";
     }
-
     String getIconPath() {
         return "icon/";
     }
+    String getShortcutParenStart() {
+        return " (shortcut: ";
+    }
+    String getShortcutParenEnd() {
+        return ")";
+    }
+
 
 }

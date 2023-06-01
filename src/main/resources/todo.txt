@@ -1,13 +1,5 @@
 when chatGPT is back, fix the generic issues with containers - hopefully not shotgun surgery
 
-.addPanel - should actually be .addControl as standalone controls are not a thing
-when you do this then get rid of this code in container and just construct the control appropriately
-        for (Panel child : childPanels) {
-            // child panels need special handling to orient themselves to this container Panel
-            // rather than the UXBuffer, which is the more common case...
-            child.parentPanel = this;
-            child.graphicsSupplier = this::getContainerPanelBuffer;
-        }
 the callback to get the panels from Patterning - just pass it as a lambda or something so you don't have to expose Patterning to everything
 
 set the width and height of the ContainerPanel in the builder then so that Panel has it on construction and you don't have to
@@ -18,6 +10,7 @@ make Control work the slide outs - may need to create a multi-line information r
 create PGraphicsSupplier to provide a record that says whether BeginDraw() has been called on UXBuffer
  so TextPanel.setFont can work without causing screen flicker
  and without using a try/catch block hack
+ also we're doing resize detection in PatternDrawer and in Panel so this could be centralized on this record also
 
  offset sizes in getIcon need to come from UxThemeManager
  getControlPanels - duration of 2000 for the transition - don't hardcode
@@ -27,6 +20,10 @@ create PGraphicsSupplier to provide a record that says whether BeginDraw() has b
 make a KeyCallbackBuilder to make it easier to read the creation of these beasts
 also make KeyHandler use Builder so that intellij doesn't think you have duplicated code
 
+===============
+slow down immediately to 1 frame per keypress / button press
+===============
+keep drawing while moving with the arrow keys if you can
 ===============
 
 back the fuck up - pass along a method::methodName that provides the UXBuffer PGraphics that is current such as the new PGraphics getUXBuffer(); - or parent buffers for newly created children.
@@ -47,6 +44,7 @@ create a new kind of ContainerPanel called an InformationRadiator that contains 
 you can display the information radiators anywhere on screen as they'll have a title window and - ideally you can reposition them and also close them
 =============
 
+
 todo: next up - make TextPanel wordwrap it's text that is passed in from instantiating
                 in Control constructor (I think) and then it should just draw itself and use the parent Transition capability
                 that would be invoked by setting it up on the Control
@@ -58,9 +56,6 @@ todo: next up - make TextPanel wordwrap it's text that is passed in from instant
                    in and fade out, then it should be able to apply that to its children as well - so that the text can
                    just take advantage of the same transition amount (I think)
 
-todo: get rid or Patterning.getInstance() on control by only creating its icon on first draw - after the panelBuffer for
-      the control has been created and is not null
-todo: when you finally get rid of OldControl, you can get rid of Patterning.getInstance() as it's the only thing using it
 todo: cleanup any use of font that is not using the one on UXTheme
 todo: encapsulate lifeForm drawing into a Panel which can receive and manage mouse events on itself so they
       can 'capture' the mouse events and release it in an intuitive way for the code

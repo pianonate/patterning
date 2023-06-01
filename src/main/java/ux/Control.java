@@ -41,7 +41,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                 .map(KeyCombo::toString)
                 .collect(Collectors.joining(", "));
 
-        hoverMessage = callback.getUsageText() + " (shortcut: " + keyCombos + ")";
+        hoverMessage = callback.getUsageText() +theme.getShortcutParenStart() + keyCombos + theme.getShortcutParenEnd();
 
     }
 
@@ -52,7 +52,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             return;
         }
 
-        PImage icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+        PImage icon = loadIcon(iconName);
         icon.resize(width - 5, height - 5);
         this.icon = icon;
 
@@ -145,6 +145,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                 .textSize(theme.getHoverTextSize())
                 .textWidth(hoverTextWidth)
                 .wrap()
+                .keepShortCutTogether()
                 .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
                 .radius(theme.getControlHighlightCornerRadius())
                 .outline(false)
