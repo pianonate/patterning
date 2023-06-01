@@ -584,38 +584,35 @@ public class Patterning extends PApplet {
     }
 
     private void setupKeyHandler() {
-
-        KeyHandler keyHandler = new KeyHandler(this);
-
-        // order matters - put them in the order you want them to show in getUsageText()
-        keyHandler.addKeyCallback(callbackPause);
-        keyHandler.addKeyCallback(callbackZoomIn);
-        keyHandler.addKeyCallback(callbackZoomInCenter);
-        keyHandler.addKeyCallback(callbackZoomOut);
-        keyHandler.addKeyCallback(callbackZoomOutCenter);
-        keyHandler.addKeyCallback(callbackStepFaster);
-        keyHandler.addKeyCallback(callbackStepSlower);
-        keyHandler.addKeyCallback(callbackDrawFaster);
-        keyHandler.addKeyCallback(callbackDrawSlower);
-        keyHandler.addKeyCallback(callbackDisplayBounds);
-        keyHandler.addKeyCallback(callbackCenterView);
-        keyHandler.addKeyCallback(callbackFitUniverseOnScreen);
-        keyHandler.addKeyCallback(callbackThemeToggle);
-        keyHandler.addKeyCallback(callbackRandomLife);
-        keyHandler.addKeyCallback(callbackRewind);
-        keyHandler.addKeyCallback(callbackPaste);
-        keyHandler.addKeyCallback(callbackUndoMovement);
-        keyHandler.addKeyCallback(callbackMovement);
+        KeyHandler keyHandler = new KeyHandler.Builder(this)
+                .addKeyCallback(callbackPause)
+                .addKeyCallback(callbackZoomIn)
+                .addKeyCallback(callbackZoomInCenter)
+                .addKeyCallback(callbackZoomOut)
+                .addKeyCallback(callbackZoomOutCenter)
+                .addKeyCallback(callbackStepFaster)
+                .addKeyCallback(callbackStepSlower)
+                .addKeyCallback(callbackDrawFaster)
+                .addKeyCallback(callbackDrawSlower)
+                .addKeyCallback(callbackDisplayBounds)
+                .addKeyCallback(callbackCenterView)
+                .addKeyCallback(callbackFitUniverseOnScreen)
+                .addKeyCallback(callbackThemeToggle)
+                .addKeyCallback(callbackRandomLife)
+                .addKeyCallback(callbackRewind)
+                .addKeyCallback(callbackPaste)
+                .addKeyCallback(callbackUndoMovement)
+                .addKeyCallback(callbackMovement)
+                .build();
 
         System.out.println(keyHandler.getUsageText());
-
     }
 
     private List<ControlPanel> getControlPanels(DrawingInfoSupplier drawingInformer) {
         ControlPanel panelLeft, panelTop;
-
+        int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
         panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
-                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, 1500)
+                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                 .setOrientation(Orientation.VERTICAL)
                 .addControl("zoomIn.png", callbackZoomInCenter)
                 .addControl("zoomOut.png", callbackZoomOutCenter)
@@ -627,7 +624,7 @@ public class Patterning extends PApplet {
                 .build();
 
         panelTop = new ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
-                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.SLIDE, 1500)
+                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.SLIDE, transitionDuration)
                 .setOrientation(Orientation.HORIZONTAL)
                 .addControl("random.png", callbackRandomLife)
                 .addControl("stepSlower.png", callbackStepSlower)

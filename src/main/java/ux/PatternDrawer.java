@@ -122,11 +122,11 @@ public class PatternDrawer {
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
 
-        TextPanel startupText = new TextPanel.Builder(drawingInformer, "patterning".toUpperCase(), AlignHorizontal.RIGHT, AlignVertical.TOP)
-                .textSize(50)
-                .fadeInDuration(2000)
-                .fadeOutDuration(2000)
-                .displayDuration(5000)
+        TextPanel startupText = new TextPanel.Builder(drawingInformer, theme.getStartupText(), AlignHorizontal.RIGHT, AlignVertical.TOP)
+                .textSize(theme.getStartupTextSize())
+                .fadeInDuration(theme.getStartupTextFadeInDuration())
+                .fadeOutDuration(theme.getStartupTextFadeOutDuration())
+                .displayDuration(theme.getStartupTextDisplayDuration())
                 .build();
         drawables.add(startupText);
 

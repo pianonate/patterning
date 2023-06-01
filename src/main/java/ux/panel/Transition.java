@@ -8,7 +8,7 @@ import ux.informer.DrawingInfoSupplier;
 
 public class Transition {
 
-    private final long duration;
+    private final int duration;
     private final TransitionDirection direction;
     private final TransitionType type;
     private final DrawingInfoSupplier drawingInformer;
@@ -20,7 +20,7 @@ public class Transition {
         this(drawingInformer, direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
     }
 
-    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type, long duration) {
+    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type, int duration) {
         this.drawingInformer = drawingInformer;
         this.direction = direction;
         this.type = type;

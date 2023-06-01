@@ -23,8 +23,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     private TextPanel hoverTextPanel;
     private String hoverMessage;
 
-    private int hoverTextWidth = UXThemeManager.getInstance().getHoverTextSize();
-
     protected Control(Builder builder) {
         super(builder);
 
@@ -53,8 +51,10 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             return;
         }
 
+        int margin = theme.getIconMargin();
+
         PImage icon = loadIcon(iconName);
-        icon.resize(width - 5, height - 5);
+        icon.resize(width - margin, height - margin);
         this.icon = icon;
 
         String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()

@@ -38,7 +38,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     boolean isHoveringPrevious = false;
     private Transition.TransitionDirection transitionDirection;
     private Transition.TransitionType transitionType;
-    private long transitionDuration;
+    private int transitionDuration;
     protected Panel(Builder<?> builder) {
 
         setPosition(builder.x, builder.y);
@@ -104,7 +104,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
     }
 
     @SuppressWarnings("unused")
-    public void setTransition(Transition.TransitionDirection direction, Transition.TransitionType type, long duration) {
+    public void setTransition(Transition.TransitionDirection direction, Transition.TransitionType type, int duration) {
         this.transitionDirection = direction;
         this.transitionType = type;
         this.transitionDuration = duration;
@@ -229,7 +229,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         private int fill = UXThemeManager.getInstance().getDefaultPanelColor();
         private Transition.TransitionDirection transitionDirection;
         private Transition.TransitionType transitionType;
-        private long transitionDuration;
+        private int transitionDuration;
 
         private OptionalInt radius = OptionalInt.empty();
 
@@ -286,7 +286,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
             return (T) this;
         }
 
-        public T transition(Transition.TransitionDirection direction, Transition.TransitionType type, long duration) {
+        public T transition(Transition.TransitionDirection direction, Transition.TransitionType type, int duration) {
             this.transitionDirection = direction;
             this.transitionType = type;
             this.transitionDuration = duration;

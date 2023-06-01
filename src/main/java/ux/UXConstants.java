@@ -2,12 +2,14 @@ package ux;
 
 public class UXConstants {
 
-    UXConstants() {}
+    UXConstants() {
+    }
 
     // sizes
     int getControlSize() {
         return 35;
     }
+
     int getControlHighlightCornerRadius() {
         return 10;
     }
@@ -32,6 +34,14 @@ public class UXConstants {
         return 14;
     }
 
+    int getIconMargin() {
+        return 5;
+    }
+
+    int getStartupTextSize() {
+        return 50;
+    }
+
     // colors
 
     int getBackgroundColor() {
@@ -54,11 +64,14 @@ public class UXConstants {
         return 0xC8E1E1E1; // partially transparent 225
     }
 
-    int getDefaultPanelColor() { return 0x00FFFFFF; }
+    int getDefaultPanelColor() {
+        return 0x00FFFFFF;
+    }
 
     int getTextColorStart() {
         return 0xFFFFFFFF;
     }
+
     int getTextColor() {
         return 0xFF000000;
     }
@@ -67,25 +80,47 @@ public class UXConstants {
     int getControlHighlightDuration() {
         return 1000;
     }
-    long getLongTransitionDuration() {
+    int getControlPanelTransitionDuration() { return 1500;}
+
+    int getLongTransitionDuration() {
         return 3000;
     }
 
-    long getShortTransitionDuration() {
+    int getShortTransitionDuration() {
         return 300;
     }
+
+    int getStartupTextDisplayDuration() {
+        return 5000;
+    }
+
+    int getStartupTextFadeInDuration() {
+        return 2000;
+    }
+
+    int getStartupTextFadeOutDuration() {
+        return 2000;
+    }
+
     // names
     String getFontName() {
         return "Verdana";
     }
+
     String getIconPath() {
         return "icon/";
     }
+
     String getShortcutParenStart() {
         return " (shortcut: ";
     }
+
     String getShortcutParenEnd() {
         return ")";
+    }
+
+    String getStartupText() {
+        return "patterning";
     }
 
 
