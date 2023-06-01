@@ -131,15 +131,15 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             }
         }
 
-        // the Control parentPanel is a ContainerPanel that has a graphic supplier of the UXBuffer
-        // we can't use the Control graphicsProvider as it is provided by the ContainerPanel so that the
+        // the Control parentPanel is a ContainerPanel that has a DrawingInfoSupplier
+        // which has a PGraphicsSupplier of the current UXBuffer
+        // we can't use the parent Control PGraphicsSupplier as it is provided by the ContainerPanel so that the
         // Control draws itself within the ContainerPanel
         //
-        // instead we pass the hover text the parent ContainerPanel's graphicsSupplier which comes from
-        // PatternDrawer, i.e., the UXBuffer itself - otherwise the hover text would try to draw itself within the control
-        // at a microscopic size
-        TextPanelInformer hoverInformer = new TextPanelInformer(parentPanel.graphicsSupplier, this::isResized, this::withinBeginDraw);
-        return new TextPanel.Builder(hoverInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
+        // instead we pass the hover text the parent ContainerPanel's DrawingInfoSupplier which comes from
+        // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
+        // would try to draw itself within the control at a microscopic size
+        return new TextPanel.Builder(parentPanel.drawingInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
                 .fill(theme.getControlHighlightColor())
                 .textSize(theme.getHoverTextSize())
                 .textWidth(hoverTextWidth)
@@ -151,9 +151,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                 .build();
     }
 
-    private boolean withinBeginDraw() {
-        return true;
-    }
 
     void mouseHover(boolean isHovering) {
 
@@ -225,8 +222,8 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         private final String iconName;
         private final int size;
 
-        public Builder(PGraphicsSupplier graphicsSupplier, KeyCallback callback, String iconName, int size) {
-            super(graphicsSupplier, size, size);
+        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, String iconName, int size) {
+            super(drawingInformer, size, size);
             this.callback = callback;
             this.iconName = iconName;
             this.size = size;

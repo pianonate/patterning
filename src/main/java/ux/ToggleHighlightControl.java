@@ -22,8 +22,8 @@ public class ToggleHighlightControl extends Control {
 
     public static class Builder extends Control.Builder {
 
-        public Builder(PGraphicsSupplier graphicsSupplier, KeyCallback callback, String iconName, int size) {
-            super(graphicsSupplier, callback, iconName, size);
+        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, String iconName, int size) {
+            super(drawingInformer, callback, iconName, size);
         }
 
         @Override

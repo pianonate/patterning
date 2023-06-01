@@ -2,21 +2,20 @@ package ux;
 
 import processing.core.PGraphics;
 
-public class TextPanelInformer implements InformativePGraphicsSupplier {
+public class DrawingInformer implements DrawingInfoSupplier {
 
     private final PGraphicsSupplier graphicsSupplier;
     private final ResizedSupplier resizedSupplier;
     private final DrawingSupplier drawingSupplier;
 
-    public TextPanelInformer(PGraphicsSupplier graphicsSupplier, ResizedSupplier resizedSupplier, DrawingSupplier drawingSupplier) {
+    public DrawingInformer(PGraphicsSupplier graphicsSupplier, ResizedSupplier resizedSupplier, DrawingSupplier drawingSupplier) {
         this.graphicsSupplier = graphicsSupplier;
         this.resizedSupplier = resizedSupplier;
-        this.drawingSupplier = drawingSupplier
-        ;
+        this.drawingSupplier = drawingSupplier;
     }
 
     @Override
-    public PGraphics get() {
+    public PGraphics getPGraphics() {
         return graphicsSupplier.get();
     }
 
@@ -28,6 +27,6 @@ public class TextPanelInformer implements InformativePGraphicsSupplier {
 
     @Override
     public boolean isDrawing() {
-        return drawingSupplier.isWithinBeginDraw();
+        return drawingSupplier.isDrawing();
     }
 }

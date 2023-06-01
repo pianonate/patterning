@@ -10,8 +10,8 @@ public class ControlPanel extends ContainerPanel{
     }
 
     public static class Builder extends ContainerPanel.Builder<Builder>{
-        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(graphicsSupplier, alignHorizontal, vAlign);
+        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            super(drawingInformer, alignHorizontal, vAlign);
         }
 
         public Builder setOrientation(Orientation orientation) {
@@ -22,7 +22,7 @@ public class ControlPanel extends ContainerPanel{
         public Builder addControl(String iconName, KeyCallback callback ) {
 
             Control c = new Control.Builder(
-                    this.graphicsSupplier,
+                    this.drawingInformer,
                     callback,
                     iconName,
                     UXThemeManager.getInstance().getControlSize()
@@ -36,7 +36,7 @@ public class ControlPanel extends ContainerPanel{
         public Builder addToggleHighlightControl(String iconName, KeyCallback callback ) {
 
             Control c = new ToggleHighlightControl.Builder(
-                    this.graphicsSupplier,
+                    this.drawingInformer,
                     callback,
                     iconName,
                     UXThemeManager.getInstance().getControlSize()
@@ -50,7 +50,7 @@ public class ControlPanel extends ContainerPanel{
         public Builder addToggleIconControl(String iconName, String toggledIconName, KeyCallback callback ) {
 
             Control c = new ToggleIconControl.Builder(
-                    this.graphicsSupplier,
+                    this.drawingInformer,
                     callback,
                     iconName,
                     toggledIconName,

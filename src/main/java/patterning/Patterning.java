@@ -440,9 +440,9 @@ public class Patterning extends PApplet {
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
 
-        long start = System.nanoTime();
+        //long start = System.nanoTime();
         drawer.draw(shouldDrawLifeForm);
-        long end = System.nanoTime();
+        //long end = System.nanoTime();
 
 
         // as mentioned above - this runs on a separate thread
@@ -606,10 +606,10 @@ public class Patterning extends PApplet {
 
     }
 
-    private List<ControlPanel> getControlPanels(PGraphicsSupplier graphicsSupplier) {
+    private List<ControlPanel> getControlPanels(DrawingInfoSupplier drawingInformer) {
         ControlPanel panelLeft, panelTop;
 
-        panelLeft = new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.LEFT, AlignVertical.CENTER)
+        panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
                 .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, 1500)
                 .setOrientation(Orientation.VERTICAL)
                 .addControl("zoomIn.png", callbackZoomInCenter)
@@ -621,7 +621,7 @@ public class Patterning extends PApplet {
                 .addControl("undo.png", callbackUndoMovement)
                 .build();
 
-        panelTop = new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.CENTER, AlignVertical.TOP)
+        panelTop = new ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
                 .transition(Transition.TransitionDirection.UP, Transition.TransitionType.SLIDE, 1500)
                 .setOrientation(Orientation.HORIZONTAL)
                 .addControl("random.png", callbackRandomLife)

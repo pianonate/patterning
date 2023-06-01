@@ -66,7 +66,7 @@ public class TextPanel extends Panel implements Drawable {
 
 
         // Always wrap the text, even if it results in a single line
-        updatePanelBuffer(graphicsSupplier.get(), true);
+        updatePanelBuffer(drawingInformer.getPGraphics(), true);
 
         //this.setFill(0xFFFF0000);
 
@@ -149,7 +149,7 @@ public class TextPanel extends Panel implements Drawable {
     // necessary because createGraphics doesn't inherit the font from the parent
     private void setFont(PGraphics buffer, float textSize) {
 
-        TextPanelInformer informer = (TextPanelInformer) graphicsSupplier;
+        DrawingInformer informer = (DrawingInformer) drawingInformer;
 
         boolean shouldInitialize = !informer.isDrawing();
 
@@ -199,7 +199,7 @@ public class TextPanel extends Panel implements Drawable {
 
             if (keepKeyboardShortcutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
-                if (words.size() == 2 && buffer.textWidth(line.toString() + words.get(0) + " " + words.get(1)) > textWidthValue.getAsInt()) {
+                if (words.size() == 2 && buffer.textWidth(line + words.get(0) + " " + words.get(1)) > textWidthValue.getAsInt()) {
                     // Add the current line to the lines list
                     lines.add(line.toString().trim());
                     line = new StringBuilder();
@@ -251,10 +251,6 @@ public class TextPanel extends Panel implements Drawable {
             return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).orElseGet(OptionalInt::empty);
     }
 
-    private boolean shouldUpdatePanelBuffer() {
-        return resized && textWidthSupplier.isPresent();
-    }
-
     protected void panelSubclassDraw() {
 
         // used for fading in the text and the various states
@@ -264,14 +260,14 @@ public class TextPanel extends Panel implements Drawable {
         // we update the size of the buffer containing the text
         // if we've resized && there is a supplier of an integer telling us the size of the text can change
         // for example the countdown text is half the screen width so we want to give it a new buffer
-        boolean shouldUpdate = resized && textWidthSupplier.isPresent();
-        updatePanelBuffer(graphicsSupplier.get(), shouldUpdate);
+        boolean shouldUpdate = drawingInformer.isResized() && textWidthSupplier.isPresent();
+        updatePanelBuffer(drawingInformer.getPGraphics(), shouldUpdate);
 
         // and if the test actually changed - or in the case of updating the buffer size on resize
         // let's update the word wrapping and font size
         if (!Objects.equals(lastMessage, message) || shouldUpdate) {
-            messageLines = wrapText(message, graphicsSupplier.get());
-            setFont(panelBuffer, getAdjustedTextSize(graphicsSupplier.get(), messageLines, textSize));
+            messageLines = wrapText(message, drawingInformer.getPGraphics());
+            setFont(panelBuffer, getAdjustedTextSize(drawingInformer.getPGraphics(), messageLines, textSize));
         }
 
         drawMultiLineText();
@@ -368,12 +364,12 @@ public class TextPanel extends Panel implements Drawable {
         private Runnable runMethod;
         private boolean keepKeyboardShortcutTogether = false;
 
-        public Builder(TextPanelInformer informer, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+        public Builder(DrawingInfoSupplier informer, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
             super(informer, alignHorizontal, vAlign);
             this.message = message;
         }
 
-        public Builder(TextPanelInformer informer, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
+        public Builder(DrawingInfoSupplier informer, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
             super(informer, position, hAlign, vAlign);
             this.message = message;
         }

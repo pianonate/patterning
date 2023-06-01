@@ -21,6 +21,8 @@ public class PatternDrawer {
     private static final BigDecimal BigTWO = new BigDecimal(2);
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private CellWidth cellWidth;
+
+    private final  DrawingInformer drawingInformer;
     final float cellBorderWidthRatio = .05F;
     float cellBorderWidth = 0.0F;
 
@@ -68,32 +70,38 @@ public class PatternDrawer {
 
     public PatternDrawer(PApplet pApplet,
                          DrawRateManager drawRateManager,
-                         Function<PGraphicsSupplier, List<ControlPanel>> getControlPanelsMethod) {
+                         Function<DrawingInfoSupplier, List<ControlPanel>> getControlPanelsMethod) {
 
         this.processing = pApplet;
         this.drawRateManager = drawRateManager;
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
 
-        TextPanelInformer informer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
+        drawingInformer = new DrawingInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
 
-        PanelTester.makeSomePanels(informer, false, true);
-
-        Patterning patterning = (Patterning) processing;
+        PanelTester.makeSomePanels(drawingInformer, false, true);
 
         // the passed in method reference is made type safe through
-        // through using Function<PGraphicsSupplier, List<ControlPanel>> which tells it what argument to take
+        // through using Function<DrawingInfoSupplier, List<ControlPanel>> which tells it what argument to take
         // and what the return type will be when it is invoked
+        //
         // java really is into its bookkeeping
         //
-        // anyway, the tomfoolery is so that control panels have access to all their keycallbacks
-        // and PatternDrawer has access to the getUXBuffer needed by controls to always have the latest
-        // post-resize UXBuffer
+        // anyway, all this tomfoolery is so that control panels have access to their KeyCallback - which
+        // need to be constructed right now in the main Patterning class as they have access to main Patterning
+        // capabilities - and PatternDrawer has access to the getUXBuffer needed by controls to always have the latest
+        // post-resize UXBuffer, resize information and, specifically for TextControls, whether they are being
+        // constructed or if they are being drawn within a PGraphics.BeginDraw() block - esoteric but necessary
+        // or else the TextPanel will get null pointer exceptions on construction
         //
-        // just one way to do it but it does work.  another way might be to have been to pass
-        // lists of controls into this method and then having all the control panels constructed over here
+        // just one way to do it but it does work.  another way might be to pass
+        // lists of controls into this method and then have all the control panels constructed over here
+        //
+        // and another way would be to pass references to objects everywhere.  i find it a bit cleaner
+        // to just pass the lambdas around for specific functionality to be invoked later.
+        //
         // six of one half a dozen of the other
-        List<ControlPanel> panels = getControlPanelsMethod.apply(this::getUXBuffer);
+        List<ControlPanel> panels = getControlPanelsMethod.apply(drawingInformer);
         drawables.addAll(panels);
 
         // resize trackers
@@ -108,9 +116,7 @@ public class PatternDrawer {
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
 
-        TextPanelInformer startupInformer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
-
-        TextPanel startupText = new TextPanel.Builder(startupInformer, "patterning".toUpperCase(), AlignHorizontal.RIGHT, AlignVertical.TOP)
+        TextPanel startupText = new TextPanel.Builder(drawingInformer, "patterning".toUpperCase(), AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
@@ -155,8 +161,7 @@ public class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        TextPanelInformer informer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
-        countdownText = new TextPanel.Builder(informer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
+        countdownText = new TextPanel.Builder(drawingInformer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
                 .runMethod(Patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)
@@ -170,7 +175,7 @@ public class PatternDrawer {
             drawables.remove(hudText);
         }
 
-        hudText = new TextPanel.Builder(informer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+        hudText = new TextPanel.Builder(drawingInformer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
                 .textWidth(Optional.of(() -> canvasWidth.intValue()))
                 .build();

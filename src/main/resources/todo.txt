@@ -34,7 +34,9 @@ create a new kind of ContainerPanel called an InformationRadiator that contains 
 
 you can display the information radiators anywhere on screen as they'll have a title window and - ideally you can reposition them and also close them
 =============
-
+todo: if !transitioning does it make sense to still call it?  can you let the control know when it's done and you can just image
+      the thing at that point to save cpu cycles - might be trivial but it seems clean.  And then you could reinvoke reset if you wish
+      to retransition ever
 
 todo: next up - make TextPanel wordwrap it's text that is passed in from instantiating
                 in Control constructor (I think) and then it should just draw itself and use the parent Transition capability

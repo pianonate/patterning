@@ -1,7 +1,7 @@
 package ux;
 
 public class PanelTester {
-    public static void makeSomePanels(TextPanelInformer informer,
+    public static void makeSomePanels(DrawingInformer informer,
                                       boolean makeBasicPanels,
                                       boolean makeExpando) {
 
@@ -30,11 +30,11 @@ public class PanelTester {
         }
     }
 
-    private static void createAlignPanel(PGraphicsSupplier graphicsSupplier, AlignHorizontal hAlign, AlignVertical vAlign, int color, Transition.TransitionDirection direction) {
+    private static void createAlignPanel(DrawingInformer informer, AlignHorizontal hAlign, AlignVertical vAlign, int color, Transition.TransitionDirection direction) {
 
         UXThemeManager theme = UXThemeManager.getInstance();
 
-        Panel panel = new BasicPanel.Builder(graphicsSupplier, hAlign, vAlign, 150, 250)
+        Panel panel = new BasicPanel.Builder(informer, hAlign, vAlign, 150, 250)
                 .fill(color)
                 .transition(direction, Transition.TransitionType.SLIDE, theme.getLongTransitionDuration())
                 .build();

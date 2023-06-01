@@ -24,7 +24,8 @@ public abstract class ContainerPanel extends Panel {
             // child panels need special handling to orient themselves to this container Panel
             // rather than the UXBuffer, which is the more common case...
             child.parentPanel = this;
-            child.graphicsSupplier = this::getContainerPanelBuffer;
+            child.drawingInformer =
+                    new DrawingInformer(this::getContainerPanelBuffer, drawingInformer::isResized, drawingInformer::isDrawing);
         }
 
         this.orientation = builder.orientation;
@@ -38,7 +39,7 @@ public abstract class ContainerPanel extends Panel {
         // given we've already called super(builder), set
         // as the one created in Panel won't work
         // there's probably a better way but i think it can wait
-        panelBuffer = getPanelBuffer(graphicsSupplier.get());
+        panelBuffer = getPanelBuffer(drawingInformer.getPGraphics());
     }
 
     private PGraphics getContainerPanelBuffer() {
@@ -80,8 +81,8 @@ public abstract class ContainerPanel extends Panel {
 
         // Constructor for aligned Panel with default dimensions (0, 0)
         // addPanel will update the actual dimensions
-        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(graphicsSupplier, alignHorizontal, vAlign);
+        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            super(drawingInformer, alignHorizontal, vAlign);
         }
 
         protected P setOrientation(Orientation orientation) {

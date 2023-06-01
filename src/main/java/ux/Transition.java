@@ -9,23 +9,29 @@ public class Transition {
     private final long duration;
     private final TransitionDirection direction;
     private final TransitionType type;
-    private final PGraphicsSupplier graphicsSupplier;
+    private final DrawingInfoSupplier drawingInformer;
     private long transitionStartTime = -1;
 
-    public Transition(PGraphicsSupplier graphicsSupplier,TransitionDirection direction, TransitionType type) {
-        this(graphicsSupplier, direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
+    private boolean isTransitioning = true;
+
+    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type) {
+        this(drawingInformer, direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
     }
 
-    public Transition(PGraphicsSupplier graphicsSupplier, TransitionDirection direction, TransitionType type, long duration) {
-        this.graphicsSupplier = graphicsSupplier;
+    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type, long duration) {
+        this.drawingInformer = drawingInformer;
         this.direction = direction;
         this.type = type;
         this.duration = duration;
     }
 
 
-    public void reset() {
+/*    public void reset() {
         transitionStartTime = -1;
+    }*/
+
+    public boolean isTransitioning() {
+        return isTransitioning;
     }
 
     public void image(PGraphics transitionBuffer, float x, float y) {
@@ -33,7 +39,7 @@ public class Transition {
             transitionStartTime = System.currentTimeMillis();
         }
 
-        PGraphics UXBuffer = graphicsSupplier.get();
+        PGraphics UXBuffer = drawingInformer.getPGraphics();
 
         long elapsed = System.currentTimeMillis() - transitionStartTime;
         float transitionProgress = PApplet.constrain((float) elapsed / duration, 0, 1);
@@ -42,6 +48,12 @@ public class Transition {
             case EXPANDO -> drawExpandoTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
             case SLIDE -> drawSlideTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
             case DIAGONAL -> drawDiagonalTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
+        }
+
+        // let it do its last transition above otherwise you get a little screen flicker on the transition
+        // from getting cut off too soon apparently
+        if (transitionProgress == 1) {
+            isTransitioning = false;
         }
     }
 

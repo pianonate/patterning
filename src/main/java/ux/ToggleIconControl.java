@@ -38,8 +38,8 @@ public class ToggleIconControl extends Control {
     public static class Builder extends Control.Builder {
         private final String  toggledIconName;
 
-        public Builder(PGraphicsSupplier graphicsSupplier, KeyCallback callback, String iconName, String tooggledIcontName, int size) {
-            super(graphicsSupplier, callback, iconName, size);
+        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, String iconName, String tooggledIcontName, int size) {
+            super(drawingInformer, callback, iconName, size);
             this.toggledIconName = tooggledIcontName;
         }
 

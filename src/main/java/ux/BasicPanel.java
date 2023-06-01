@@ -12,8 +12,8 @@ public class BasicPanel extends Panel {
 
     public static class Builder extends Panel.Builder<Builder> {
 
-        public Builder(PGraphicsSupplier graphicsSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
-            super(graphicsSupplier, alignHorizontal, vAlign, width, height);
+        public Builder(DrawingInformer drawingInfoSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
+            super(drawingInfoSupplier, alignHorizontal, vAlign, width, height);
         }
 
         @Override
