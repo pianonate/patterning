@@ -61,15 +61,12 @@ public class PatternDrawer {
     // used for resize detection
     private int prevWidth, prevHeight;
 
-    private List<OldControlPanel> panels;
 
     public PatternDrawer(PApplet pApplet,
-                         DrawRateManager drawRateManager,
-                         List<OldControlPanel> panels) {
+                         DrawRateManager drawRateManager) {
 
         this.processing = pApplet;
         this.drawRateManager = drawRateManager;
-        this.panels = panels;
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
 
@@ -77,8 +74,8 @@ public class PatternDrawer {
 
         Patterning patterning = (Patterning) processing;
 
-        Panel testControlPanel = patterning.getTestControl(this::getUXBuffer);
-        drawables.add(testControlPanel);
+        List<ControlPanel> panels = patterning.getControlPanels(this::getUXBuffer);
+        drawables.addAll(panels);
 
         font = processing.createFont("Verdana", 24);
 
@@ -439,9 +436,6 @@ public class PatternDrawer {
         hudText.setMessage(hudMessage);
 
         drawables.drawAll(UXBuffer);
-        for (OldControlPanel panel : panels) {
-            panel.draw(UXBuffer);
-        }
 
         UXBuffer.endDraw();
 

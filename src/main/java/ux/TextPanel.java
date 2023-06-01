@@ -43,8 +43,6 @@ public class TextPanel extends Panel implements Drawable {
 
     private State state;
 
-    private final boolean underConstruction;
-
     protected TextPanel(TextPanel.Builder builder) {
         super(builder);
         // construct the TextPanel with the default Panel constructor
@@ -74,7 +72,7 @@ public class TextPanel extends Panel implements Drawable {
         // Always wrap the text, even if it results in a single line
         updatePanelBuffer(graphicsSupplier.get(), true);
 
-        this.setFill(0xFFFF0000);
+        //this.setFill(0xFFFF0000);
 
         // automatically start the display unless we're a countdown
         // which needs to be manually invoked by the caller...
@@ -83,8 +81,6 @@ public class TextPanel extends Panel implements Drawable {
         } else {
             startDisplay();
         }
-
-        underConstruction = false;
     }
 
     private void updatePanelBuffer(PGraphics parentBuffer, boolean shouldUpdate) {
@@ -234,12 +230,25 @@ public class TextPanel extends Panel implements Drawable {
     // on both the parent and the new textBuffer
     // necessary because createGraphics doesn't inherit the font from the parent
     private void setFont(PGraphics buffer, float textSize) {
-        if (underConstruction) buffer.beginDraw();
 
+        try {
+            setFontActual(buffer, textSize);
+        } catch (Exception e) {
+            // hack because i don't want to pass around a boolean just to see if
+            // we're in original initialization or are creating a new text buffer while
+            // things are running
+            // during initial program construction, UXBuffers are not being drawn
+            // they are being drawn at all other times so both mechanisms are used
+            // in the future you could create some kind of record where PGraphicsSupplier tells you whether it's in draw or not...
+            buffer.beginDraw();
+            setFontActual(buffer, textSize);
+            buffer.endDraw();
+        }
+    }
+
+    private void setFontActual(PGraphics buffer, float textSize) {
         buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
         buffer.textSize(textSize);
-
-        if (underConstruction) buffer.endDraw();
     }
 
     private void updateTextSize(){
@@ -368,8 +377,8 @@ public class TextPanel extends Panel implements Drawable {
             this.message = message;
         }
 
-        public Builder(PGraphicsSupplier graphicsSupplier, String message,PVector position) {
-            super(graphicsSupplier, position);
+        public Builder(PGraphicsSupplier graphicsSupplier, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
+            super(graphicsSupplier, position, hAlign, vAlign);
             this.message = message;
         }
 

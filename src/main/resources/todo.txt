@@ -1,4 +1,4 @@
-ContainerPanel - make abstract and then subclass to create a ControlPanel, InformationRadiator, etc.
+when chatGPT is back, fix the generic issues with containers - hopefully not shotgun surgery
 
 .addPanel - should actually be .addControl as standalone controls are not a thing
 when you do this then get rid of this code in container and just construct the control appropriately
@@ -8,11 +8,19 @@ when you do this then get rid of this code in container and just construct the c
             child.parentPanel = this;
             child.graphicsSupplier = this::getContainerPanelBuffer;
         }
+the callback to get the panels from Patterning - just pass it as a lambda or something so you don't have to expose Patterning to everything
 
 set the width and height of the ContainerPanel in the builder then so that Panel has it on construction and you don't have to
     do a redundant call to getPanelBuffer() in the constructor of ContainerPanel
 
 make Control work the slide outs - may need to create a multi-line information radiator to display
+
+create PGraphicsSupplier to provide a record that says whether BeginDraw() has been called on UXBuffer
+ so TextPanel.setFont can work without causing screen flicker
+ and without using a try/catch block hack
+
+ offset sizes in getIcon need to come from UxThemeManager
+ getControlPanels - duration of 2000 for the transition - don't hardcode
 
 ==============
 

@@ -28,10 +28,16 @@ public abstract class ContainerPanel extends Panel {
         }
 
         this.orientation = builder.orientation;
+
         updatePanelSize();
 
-        // Panel's create an initial buffer for their children to draw into
-        // however in some cases the child doesn't have a size until
+        // super(builder) causes Panel to create an initial panelBuffer
+        // to draw into.  However ContainerPanel's don't have a width and height until
+        // we've run updatePanelSize as we don't know how
+        // many children will get added to a ContainerPanel -
+        // given we've already called super(builder), set
+        // as the one created in Panel won't work
+        // there's probably a better way but i think it can wait
         panelBuffer = getPanelBuffer(graphicsSupplier.get());
     }
 

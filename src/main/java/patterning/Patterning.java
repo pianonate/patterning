@@ -4,7 +4,6 @@ import actions.*;
 import processing.core.PApplet;
 import processing.data.JSONObject;
 import processing.event.KeyEvent;
-import ux.Panel;
 import ux.*;
 
 import java.awt.*;
@@ -417,17 +416,13 @@ public class Patterning extends PApplet {
 
         loadSavedWindowPositions();
 
-
         this.drawRateManager = DrawRateManager.getInstance();
-        List<OldControlPanel> panels = getControlPanels();
 
-
-        this.drawer = new PatternDrawer(this, drawRateManager, panels);
+        this.drawer = new PatternDrawer(this, drawRateManager);
 
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform();
-
 
     }
 
@@ -463,8 +458,6 @@ public class Patterning extends PApplet {
         if (shouldDraw) {
             goForwardInTime();
         }
-
-
     }
 
     private boolean lifeIsThreadSafe() {
@@ -621,94 +614,39 @@ public class Patterning extends PApplet {
 
     }
 
-    public Panel getTestControl(PGraphicsSupplier graphicsSupplier) {
+    public List<ControlPanel> getControlPanels(PGraphicsSupplier graphicsSupplier) {
+        ControlPanel panelLeft, panelTop;
 
-        return new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.DIAGONAL, 2000)
+        panelLeft = new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.LEFT, AlignVertical.CENTER)
+                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, 1500)
                 .setOrientation(Orientation.VERTICAL)
                 .addControl("zoomIn.png", callbackZoomInCenter)
                 .addControl("zoomOut.png", callbackZoomOutCenter)
                 .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
                 .addControl("center.png", callbackCenterView)
+                .addToggleHighlightControl("boundary.png", callbackDisplayBounds)
+                .addToggleHighlightControl("darkmode.png", callbackThemeToggle)
                 .addControl("undo.png", callbackUndoMovement)
                 .build();
-    }
 
-    // now set up control panels
-    public List<OldControlPanel> getControlPanels() {
+        panelTop = new ControlPanel.Builder(graphicsSupplier, AlignHorizontal.CENTER, AlignVertical.TOP)
+                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.SLIDE, 1500)
+                .setOrientation(Orientation.HORIZONTAL)
+                .addControl("random.png", callbackRandomLife)
+                .addControl("stepSlower.png", callbackStepSlower)
+                .addControl("drawSlower.png", callbackDrawSlower)
+                .addToggleIconControl("pause.png", "play.png", callbackPause)
+                .addControl("drawFaster.png", callbackDrawFaster)
+                .addControl("stepFaster.png", callbackStepFaster)
+                .addControl("rewind.png", callbackRewind)
+                .build();
 
-        //oldControls.OldControlPanel panelLeft, panelTop, panelRight, panelBottom;
-        OldControlPanel panelLeft, panelTop;
-
-
-        try {
-            // loading icons can generate an IOException if the file isn't there - which is problematic
-            panelLeft = new OldControlPanel.Builder(OldPanelPosition.LEFT)
-                    // todo - if you add running guy back in you have to notify observers if you click on it
-                    // same issue for the toggleIconControl below - clicks need to inform the running guy
-                    //.addToggleControl("running.png", callbackPause)
-                    .addControl("zoomIn.png", callbackZoomInCenter)
-                    .addControl("zoomOut.png", callbackZoomOutCenter)
-                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
-                    .addControl("center.png", callbackCenterView)
-                    .addToggleControl("boundary.png", callbackDisplayBounds)
-                    .addToggleControl("darkmode.png", callbackThemeToggle)
-                    .addControl("undo.png", callbackUndoMovement)
-                    .alignment(OldPanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();
-
-            // loading icons can generate an IOException if the file isn't there - which is problematic
-            panelTop = new OldControlPanel.Builder(OldPanelPosition.TOP)
-                    .addControl("random.png", callbackRandomLife)
-                    .addControl("stepSlower.png", callbackStepSlower)
-                    .addControl("drawSlower.png", callbackDrawSlower)
-                    .addToggleIconControl("pause.png", "play.png", callbackPause)
-                    .addControl("drawFaster.png", callbackDrawFaster)
-                    .addControl("stepFaster.png", callbackStepFaster)
-                    .addControl("rewind.png", callbackRewind)
-                    .alignment(OldPanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();
-
-      /*      panelRight = new oldControls.OldControlPanel.Builder(oldControls.OldControlPanel.OldPanelPosition.RIGHT, this)
-                    .addControl("zoomIn.png", callbackZoomInCenter)
-                    .addControl("zoomOut.png", callbackZoomOutCenter)
-                    .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
-                    .addControl("center.png", callbackCenterView)
-                    .addControl("boundary.png", true, callbackDisplayBounds)
-                    .addControl("undo.png", callbackUndoMovement)
-                    .alignment(OldPanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();
-
-            // loading icons can generate an IOException if the file isn't there - which is problematic
-            panelBottom = new oldControls.OldControlPanel.Builder(oldControls.OldControlPanel.OldPanelPosition.BOTTOM, this)
-                    .addControl("random.png", callbackRandomLife)
-                    .addControl("stepSlower.png", callbackStepSlower)
-                    .addControl("drawSlower.png", callbackDrawSlower)
-                    .addControl("pause.png", "play.png", callbackPause)
-                    .addControl("drawFaster.png", callbackDrawFaster)
-                    .addControl("stepFaster.png", callbackStepFaster)
-                    .addControl("rewind.png", callbackRewind)
-                    .alignment(OldPanelAlignment.CENTER)
-                    .sizeToFit(true)
-                    .build();*/
-
-
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        //List<oldControls.OldControlPanel> panels = Arrays.asList(panelLeft, panelTop, panelRight, panelBottom);
-        List<OldControlPanel> panels = Arrays.asList(panelLeft, panelTop);
-
+        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
 
         MouseEventManager.getInstance().addAll(panels);
 
-
         return panels;
+
     }
 
     private void performComplexCalculationSetStep(Integer step) {

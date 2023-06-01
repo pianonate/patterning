@@ -16,9 +16,6 @@ public class BasicPanel extends Panel {
             super(graphicsSupplier, alignHorizontal, vAlign, width, height);
         }
 
-        public Builder(PGraphicsSupplier graphicsSupplier, int x, int y, int width, int height) {
-            super(graphicsSupplier, x, y, width, height);
-        }
         @Override
         public BasicPanel build() {
             return new BasicPanel(this);

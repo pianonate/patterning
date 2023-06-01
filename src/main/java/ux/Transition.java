@@ -9,13 +9,15 @@ public class Transition {
     private final long duration;
     private final TransitionDirection direction;
     private final TransitionType type;
+    private final PGraphicsSupplier graphicsSupplier;
     private long transitionStartTime = -1;
 
-    public Transition(TransitionDirection direction, TransitionType type) {
-        this(direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
+    public Transition(PGraphicsSupplier graphicsSupplier,TransitionDirection direction, TransitionType type) {
+        this(graphicsSupplier, direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
     }
 
-    public Transition(TransitionDirection direction, TransitionType type, long duration) {
+    public Transition(PGraphicsSupplier graphicsSupplier, TransitionDirection direction, TransitionType type, long duration) {
+        this.graphicsSupplier = graphicsSupplier;
         this.direction = direction;
         this.type = type;
         this.duration = duration;
@@ -26,10 +28,12 @@ public class Transition {
         transitionStartTime = -1;
     }
 
-    public void transition(PGraphics UXBuffer, PGraphics transitionBuffer, float x, float y) {
+    public void image(PGraphics transitionBuffer, float x, float y) {
         if (transitionStartTime == -1) {
             transitionStartTime = System.currentTimeMillis();
         }
+
+        PGraphics UXBuffer = graphicsSupplier.get();
 
         long elapsed = System.currentTimeMillis() - transitionStartTime;
         float transitionProgress = PApplet.constrain((float) elapsed / duration, 0, 1);

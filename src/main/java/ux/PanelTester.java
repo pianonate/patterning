@@ -19,7 +19,7 @@ public class PanelTester {
                 .displayDuration(20000)
                 .build();
 
-        DrawableManager.getInstance().add(testText);
+       // DrawableManager.getInstance().add(testText);
     }
 
     private void createAlignPanel(PGraphicsSupplier graphicsSupplier, AlignHorizontal hAlign, AlignVertical vAlign, int color, Transition.TransitionDirection direction) {
@@ -30,7 +30,7 @@ public class PanelTester {
                 .fill(color)
                 .transition(direction, Transition.TransitionType.SLIDE, theme.getLongTransitionDuration())
                 .build();
-        DrawableManager.getInstance().add(panel);
+       // DrawableManager.getInstance().add(panel);
 
     }
 

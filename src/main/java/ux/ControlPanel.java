@@ -21,8 +21,41 @@ public class ControlPanel extends ContainerPanel{
 
         public Builder addControl(String iconName, KeyCallback callback ) {
 
-            Control c = new Control.Builder(this.graphicsSupplier, callback, iconName, UXThemeManager.getInstance().getControlSize())
-                    .build();
+            Control c = new Control.Builder(
+                    this.graphicsSupplier,
+                    callback,
+                    iconName,
+                    UXThemeManager.getInstance().getControlSize()
+            ).build();
+
+            addPanel(c);
+
+            return this;
+        }
+
+        public Builder addToggleHighlightControl(String iconName, KeyCallback callback ) {
+
+            Control c = new ToggleHighlightControl.Builder(
+                    this.graphicsSupplier,
+                    callback,
+                    iconName,
+                    UXThemeManager.getInstance().getControlSize()
+            ).build();
+
+            addPanel(c);
+
+            return this;
+        }
+
+        public Builder addToggleIconControl(String iconName, String toggledIconName, KeyCallback callback ) {
+
+            Control c = new ToggleIconControl.Builder(
+                    this.graphicsSupplier,
+                    callback,
+                    iconName,
+                    toggledIconName,
+                    UXThemeManager.getInstance().getControlSize()
+            ).build();
 
             addPanel(c);
 

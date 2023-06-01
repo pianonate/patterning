@@ -15,7 +15,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     private final KeyCallback callback;
     private final int size;
     boolean isHighlightFromKeypress = false;
-    private  PImage icon;
+    protected PImage icon;
     private final String iconName;
     private TextPanel hoverTextPanel;
     private String hoverMessage;
@@ -33,6 +33,16 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         MouseEventManager.getInstance().addReceiver(this);
         this.iconName = builder.iconName;
 
+        this.icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+       // icon.resize(width - 5, height - 5);
+        //this.icon = icon;
+
+        String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
+                .map(KeyCombo::toString)
+                .collect(Collectors.joining(", "));
+
+        hoverMessage = callback.getUsageText() + " (shortcut: " + keyCombos + ")";
+
     }
 
     // at time of construction, the control doesn't have information about its parent
@@ -42,7 +52,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             return;
         }
 
-        PImage icon = panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+        PImage icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
         icon.resize(width - 5, height - 5);
         this.icon = icon;
 
@@ -54,9 +64,19 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
 
     }
 
+    protected PImage loadIcon(String iconName) {
+        PImage icon = panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+        icon.resize(width - 5, height - 5);
+        return icon;
+    }
+
+    protected PImage getIcon() {
+        return icon;
+    }
+
     protected void panelSubclassDraw() {
 
-        firstDrawSetup();
+        //firstDrawSetup();
 
         mouseHover(isMouseOverMe());
         drawHover();
@@ -113,8 +133,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
             }
         }
 
-       // return new TextPanel.Builder(hoverMessage, this.parentPanel.alignHorizontal, this.parentPanel.vAlign)
-
         // the Control parentPanel is a ContainerPanel that has a graphic supplier of the UXBuffer
         // we can't use the Control graphicsProvider as it is provided by the ContainerPanel so that the
         // Control draws itself within the ContainerPanel
@@ -122,10 +140,11 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         // instead we pass the hover text the parent ContainerPanel's graphicsSupplier which comes from
         // PatternDrawer, i.e., the UXBuffer itself - otherwise the hover text would try to draw itself within the control
         // at a microscopic size
-        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY))
+        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
                 .fill(theme.getControlHighlightColor())
                 .textSize(theme.getHoverTextSize())
                 .textWidth(hoverTextWidth)
+                .wrap()
                 .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
                 .radius(theme.getControlHighlightCornerRadius())
                 .outline(false)
@@ -151,9 +170,11 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
 
     private void drawIcon() {
-        float x = (float) (width - icon.width) / 2;
-        float y = (float) (height - icon.height) / 2;
-        panelBuffer.image(icon, x, y);
+        PImage thisIcon = getIcon();
+
+        float x = (float) (width - thisIcon.width) / 2;
+        float y = (float) (height - thisIcon.height) / 2;
+        panelBuffer.image(thisIcon, x, y);
     }
 
     private void drawControlHighlight(int color) {
@@ -187,6 +208,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     public void onMousePressed() {
         super.onMousePressed();
     }
+
     @Override
     public void onMouseReleased() {
         super.onMouseReleased(); // Calls Panel's onMouseReleased
