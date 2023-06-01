@@ -1,10 +1,13 @@
-package ux;
+package ux.panel;
 
 import actions.MouseEventReceiver;
 import patterning.Patterning;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
+import ux.Drawable;
+import ux.UXThemeManager;
+import ux.informer.DrawingInfoSupplier;
 
 import java.awt.*;
 import java.util.OptionalInt;

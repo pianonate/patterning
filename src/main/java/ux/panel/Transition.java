@@ -1,8 +1,10 @@
-package ux;
+package ux.panel;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PImage;
+import ux.UXThemeManager;
+import ux.informer.DrawingInfoSupplier;
 
 public class Transition {
 
@@ -109,7 +111,6 @@ public class Transition {
             }
         }
     }
-
 
     private void drawDiagonalTransition(PGraphics UXBuffer, PGraphics transitionBuffer, float animationProgress, float x, float y) {
         switch (direction) {

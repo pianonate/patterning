@@ -4,7 +4,12 @@ import actions.*;
 import processing.core.PApplet;
 import processing.data.JSONObject;
 import processing.event.KeyEvent;
-import ux.*;
+import ux.DrawRateManager;
+import ux.PatternDrawer;
+import ux.UXThemeManager;
+import ux.UXThemeType;
+import ux.informer.DrawingInfoSupplier;
+import ux.panel.*;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;

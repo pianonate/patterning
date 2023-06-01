@@ -1,15 +1,15 @@
-package ux;
-
+package ux.panel;
 import processing.core.PApplet;
 
-public enum AlignVertical {
-    TOP, CENTER, BOTTOM;
+public enum AlignHorizontal {
+    LEFT, CENTER, RIGHT;
 
     public int toPApplet() {
         return switch (this) {
-            case TOP -> PApplet.TOP;
+            case LEFT -> PApplet.LEFT;
             case CENTER -> PApplet.CENTER;
-            case BOTTOM -> PApplet.BOTTOM;
+            case RIGHT -> PApplet.RIGHT;
         };
     }
+
 }

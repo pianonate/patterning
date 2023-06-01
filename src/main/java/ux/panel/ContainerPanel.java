@@ -1,6 +1,8 @@
-package ux;
+package ux.panel;
 
 import processing.core.PGraphics;
+import ux.informer.DrawingInfoSupplier;
+import ux.informer.DrawingInformer;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,8 +1,11 @@
-package ux;
+package ux.panel;
 
 import actions.*;
 import processing.core.PImage;
 import processing.core.PVector;
+import ux.DrawableManager;
+import ux.UXThemeManager;
+import ux.informer.DrawingInfoSupplier;
 
 import java.util.Timer;
 import java.util.TimerTask;

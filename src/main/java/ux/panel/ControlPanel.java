@@ -1,7 +1,9 @@
-package ux;
+package ux.panel;
 
 
 import actions.KeyCallback;
+import ux.UXThemeManager;
+import ux.informer.DrawingInfoSupplier;
 
 public class ControlPanel extends ContainerPanel{
 

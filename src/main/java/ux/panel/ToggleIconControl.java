@@ -1,8 +1,9 @@
-package ux;
+package ux.panel;
 
 import actions.KeyCallback;
 import actions.KeyObservable;
 import processing.core.PImage;
+import ux.informer.DrawingInfoSupplier;
 
 public class ToggleIconControl extends Control {
     PImage toggledIcon; // right now only used with play / pause

@@ -1,8 +1,13 @@
-package ux;
+package ux.panel;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
+import ux.Drawable;
+import ux.DrawableManager;
+import ux.UXThemeManager;
+import ux.informer.DrawingInfoSupplier;
+import ux.informer.DrawingInformer;
 
 import java.util.*;
 import java.util.function.IntSupplier;
@@ -254,7 +259,7 @@ public class TextPanel extends Panel implements Drawable {
     protected void panelSubclassDraw() {
 
         // used for fading in the text and the various states
-        // a ux.TextPanel can advance through
+        // a ux.panel.TextPanel can advance through
         state.update();
 
         // we update the size of the buffer containing the text

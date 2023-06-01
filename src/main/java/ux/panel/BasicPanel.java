@@ -1,4 +1,6 @@
-package ux;
+package ux.panel;
+
+import ux.informer.DrawingInfoSupplier;
 
 public class BasicPanel extends Panel {
     protected BasicPanel(Builder builder) {
@@ -12,7 +14,7 @@ public class BasicPanel extends Panel {
 
     public static class Builder extends Panel.Builder<Builder> {
 
-        public Builder(DrawingInformer drawingInfoSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
+        public Builder(DrawingInfoSupplier drawingInfoSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
             super(drawingInfoSupplier, alignHorizontal, vAlign, width, height);
         }
 

@@ -8,6 +8,12 @@ import patterning.Patterning;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
+import ux.informer.DrawingInfoSupplier;
+import ux.informer.DrawingInformer;
+import ux.panel.AlignHorizontal;
+import ux.panel.AlignVertical;
+import ux.panel.ControlPanel;
+import ux.panel.TextPanel;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,7 +28,7 @@ public class PatternDrawer {
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private CellWidth cellWidth;
 
-    private final  DrawingInformer drawingInformer;
+    private final DrawingInfoSupplier drawingInformer;
     final float cellBorderWidthRatio = .05F;
     float cellBorderWidth = 0.0F;
 

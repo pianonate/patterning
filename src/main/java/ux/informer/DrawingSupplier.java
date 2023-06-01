@@ -1,4 +1,4 @@
-package ux;
+package ux.informer;
 
 @FunctionalInterface
 public interface DrawingSupplier {

@@ -1,7 +1,10 @@
 package ux;
 
+import ux.informer.DrawingInfoSupplier;
+import ux.panel.*;
+
 public class PanelTester {
-    public static void makeSomePanels(DrawingInformer informer,
+    public static void makeSomePanels(DrawingInfoSupplier informer,
                                       boolean makeBasicPanels,
                                       boolean makeExpando) {
 
@@ -30,7 +33,7 @@ public class PanelTester {
         }
     }
 
-    private static void createAlignPanel(DrawingInformer informer, AlignHorizontal hAlign, AlignVertical vAlign, int color, Transition.TransitionDirection direction) {
+    private static void createAlignPanel(DrawingInfoSupplier informer, AlignHorizontal hAlign, AlignVertical vAlign, int color, Transition.TransitionDirection direction) {
 
         UXThemeManager theme = UXThemeManager.getInstance();
 

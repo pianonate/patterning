@@ -1,7 +1,8 @@
-package ux;
+package ux.panel;
 
 import actions.KeyCallback;
 import actions.KeyObservable;
+import ux.informer.DrawingInfoSupplier;
 
 public class ToggleHighlightControl extends Control {
     protected ToggleHighlightControl(Builder builder) {
