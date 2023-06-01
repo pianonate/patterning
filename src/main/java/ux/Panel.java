@@ -64,6 +64,10 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
 
     }
 
+    protected boolean isResized() {
+      return  resized;
+    }
+
     protected void setPosition(int x, int y) {
         if (position == null) {
             position = new PVector();

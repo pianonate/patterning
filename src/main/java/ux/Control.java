@@ -34,8 +34,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         this.iconName = builder.iconName;
 
         this.icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
-       // icon.resize(width - 5, height - 5);
-        //this.icon = icon;
 
         String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
                 .map(KeyCombo::toString)
@@ -140,7 +138,8 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         // instead we pass the hover text the parent ContainerPanel's graphicsSupplier which comes from
         // PatternDrawer, i.e., the UXBuffer itself - otherwise the hover text would try to draw itself within the control
         // at a microscopic size
-        return new TextPanel.Builder(parentPanel.graphicsSupplier, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
+        TextPanelInformer hoverInformer = new TextPanelInformer(parentPanel.graphicsSupplier, this::isResized, this::withinBeginDraw);
+        return new TextPanel.Builder(hoverInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
                 .fill(theme.getControlHighlightColor())
                 .textSize(theme.getHoverTextSize())
                 .textWidth(hoverTextWidth)
@@ -150,6 +149,10 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                 .radius(theme.getControlHighlightCornerRadius())
                 .outline(false)
                 .build();
+    }
+
+    private boolean withinBeginDraw() {
+        return true;
     }
 
     void mouseHover(boolean isHovering) {

@@ -10,7 +10,7 @@ public abstract class ContainerPanel extends Panel {
     private final List<Panel> childPanels;
     private final Orientation orientation;
 
-    protected ContainerPanel(Builder builder) {
+    protected ContainerPanel(Builder<?> builder) {
         super(builder);
 
         this.childPanels = new ArrayList<>(builder.childPanels);
@@ -84,17 +84,19 @@ public abstract class ContainerPanel extends Panel {
             super(graphicsSupplier, alignHorizontal, vAlign);
         }
 
-        protected Builder setOrientation(Orientation orientation) {
+        protected P setOrientation(Orientation orientation) {
             this.orientation = orientation;
-            return this;
+            return self();
         }
 
-        protected Builder addPanel(Panel child) {
+        @SuppressWarnings("UnusedReturnValue")
+        protected P addPanel(Panel child) {
             this.childPanels.add(child);
-            return this;
+            return self();
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         protected P self() {
             return (P) this;
         }

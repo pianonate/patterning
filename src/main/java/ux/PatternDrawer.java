@@ -62,6 +62,9 @@ public class PatternDrawer {
     // used for resize detection
     private int prevWidth, prevHeight;
 
+    boolean drawing = false;
+
+
 
     public PatternDrawer(PApplet pApplet,
                          DrawRateManager drawRateManager,
@@ -72,7 +75,9 @@ public class PatternDrawer {
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
 
-        PanelTester.makeSomePanels(this::getUXBuffer, false, true);
+        TextPanelInformer informer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
+
+        PanelTester.makeSomePanels(informer, false, true);
 
         Patterning patterning = (Patterning) processing;
 
@@ -103,7 +108,9 @@ public class PatternDrawer {
         this.drawBounds = false;
         this.hudInfo = new HUDStringBuilder();
 
-        TextPanel startupText = new TextPanel.Builder(this::getUXBuffer, "patterning".toUpperCase(), AlignHorizontal.RIGHT, AlignVertical.TOP)
+        TextPanelInformer startupInformer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
+
+        TextPanel startupText = new TextPanel.Builder(startupInformer, "patterning".toUpperCase(), AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(50)
                 .fadeInDuration(2000)
                 .fadeOutDuration(2000)
@@ -111,6 +118,10 @@ public class PatternDrawer {
                 .build();
         drawables.add(startupText);
 
+    }
+
+    private boolean isDrawing() {
+        return drawing;
     }
 
     private PGraphics getUXBuffer() {
@@ -144,7 +155,8 @@ public class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        countdownText = new TextPanel.Builder(this::getUXBuffer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
+        TextPanelInformer informer = new TextPanelInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
+        countdownText = new TextPanel.Builder(informer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
                 .runMethod(Patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)
@@ -158,7 +170,7 @@ public class PatternDrawer {
             drawables.remove(hudText);
         }
 
-        hudText = new TextPanel.Builder(this::getUXBuffer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+        hudText = new TextPanel.Builder(informer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
                 .textWidth(Optional.of(() -> canvasWidth.intValue()))
                 .build();
@@ -230,7 +242,7 @@ public class PatternDrawer {
     }
 
     private boolean isWindowResized() {
-       return prevWidth != processing.width || prevHeight != processing.height;
+        return prevWidth != processing.width || prevHeight != processing.height;
     }
 
     private void updateWindowResized() {
@@ -417,6 +429,8 @@ public class PatternDrawer {
 
     public void draw(boolean shouldDraw) {
 
+        drawing = true;
+
         boolean resized = isWindowResized();
 
         prevWidth = processing.width;
@@ -469,8 +483,7 @@ public class PatternDrawer {
         processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
         processing.image(UXBuffer, 0, 0);
 
-
-
+        drawing = false;
     }
 
     private String getHUDMessage(LifeUniverse life, Bounds bounds) {

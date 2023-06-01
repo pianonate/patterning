@@ -1,12 +1,3 @@
-when chatGPT is back, fix the generic issues with containers - hopefully not shotgun surgery
-
-the callback to get the panels from Patterning - just pass it as a lambda or something so you don't have to expose Patterning to everything
-
-set the width and height of the ContainerPanel in the builder then so that Panel has it on construction and you don't have to
-    do a redundant call to getPanelBuffer() in the constructor of ContainerPanel
-
-make Control work the slide outs - may need to create a multi-line information radiator to display
-
 create PGraphicsSupplier to provide a record that says whether BeginDraw() has been called on UXBuffer
  so TextPanel.setFont can work without causing screen flicker
  and without using a try/catch block hack

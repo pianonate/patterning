@@ -149,19 +149,16 @@ public class TextPanel extends Panel implements Drawable {
     // necessary because createGraphics doesn't inherit the font from the parent
     private void setFont(PGraphics buffer, float textSize) {
 
-        try {
-            setFontActual(buffer, textSize);
-        } catch (Exception e) {
-            // hack because i don't want to pass around a boolean just to see if
-            // we're in original initialization or are creating a new text buffer while
-            // things are running
-            // during initial program construction, UXBuffers are not being drawn
-            // they are being drawn at all other times so both mechanisms are used
-            // in the future you could create some kind of record where PGraphicsSupplier tells you whether it's in draw or not...
-            buffer.beginDraw();
-            setFontActual(buffer, textSize);
-            buffer.endDraw();
-        }
+        TextPanelInformer informer = (TextPanelInformer) graphicsSupplier;
+
+        boolean shouldInitialize = !informer.isDrawing();
+
+        if (shouldInitialize) buffer.beginDraw();
+        buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
+        buffer.textSize(textSize);
+        if (shouldInitialize) buffer.endDraw();
+
+
     }
 
     private String getCountdownMessage(long count) {
@@ -245,11 +242,6 @@ public class TextPanel extends Panel implements Drawable {
             parentBuffer.textSize(adjustedTextSize);
         }
         return adjustedTextSize;
-    }
-
-    private void setFontActual(PGraphics buffer, float textSize) {
-        buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
-        buffer.textSize(textSize);
     }
 
     private OptionalInt getTextWidth() {
@@ -376,13 +368,13 @@ public class TextPanel extends Panel implements Drawable {
         private Runnable runMethod;
         private boolean keepKeyboardShortcutTogether = false;
 
-        public Builder(PGraphicsSupplier graphicsSupplier, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(graphicsSupplier, alignHorizontal, vAlign);
+        public Builder(TextPanelInformer informer, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
+            super(informer, alignHorizontal, vAlign);
             this.message = message;
         }
 
-        public Builder(PGraphicsSupplier graphicsSupplier, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
-            super(graphicsSupplier, position, hAlign, vAlign);
+        public Builder(TextPanelInformer informer, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
+            super(informer, position, hAlign, vAlign);
             this.message = message;
         }
 
