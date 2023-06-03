@@ -1,5 +1,7 @@
 package ux;
 
+import processing.core.PApplet;
+
 public class UXThemeManager {
     private static UXThemeManager instance = null;
 
@@ -15,23 +17,24 @@ public class UXThemeManager {
     private int startupTextSize;
 
     // colors
-    private int backGroundColor;
-    private int cellColor;
-    private int controlColor;
-    private int controlHighlightColor;
-    private int controlMousePressedColor;
-    private int defaultPanelColor;
-    private int textColor;
-    private int textColorStart; // for lerping purposes
+    private final ColorConstant backGroundColor;
+    private final ColorConstant cellColor;
+    private final ColorConstant controlColor;
+    private final ColorConstant controlHighlightColor;
+    private final ColorConstant controlMousePressedColor;
+    private final ColorConstant defaultPanelColor;
+    private final ColorConstant textColor;
+    private final ColorConstant textColorStart; // for lerping purposes
 
     // durations
     private int controlHighlightDuration;
     private int controlPanelTransitionDuration;
-    private int longTransitionDuration;
     private int shortTransitionDuration;
+    private int singleModeToggleDuration;
     private int startupTextDisplayDuration;
     private int startupTextFadeInDuration;
     private int startupTextFadeOutDuration;
+    private int themeTransitionDuration;
 
     // strings
     private String fontName;
@@ -41,10 +44,18 @@ public class UXThemeManager {
     private String startupText;
 
     private UXThemeManager() {
-        setTheme(UXThemeType.DARK);  // Default theme
+        backGroundColor = new ColorConstant();
+        cellColor = new ColorConstant();
+        controlColor = new ColorConstant();
+        controlHighlightColor = new ColorConstant();
+        controlMousePressedColor =new ColorConstant();
+        defaultPanelColor = new ColorConstant();
+        textColor = new ColorConstant();
+        textColorStart = new ColorConstant();
+        setTheme(UXThemeType.DARK, null, true);  // Default theme
     }
 
-    public void setTheme(UXThemeType newTheme) {
+    private void setTheme(UXThemeType newTheme, PApplet processing, boolean underConstruction) {
         UXConstants themeConstants = newTheme.getThemeConstants();
 
         // sizes and radii
@@ -59,23 +70,24 @@ public class UXThemeManager {
         startupTextSize = themeConstants.getStartupTextSize();
 
         // colors
-        backGroundColor = themeConstants.getBackgroundColor();
-        cellColor = themeConstants.getCellColor();
-        controlColor = themeConstants.getControlColor();
-        controlHighlightColor = themeConstants.getControlHighlightColor();
-        controlMousePressedColor = themeConstants.getControlMousePressedColor();
-        defaultPanelColor = themeConstants.getDefaultPanelColor();
-        textColor = themeConstants.getTextColor();
-        textColorStart = themeConstants.getTextColorStart();
+        backGroundColor.setColor(themeConstants.getBackgroundColor(), processing);
+        cellColor.setColor(themeConstants.getCellColor(), processing);
+        controlColor.setColor(themeConstants.getControlColor(), processing);
+        controlHighlightColor.setColor(themeConstants.getControlHighlightColor(), processing);
+        controlMousePressedColor.setColor(themeConstants.getControlMousePressedColor(), processing);
+        defaultPanelColor.setColor(themeConstants.getDefaultPanelColor(), processing);
+        textColor.setColor(themeConstants.getTextColor(), processing);
+        textColorStart.setColor(themeConstants.getTextColorStart(), processing);
 
         //durations
         controlHighlightDuration = themeConstants.getControlHighlightDuration();
         controlPanelTransitionDuration = themeConstants.getControlPanelTransitionDuration();
-        longTransitionDuration = themeConstants.getLongTransitionDuration();
         shortTransitionDuration = themeConstants.getShortTransitionDuration();
+        singleModeToggleDuration = themeConstants.getSingleModeToggleDuration();
         startupTextDisplayDuration = themeConstants.getStartupTextDisplayDuration();
         startupTextFadeInDuration = themeConstants.getStartupTextFadeInDuration();
         startupTextFadeOutDuration = themeConstants.getStartupTextFadeOutDuration();
+        themeTransitionDuration = themeConstants.getThemeTransitionDuration();
 
         // strings
         fontName = themeConstants.getFontName();
@@ -91,6 +103,10 @@ public class UXThemeManager {
             instance = new UXThemeManager();
         }
         return instance;
+    }
+
+    public void setTheme(UXThemeType newTheme, PApplet processing) {
+        setTheme(newTheme, processing, false);
     }
 
     // sizes
@@ -133,35 +149,36 @@ public class UXThemeManager {
 
     // colors
     public int getBackGroundColor() {
-        return backGroundColor;
+        return backGroundColor.getColor();
     }
 
     public int getCellColor() {
-        return cellColor;
+
+        return cellColor.getColor();
     }
 
     public int getControlColor() {
-        return controlColor;
+        return controlColor.getColor();
     }
 
     public int getControlHighlightColor() {
-        return controlHighlightColor;
+        return controlHighlightColor.getColor();
     }
 
     public int getControlMousePressedColor() {
-        return controlMousePressedColor;
+        return controlMousePressedColor.getColor();
     }
 
     public int getDefaultPanelColor() {
-        return defaultPanelColor;
+        return defaultPanelColor.getColor();
     }
 
     public int getTextColor() {
-        return textColor;
+        return textColor.getColor();
     }
 
     public int getTextColorStart() {
-        return textColorStart;
+        return textColorStart.getColor();
     }
 
     // durations
@@ -169,21 +186,22 @@ public class UXThemeManager {
     public int getControlHighlightDuration() {
         return controlHighlightDuration;
     }
-    public int getControlPanelTransitionDuration() { return controlPanelTransitionDuration;}
 
-    public int getLongTransitionDuration() {
-        return longTransitionDuration;
+    public int getControlPanelTransitionDuration() {
+        return controlPanelTransitionDuration;
     }
 
     public int getShortTransitionDuration() {
         return shortTransitionDuration;
     }
 
+    public int getSingleModeToggleDuration() {
+        return singleModeToggleDuration;
+    }
+
     public int getStartupTextDisplayDuration() {
         return startupTextDisplayDuration;
     }
-
-    ;
 
     public int getStartupTextFadeInDuration() {
         return startupTextFadeInDuration;
@@ -191,6 +209,10 @@ public class UXThemeManager {
 
     public int getStartupTextFadeOutDuration() {
         return startupTextFadeOutDuration;
+    }
+
+    public int getThemeTransitionDuration() {
+        return themeTransitionDuration;
     }
 
     // names

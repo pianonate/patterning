@@ -9,7 +9,6 @@ import ux.informer.DrawingInfoSupplier;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 
 public class Control extends Panel implements KeyObserver, MouseEventReceiver {
@@ -19,9 +18,8 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     private final int size;
     boolean isHighlightFromKeypress = false;
     protected PImage icon;
-    private final String iconName;
     private TextPanel hoverTextPanel;
-    private String hoverMessage;
+    private final String hoverMessage;
 
     protected Control(Builder builder) {
         super(builder);
@@ -32,9 +30,9 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         setFill(theme.getControlColor());
         callback.addObserver(this);
         MouseEventManager.getInstance().addReceiver(this);
-        this.iconName = builder.iconName;
 
-        this.icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
+
+        this.icon = loadIcon(builder.iconName);
 
         String keyCombos = callback.toString();
 
@@ -42,30 +40,9 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
 
     }
 
-    // at time of construction, the control doesn't have information about its parent
-    // so instantiate the hover text on first use
-    private void firstDrawSetup() {
-        if (icon != null) {
-            return;
-        }
-
-        int margin = theme.getIconMargin();
-
-        PImage icon = loadIcon(iconName);
-        icon.resize(width - margin, height - margin);
-        this.icon = icon;
-
-        String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
-                .map(KeyCombo::toString)
-                .collect(Collectors.joining(", "));
-
-        hoverMessage = callback.getUsageText() + " (shortcut: " + keyCombos + ")";
-
-    }
-
     protected PImage loadIcon(String iconName) {
         PImage icon = panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
-        icon.resize(width - 5, height - 5);
+        icon.resize(width - theme.getIconMargin(), height - theme.getIconMargin());
         return icon;
     }
 
@@ -74,8 +51,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
 
     protected void panelSubclassDraw() {
-
-        //firstDrawSetup();
 
         mouseHover(isMouseOverMe());
         drawHover();

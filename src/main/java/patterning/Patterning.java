@@ -31,6 +31,7 @@ public class Patterning extends PApplet {
     private int targetStep;
     private boolean running;
     private boolean mousePressedOverReceiver = false;
+    private boolean singleStepMode = false;
 
     public static void main(String[] args) {
         PApplet.main("patterning.Patterning");
@@ -110,6 +111,7 @@ public class Patterning extends PApplet {
 
     public void draw() {
 
+
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
@@ -166,6 +168,9 @@ public class Patterning extends PApplet {
         if (shouldStartComplexCalculationNextGeneration()) {
             complexCalculationHandlerNextGeneration.startCalculation(null);
         }
+
+        if (running && singleStepMode)
+            toggleRun();
     }
 
     private boolean shouldStartComplexCalculationSetStep() {
@@ -425,5 +430,12 @@ public class Patterning extends PApplet {
 
     public void centerView() {
         drawer.center(life.getRootBounds(), false, true);
+    }
+
+    public void toggleSingleStep() {
+        if (running && !singleStepMode)
+            running=false;
+
+        singleStepMode = !singleStepMode;
     }
 }

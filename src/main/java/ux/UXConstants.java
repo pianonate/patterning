@@ -49,7 +49,7 @@ public class UXConstants {
     }
 
     int getCellColor() {
-        return 0;
+        return 0xFF000000;
     }
 
     int getControlColor() {
@@ -81,14 +81,11 @@ public class UXConstants {
         return 1000;
     }
     int getControlPanelTransitionDuration() { return 1500;}
-
-    int getLongTransitionDuration() {
-        return 3000;
-    }
-
     int getShortTransitionDuration() {
         return 300;
     }
+
+    int getSingleModeToggleDuration() { return 200; }
 
     int getStartupTextDisplayDuration() {
         return 5000;
@@ -101,6 +98,7 @@ public class UXConstants {
     int getStartupTextFadeOutDuration() {
         return 2000;
     }
+    int getThemeTransitionDuration() { return 500;}
 
     // names
     String getFontName() {

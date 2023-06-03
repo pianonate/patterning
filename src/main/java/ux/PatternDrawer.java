@@ -24,14 +24,9 @@ public class PatternDrawer {
     private static final MathContext mc = new MathContext(10);
     private static final BigDecimal BigTWO = new BigDecimal(2);
     private static final Stack<CanvasState> previousStates = new Stack<>();
-    private CellWidth cellWidth;
-
-    private final DrawingInfoSupplier drawingInformer;
-    final float cellBorderWidthRatio = .05F;
-    float cellBorderWidth = 0.0F;
-
     private static final int DEFAULT_CELL_WIDTH = 4;
-
+    final float cellBorderWidthRatio = .05F;
+    private final DrawingInfoSupplier drawingInformer;
     // for all conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
@@ -40,13 +35,13 @@ public class PatternDrawer {
     private final DrawRateManager drawRateManager;
     private final HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
-
     // ain't no way to do drawing without a singleton drawables manager
     private final DrawableManager drawables = DrawableManager.getInstance();
-    private TextPanel countdownText;
-    private TextPanel hudText;
-    UXThemeManager theme = UXThemeManager.getInstance();
 
+    private final KeyFactory keyFactory;
+
+    float cellBorderWidth = 0.0F;
+    UXThemeManager theme = UXThemeManager.getInstance();
     // this is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
     // if we haven't drawn an image, we still want to be able to move and drag
@@ -56,6 +51,10 @@ public class PatternDrawer {
     // it's a nifty way to handle things - just follow lifeFormPosition through the code
     // to see what i'm talking about
     PVector lifeFormPosition = new PVector(0, 0);
+    boolean drawing = false;
+    private CellWidth cellWidth;
+    private TextPanel countdownText;
+    private TextPanel hudText;
     private PGraphics lifeFormBuffer;
     private PGraphics UXBuffer;
     private boolean drawBounds;
@@ -65,12 +64,8 @@ public class PatternDrawer {
     // that calculations can be done without conversions until necessary
     private BigDecimal canvasWidth;
     private BigDecimal canvasHeight;
-
     // used for resize detection
     private int prevWidth, prevHeight;
-
-    boolean drawing = false;
-
 
 
     public PatternDrawer(PApplet pApplet,
@@ -84,8 +79,6 @@ public class PatternDrawer {
         this.lifeFormBuffer = getBuffer();
 
         drawingInformer = new DrawingInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
-
-        PanelTester.makeSomePanels(drawingInformer, false, true);
         // resize trackers
         prevWidth = pApplet.width;
         prevHeight = pApplet.height;
@@ -106,27 +99,40 @@ public class PatternDrawer {
                 .build();
         drawables.add(startupText);
 
+        this.keyFactory = new KeyFactory(patterning, this);
         setupControls();
+    }
+
+    private PGraphics getBuffer() {
+        return processing.createGraphics(processing.width, processing.height);
+    }
+
+    private PGraphics getUXBuffer() {
+        return UXBuffer;
+    }
+
+    private boolean isWindowResized() {
+        return prevWidth != processing.width || prevHeight != processing.height;
+    }
+
+    private boolean isDrawing() {
+        return drawing;
     }
 
     private void setupControls() {
 
         // all callbacks have to invoke work - either on the Patterning or PatternDrawer
         // so give'em what they need
-        KeyFactory keyFactory = new KeyFactory((Patterning) processing, this);
         keyFactory.setupKeyHandler();
-
-        ControlPanel panelLeft, panelTop;
-       int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
-       panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
+        ControlPanel panelLeft, panelTop, panelRight;
+        int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
+        panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
                 .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
                 .setOrientation(Orientation.VERTICAL)
                 .addControl("zoomIn.png", keyFactory.callbackZoomInCenter)
                 .addControl("zoomOut.png", keyFactory.callbackZoomOutCenter)
                 .addControl("fitToScreen.png", keyFactory.callbackFitUniverseOnScreen)
                 .addControl("center.png", keyFactory.callbackCenterView)
-                .addToggleHighlightControl("boundary.png", keyFactory.callbackDisplayBounds)
-                .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
                 .addControl("undo.png", keyFactory.callbackUndoMovement)
                 .build();
 
@@ -136,31 +142,27 @@ public class PatternDrawer {
                 .addControl("random.png", keyFactory.callbackRandomLife)
                 .addControl("stepSlower.png", keyFactory.callbackStepSlower)
                 .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-                .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause)
+                .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause, keyFactory.callbackSingleStep)
                 .addControl("drawFaster.png", keyFactory.callbackDrawFaster)
                 .addControl("stepFaster.png", keyFactory.callbackStepFaster)
                 .addControl("rewind.png", keyFactory.callbackRewind)
                 .build();
 
-        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
+        panelRight = new ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
+                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
+                .setOrientation(Orientation.VERTICAL)
+                .addToggleHighlightControl("boundary.png", keyFactory.callbackDisplayBounds)
+                .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
+                .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
+                .build();
+
+        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop, panelRight);
 
         MouseEventManager.getInstance().addAll(panels);
 
         drawables.addAll(panels);
 
 
-    }
-
-    private boolean isDrawing() {
-        return drawing;
-    }
-
-    private PGraphics getUXBuffer() {
-        return UXBuffer;
-    }
-
-    private PGraphics getBuffer() {
-        return processing.createGraphics(processing.width, processing.height);
     }
 
     public void toggleDrawBounds() {
@@ -196,8 +198,9 @@ public class PatternDrawer {
                 .build();
         drawables.add(countdownText);
 
-        if (null!=hudText) {
+        if (null != hudText) {
             drawables.remove(hudText);
+            System.out.println(String.join("\n", Arrays.toString(Thread.currentThread().getStackTrace()).split(", ")));
         }
 
         hudText = new TextPanel.Builder(drawingInformer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
@@ -255,6 +258,29 @@ public class PatternDrawer {
         previousStates.clear();
     }
 
+    private String getHUDMessage(LifeUniverse life, Bounds bounds) {
+        Node root = life.root;
+
+        hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
+        hudInfo.addOrUpdate("dps", Math.round(drawRateManager.getCurrentDrawRate()));
+        hudInfo.addOrUpdate("cell", getCellWidth());
+        hudInfo.addOrUpdate("running", (patterning.isRunning()) ? "running" : "stopped");
+
+        hudInfo.addOrUpdate("level ", root.level);
+        hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));
+        hudInfo.addOrUpdate("generation", life.generation);
+        hudInfo.addOrUpdate("population", root.population);
+        hudInfo.addOrUpdate("maxLoad", life.maxLoad);
+        hudInfo.addOrUpdate("lastID", life.lastId);
+
+        hudInfo.addOrUpdate("width", bounds.right.subtract(bounds.left));
+        hudInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top));
+
+        UXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
+        // use the default delimiter
+        return hudInfo.getFormattedString(processing.frameCount, 12);
+    }
+
     // called when moves are invoked as there is some trickery in the move handler to move
     // multiple times on key presses and even more so as they are held down
     // we just want to go back to the first one...
@@ -262,17 +288,18 @@ public class PatternDrawer {
         previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
     }
 
+    public float getCellWidth() {
+        return cellWidth.get();
+    }
+
     public void handlePause() {
 
         if (drawables.isManaging(countdownText)) {
             countdownText.interruptCountdown();
+            keyFactory.callbackPause.notifyKeyObservers();
         } else {
             patterning.toggleRun();
         }
-    }
-
-    private boolean isWindowResized() {
-        return prevWidth != processing.width || prevHeight != processing.height;
     }
 
     private void updateWindowResized() {
@@ -304,18 +331,18 @@ public class PatternDrawer {
 
     }
 
-    public float getCellWidth() {
-        return cellWidth.get();
-    }
-
-    @SuppressWarnings("SuspiciousNameCombination")
     private void fillSquare(float x, float y, float size) {
 
+
         float width = size - cellBorderWidth;
+
+        UXBuffer.pushStyle();
+        lifeFormBuffer.fill(theme.getCellColor());
         lifeFormBuffer.noStroke();
         lifeFormBuffer.rect(x, y, width, width);
+        UXBuffer.popStyle();
 
-        // todo, create a keyboard handler to display these values
+/*        // todo, create a keyboard handler to display these values
         //       or a mouse mode - it can be useful when debugging positioning information
         // you'll be glad you did
         if (false) {
@@ -329,7 +356,7 @@ public class PatternDrawer {
 
             int nextPos = (int) x + (int) size;
             lifeFormBuffer.text("next: " + nextPos, x, y + 36, width, width);
-        }
+        }*/
 
     }
 
@@ -356,13 +383,11 @@ public class PatternDrawer {
         // draw a unit square and be done
         if (size.compareTo(BigDecimal.ONE) <= 0) {
             if (node.population.compareTo(BigInteger.ZERO) > 0) {
-                lifeFormBuffer.fill(theme.getCellColor());
                 fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
                         1);
             }
         } else if (node.level == 0) {
             if (node.population.equals(BigInteger.ONE)) {
-                lifeFormBuffer.fill(theme.getCellColor());
                 fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
                         cellWidth.get());
             }
@@ -456,9 +481,9 @@ public class PatternDrawer {
         lifeFormBuffer.popStyle();
     }
 
-
     public void draw(LifeUniverse life, boolean shouldDraw) {
 
+        // lambdas are interested in this fact
         drawing = true;
 
         boolean resized = isWindowResized();
@@ -467,15 +492,12 @@ public class PatternDrawer {
         prevHeight = processing.height;
         processing.background(theme.getBackGroundColor());
 
-
-
         if (resized) {
             processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
             processing.image(UXBuffer, 0, 0);
             updateWindowResized();
             return;
         }
-
 
         UXBuffer.beginDraw();
         UXBuffer.clear();
@@ -508,34 +530,10 @@ public class PatternDrawer {
             lifeFormPosition.set(0, 0);
         }
 
-
         processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
         processing.image(UXBuffer, 0, 0);
 
         drawing = false;
-    }
-
-    private String getHUDMessage(LifeUniverse life, Bounds bounds) {
-        Node root = life.root;
-
-        hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
-        hudInfo.addOrUpdate("dps", Math.round(drawRateManager.getCurrentDrawRate()));
-        hudInfo.addOrUpdate("cell", getCellWidth());
-        hudInfo.addOrUpdate("running", (patterning.isRunning()) ? "running" : "stopped");
-
-        hudInfo.addOrUpdate("level ", root.level);
-        hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));
-        hudInfo.addOrUpdate("generation", life.generation);
-        hudInfo.addOrUpdate("population", root.population);
-        hudInfo.addOrUpdate("maxLoad", life.maxLoad);
-        hudInfo.addOrUpdate("lastID", life.lastId);
-
-        hudInfo.addOrUpdate("width", bounds.right.subtract(bounds.left));
-        hudInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top));
-
-        UXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
-        // use the default delimiter
-        return hudInfo.getFormattedString(processing.frameCount, 12);
     }
 
     // the cell width times 2 ^ level will give you the size of the whole universe

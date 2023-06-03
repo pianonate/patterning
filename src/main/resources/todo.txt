@@ -1,6 +1,3 @@
-todo: lerp changes in dark mode
-
-todo: slow down immediately to 1 frame per keypress / button press
 todo: keep drawing while moving with the arrow keys if you can
 
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels

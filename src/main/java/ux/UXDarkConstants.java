@@ -6,15 +6,12 @@ public class UXDarkConstants extends UXConstants {
         int getBackgroundColor() {
                 return 0;
         }
-
         int getCellColor() {
-                return 255;
+                return 0xFFFFFFFF;
         }
-
         int getTextColorStart() {
                 return 0xFF000000;
         }
-
         int getTextColor() {
                 return 0xFFFFFFFF;
         }

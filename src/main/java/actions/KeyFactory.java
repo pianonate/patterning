@@ -27,14 +27,16 @@ public class KeyFactory {
     private static final char SHORTCUT_UNDO = 'z';
     private static final char SHORTCUT_ZOOM_CENTERED = 'z';
     private static final char SHORTCUT_DRAW_SPEED = 's';
+    private static final char SHORTCUT_THEME_TOGGLE = 'd';
+    private static final char SHORTCUT_SINGLE_STEP = 't';
     private final Patterning patterning;
     private final PApplet processing;
-
     private final PatternDrawer drawer;
 
     public KeyFactory(Patterning patterning, PatternDrawer drawer) {
-        this.patterning = patterning;
+        // we pass processing along so KeyHandler can register all of these beasties against it
         this.processing = patterning;
+        this.patterning = patterning;
         this.drawer = drawer;
     }
 
@@ -54,6 +56,7 @@ public class KeyFactory {
             .addKeyCallback(callbackFitUniverseOnScreen)
             .addKeyCallback(callbackThemeToggle)
             .addKeyCallback(callbackRandomLife)
+            .addKeyCallback(callbackSingleStep)
             .addKeyCallback(callbackRewind)
             .addKeyCallback(callbackPaste)
             .addKeyCallback(callbackUndoMovement)
@@ -101,16 +104,7 @@ public class KeyFactory {
     ) {
         @Override
         public void invokeFeature() {
-            DrawRateManager drawRateManager = DrawRateManager.getInstance();
-            float current = drawRateManager.getCurrentDrawRate();
-
-            float slowdownBy;
-            if (current > 10) slowdownBy = 5;
-            else if (current > 5) slowdownBy = 2;
-            else if (current > 1) slowdownBy = 1;
-            else slowdownBy = .1F;
-
-            drawRateManager.updateTargetDrawRate(current - slowdownBy);
+            DrawRateManager.getInstance().goSlower();
         }
 
         @Override
@@ -121,9 +115,8 @@ public class KeyFactory {
     public final KeyCallback callbackDrawFaster = new KeyCallback(SHORTCUT_DRAW_SPEED) {
         @Override
         public void invokeFeature() {
-            DrawRateManager drawRateManager = DrawRateManager.getInstance();
-            float current = drawRateManager.getCurrentDrawRate();
-            drawRateManager.updateTargetDrawRate((int) current + 5);
+            DrawRateManager.getInstance().goFaster();
+
         }
 
         @Override
@@ -250,6 +243,7 @@ public class KeyFactory {
             return "draw a border around the part of the universe containing living cells";
         }
     };
+
     public final KeyCallback callbackCenterView = new KeyCallback(SHORTCUT_CENTER) {
         @Override
         public void invokeFeature() {
@@ -292,14 +286,14 @@ public class KeyFactory {
         }
     };
 
-    public final KeyCallback callbackThemeToggle = new KeyCallback('d') {
+    public final KeyCallback callbackThemeToggle = new KeyCallback(SHORTCUT_THEME_TOGGLE) {
         private boolean toggled = true;
         @Override
         public void invokeFeature() {
             if (toggled)
-                UXThemeManager.getInstance().setTheme(UXThemeType.DEFAULT);
+                UXThemeManager.getInstance().setTheme(UXThemeType.DEFAULT, processing);
             else
-                UXThemeManager.getInstance().setTheme(UXThemeType.DARK);
+                UXThemeManager.getInstance().setTheme(UXThemeType.DARK, processing);
 
             toggled = !toggled;
         }
@@ -351,6 +345,21 @@ public class KeyFactory {
         @Override
         public String getUsageText() {
             return "use arrow keys to move the image around. hold down two keys to move diagonally";
+        }
+    };
+
+    public final KeyCallback callbackSingleStep = new KeyCallback(SHORTCUT_SINGLE_STEP) {
+        @Override
+        public void invokeFeature() {
+            patterning.toggleSingleStep();
+        }
+
+        @Override
+        public boolean invokeModeChange() {return true;}
+
+        @Override
+        public String getUsageText() {
+            return "in single step mode, advanced one frame at a time";
         }
     };
 }

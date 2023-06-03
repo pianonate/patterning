@@ -282,7 +282,7 @@ public class TextPanel extends Panel implements Drawable {
         // Get the colors every time in case the UX theme changes
         int outlineColor = theme.getTextColorStart(); // black
         // Interpolate between "black" 0xff000000 and "white" (0xffffffff)
-        // fade values goes from 0 to 255 to make this happen
+        // fade value goes from 0 to 255 to make this happen
         int currentColor = panelBuffer.lerpColor(outlineColor, theme.getTextColor(), fadeValue / 255.0F);
 
         // Draw black text slightly offset in each direction to create an outline effect

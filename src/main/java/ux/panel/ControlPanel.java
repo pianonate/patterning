@@ -49,11 +49,12 @@ public class ControlPanel extends ContainerPanel{
             return this;
         }
 
-        public Builder addToggleIconControl(String iconName, String toggledIconName, KeyCallback callback ) {
+        public Builder addToggleIconControl(String iconName, String toggledIconName, KeyCallback callback, KeyCallback modeChangeCallback) {
 
             Control c = new ToggleIconControl.Builder(
                     this.drawingInformer,
                     callback,
+                    modeChangeCallback,
                     iconName,
                     toggledIconName,
                     UXThemeManager.getInstance().getControlSize()

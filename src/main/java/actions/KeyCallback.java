@@ -49,11 +49,14 @@ public abstract class KeyCallback implements KeyObservable {
         keyObservers.add(o);
     }
 
+
     public void notifyKeyObservers() {
         for (KeyObserver keyObserver : keyObservers) {
             keyObserver.notifyKeyPress(this);
         }
     }
+
+    public boolean invokeModeChange() {return false;}
 
     public void deleteObserver(KeyObserver o) {
         keyObservers.remove(o);
