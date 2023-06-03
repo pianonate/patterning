@@ -32,7 +32,7 @@ public class TextPanel extends Panel implements Drawable {
     private final OptionalInt countdownFrom;
     private final Runnable runMethod;
     private final String initialMessage;
-    private final boolean keepKeyboardShortcutTogether;
+    private final boolean keepShortCutTogether;
     private long transitionTime;
     private int fadeValue;
     // the message
@@ -51,7 +51,7 @@ public class TextPanel extends Panel implements Drawable {
         this.lastMessage = builder.message;
 
         // just for keyboard shortcuts for now
-        this.keepKeyboardShortcutTogether = builder.keepKeyboardShortcutTogether;
+        this.keepShortCutTogether = builder.keepShortCutTogether;
         this.outline = builder.outline;
 
         this.textSize = builder.textSize;
@@ -202,7 +202,7 @@ public class TextPanel extends Panel implements Drawable {
                 line = new StringBuilder();
             }
 
-            if (keepKeyboardShortcutTogether) {
+            if (keepShortCutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
                 if (words.size() == 2 && buffer.textWidth(line + words.get(0) + " " + words.get(1)) > textWidthValue.getAsInt()) {
                     // Add the current line to the lines list
@@ -367,7 +367,7 @@ public class TextPanel extends Panel implements Drawable {
         private Optional<IntSupplier> textWidthSupplier = Optional.empty();
 
         private Runnable runMethod;
-        private boolean keepKeyboardShortcutTogether = false;
+        private boolean keepShortCutTogether = false;
 
         public Builder(DrawingInfoSupplier informer, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
             super(informer, alignHorizontal, vAlign);
@@ -402,14 +402,14 @@ public class TextPanel extends Panel implements Drawable {
         public Builder textWidth(int textWidth) {
             this.textWidth = OptionalInt.of(textWidth);
             if (textWidthSupplier.isPresent())
-                throw new IllegalStateException("Cannot set both wordWrapWidth and wordWrapWidthSupplier");
+                throw new IllegalStateException("Cannot set both textWidth and textWidth");
             return this;
         }
 
         public Builder textWidth(Optional<IntSupplier> textWidth) {
             textWidthSupplier = textWidth;
             if (this.textWidth.isPresent())
-                throw new IllegalStateException("Cannot set both wordWrapWidth and wordWrapWidthSupplier");
+                throw new IllegalStateException("Cannot set both textWidth and textWidth");
             return this;
         }
 
@@ -419,7 +419,7 @@ public class TextPanel extends Panel implements Drawable {
         }
 
         public Builder keepShortCutTogether() {
-            this.keepKeyboardShortcutTogether = true;
+            this.keepShortCutTogether = true;
             return this;
         }
 

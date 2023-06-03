@@ -20,13 +20,23 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
-public class ResourceLoader {
+public class ResourceManager {
 
-    private ResourceLoader() {
+    public static String RLE_DIRECTORY = "rle";
 
+    private static ResourceManager instance;
+
+    private ResourceManager() {}
+
+    public static ResourceManager getInstance() {
+        if (instance == null) {
+            instance = new ResourceManager();
+        }
+        return instance;
     }
 
-    public static String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
+
+    public String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
         List<String> files = getResourceFilePaths(directoryName);
         if (files.isEmpty()) {
             throw new IOException("No files found in directory: " + directoryName);
@@ -36,7 +46,7 @@ public class ResourceLoader {
     }
 
 
-    private static List<String> getResourceFilePaths(String directoryName) throws IOException, URISyntaxException {
+    private List<String> getResourceFilePaths(String directoryName) throws IOException, URISyntaxException {
         URL url = getClassLoader().getResource(directoryName);
         if (url == null) {
             throw new IOException("Directory not found: " + directoryName);
@@ -49,7 +59,7 @@ public class ResourceLoader {
         };
     }
 
-    private static List<String> getResourceFilePathsFromJar(URL url, String directoryName) throws IOException {
+    private List<String> getResourceFilePathsFromJar(URL url, String directoryName) throws IOException {
         String dirPath = url.getPath();
         String jarPath = dirPath.substring(5, dirPath.indexOf("!")); // strip out only the JAR file
         List<String> filenames = new ArrayList<>();
@@ -71,7 +81,7 @@ public class ResourceLoader {
         return filenames;
     }
 
-    private static List<String> getResourceFilePathsFromFileSystem(URL url, String directoryName) throws IOException, URISyntaxException {
+    private List<String> getResourceFilePathsFromFileSystem(URL url, String directoryName) throws IOException, URISyntaxException {
         Path dirPath = Paths.get(url.toURI());
         List<String> filenames = new ArrayList<>();
 
@@ -86,7 +96,7 @@ public class ResourceLoader {
         return filenames;
     }
 
-    private static String getResourceAsString(String resourceName) throws IOException {
+    private String getResourceAsString(String resourceName) throws IOException {
         try (InputStream is = getClassLoader().getResourceAsStream(resourceName)) {
             if (is == null) {
                 throw new IOException("Resource not found: " + resourceName);
@@ -97,7 +107,19 @@ public class ResourceLoader {
         }
     }
 
-    private static ClassLoader getClassLoader() {
-        return ResourceLoader.class.getClassLoader();
+    private ClassLoader getClassLoader() {
+        return ResourceManager.class.getClassLoader();
+    }
+
+    public String getResourceAtFileIndexAsString(String directoryName, int number) throws IOException, URISyntaxException {
+        List<String> files = getResourceFilePaths(directoryName);
+        if (files.isEmpty()) {
+            throw new IOException("No files found in directory: " + directoryName);
+        }
+        if (files.size() < number){
+            number = files.size();
+        }
+
+        return getResourceAsString(files.get(number -1));
     }
 }

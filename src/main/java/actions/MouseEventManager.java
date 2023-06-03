@@ -8,7 +8,6 @@ import java.util.List;
 
 public class MouseEventManager {
     private static MouseEventManager instance;
-    private final List<MouseEventReceiver> mouseEventReceivers = new ArrayList<>();
 
     private MouseEventManager() {}
 
@@ -18,6 +17,8 @@ public class MouseEventManager {
         }
         return instance;
     }
+
+    private final List<MouseEventReceiver> mouseEventReceivers = new ArrayList<>();
 
     public void addReceiver(MouseEventReceiver receiver) {
         mouseEventReceivers.add(receiver);

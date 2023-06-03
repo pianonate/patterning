@@ -36,9 +36,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
 
         this.icon = loadIcon(iconName); // panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
 
-        String keyCombos = callback.getValidKeyCombosForCurrentOS().stream()
-                .map(KeyCombo::toString)
-                .collect(Collectors.joining(", "));
+        String keyCombos = callback.toString();
 
         hoverMessage = callback.getUsageText() +theme.getShortcutParenStart() + keyCombos + theme.getShortcutParenEnd();
 
@@ -105,18 +103,33 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         int margin = theme.getHoverTextMargin();
         int hoverTextWidth = theme.getHoverTextWidth();
 
-        int hoverX = 0, hoverY = 0;
+        int hoverX = (int) parentPanel.position.x;
+        int hoverY = (int) parentPanel.position.y;
+
         Transition.TransitionDirection transitionDirection = null;
 
-        switch (parentPanel.hAlign) {
-            case LEFT -> {
-                hoverX = (int) parentPanel.position.x + size + margin;
-                hoverY = (int) (parentPanel.position.y + position.y);
-                transitionDirection = Transition.TransitionDirection.RIGHT;
+        Orientation orientation = ((ControlPanel)parentPanel).orientation;
+
+        switch (orientation) {
+            case VERTICAL -> {
+                switch(parentPanel.hAlign) {
+
+                    case LEFT, CENTER -> {
+                        hoverX += size + margin;
+                        hoverY += position.y;
+                        transitionDirection = Transition.TransitionDirection.RIGHT;
+                    }
+                    case RIGHT -> {
+                        hoverX = hoverX - margin - hoverTextWidth;
+                        hoverY += position.y;
+                        transitionDirection = Transition.TransitionDirection.LEFT;
+                    }
+                }
             }
-            case CENTER -> {
-                hoverX = (int) (parentPanel.position.x + position.x);
-                switch (parentPanel.vAlign) {
+            case HORIZONTAL -> {
+                hoverX += position.x;
+
+                switch(parentPanel.vAlign) {
                     case TOP, CENTER -> {
                         hoverY = (int) parentPanel.position.y + size + margin;
                         transitionDirection = Transition.TransitionDirection.DOWN;
@@ -126,11 +139,6 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
                         transitionDirection = Transition.TransitionDirection.UP;
                     }
                 }
-            }
-            case RIGHT -> {
-                hoverX = (int) parentPanel.position.x - margin - hoverTextWidth;
-                hoverY = (int) (parentPanel.position.y + position.y);
-                transitionDirection = Transition.TransitionDirection.LEFT;
             }
         }
 
@@ -142,16 +150,42 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         // instead we pass the hover text the parent ContainerPanel's DrawingInfoSupplier which comes from
         // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
         // would try to draw itself within the control at a microscopic size
-        return new TextPanel.Builder(parentPanel.drawingInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
+        TextPanel hoverText = new TextPanel.Builder(parentPanel.drawingInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
                 .fill(theme.getControlHighlightColor())
+                .radius(theme.getControlHighlightCornerRadius())
                 .textSize(theme.getHoverTextSize())
                 .textWidth(hoverTextWidth)
                 .wrap()
-                .keepShortCutTogether()
+                .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
                 .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
-                .radius(theme.getControlHighlightCornerRadius())
                 .outline(false)
                 .build();
+
+        // hover text is word wrapped and sized to fit
+        // we pass in the max and set up the position to display
+        // for RIGHT aligned VERTICAL control panels, we need to change the x position to make it appear
+        // next to the control.  Not a problem for TOP, LEFT, BOTTOM controls
+        // we could put this logic into TextPanel so that it adjusts
+        // its own x position based on the alignment of this control but that would clutter TextPanel
+        //
+        // maybe a generic capability of aligning controls to each other
+        // could be added in the future if it becomes a common need -for now, we just do it here
+        if (orientation==Orientation.VERTICAL && parentPanel.hAlign == AlignHorizontal.RIGHT) {
+            hoverText.position.x += (hoverTextWidth - hoverText.width);
+        }
+
+        // similar treatment for HORIZONTAL aligned BOTTOM control panels
+        if (orientation==Orientation.HORIZONTAL && parentPanel.vAlign==AlignVertical.BOTTOM) {
+            hoverText.position.y -= (hoverText.height);
+        }
+
+        // if the text won't display, make it possible to display
+        int screenWidth = parentPanel.drawingInformer.getPGraphics().width;
+        if (hoverText.position.x + hoverText.width > screenWidth) {
+            hoverText.position.x = screenWidth - hoverText.width;
+        }
+
+        return hoverText;
     }
 
 

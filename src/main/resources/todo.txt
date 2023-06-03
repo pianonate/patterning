@@ -1,5 +1,4 @@
-todo: make a KeyCallbackBuilder to make it easier to read the creation of these beasts
-        also make KeyHandler use Builder so that intellij doesn't think you have duplicated code
+todo: lerp changes in dark mode
 
 todo: slow down immediately to 1 frame per keypress / button press
 todo: keep drawing while moving with the arrow keys if you can

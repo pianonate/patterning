@@ -1,15 +1,10 @@
 package patterning;
 
-import actions.*;
+import actions.MouseEventManager;
 import processing.core.PApplet;
 import processing.data.JSONObject;
-import processing.event.KeyEvent;
 import ux.DrawRateManager;
 import ux.PatternDrawer;
-import ux.UXThemeManager;
-import ux.UXThemeType;
-import ux.informer.DrawingInfoSupplier;
-import ux.panel.*;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -18,338 +13,39 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class Patterning extends PApplet {
-    private static final char SHORTCUT_CENTER = 'c';
-    private static final char SHORTCUT_DISPLAY_BOUNDS = 'b';
-    private static final char SHORTCUT_FIT_UNIVERSE = 'f';
-    private static final char SHORTCUT_PASTE = 'v';
-    private static final char SHORTCUT_PAUSE = ' ';
-    private static final char SHORTCUT_RANDOM_FILE = 'r';
-    private static final char SHORTCUT_REWIND = 'r'; // because this one is paired with Command
-    private static final char SHORTCUT_STEP_FASTER = ']';
-    private static final char SHORTCUT_STEP_SLOWER = '[';
-    private static final char SHORTCUT_ZOOM_IN = '=';
-    private static final char SHORTCUT_ZOOM_OUT = '-';
-    private static final char SHORTCUT_UNDO = 'z';
-    private static final char SHORTCUT_ZOOM_CENTERED = 'z';
     private static final String PROPERTY_FILE_NAME = "patterning_autosave.json";
-    private static final char SHORTCUT_DRAW_FASTER = 's';
-    private static boolean running;
-    private static LifeUniverse life;
-    private static PApplet processing;
+    public boolean draggingDrawing = false;
+    private LifeUniverse life;
     private DrawRateManager drawRateManager;
-    private final KeyCallback callbackDrawSlower = new KeyCallback(
-            new KeyCombo(SHORTCUT_DRAW_FASTER, KeyEvent.SHIFT)
-    ) {
-        @Override
-        public void invokeFeature() {
-            float current = drawRateManager.getCurrentDrawRate();
-
-            float slowdownBy;
-            if (current > 10) slowdownBy = 5;
-            else if (current > 5) slowdownBy = 2;
-            else if (current > 1) slowdownBy = 1;
-            else slowdownBy = .1F;
-
-            drawRateManager.updateTargetDrawRate(current - slowdownBy);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "slow the animation down";
-        }
-    };
-    private final KeyCallback callbackDrawFaster = new KeyCallback(SHORTCUT_DRAW_FASTER) {
-        @Override
-        public void invokeFeature() {
-
-            float current = drawRateManager.getCurrentDrawRate();
-            drawRateManager.updateTargetDrawRate((int) current + 5);
-
-        }
-
-        @Override
-        public String getUsageText() {
-            return "speed the animation up";
-        }
-    };
     private ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
     private ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
     private PatternDrawer drawer;
-    private final KeyCallback callbackMovement = new KeyCallback(Stream.of(PApplet.LEFT, PApplet.RIGHT, PApplet.UP, PApplet.DOWN)
-            .map(KeyCombo::new)
-            .toArray(KeyCombo[]::new)) {
-        private boolean pressed = false;
-
-        @Override
-        public void invokeFeature() {
-            if (!pressed) {
-                pressed = true;
-                // we only want to save the undo state for key presses when we start them
-                // no need to save again until they're all released
-                drawer.saveUndoState();
-            }
-        }
-
-        @Override
-        public void cleanupFeature() {
-            if (KeyHandler.getPressedKeys().size() == 0) {
-                pressed = false;
-            }
-        }
-
-        @Override
-        public String getUsageText() {
-            return "use arrow keys to move the image around. hold down two keys to move diagonally";
-        }
-    };
-    private final KeyCallback callbackZoomIn = new KeyCallback(
-            new KeyCombo(SHORTCUT_ZOOM_IN),
-            new KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)
-    ) {
-        @Override
-        public void invokeFeature() {
-            drawer.zoomXY(true, mouseX, mouseY);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "zoom in centered on the mouse";
-        }
-    };
-    private final KeyCallback callbackZoomInCenter = new KeyCallback(SHORTCUT_ZOOM_CENTERED) {
-        @Override
-        public void invokeFeature() {
-            drawer.zoomXY(true, (float) width / 2, (float) height / 2);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "zoom in centered on the middle of the screen";
-        }
-    };
-    private final KeyCallback callbackZoomOutCenter = new KeyCallback(
-            new KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)
-    ) {
-        @Override
-        public void invokeFeature() {
-            drawer.zoomXY(false, (float) width / 2, (float) height / 2);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "zoom out centered on the middle of the screen";
-        }
-    };
-    private final KeyCallback callbackZoomOut = new KeyCallback(SHORTCUT_ZOOM_OUT) {
-        @Override
-        public void invokeFeature() {
-            drawer.zoomXY(false, mouseX, mouseY);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "zoom out centered on the mouse";
-        }
-    };
-    private final KeyCallback callbackDisplayBounds = new KeyCallback(SHORTCUT_DISPLAY_BOUNDS) {
-        @Override
-        public void invokeFeature() {
-            drawer.toggleDrawBounds();
-        }
-
-        @Override
-        public String getUsageText() {
-            return "draw a border around the part of the universe containing living cells";
-        }
-    };
-    private final KeyCallback callbackCenterView = new KeyCallback(SHORTCUT_CENTER) {
-        @Override
-        public void invokeFeature() {
-            drawer.center(life.getRootBounds(), false, true);
-        }
-
-        @SuppressWarnings("SameReturnValue")
-        @Override
-        public String getUsageText() {
-            return "center the view on the universe - regardless of its size";
-        }
-    };
-    private final KeyCallback callbackUndoMovement = new KeyCallback(
-            new KeyCombo(SHORTCUT_UNDO, KeyEvent.META, ValidOS.MAC),
-            new KeyCombo(SHORTCUT_UNDO, KeyEvent.CTRL, ValidOS.NON_MAC)
-    ) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-            drawer.undoMovement();
-        }
-
-        @SuppressWarnings("unused")
-        @Override
-        public String getUsageText() {
-            return "undo various movement actions such as centering or fitting to screen";
-        }
-    };
-    private final KeyCallback callbackFitUniverseOnScreen = new KeyCallback(SHORTCUT_FIT_UNIVERSE) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-            fitUniverseOnScreen();
-        }
-
-        @SuppressWarnings("unused")
-        @Override
-        public String getUsageText() {
-            return "fit the visible universe on screen";
-        }
-    };
-    private final KeyCallback callbackPause = new KeyCallback(SHORTCUT_PAUSE) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-            // the encapsulation is messy to ask the drawer to stop displaying countdown text
-            // and just continue running, or toggle the running state...
-            // but CountdownText already reaches back to patterning.Patterning.run()
-            // so there aren't that many complex paths to deal with here...
-            drawer.handlePause();
-        }
-
-        @SuppressWarnings("unused")
-        @Override
-        public String getUsageText() {
-            return "pause and play";
-        }
-    };
     // used to control dragging the image around the screen with the mouse
     private float last_mouse_x;
     private float last_mouse_y;
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
-    private boolean mousePressedOverReceiver = false;
     private String storedLife;
     private int targetStep;
-    private final KeyCallback callbackStepFaster = new KeyCallback(SHORTCUT_STEP_FASTER) {
-        @Override
-        public void invokeFeature() {
-            handleStep(true);
-        }
-
-
-        @Override
-        public String getUsageText() {
-            return "double the generations per draw";
-        }
-
-    };
-    private final KeyCallback callbackStepSlower = new KeyCallback(SHORTCUT_STEP_SLOWER) {
-
-        @Override
-        public void invokeFeature() {
-            handleStep(false);
-        }
-
-        @Override
-        public String getUsageText() {
-            return "cut in half the generations per draw";
-        }
-
-    };
-    private final KeyCallback callbackRewind = new KeyCallback(
-            new KeyCombo(SHORTCUT_REWIND, KeyEvent.META, ValidOS.MAC),
-            new KeyCombo(SHORTCUT_REWIND, KeyEvent.CTRL, ValidOS.NON_MAC)
-    ) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-            destroyAndCreate(false);
-        }
-
-        @SuppressWarnings("unused")
-        @Override
-        public String getUsageText() {
-            return "rewind the current life form back to generation 0";
-        }
-    };
-    private final KeyCallback callbackRandomLife = new KeyCallback(SHORTCUT_RANDOM_FILE) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-
-            destroyAndCreate(true);
-
-        }
-
-        @Override
-        public String getUsageText() {
-            return "get a random life form from the built-in library";
-        }
-    };
-
-    private final KeyCallback callbackThemeToggle = new KeyCallback('d') {
-        private boolean toggled = true;
-        @Override
-        public void invokeFeature() {
-            if (toggled)
-                UXThemeManager.getInstance().setTheme(UXThemeType.DEFAULT);
-            else
-                UXThemeManager.getInstance().setTheme(UXThemeType.DARK);
-
-            toggled = !toggled;
-        }
-
-        @Override
-        public String getUsageText() {
-            return "toggle between dark and light themes";
-        }
-    };
-
-
-
-    private final KeyCallback callbackPaste = new KeyCallback(
-            new KeyCombo(SHORTCUT_PASTE, KeyEvent.META, ValidOS.MAC),
-            new KeyCombo(SHORTCUT_PASTE, KeyEvent.CTRL, ValidOS.NON_MAC)
-
-    ) {
-        @SuppressWarnings("unused")
-        @Override
-        public void invokeFeature() {
-            pasteLifeForm();
-        }
-
-        @SuppressWarnings("unused")
-        @Override
-        public String getUsageText() {
-            return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms";
-        }
-    };
-
-    public static boolean isRunning() {
-        return running;
-    }
-
-    public static void toggleRun() {
-        running = !running;
-    }
-
-    public static void run() {
-        running = true;
-    }
-
-    public static LifeUniverse getLifeUniverse() {
-        return life;
-    }
-
-    public static PApplet getProcessing() {
-        return processing;
-    }
+    private boolean running;
+    private boolean mousePressedOverReceiver = false;
 
     public static void main(String[] args) {
         PApplet.main("patterning.Patterning");
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    public void toggleRun() {
+        running = !running;
+    }
+
+    public void run() {
+        running = true;
     }
 
     public void settings() {
@@ -371,30 +67,14 @@ public class Patterning extends PApplet {
             this.storedLife = properties.getString("lifeForm", "");
         }
 
-        if (null == this.storedLife || this.storedLife.isEmpty()) {
-            getRandomLifeform();
-        }
-
         // Set the window size
         size(width, height);
 
     }
 
-    private void getRandomLifeform() {
-        // todo: do you need to instantiate every time?  maybe that's fine...
-        try {
-            this.storedLife = ResourceLoader.getRandomResourceAsString("rle");
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void setup() {
 
         surface.setResizable(true);
-
-
-        setupKeyHandler();
 
         frameRate(DrawRateManager.MAX_FRAME_RATE);
 
@@ -410,12 +90,17 @@ public class Patterning extends PApplet {
             return null;
         });
 
-
         loadSavedWindowPositions();
 
         this.drawRateManager = DrawRateManager.getInstance();
 
-        this.drawer = new PatternDrawer(this, drawRateManager, this::getControlPanels);
+        this.drawer = new PatternDrawer(this, drawRateManager);
+
+        // on startup, storedLife may be loaded from the properties file but if it's not
+        // just get a random one
+        if (null == this.storedLife || this.storedLife.isEmpty()) {
+            getRandomLifeform(false);
+        }
 
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
@@ -424,8 +109,6 @@ public class Patterning extends PApplet {
     }
 
     public void draw() {
-
-        if (null == processing) processing = this;
 
         // we want independent control over how often we update and display
         // the next generation of drawing
@@ -446,7 +129,7 @@ public class Patterning extends PApplet {
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
 
         //long start = System.nanoTime();
-        drawer.draw(shouldDrawLifeForm);
+        drawer.draw(life, shouldDrawLifeForm);
         //long end = System.nanoTime();
 
 
@@ -498,9 +181,6 @@ public class Patterning extends PApplet {
         return lifeIsThreadSafe();
     }
 
-    public boolean draggingDrawing = false;
-
-
     public void mousePressed() {
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
@@ -534,13 +214,6 @@ public class Patterning extends PApplet {
             last_mouse_x += dx;
             last_mouse_y += dy;
         }
-    }
-
-
-    // possibly this will help when returning from screensaver
-    // which had a problem that one time
-    public void focusGained() {
-        redraw();
     }
 
     // Override the exit() method to save window properties before closing
@@ -581,66 +254,6 @@ public class Patterning extends PApplet {
         properties.setString("lifeForm", storedLife);
 
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME));
-    }
-
-    private void setupKeyHandler() {
-        KeyHandler keyHandler = new KeyHandler.Builder(this)
-                .addKeyCallback(callbackPause)
-                .addKeyCallback(callbackZoomIn)
-                .addKeyCallback(callbackZoomInCenter)
-                .addKeyCallback(callbackZoomOut)
-                .addKeyCallback(callbackZoomOutCenter)
-                .addKeyCallback(callbackStepFaster)
-                .addKeyCallback(callbackStepSlower)
-                .addKeyCallback(callbackDrawFaster)
-                .addKeyCallback(callbackDrawSlower)
-                .addKeyCallback(callbackDisplayBounds)
-                .addKeyCallback(callbackCenterView)
-                .addKeyCallback(callbackFitUniverseOnScreen)
-                .addKeyCallback(callbackThemeToggle)
-                .addKeyCallback(callbackRandomLife)
-                .addKeyCallback(callbackRewind)
-                .addKeyCallback(callbackPaste)
-                .addKeyCallback(callbackUndoMovement)
-                .addKeyCallback(callbackMovement)
-                .build();
-
-        System.out.println(keyHandler.getUsageText());
-    }
-
-    private List<ControlPanel> getControlPanels(DrawingInfoSupplier drawingInformer) {
-        ControlPanel panelLeft, panelTop;
-        int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
-        panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
-                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
-                .setOrientation(Orientation.VERTICAL)
-                .addControl("zoomIn.png", callbackZoomInCenter)
-                .addControl("zoomOut.png", callbackZoomOutCenter)
-                .addControl("fitToScreen.png", callbackFitUniverseOnScreen)
-                .addControl("center.png", callbackCenterView)
-                .addToggleHighlightControl("boundary.png", callbackDisplayBounds)
-                .addToggleHighlightControl("darkmode.png", callbackThemeToggle)
-                .addControl("undo.png", callbackUndoMovement)
-                .build();
-
-        panelTop = new ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
-                .transition(Transition.TransitionDirection.UP, Transition.TransitionType.SLIDE, transitionDuration)
-                .setOrientation(Orientation.HORIZONTAL)
-                .addControl("random.png", callbackRandomLife)
-                .addControl("stepSlower.png", callbackStepSlower)
-                .addControl("drawSlower.png", callbackDrawSlower)
-                .addToggleIconControl("pause.png", "play.png", callbackPause)
-                .addControl("drawFaster.png", callbackDrawFaster)
-                .addControl("stepFaster.png", callbackStepFaster)
-                .addControl("rewind.png", callbackRewind)
-                .build();
-
-        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
-
-        MouseEventManager.getInstance().addAll(panels);
-
-        return panels;
-
     }
 
     private void performComplexCalculationSetStep(Integer step) {
@@ -685,6 +298,18 @@ public class Patterning extends PApplet {
 
     }
 
+    public void getRandomLifeform(boolean reset) {
+
+        try {
+            this.storedLife = ResourceManager.getInstance().getRandomResourceAsString(ResourceManager.RLE_DIRECTORY);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (reset)
+            destroyAndCreate();
+    }
+
     private void instantiateLifeform() {
 
         try {
@@ -725,6 +350,19 @@ public class Patterning extends PApplet {
         return (Frame) comp;
     }
 
+    // either bring us back to the start on the current life form
+    // or get a random one from the well...
+    public void destroyAndCreate() {
+
+        ComplexCalculationHandler.lock();
+        try {
+
+            instantiateLifeform();
+
+        } finally {
+            ComplexCalculationHandler.unlock();
+        }
+    }
 
     public void pasteLifeForm() {
 
@@ -742,7 +380,7 @@ public class Patterning extends PApplet {
         }
     }
 
-    private void handleStep(boolean faster) {
+    public void handleStep(boolean faster) {
 
         int increment = (faster) ? 1 : -1;
 
@@ -751,26 +389,41 @@ public class Patterning extends PApplet {
         this.targetStep += increment;
     }
 
-    private void fitUniverseOnScreen() {
+    public void fitUniverseOnScreen() {
         drawer.center(life.getRootBounds(), true, true);
     }
 
-    // either bring us back to the start on the current life form
-    // or get a random one from the well...
-    private void destroyAndCreate(boolean random) {
+    public void getNumberedLifeForm() {
 
-        ComplexCalculationHandler.lock();
+        // subclasses of PApplet will have a keyCode
+        // so this isn't magical
+        int number = keyCode - '0';
+
         try {
-
-            if (random) {
-                getRandomLifeform();
-            }
-
-            instantiateLifeform();
-
-        } finally {
-            ComplexCalculationHandler.unlock();
+            this.storedLife = ResourceManager.getInstance().getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number);
+            destroyAndCreate();
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public int getMouseX() {
+        return mouseX;
+    }
+
+    public int getMouseY() {
+        return mouseY;
+    }
+
+    public void centerView() {
+        drawer.center(life.getRootBounds(), false, true);
+    }
 }

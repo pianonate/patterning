@@ -10,7 +10,7 @@ import java.util.List;
 public abstract class ContainerPanel extends Panel {
 
     private final List<Panel> childPanels;
-    private final Orientation orientation;
+    protected final Orientation orientation;
 
     protected ContainerPanel(Builder<?> builder) {
         super(builder);

@@ -112,7 +112,7 @@ public class UXConstants {
     }
 
     String getShortcutParenStart() {
-        return " (shortcut: ";
+        return " (";
     }
 
     String getShortcutParenEnd() {
@@ -122,6 +122,5 @@ public class UXConstants {
     String getStartupText() {
         return "patterning";
     }
-
 
 }

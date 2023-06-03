@@ -1,5 +1,7 @@
 package ux;
 
+import actions.KeyFactory;
+import actions.MouseEventManager;
 import actions.MovementHandler;
 import patterning.Bounds;
 import patterning.LifeUniverse;
@@ -10,16 +12,12 @@ import processing.core.PGraphics;
 import processing.core.PVector;
 import ux.informer.DrawingInfoSupplier;
 import ux.informer.DrawingInformer;
-import ux.panel.AlignHorizontal;
-import ux.panel.AlignVertical;
-import ux.panel.ControlPanel;
-import ux.panel.TextPanel;
+import ux.panel.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
-import java.util.function.Function;
 
 public class PatternDrawer {
 
@@ -38,6 +36,7 @@ public class PatternDrawer {
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
     private final PApplet processing;
+    private final Patterning patterning;
     private final DrawRateManager drawRateManager;
     private final HUDStringBuilder hudInfo;
     private final MovementHandler movementHandler;
@@ -75,10 +74,11 @@ public class PatternDrawer {
 
 
     public PatternDrawer(PApplet pApplet,
-                         DrawRateManager drawRateManager,
-                         Function<DrawingInfoSupplier, List<ControlPanel>> getControlPanelsMethod) {
+                         DrawRateManager drawRateManager) {
 
         this.processing = pApplet;
+        this.patterning = (Patterning) pApplet;
+
         this.drawRateManager = drawRateManager;
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
@@ -86,30 +86,6 @@ public class PatternDrawer {
         drawingInformer = new DrawingInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
 
         PanelTester.makeSomePanels(drawingInformer, false, true);
-
-        // the passed in method reference is made type safe through
-        // through using Function<DrawingInfoSupplier, List<ControlPanel>> which tells it what argument to take
-        // and what the return type will be when it is invoked
-        //
-        // java really is into its bookkeeping
-        //
-        // anyway, all this tomfoolery is so that control panels have access to their KeyCallback - which
-        // need to be constructed right now in the main Patterning class as they have access to main Patterning
-        // capabilities - and PatternDrawer has access to the getUXBuffer needed by controls to always have the latest
-        // post-resize UXBuffer, resize information and, specifically for TextControls, whether they are being
-        // constructed or if they are being drawn within a PGraphics.BeginDraw() block - esoteric but necessary
-        // or else the TextPanel will get null pointer exceptions on construction
-        //
-        // just one way to do it but it does work.  another way might be to pass
-        // lists of controls into this method and then have all the control panels constructed over here
-        //
-        // and another way would be to pass references to objects everywhere.  i find it a bit cleaner
-        // to just pass the lambdas around for specific functionality to be invoked later.
-        //
-        // six of one half a dozen of the other
-        List<ControlPanel> panels = getControlPanelsMethod.apply(drawingInformer);
-        drawables.addAll(panels);
-
         // resize trackers
         prevWidth = pApplet.width;
         prevHeight = pApplet.height;
@@ -129,6 +105,49 @@ public class PatternDrawer {
                 .displayDuration(theme.getStartupTextDisplayDuration())
                 .build();
         drawables.add(startupText);
+
+        setupControls();
+    }
+
+    private void setupControls() {
+
+        // all callbacks have to invoke work - either on the Patterning or PatternDrawer
+        // so give'em what they need
+        KeyFactory keyFactory = new KeyFactory((Patterning) processing, this);
+        keyFactory.setupKeyHandler();
+
+        ControlPanel panelLeft, panelTop;
+       int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
+       panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
+                .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
+                .setOrientation(Orientation.VERTICAL)
+                .addControl("zoomIn.png", keyFactory.callbackZoomInCenter)
+                .addControl("zoomOut.png", keyFactory.callbackZoomOutCenter)
+                .addControl("fitToScreen.png", keyFactory.callbackFitUniverseOnScreen)
+                .addControl("center.png", keyFactory.callbackCenterView)
+                .addToggleHighlightControl("boundary.png", keyFactory.callbackDisplayBounds)
+                .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
+                .addControl("undo.png", keyFactory.callbackUndoMovement)
+                .build();
+
+        panelTop = new ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
+                .transition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, transitionDuration)
+                .setOrientation(Orientation.HORIZONTAL)
+                .addControl("random.png", keyFactory.callbackRandomLife)
+                .addControl("stepSlower.png", keyFactory.callbackStepSlower)
+                .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+                .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause)
+                .addControl("drawFaster.png", keyFactory.callbackDrawFaster)
+                .addControl("stepFaster.png", keyFactory.callbackStepFaster)
+                .addControl("rewind.png", keyFactory.callbackRewind)
+                .build();
+
+        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop);
+
+        MouseEventManager.getInstance().addAll(panels);
+
+        drawables.addAll(panels);
+
 
     }
 
@@ -168,7 +187,7 @@ public class PatternDrawer {
         clearCache();
 
         countdownText = new TextPanel.Builder(drawingInformer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
-                .runMethod(Patterning::run)
+                .runMethod(patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)
                 .textWidth(Optional.of(() -> canvasWidth.intValue() / 2))
@@ -248,7 +267,7 @@ public class PatternDrawer {
         if (drawables.isManaging(countdownText)) {
             countdownText.interruptCountdown();
         } else {
-            Patterning.toggleRun();
+            patterning.toggleRun();
         }
     }
 
@@ -438,7 +457,7 @@ public class PatternDrawer {
     }
 
 
-    public void draw(boolean shouldDraw) {
+    public void draw(LifeUniverse life, boolean shouldDraw) {
 
         drawing = true;
 
@@ -461,7 +480,6 @@ public class PatternDrawer {
         UXBuffer.beginDraw();
         UXBuffer.clear();
 
-        LifeUniverse life = Patterning.getLifeUniverse();
         // make this threadsafe
         Node node = life.root;
         Bounds bounds = life.getRootBounds();
@@ -503,7 +521,7 @@ public class PatternDrawer {
         hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
         hudInfo.addOrUpdate("dps", Math.round(drawRateManager.getCurrentDrawRate()));
         hudInfo.addOrUpdate("cell", getCellWidth());
-        hudInfo.addOrUpdate("running", (Patterning.isRunning()) ? "running" : "stopped");
+        hudInfo.addOrUpdate("running", (patterning.isRunning()) ? "running" : "stopped");
 
         hudInfo.addOrUpdate("level ", root.level);
         hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));

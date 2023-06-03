@@ -937,7 +937,7 @@ public class LifeUniverse {
             quickCacheMisses = 0;
             // System.out.println("root.level: " + root.level + " step: " + this.step + "
             // node.level: " + node.level);
-            return nodeQuickNextGeneration(node, 0);
+           return nodeQuickNextGeneration(node, 0);
         }
 
         // right now i have seen a nodeNextGeneration where

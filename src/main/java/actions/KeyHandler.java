@@ -17,6 +17,9 @@ public class KeyHandler {
 
     private KeyHandler(Builder builder) {
         this.keyCallbacks = builder.keyCallbacks;
+        // this registration is what keeps a reference of KeyHandler around
+        // for the duration of the program even though you don't explicitly
+        // store it anywhere else...
         builder.processing.registerMethod("keyEvent", this);
     }
 
@@ -45,7 +48,7 @@ public class KeyHandler {
                     pressedKeys.add(keyCode);
                     callback.invokeFeature();
                     callback.notifyKeyObservers();
-                    ;
+                    // make that UX snappy!
                     DrawRateManager.getInstance().drawImmediately();
                 }
 
