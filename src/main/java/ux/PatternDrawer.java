@@ -42,7 +42,9 @@ public class PatternDrawer {
 
     float cellBorderWidth = 0.0F;
     UXThemeManager theme = UXThemeManager.getInstance();
-    // this is used because we now separate the drawing speed from the framerate
+
+
+    // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
     // if we haven't drawn an image, we still want to be able to move and drag
     // the image around so this allows us to keep track of the current position
@@ -409,7 +411,6 @@ public class PatternDrawer {
         saveUndoState();
         updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
         lifeFormPosition.add(dx, dy);
-        DrawRateManager.getInstance().drawImmediately();
     }
 
     private void updateCanvasOffsets(BigDecimal offsetX, BigDecimal offsetY) {
@@ -507,7 +508,7 @@ public class PatternDrawer {
         Bounds bounds = life.getRootBounds();
 
         movementHandler.handleRequestedMovement();
-        // (int)
+
         cellBorderWidth = (cellBorderWidthRatio * cellWidth.get());
 
         // make this threadsafe

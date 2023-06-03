@@ -21,6 +21,7 @@ public class Patterning extends PApplet {
     private DrawRateManager drawRateManager;
     private ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
     private ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
+    private final MouseEventManager mouseEventManager = MouseEventManager.getInstance();
     private PatternDrawer drawer;
     // used to control dragging the image around the screen with the mouse
     private float last_mouse_x;
@@ -190,9 +191,9 @@ public class Patterning extends PApplet {
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
 
-        MouseEventManager.getInstance().onMousePressed(mouseX, mouseY);
+        mouseEventManager.onMousePressed(mouseX, mouseY);
 
-        mousePressedOverReceiver = MouseEventManager.getInstance().isMousePressedOverAnyReceiver();
+        mousePressedOverReceiver = mouseEventManager.isMousePressedOverAnyReceiver();
 
         // If the mouse press is not over any MouseEventReceiver, we consider it as over the drawing.
         draggingDrawing = !mousePressedOverReceiver;
@@ -201,9 +202,15 @@ public class Patterning extends PApplet {
     public void mouseReleased() {
         if (draggingDrawing) {
             draggingDrawing = false;
+            // if the DPS is slow then the screen won't update correctly
+            // so tell the system to draw immediately
+            // we used to have drawImmediately() called in move
+            // but it had a negative effect of freezing the screen while drawing
+            // this is a good enough compromise as most of the time DPS is not really low
+            drawRateManager.drawImmediately();
         } else {
             mousePressedOverReceiver = false;
-            MouseEventManager.getInstance().onMouseReleased();
+            mouseEventManager.onMouseReleased();
         }
         last_mouse_x = 0;
         last_mouse_y = 0;

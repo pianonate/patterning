@@ -5,6 +5,9 @@ import java.nio.IntBuffer;
 import java.util.HashMap;
 /*
 
+ great article:  https://www.dev-mind.blog/hashlife/ and code: https://github.com/ngmsoftware/hashlife
+
+
 * this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
 - better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
 - also: https://web.archive.org/web/20220131050938/https://jennyhasahat.github.io/hashlife.html

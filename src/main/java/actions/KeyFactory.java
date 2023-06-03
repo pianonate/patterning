@@ -339,6 +339,8 @@ public class KeyFactory {
         public void cleanupFeature() {
             if (KeyHandler.getPressedKeys().size() == 0) {
                 pressed = false;
+                DrawRateManager.getInstance().drawImmediately();
+
             }
         }
 

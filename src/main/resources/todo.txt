@@ -1,4 +1,3 @@
-todo: keep drawing while moving with the arrow keys if you can
 
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
         that each contain a left aligned name and right aligned value

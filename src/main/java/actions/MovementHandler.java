@@ -11,9 +11,19 @@ public class MovementHandler {
 
     private final static Set<Integer> pressedKeys = KeyHandler.getPressedKeys();
 
+    private final static int[][] directions = {
+            {PApplet.LEFT, 0, -1},
+            {PApplet.UP, -1, 0},
+            {PApplet.RIGHT, 0, 1},
+            {PApplet.DOWN, 1, 0},
+            {PApplet.UP + PApplet.LEFT, -1, -1},
+            {PApplet.UP + PApplet.RIGHT, -1, 1},
+            {PApplet.DOWN + PApplet.LEFT, 1, -1},
+            {PApplet.DOWN + PApplet.RIGHT, 1, 1}
+    };
+
     private int lastDirection = 0;
-    private long lastIncreaseTime;
-    private final float initialMoveAmount = 1;
+    private final float initialMoveAmount = 5;
     private float moveAmount = initialMoveAmount;
 
     private final PatternDrawer drawer;
@@ -40,22 +50,11 @@ public class MovementHandler {
         float moveX = 0;
         float moveY = 0;
 
-        int[][] directions = {
-                {PApplet.LEFT, 0, -1},
-                {PApplet.UP, -1, 0},
-                {PApplet.RIGHT, 0, 1},
-                {PApplet.DOWN, 1, 0},
-                {PApplet.UP + PApplet.LEFT, -1, -1},
-                {PApplet.UP + PApplet.RIGHT, -1, 1},
-                {PApplet.DOWN + PApplet.LEFT, 1, -1},
-                {PApplet.DOWN + PApplet.RIGHT, 1, 1}
-        };
-
         for (int[] direction : directions) {
             boolean isMoving = pressedKeys.contains(direction[0]);
             if (isMoving) {
-                moveX += direction[2] * moveAmount;
-                moveY += direction[1] * moveAmount;
+                moveX += direction[2] * moveAmount / pressedKeys.size();
+                moveY += direction[1] * moveAmount / pressedKeys.size();
             }
         }
 
@@ -71,15 +70,6 @@ public class MovementHandler {
         if (currentDirection != lastDirection) {
             // Reset moveAmount if direction has changed
             moveAmount = initialMoveAmount;
-            lastIncreaseTime = System.currentTimeMillis();
-        } else {
-            // Increase moveAmount if enough time has passed since last increase
-            long currentTime = System.currentTimeMillis();
-            long increaseInterval = 100;
-            if (currentTime - lastIncreaseTime >= increaseInterval) {
-                moveAmount += 0.6f;
-                lastIncreaseTime = currentTime;
-            }
         }
 
         lastDirection = currentDirection;
