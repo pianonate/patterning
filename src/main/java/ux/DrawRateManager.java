@@ -107,7 +107,7 @@ public class DrawRateManager {
             }
         }
 
-        speedIndex = closestIndex;
+        speedIndex = Math.max(0,closestIndex);
         targetDrawRate = SPEED_VALUES[speedIndex];
     }
 

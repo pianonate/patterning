@@ -21,7 +21,10 @@ import java.util.*;
 
 public class PatternDrawer {
 
-    private static final MathContext mc = new MathContext(10);
+    // without this precision on the MathContext, small imprecision propagates at
+    // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
+    // off the screen.  don't skimp on precision!
+    private static final MathContext mc = new MathContext(100);
     private static final BigDecimal BigTWO = new BigDecimal(2);
     private static final Stack<CanvasState> previousStates = new Stack<>();
     private static final int DEFAULT_CELL_WIDTH = 4;
@@ -66,6 +69,11 @@ public class PatternDrawer {
     // that calculations can be done without conversions until necessary
     private BigDecimal canvasWidth;
     private BigDecimal canvasHeight;
+
+    // surprisingly cacheing the result of the half size calculation provides
+    // a remarkable speed boost
+    private final Map<BigDecimal, BigDecimal> halfSizeMap = new HashMap<>();
+
     // used for resize detection
     private int prevWidth, prevHeight;
 
@@ -362,22 +370,22 @@ public class PatternDrawer {
 
     }
 
-    private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top, DrawNodeContext ctx) {
+    private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top) {
 
         if (node.population.equals(BigInteger.ZERO)) {
             return;
         }
 
-        BigDecimal leftWithOffset = left.add(ctx.canvasOffsetXDecimal);
-        BigDecimal topWithOffset = top.add(ctx.canvasOffsetYDecimal);
+        BigDecimal leftWithOffset = left.add(canvasOffsetX);
+        BigDecimal topWithOffset = top.add(canvasOffsetY);
         BigDecimal leftWithOffsetAndSize = leftWithOffset.add(size);
         BigDecimal topWithOffsetAndSize = topWithOffset.add(size);
 
         // no need to draw anything not visible on screen
         if (leftWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
                 || topWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
-                || leftWithOffset.compareTo(ctx.canvasWidthDecimal) >= 0
-                || topWithOffset.compareTo(ctx.canvasHeightDecimal) >= 0) {
+                || leftWithOffset.compareTo(canvasWidth) >= 0
+                || topWithOffset.compareTo(canvasHeight) >= 0) {
             return;
         }
 
@@ -395,14 +403,14 @@ public class PatternDrawer {
             }
         } else {
 
-            BigDecimal halfSize = ctx.getHalfSize(size);
+            BigDecimal halfSize = getHalfSize(size);
             BigDecimal leftHalfSize = left.add(halfSize);
             BigDecimal topHalfSize = top.add(halfSize);
 
-            drawNode(node.nw, halfSize, left, top, ctx);
-            drawNode(node.ne, halfSize, leftHalfSize, top, ctx);
-            drawNode(node.sw, halfSize, left, topHalfSize, ctx);
-            drawNode(node.se, halfSize, leftHalfSize, topHalfSize, ctx);
+            drawNode(node.nw, halfSize, left, top);
+            drawNode(node.ne, halfSize, leftHalfSize, top);
+            drawNode(node.sw, halfSize, left, topHalfSize);
+            drawNode(node.se, halfSize, leftHalfSize, topHalfSize);
 
         }
     }
@@ -500,16 +508,25 @@ public class PatternDrawer {
             return;
         }
 
+
+
         UXBuffer.beginDraw();
         UXBuffer.clear();
 
+
         // make this threadsafe
         Node node = life.root;
+
+        long start = System.nanoTime();
         Bounds bounds = life.getRootBounds();
+        long end = System.nanoTime();
 
         movementHandler.handleRequestedMovement();
 
+        float duration = (end - start) / 1000000f;
+
         cellBorderWidth = (cellBorderWidthRatio * cellWidth.get());
+
 
         // make this threadsafe
         String hudMessage = getHUDMessage(life, bounds);
@@ -523,8 +540,7 @@ public class PatternDrawer {
             lifeFormBuffer.beginDraw();
             lifeFormBuffer.clear();
             BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);
-            DrawNodeContext ctx = new DrawNodeContext();
-            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate(), ctx);
+            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate());
             drawBounds(bounds);
             lifeFormBuffer.endDraw();
             // reset the position in case you've had mouse moves
@@ -533,6 +549,8 @@ public class PatternDrawer {
 
         processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
         processing.image(UXBuffer, 0, 0);
+
+
 
         drawing = false;
     }
@@ -591,28 +609,12 @@ public class PatternDrawer {
         }
     }
 
-    private class DrawNodeContext {
-
-        public final BigDecimal canvasWidthDecimal;
-        public final BigDecimal canvasHeightDecimal;
-        public final BigDecimal canvasOffsetXDecimal;
-        public final BigDecimal canvasOffsetYDecimal;
-
-        private final Map<BigDecimal, BigDecimal> halfSizeMap = new HashMap<>();
-
-        public DrawNodeContext() {
-            this.canvasWidthDecimal = canvasWidth;
-            this.canvasHeightDecimal = canvasHeight;
-            this.canvasOffsetXDecimal = canvasOffsetX; // new BigDecimal(canvasOffsetX);
-            this.canvasOffsetYDecimal = canvasOffsetY; // new BigDecimal(canvasOffsetY);
+    // re-using these really seems to make a difference
+    private BigDecimal getHalfSize(BigDecimal size) {
+        if (!halfSizeMap.containsKey(size)) {
+            BigDecimal halfSize = size.divide(BigTWO, mc);
+            halfSizeMap.put(size, halfSize);
         }
-
-        public BigDecimal getHalfSize(BigDecimal size) {
-            if (!halfSizeMap.containsKey(size)) {
-                BigDecimal halfSize = size.divide(BigTWO, mc);
-                halfSizeMap.put(size, halfSize);
-            }
-            return halfSizeMap.get(size);
-        }
+        return halfSizeMap.get(size);
     }
 }

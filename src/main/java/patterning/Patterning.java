@@ -131,10 +131,10 @@ public class Patterning extends PApplet {
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
 
-        //long start = System.nanoTime();
+        long start = System.nanoTime();
         drawer.draw(life, shouldDrawLifeForm);
-        //long end = System.nanoTime();
-
+        long end = System.nanoTime();
+        float duration = end - start;
 
         // as mentioned above - this runs on a separate thread
         // and we don't want it to go any faster than the draw rate throttling mechanism
