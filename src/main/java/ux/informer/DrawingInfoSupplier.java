@@ -6,4 +6,5 @@ public interface DrawingInfoSupplier {
     PGraphics getPGraphics();
     boolean isResized();
     boolean isDrawing();
+
 }

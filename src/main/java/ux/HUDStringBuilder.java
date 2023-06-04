@@ -36,7 +36,7 @@ public class HUDStringBuilder {
     }
 
 
-    public String formatLargeNumber(Object value) {
+    private String formatLargeNumber(Object value) {
         if (value instanceof BigInteger bigValue) {
             int exponent = bigValue.toString().length() - 1;
             return formatLargeNumberUsingExponent(new BigDecimal(bigValue), exponent);

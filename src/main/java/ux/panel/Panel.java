@@ -123,7 +123,7 @@ public abstract class Panel implements Drawable, MouseEventReceiver {
         panelBuffer.pushStyle();
 
         panelBuffer.fill(fill);
-        // panelBuffer.fill(0xFFFF0000); // debugging ghost panel
+         //panelBuffer.fill(0xFFFF0000); // debugging ghost panel
         panelBuffer.noStroke();
 
         panelBuffer.clear();

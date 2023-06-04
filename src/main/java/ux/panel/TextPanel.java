@@ -69,8 +69,7 @@ public class TextPanel extends Panel implements Drawable {
         this.countdownFrom = builder.countdownFrom;
         this.initialMessage = builder.message;
 
-
-        // Always wrap the text, even if it results in a single line
+        // create initial panelBuffer for the text
         updatePanelBuffer(drawingInformer.getPGraphics(), true);
 
         //this.setFill(0xFFFF0000);
@@ -101,10 +100,7 @@ public class TextPanel extends Panel implements Drawable {
         this.transitionTime = System.currentTimeMillis(); // start displaying immediately
     }
 
-    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {
-
-        // ensure that the text size is set to the correct value for the wrapping exercise
-        setFont(parentBuffer, textSize);
+    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {;
 
         String testMessage = (countdownFrom.isPresent()) ?
                 getCountdownMessage(countdownFrom.getAsInt()) : message;
@@ -126,19 +122,20 @@ public class TextPanel extends Panel implements Drawable {
             totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent();
         }
 
-        width = (int) Math.ceil(maxWidth + doubleTextMargin);
+       // width = (int) Math.ceil(maxWidth + doubleTextMargin);
 
         // Adjust the width and height according to the size of the wrapped text
         height = (int) Math.ceil(totalHeight + textMargin);
 
+        // take either the specified width - which has just been sized to fit
+        // or the width of the longest line of text in case of word wrapping
+        width = Math.min( getTextWidth(), (int) Math.ceil(maxWidth + doubleTextMargin));
 
         PGraphics textBuffer = parentBuffer.parent.createGraphics(width, height);
 
         // set the font for this PGraphics as it will not change
         textBuffer.beginDraw();
-        //textBuffer.textAlign(PApplet.LEFT, PApplet.TOP);
         setFont(textBuffer, adjustedTextSize);
-
         textBuffer.endDraw();
 
         return textBuffer;
@@ -163,7 +160,6 @@ public class TextPanel extends Panel implements Drawable {
         buffer.textSize(textSize);
         if (shouldInitialize) buffer.endDraw();
 
-
     }
 
     private String getCountdownMessage(long count) {
@@ -175,24 +171,26 @@ public class TextPanel extends Panel implements Drawable {
         List<String> lines = new ArrayList<>();
         StringBuilder line = new StringBuilder();
 
-        OptionalInt textWidthValue = getTextWidth();
-
-        if (textWidthValue.isEmpty() || !this.wrap) {
+        if (!this.wrap) {
             lines.add(theMessage);
             return lines;
         }
+
+        setFont(buffer, textSize);
+
+        int evalWidth = getTextWidth();
 
         while (!words.isEmpty()) {
             String word = words.get(0);
             float prospectiveLineWidth = buffer.textWidth(line + word);
 
             // If the word alone is wider than the wordWrapWidth, it should be put on its own line
-            if (prospectiveLineWidth > textWidthValue.getAsInt() && line.length() == 0) {
+            if (prospectiveLineWidth > evalWidth && line.length() == 0) {
                 line.append(word).append(" ");
                 words.remove(0);
             }
             // Otherwise, if it fits with the current line, add it to the line
-            else if (prospectiveLineWidth <= textWidthValue.getAsInt()) {
+            else if (prospectiveLineWidth <= evalWidth) {
                 line.append(word).append(" ");
                 words.remove(0);
             }
@@ -204,7 +202,7 @@ public class TextPanel extends Panel implements Drawable {
 
             if (keepShortCutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
-                if (words.size() == 2 && buffer.textWidth(line + words.get(0) + " " + words.get(1)) > textWidthValue.getAsInt()) {
+                if (words.size() == 2 && buffer.textWidth(line + words.get(0) + " " + words.get(1)) > evalWidth) {
                     // Add the current line to the lines list
                     lines.add(line.toString().trim());
                     line = new StringBuilder();
@@ -223,11 +221,14 @@ public class TextPanel extends Panel implements Drawable {
         return lines;
     }
 
+
+
     // used to make sure that a long line will fit on the screen at this size
     private float getAdjustedTextSize(PGraphics parentBuffer, List<String> lines, float startingSize) {
-        // inherently we can have word wrapped text so make sure that we find the longest line to get the width
 
-        parentBuffer.textSize(startingSize);
+        // inherently we can have word wrapped text so make sure that we find the longest line to get the width
+        // set the font on the buffer we're using to evaluate text width
+        setFont(parentBuffer, startingSize);
 
         float adjustedTextSize = startingSize;
         String longestLine = "";
@@ -239,21 +240,24 @@ public class TextPanel extends Panel implements Drawable {
             }
         }
 
+        int targetWidth = getTextWidth();
+
         // fit within the width minus a margin
-        while ((parentBuffer.textWidth(longestLine) > (parentBuffer.width - doubleTextMargin))
-                || ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))) {
-            adjustedTextSize -= .05; // smooth baby
+        while ((parentBuffer.textWidth(longestLine) > (targetWidth - doubleTextMargin))
+                /*|| ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))*/) {
+            adjustedTextSize -= .1; // smooth baby
             adjustedTextSize = Math.max(adjustedTextSize, 1); // Prevent the textSize from going below 1
             parentBuffer.textSize(adjustedTextSize);
         }
         return adjustedTextSize;
     }
 
-    private OptionalInt getTextWidth() {
+    private int getTextWidth() {
         if (textWidth.isPresent()) {
-            return textWidth;
-        } else
-            return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).orElseGet(OptionalInt::empty);
+            return textWidth.getAsInt();
+        } else {
+            return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).get().getAsInt();
+        }
     }
 
     protected void panelSubclassDraw() {
@@ -265,15 +269,35 @@ public class TextPanel extends Panel implements Drawable {
         // we update the size of the buffer containing the text
         // if we've resized && there is a supplier of an integer telling us the size of the text can change
         // for example the countdown text is half the screen width so we want to give it a new buffer
-        boolean shouldUpdate = drawingInformer.isResized() && textWidthSupplier.isPresent();
-        updatePanelBuffer(drawingInformer.getPGraphics(), shouldUpdate);
+        boolean shouldUpdate = drawingInformer.isResized() ;//&& textWidthSupplier.isPresent();
+        //updatePanelBuffer(drawingInformer.getPGraphics(), shouldUpdate);
+
+        // if i cache a panel and then just create a new one when the screen resizes
+        // the hud text jumps around too much.
+        //
+        // can't seem to make that work on a cached panel just by updating the text size
+        // spent too much time trying to figure it out - for now will leave it this way
+        //
+        // be warned that it can be a perf hit to create the panel and walk through all of the text sizes
+        // each time - but the performance is acceptable.
+        // when you create new text panels that organize the text
+        // better - possibly you won't have to do this anymore.
+
+        if (!Objects.equals(lastMessage, message)) {
+            updatePanelBuffer(drawingInformer.getPGraphics(), true);
+        }
+
 
         // and if the test actually changed - or in the case of updating the buffer size on resize
         // let's update the word wrapping and font size
-        if (!Objects.equals(lastMessage, message) || shouldUpdate) {
-            messageLines = wrapText(message, drawingInformer.getPGraphics());
+      /*  if (!Objects.equals(lastMessage, message) || shouldUpdate) {
+
+            // getAdjustedTextSize uses the parentBuffer to calculate the sizes for use on the panelBuffer
+            // uses the parent to calculate so I guess that's it
+            //setFont(drawingInformer.getPGraphics(), textSize);
             setFont(panelBuffer, getAdjustedTextSize(drawingInformer.getPGraphics(), messageLines, textSize));
-        }
+            messageLines = wrapText(message, drawingInformer.getPGraphics());
+        }*/
 
         drawMultiLineText();
     }
@@ -281,30 +305,33 @@ public class TextPanel extends Panel implements Drawable {
     void drawMultiLineText() {
         // Get the colors every time in case the UX theme changes
         int outlineColor = theme.getTextColorStart(); // black
+
         // Interpolate between "black" 0xff000000 and "white" (0xffffffff)
         // fade value goes from 0 to 255 to make this happen
-        int currentColor = panelBuffer.lerpColor(outlineColor, theme.getTextColor(), fadeValue / 255.0F);
+        int themeColor = theme.getTextColor();
+
+        int currentColor = panelBuffer.lerpColor(outlineColor, themeColor, fadeValue / 255.0F);
+
+    //    System.out.println(System.currentTimeMillis() + " current: " + currentColor + " theme: " + themeColor + " outline: " + outlineColor + " fade: " + fadeValue);
 
         // Draw black text slightly offset in each direction to create an outline effect
         float outlineOffset = 1.0F;
-        int margin = textMargin;
 
         panelBuffer.beginDraw();
 
         panelBuffer.textAlign(this.hAlign.toPApplet(), this.vAlign.toPApplet());
 
         // Determine where to start drawing the text based on the alignment
-        float x = margin;
+        float x = textMargin;
         float y = 0;
 
-
         switch (hAlign) {
-            case LEFT -> x = margin;
+            case LEFT -> x = textMargin;
             case CENTER -> x = panelBuffer.width / 2f;
-            case RIGHT -> x = panelBuffer.width - margin;
+            case RIGHT -> x = panelBuffer.width - textMargin;
         }
 
-// Determine the starting y position based on the alignment
+        // Determine the starting y position based on the alignment
         float lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent();
         float totalTextHeight = lineHeight * messageLines.size();
 
@@ -312,7 +339,6 @@ public class TextPanel extends Panel implements Drawable {
             case CENTER -> y = (panelBuffer.height / 2f) - (totalTextHeight / 2f) + doubleTextMargin;
             case BOTTOM -> y = panelBuffer.height - textMargin;
         }
-
 
         for (int i = 0; i < messageLines.size(); i++) {
             String line = messageLines.get(i);
@@ -326,6 +352,7 @@ public class TextPanel extends Panel implements Drawable {
 
             // Draw the actual text in the calculated color
             panelBuffer.fill(currentColor);
+            //panelBuffer.fill(0xFFFF00FF);
             panelBuffer.text(line, x, lineY);
         }
 
@@ -350,7 +377,6 @@ public class TextPanel extends Panel implements Drawable {
     }
 
     public static class Builder extends Panel.Builder<Builder> {
-
         private static final UXThemeManager theme = UXThemeManager.getInstance();
         private final String message;
         private boolean outline = true;
@@ -402,14 +428,14 @@ public class TextPanel extends Panel implements Drawable {
         public Builder textWidth(int textWidth) {
             this.textWidth = OptionalInt.of(textWidth);
             if (textWidthSupplier.isPresent())
-                throw new IllegalStateException("Cannot set both textWidth and textWidth");
+                throw new IllegalStateException("Cannot set both int textWidth and Optional<IntSupplier> textWidth");
             return this;
         }
 
         public Builder textWidth(Optional<IntSupplier> textWidth) {
             textWidthSupplier = textWidth;
             if (this.textWidth.isPresent())
-                throw new IllegalStateException("Cannot set both textWidth and textWidth");
+                throw new IllegalStateException("Cannot set both int textWidth and Optional<IntSupplier> textWidth");
             return this;
         }
 
@@ -445,6 +471,9 @@ public class TextPanel extends Panel implements Drawable {
 
         @Override
         public TextPanel build() {
+            if (textWidth.isEmpty() && textWidthSupplier.isEmpty()) {
+                textWidth = OptionalInt.of((int) drawingInformer.getPGraphics().width);
+            }
             return new TextPanel(this);
         }
     }

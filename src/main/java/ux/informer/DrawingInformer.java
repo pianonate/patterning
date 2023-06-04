@@ -8,11 +8,16 @@ public class DrawingInformer implements DrawingInfoSupplier {
     private final ResizedSupplier resizedSupplier;
     private final DrawingSupplier drawingSupplier;
 
-    public DrawingInformer(PGraphicsSupplier graphicsSupplier, ResizedSupplier resizedSupplier, DrawingSupplier drawingSupplier) {
+    public DrawingInformer(PGraphicsSupplier graphicsSupplier,
+                           ResizedSupplier resizedSupplier,
+                           DrawingSupplier drawingSupplier)
+    {
         this.graphicsSupplier = graphicsSupplier;
         this.resizedSupplier = resizedSupplier;
         this.drawingSupplier = drawingSupplier;
     }
+
+
 
     @Override
     public PGraphics getPGraphics() {

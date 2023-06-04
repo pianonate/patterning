@@ -3,10 +3,7 @@ package ux;
 import actions.KeyFactory;
 import actions.MouseEventManager;
 import actions.MovementHandler;
-import patterning.Bounds;
-import patterning.LifeUniverse;
-import patterning.Node;
-import patterning.Patterning;
+import patterning.*;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
@@ -88,7 +85,10 @@ public class PatternDrawer {
         this.UXBuffer = getBuffer();
         this.lifeFormBuffer = getBuffer();
 
-        drawingInformer = new DrawingInformer(this::getUXBuffer, this::isWindowResized, this::isDrawing);
+        drawingInformer = new DrawingInformer(
+                this::getUXBuffer,
+                this::isWindowResized,
+                this::isDrawing);
         // resize trackers
         prevWidth = pApplet.width;
         prevHeight = pApplet.height;
@@ -122,7 +122,9 @@ public class PatternDrawer {
     }
 
     private boolean isWindowResized() {
-        return prevWidth != processing.width || prevHeight != processing.height;
+        boolean widthChanged = prevWidth != processing.width;
+        boolean heightChanged = prevHeight != processing.height;
+        return widthChanged || heightChanged;
     }
 
     private boolean isDrawing() {
@@ -198,7 +200,7 @@ public class PatternDrawer {
         // clear image cache and previous states
         clearCache();
 
-        countdownText = new TextPanel.Builder(drawingInformer, "counting down - press space to begin immediately", AlignHorizontal.CENTER, AlignVertical.CENTER)
+        countdownText = new TextPanel.Builder(drawingInformer, theme.getCountdownText(), AlignHorizontal.CENTER, AlignVertical.CENTER)
                 .runMethod(patterning::run)
                 .fadeInDuration(2000)
                 .countdownFrom(3)
@@ -213,9 +215,9 @@ public class PatternDrawer {
             System.out.println(String.join("\n", Arrays.toString(Thread.currentThread().getStackTrace()).split(", ")));
         }
 
-        hudText = new TextPanel.Builder(drawingInformer, getHUDMessage(life, bounds), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+        hudText = new TextPanel.Builder(drawingInformer, getHUDMessage(life), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
-                .textWidth(Optional.of(() -> canvasWidth.intValue()))
+                .textWidth(Optional.of(() -> canvasWidth.intValue() ))
                 .build();
         drawables.add(hudText);
     }
@@ -268,23 +270,23 @@ public class PatternDrawer {
         previousStates.clear();
     }
 
-    private String getHUDMessage(LifeUniverse life, Bounds bounds) {
-        Node root = life.root;
+    private String getHUDMessage(LifeUniverse life) {
+
+        PatternInfo patternInfo = life.getPatternInfo();
 
         hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
         hudInfo.addOrUpdate("dps", Math.round(drawRateManager.getCurrentDrawRate()));
         hudInfo.addOrUpdate("cell", getCellWidth());
         hudInfo.addOrUpdate("running", (patterning.isRunning()) ? "running" : "stopped");
 
-        hudInfo.addOrUpdate("level ", root.level);
-        hudInfo.addOrUpdate("step", LifeUniverse.pow2(life.step));
-        hudInfo.addOrUpdate("generation", life.generation);
-        hudInfo.addOrUpdate("population", root.population);
-        hudInfo.addOrUpdate("maxLoad", life.maxLoad);
-        hudInfo.addOrUpdate("lastID", life.lastId);
-
-        hudInfo.addOrUpdate("width", bounds.right.subtract(bounds.left));
-        hudInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top));
+        hudInfo.addOrUpdate("level ", patternInfo.get("level"));
+        hudInfo.addOrUpdate("step", patternInfo.get("step"));
+        hudInfo.addOrUpdate("generation", patternInfo.get("generation"));
+        hudInfo.addOrUpdate("population", patternInfo.get("population"));
+        hudInfo.addOrUpdate("maxLoad", patternInfo.get("maxLoad"));
+        hudInfo.addOrUpdate("lastID", patternInfo.get("lastId"));
+        hudInfo.addOrUpdate("width", patternInfo.get("width"));
+        hudInfo.addOrUpdate("height", patternInfo.get("height"));
 
         UXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
         // use the default delimiter
@@ -315,7 +317,7 @@ public class PatternDrawer {
     private void updateWindowResized() {
 
         BigDecimal bigWidth = BigDecimal.valueOf(processing.width);
-        BigDecimal bigHEight = BigDecimal.valueOf(processing.height);
+        BigDecimal bigHeight = BigDecimal.valueOf(processing.height);
 
         // create new buffers
         UXBuffer = getBuffer();
@@ -327,11 +329,11 @@ public class PatternDrawer {
 
         // Update the canvas size
         canvasWidth = bigWidth;
-        canvasHeight = bigHEight;
+        canvasHeight = bigHeight;
 
         // Calculate the center of the visible portion after resizing
         BigDecimal centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX);
-        BigDecimal centerYAfter = calcCenterOnResize(bigHEight, canvasOffsetY);
+        BigDecimal centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY);
 
         // Calculate the difference in the visible portion's center
         BigDecimal offsetX = centerXAfter.subtract(centerXBefore);
@@ -473,9 +475,11 @@ public class PatternDrawer {
         // or show some sparkles or something
     }
 
-    public void drawBounds(Bounds bounds) {
+    public void drawBounds(LifeUniverse life) {
 
         if (!drawBounds) return;
+
+        Bounds bounds = life.getRootBounds();
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
@@ -497,39 +501,23 @@ public class PatternDrawer {
 
         boolean resized = isWindowResized();
 
+        if (resized) {
+            updateWindowResized();
+        }
+
         prevWidth = processing.width;
         prevHeight = processing.height;
         processing.background(theme.getBackGroundColor());
 
-        if (resized) {
-            processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
-            processing.image(UXBuffer, 0, 0);
-            updateWindowResized();
-            return;
-        }
-
-
-
         UXBuffer.beginDraw();
         UXBuffer.clear();
 
-
-        // make this threadsafe
-        Node node = life.root;
-
-        long start = System.nanoTime();
-        Bounds bounds = life.getRootBounds();
-        long end = System.nanoTime();
-
         movementHandler.handleRequestedMovement();
-
-        float duration = (end - start) / 1000000f;
 
         cellBorderWidth = (cellBorderWidthRatio * cellWidth.get());
 
-
         // make this threadsafe
-        String hudMessage = getHUDMessage(life, bounds);
+        String hudMessage = getHUDMessage(life);
         hudText.setMessage(hudMessage);
 
         drawables.drawAll(UXBuffer);
@@ -537,20 +525,20 @@ public class PatternDrawer {
         UXBuffer.endDraw();
 
         if (shouldDraw) {
+            Node node = life.root;
             lifeFormBuffer.beginDraw();
             lifeFormBuffer.clear();
             BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate());
-            drawBounds(bounds);
+            drawBounds(life);
             lifeFormBuffer.endDraw();
             // reset the position in case you've had mouse moves
             lifeFormPosition.set(0, 0);
         }
 
+
         processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
         processing.image(UXBuffer, 0, 0);
-
-
 
         drawing = false;
     }

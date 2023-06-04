@@ -37,6 +37,8 @@ public class UXThemeManager {
     private int themeTransitionDuration;
 
     // strings
+
+    private String countdownText;
     private String fontName;
     private String iconPath;
     private String shortcutParenStart;
@@ -90,6 +92,7 @@ public class UXThemeManager {
         themeTransitionDuration = themeConstants.getThemeTransitionDuration();
 
         // strings
+        countdownText = themeConstants.getCountdownText();
         fontName = themeConstants.getFontName();
         iconPath = themeConstants.getIconPath();
         shortcutParenStart = themeConstants.getShortcutParenStart();
@@ -216,6 +219,9 @@ public class UXThemeManager {
     }
 
     // names
+    public String getCountdownText() {
+        return countdownText;
+    }
     public String getFontName() {
         return fontName;
     }

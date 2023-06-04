@@ -172,8 +172,7 @@ public class LifeUniverse {
     private long quickCacheHits = 0;
     private long quickCacheMisses = 0;
 
-    @SuppressWarnings("FieldMayBeFinal")
-    private byte[] _bitcounts;
+    private final byte[] _bitcounts;
     private final int rule_b;
     private final int rule_s;
     public Node root;
@@ -183,7 +182,10 @@ public class LifeUniverse {
     private final Node falseLeaf;
     private final Node trueLeaf;
 
+    private PatternInfo patternInfo;
+
     LifeUniverse() {
+        patternInfo = new PatternInfo();
         this._bitcounts = new byte[0x758];
         this._bitcounts[0] = 0;
         this._bitcounts[1] = 1;
@@ -240,6 +242,9 @@ public class LifeUniverse {
         this.step = 0;
     }
 
+    public PatternInfo getPatternInfo() {
+        return patternInfo;
+    }
 
     /*
      * Note that Java doesn't have a bitwise logical shift operator
@@ -248,7 +253,7 @@ public class LifeUniverse {
      * However, since the _bitcounts array contains only positive values,
      * we can use the regular right shift operator (>>) instead without any issues.
      */
-    public int evalMask(int bitmask) {
+    private int evalMask(int bitmask) {
         int rule = ((bitmask & 32) != 0) ? this.rule_s : this.rule_b;
         return (rule >> this._bitcounts[bitmask & 0x757]) & 1;
     }
@@ -294,24 +299,7 @@ public class LifeUniverse {
      * }
      */
 
-    public Bounds getRootBounds() {
-        if (root.population.equals(BigInteger.ZERO)) {
-            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
-        }
 
-        // todo: why does this have to be the size that it is to start?
-        // seems to cause an error when the step size is huge...
-        Bounds bounds = new Bounds(BigInteger.valueOf(Integer.MAX_VALUE), BigInteger.valueOf(Integer.MAX_VALUE),
-                BigInteger.valueOf(Integer.MIN_VALUE), BigInteger.valueOf(Integer.MIN_VALUE));
-
-        // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
-        BigInteger offset = pow2(root.level - 1);
-
-        nodeGetBoundary(root, offset.negate(), offset.negate(),
-                MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
-
-        return bounds;
-    }
 
     public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
         BigInteger offsetX = bounds.left.subtract(bounds.right)
@@ -632,6 +620,8 @@ public class LifeUniverse {
         moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
 
         root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
+
+        updatePatternInfo(true);
     }
 
     private int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
@@ -719,7 +709,7 @@ public class LifeUniverse {
 
             // todo: why did this originally exist - it seems empty trees are all the same
             emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
-            level2Cache = new HashMap<>(0x10000);
+           // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
         }
 
     }
@@ -853,6 +843,8 @@ public class LifeUniverse {
     }
 
     public void nextGeneration() {
+        long start = System.nanoTime();
+
 
         Node root = this.root;
 
@@ -926,6 +918,36 @@ public class LifeUniverse {
         BigInteger generationIncrease = pow2(this.step); // BigInteger.valueOf(2).pow(this.step);
 
         this.generation = this.generation.add(generationIncrease);
+
+        long endnextGen = System.nanoTime();
+
+        // there are some patterns that got down completely
+        // after a short while to be able to do getRootBounds()
+        // other similarly large patterns don't have this issue
+        // what's the story?
+        updatePatternInfo(true);
+
+        long endupdatePatternInfo = System.nanoTime();
+        float durationNextGen = endnextGen - start;
+        float durationUpdatePatternInfo = endupdatePatternInfo - endnextGen;
+        int x=1;
+
+    }
+
+    private void updatePatternInfo(boolean everything) {
+
+        patternInfo.addOrUpdate("level", root.level);
+        patternInfo.addOrUpdate("step", LifeUniverse.pow2(step));
+        patternInfo.addOrUpdate("generation", generation);
+        patternInfo.addOrUpdate("population", root.population);
+        patternInfo.addOrUpdate("maxLoad", maxLoad);
+        patternInfo.addOrUpdate("lastId", lastId);
+
+        if (everything) {
+            Bounds bounds = getRootBounds();
+            patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE));
+            patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
+        }
     }
 
     private Node nodeNextGeneration(Node node) {
@@ -983,6 +1005,8 @@ public class LifeUniverse {
 
         node.cache = result;
 
+
+
         return result;
     }
 
@@ -1033,33 +1057,41 @@ public class LifeUniverse {
                 "nodeQuickNextGeneration10");
     }
 
-    private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds boundary) {
+   public Bounds getRootBounds() {
+        if (root.population.equals(BigInteger.ZERO)) {
+            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
+        }
+
+       // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
+       BigInteger offset = pow2(root.level-1);
+
+       Bounds bounds = new Bounds(offset, offset, offset.negate(), offset.negate());
+
+       nodeGetBoundary(root, offset.negate(), offset.negate(),
+                MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
+
+       return bounds;
+    }
+
+    private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary) {
         if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
             return;
         }
 
         if (node.level == 0) {
-            if (left.compareTo(boundary.left) < 0) {
-                boundary.left = left;
-            }
-            if (left.compareTo(boundary.right) > 0) {
-                boundary.right = left;
-            }
-            if (top.compareTo(boundary.top) < 0) {
-                boundary.top = top;
-            }
-            if (top.compareTo(boundary.bottom) > 0) {
-                boundary.bottom = top;
-            }
+                boundary.left = boundary.left.min(left);
+                boundary.right = boundary.right.max(left);
+                boundary.top = boundary.top.min(top);
+                boundary.bottom = boundary.bottom.max(top);
         } else {
-            // BigInteger offset = BigInteger.valueOf(2).pow(node.level - 1);
             BigInteger offset = pow2(node.level - 1);
+            BigInteger doubledOffset = pow2(node.level);
 
             if (left.compareTo(boundary.left) >= 0
-                    && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
+                    && left.add(doubledOffset).compareTo(boundary.right) <= 0 &&
                     top.compareTo(boundary.top) >= 0
-                    && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
-                // this square is already inside the found boundary
+                    && top.add(doubledOffset).compareTo(boundary.bottom) <= 0) {
+                // This square is already inside the found boundary
                 return;
             }
 
@@ -1093,6 +1125,62 @@ public class LifeUniverse {
             nodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary);
             nodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary);
             nodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary);
+        }
+    }
+
+    private void newNodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary, int levelOffset, Object lock) {
+        if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
+            return;
+        }
+
+        if (node.level == 0) {
+            synchronized (lock) {
+                boundary.left = boundary.left.min(left);
+                boundary.right = boundary.right.max(left);
+                boundary.top = boundary.top.min(top);
+                boundary.bottom = boundary.bottom.max(top);
+            }
+        } else {
+            BigInteger offset = pow2(node.level - 1);
+
+            if (left.compareTo(boundary.left) >= 0
+                    && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
+                    top.compareTo(boundary.top) >= 0
+                    && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
+                // This square is already inside the found boundary
+                return;
+            }
+
+            int findNW = findMask;
+            int findSW = findMask;
+            int findNE = findMask;
+            int findSE = findMask;
+
+            if (!node.nw.population.equals(BigInteger.ZERO)) {
+                findSW &= ~MASK_TOP;
+                findNE &= ~MASK_LEFT;
+                findSE &= ~(MASK_TOP | MASK_LEFT);
+            }
+            if (!node.sw.population.equals(BigInteger.ZERO)) {
+                findSE &= ~MASK_LEFT;
+                findNW &= ~MASK_BOTTOM;
+                findNE &= ~(MASK_BOTTOM | MASK_LEFT);
+            }
+            if (!node.ne.population.equals(BigInteger.ZERO)) {
+                findNW &= ~MASK_RIGHT;
+                findSE &= ~MASK_TOP;
+                findSW &= ~(MASK_TOP | MASK_RIGHT);
+            }
+            if (!node.se.population.equals(BigInteger.ZERO)) {
+                findSW &= ~MASK_RIGHT;
+                findNE &= ~MASK_BOTTOM;
+                findNW &= ~(MASK_BOTTOM | MASK_RIGHT);
+            }
+
+            newNodeGetBoundary(node.nw, left, top, findNW, boundary, levelOffset, lock);
+            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, levelOffset, lock);
+            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, levelOffset, lock);
+            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, levelOffset, lock);
         }
     }
 }

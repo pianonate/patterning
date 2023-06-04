@@ -1,9 +1,10 @@
-todo: text box - only uses the list of lines and don't use message - too messy
-
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
-        that each contain a left aligned name and right aligned value
+        that each contain a left aligned name and right aligned value - Radiator
         you can display the information radiators anywhere on screen as
         they'll have a title window and - ideally you can reposition them and also close them
+
+
+todo: text box - only uses the list of lines and don't use message - too messy
 
 
 todo: should we use futures instead of ComplexCalculationHandler?  it's a little more complicated but it's more standard and it's more flexible - you can cancel a future and you can get a result from it - and you can get a result from it with a timeout - which is what you want for the ComplexCalculationHandler

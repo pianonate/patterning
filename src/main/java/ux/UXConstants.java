@@ -101,6 +101,9 @@ public class UXConstants {
     int getThemeTransitionDuration() { return 500;}
 
     // names
+    String getCountdownText() {
+        return "press space to begin immediately";
+    }
     String getFontName() {
         return "Verdana";
     }
