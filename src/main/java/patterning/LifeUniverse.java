@@ -138,11 +138,6 @@ public class LifeUniverse {
     private static final int MASK_TOP = 2;
     private static final int MASK_RIGHT = 4;
     private static final int MASK_BOTTOM = 8;
-
-    private long nextGenerationCalls = 0;
-    private long hashCollisions = 0;
-
-    // todo: magic value that you can share with drawer to specify
     private static final BigInteger[] _powers = new BigInteger[EMPTY_TREE_CACHE_SIZE];
 
     static {// the size of the MathContext
@@ -168,10 +163,6 @@ public class LifeUniverse {
     private Node[] emptyTreeCache;
     private HashMap<Integer, Node> level2Cache;
 
-    // debugging
-    private long quickCacheHits = 0;
-    private long quickCacheMisses = 0;
-
     private final byte[] _bitcounts;
     private final int rule_b;
     private final int rule_s;
@@ -182,7 +173,7 @@ public class LifeUniverse {
     private final Node falseLeaf;
     private final Node trueLeaf;
 
-    private PatternInfo patternInfo;
+    private final PatternInfo patternInfo;
 
     LifeUniverse() {
         patternInfo = new PatternInfo();
@@ -263,8 +254,7 @@ public class LifeUniverse {
                 (bitmask & 1) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 2) != 0 ? trueLeaf : falseLeaf,
                 (bitmask & 4) != 0 ? trueLeaf : falseLeaf,
-                (bitmask & 8) != 0 ? trueLeaf : falseLeaf,
-                "level1Create");
+                (bitmask & 8) != 0 ? trueLeaf : falseLeaf);
     }
 
     /*
@@ -301,7 +291,7 @@ public class LifeUniverse {
 
 
 
-    public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
+/*    public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
         BigInteger offsetX = bounds.left.subtract(bounds.right)
                 .divide(BigInteger.valueOf(2))
                 .subtract(bounds.left)
@@ -317,7 +307,7 @@ public class LifeUniverse {
         bounds.right = bounds.right.add(offsetX);
         bounds.top = bounds.top.add(offsetY);
         bounds.bottom = bounds.bottom.add(offsetY);
-    }
+    }*/
 
     public void moveField(IntBuffer fieldX, IntBuffer fieldY, int offsetX, int offsetY) {
         for (int i = 0; i < fieldX.capacity(); i++) {
@@ -342,7 +332,7 @@ public class LifeUniverse {
             t = emptyTree(level - 1);
         }
 
-        emptyTreeCache[level] = createTree(t, t, t, t, "emptyTree");
+        emptyTreeCache[level] = createTree(t, t, t, t);
 
         return emptyTreeCache[level];
     }
@@ -379,19 +369,16 @@ public class LifeUniverse {
      * as it combines the new trees created with an extra level of hierarchy.
      */
 
-    private int lastLevel;
     private Node expandUniverse(Node node) {
         // System.out.println("expanding universe");
 
         Node t = emptyTree(node.level - 1);
 
-        lastLevel = node.level;
-
         return createTree(
-                createTree(t, t, t, node.nw, "expandUniverse1"),
-                createTree(t, t, node.ne, t, "expandUniverse2"),
-                createTree(t, node.sw, t, t, "expandUniverse3"),
-                createTree(node.se, t, t, t, "expandUniverse4"), "expandUniverse5"
+                createTree(t, t, t, node.nw),
+                createTree(t, t, node.ne, t),
+                createTree(t, node.sw, t, t),
+                createTree(node.se, t, t, t)
         );
     }
 
@@ -512,8 +499,6 @@ public class LifeUniverse {
     }
 
     public void garbageCollect() {
-        long start = System.currentTimeMillis();
-
         // if rewinding just keep things as they are
         if (hashmapSize < (1 << HASHMAP_LIMIT) - 1) {
             hashmapSize = (hashmapSize << 1) | 1;
@@ -524,8 +509,6 @@ public class LifeUniverse {
 
         lastId = 4;
         nodeHash(root);
-
-        long end = System.currentTimeMillis();
 
     }
 
@@ -669,8 +652,7 @@ public class LifeUniverse {
                 setupFieldRecurse(start, part2 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part2, part3 - 1, fieldX, fieldY, level),
                 setupFieldRecurse(part3, part4 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part4, end, fieldX, fieldY, level),
-                "setupFieldRecurse");
+                setupFieldRecurse(part4, end, fieldX, fieldY, level));
     }
 
     public Node level2Setup(int start, int end, IntBuffer fieldX, IntBuffer fieldY) {
@@ -692,8 +674,7 @@ public class LifeUniverse {
                 level1Create(set),
                 level1Create(set >> 4),
                 level1Create(set >> 8),
-                level1Create(set >> 12),
-                "level2setup");
+                level1Create(set >> 12));
 
         level2Cache.put(set, tree);
         return tree;
@@ -808,7 +789,7 @@ public class LifeUniverse {
     }
 
     // create or search for a tree node given its children
-    private Node createTree(Node nw, Node ne, Node sw, Node se, String caller) {
+    private Node createTree(Node nw, Node ne, Node sw, Node se) {
 
         int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
         Node node = hashmap.get(hash);
@@ -828,12 +809,11 @@ public class LifeUniverse {
             // returning a new tree because createTree was about to just make a new one, but
             // now it's calling itself recursively rather than just making a new node and
             // returning it
-            return createTree(nw, ne, sw, se, "lastID > maxload createTree()");
+            return createTree(nw, ne, sw, se);
         }
 
         Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
         if (prev != null) {
-            hashCollisions++;
             prev.hashmapNext = newNode;
         } else {
             hashmap.put(hash, newNode);
@@ -843,14 +823,7 @@ public class LifeUniverse {
     }
 
     public void nextGeneration() {
-        long start = System.nanoTime();
-
-
         Node root = this.root;
-
-        // debugging
-        nextGenerationCalls++;
-        hashCollisions = 0;
 
        /* // the following is a new mechanism to only expandUniverse as far as you need to
         // and not just merely to match up to the current step size
@@ -897,9 +870,6 @@ public class LifeUniverse {
                 This could help you figure out if the issue is with the size of the root node or with recentering the universe.
          */
 
-
-         
-
         while ( (root.level <= this.step + 2) || 
                 !root.nw.population.equals(root.nw.se.se.population) ||
                 !root.ne.population.equals(root.ne.sw.sw.population) ||
@@ -919,19 +889,11 @@ public class LifeUniverse {
 
         this.generation = this.generation.add(generationIncrease);
 
-        long endnextGen = System.nanoTime();
-
         // there are some patterns that got down completely
         // after a short while to be able to do getRootBounds()
         // other similarly large patterns don't have this issue
         // what's the story?
         updatePatternInfo(true);
-
-        long endupdatePatternInfo = System.nanoTime();
-        float durationNextGen = endnextGen - start;
-        float durationUpdatePatternInfo = endupdatePatternInfo - endnextGen;
-        int x=1;
-
     }
 
     private void updatePatternInfo(boolean everything) {
@@ -958,8 +920,6 @@ public class LifeUniverse {
 
         if (this.step == node.level - 2) {
             quickgen = 0;
-            quickCacheHits = 0;
-            quickCacheMisses = 0;
             // System.out.println("root.level: " + root.level + " step: " + this.step + "
             // node.level: " + node.level);
            return nodeQuickNextGeneration(node, 0);
@@ -981,22 +941,22 @@ public class LifeUniverse {
         Node sw = node.sw;
         Node se = node.se;
 
-        Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw, "nodeNextGeneration1");
-        Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw, "nodeNextGeneration2");
-        Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw, "nodeNextGeneration3");
-        Node n10 = createTree(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw, "nodeNextGeneration4");
-        Node n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw, "nodeNextGeneration5");
-        Node n12 = createTree(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw, "nodeNextGeneration6");
-        Node n20 = createTree(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw, "nodeNextGeneration7");
-        Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw, "nodeNextGeneration8");
-        Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw, "nodeNextGeneration9");
+        Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw);
+        Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw);
+        Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw);
+        Node n10 = createTree(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw);
+        Node n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw);
+        Node n12 = createTree(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw);
+        Node n20 = createTree(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw);
+        Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw);
+        Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw);
 
-        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11, "nodeNextGeneration10"));
-        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12, "nodeNextGeneration11"));
-        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21, "nodeNextGeneration12"));
-        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22, "nodeNextGeneration13"));
+        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11));
+        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12));
+        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21));
+        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22));
 
-        Node result = createTree(newNW, newNE, newSW, newSE, "nodeNextGeneration14");
+        Node result = createTree(newNW, newNE, newSW, newSE);
 
         // cascade it up the tree
         Node.addChanged(node);
@@ -1016,16 +976,12 @@ public class LifeUniverse {
         quickgen += 1;
 
         if (node.quickCache != null) {
-            quickCacheHits++; // Increment the cache hit counter
             return node.quickCache;
-        } else {
-            quickCacheMisses++;
         }
 
         if (node.level == 2) {
             return node.quickCache = this.node_level2_next(node);
         }
-
 
         Node nw = node.nw;
         Node ne = node.ne;
@@ -1035,26 +991,25 @@ public class LifeUniverse {
         depth = depth + 1;
 
         Node n00 = this.nodeQuickNextGeneration(nw, depth);
-        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw, "nodeQuickNextGeneration 1"),
+        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw),
                 depth);
         Node n02 = this.nodeQuickNextGeneration(ne, depth);
-        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne, "nodeQuickNextGeneration 2"),
+        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne),
                 depth);
-        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw, "nodeQuickNextGeneration 3"),
+        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw),
                 depth);
-        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne, "nodeQuickNextGeneration 4"),
+        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne),
                 depth);
         Node n20 = this.nodeQuickNextGeneration(sw, depth);
-        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw, "nodeQuickNextGeneration 5"),
+        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw),
                 depth);
         Node n22 = this.nodeQuickNextGeneration(se, depth);
 
         return node.quickCache = this.createTree(
-                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11, "nodeQuickNextGeneration 6"), depth),
-                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12, "nodeQuickNextGeneration 7"), depth),
-                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21, "nodeQuickNextGeneration 8"), depth),
-                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22, "nodeQuickNextGeneration 9"), depth),
-                "nodeQuickNextGeneration10");
+                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11), depth),
+                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12), depth),
+                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21), depth),
+                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22), depth));
     }
 
    public Bounds getRootBounds() {
@@ -1128,7 +1083,7 @@ public class LifeUniverse {
         }
     }
 
-    private void newNodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary, int levelOffset, Object lock) {
+    private void newNodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary, Object lock) {
         if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
             return;
         }
@@ -1177,10 +1132,10 @@ public class LifeUniverse {
                 findNW &= ~(MASK_BOTTOM | MASK_RIGHT);
             }
 
-            newNodeGetBoundary(node.nw, left, top, findNW, boundary, levelOffset, lock);
-            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, levelOffset, lock);
-            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, levelOffset, lock);
-            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, levelOffset, lock);
+            newNodeGetBoundary(node.nw, left, top, findNW, boundary, lock);
+            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, lock);
+            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, lock);
+            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, lock);
         }
     }
 }

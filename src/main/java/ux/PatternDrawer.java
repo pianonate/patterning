@@ -395,13 +395,13 @@ public class PatternDrawer {
         // draw a unit square and be done
         if (size.compareTo(BigDecimal.ONE) <= 0) {
             if (node.population.compareTo(BigInteger.ZERO) > 0) {
-                fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
-                        1);
+                //fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),1);
+                fillSquare(leftWithOffset.intValue(), topWithOffset.intValue(),1);
             }
         } else if (node.level == 0) {
             if (node.population.equals(BigInteger.ONE)) {
-                fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),
-                        cellWidth.get());
+               // fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), cellWidth.get());
+                fillSquare(leftWithOffset.intValue(), topWithOffset.intValue(), cellWidth.get());
             }
         } else {
 

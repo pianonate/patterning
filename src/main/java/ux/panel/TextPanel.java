@@ -303,6 +303,8 @@ public class TextPanel extends Panel implements Drawable {
     }
 
     void drawMultiLineText() {
+
+
         // Get the colors every time in case the UX theme changes
         int outlineColor = theme.getTextColorStart(); // black
 
@@ -318,6 +320,7 @@ public class TextPanel extends Panel implements Drawable {
         float outlineOffset = 1.0F;
 
         panelBuffer.beginDraw();
+        panelBuffer.pushStyle();
 
         panelBuffer.textAlign(this.hAlign.toPApplet(), this.vAlign.toPApplet());
 
@@ -332,6 +335,7 @@ public class TextPanel extends Panel implements Drawable {
         }
 
         // Determine the starting y position based on the alignment
+        //todo: for multiline you can use textLeading to control the actual spacing...
         float lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent();
         float totalTextHeight = lineHeight * messageLines.size();
 
@@ -356,6 +360,7 @@ public class TextPanel extends Panel implements Drawable {
             panelBuffer.text(line, x, lineY);
         }
 
+        panelBuffer.popStyle();
         panelBuffer.endDraw();
     }
 
