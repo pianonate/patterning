@@ -1,7 +1,12 @@
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
         that each contain a left aligned name and right aligned value - Radiator
         you can display the information radiators anywhere on screen as
-        they'll have a title window and - ideally you can reposition them and also close them
+        they'll have a title window and - you can close them with an icon that highlights for that purpose
+                and a docked icon opens them up
+                for now, recreate the ableton experience
+                anyone that wants to provide info to the ableton experience can implement the DetailsProvider interface
+                And the AbletonPanel will have to register an Observer/Observable relationship with the DetailsProvider
+
 
 
 todo: text box - only uses the list of lines and don't use message - too messy

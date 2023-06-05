@@ -87,6 +87,7 @@ public class KeyCombo {
                 validOS == keyCombo.validOS;
     }
 
+    // later:  “␛” or better yet: ⎋ - but large enough to see - use it for closing info panels
     @Override
     public String toString() {
         // Special case for Shift+=, display as +
@@ -103,7 +104,7 @@ public class KeyCombo {
             keyTextBuilder.append("^");
         }
         if ((modifiers & KeyEvent.SHIFT) != 0) {
-            keyTextBuilder.append("↑");
+            keyTextBuilder.append("⇧");
         }
         if ((modifiers & KeyEvent.ALT) != 0) {
             keyTextBuilder.append("⌥");

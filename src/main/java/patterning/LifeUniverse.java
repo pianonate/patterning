@@ -132,26 +132,30 @@ public class LifeUniverse {
 
     // this is extremely large but can be maybe reached if you fix problems with
     // nodeQuickNextGeneration
-    private static final int EMPTY_TREE_CACHE_SIZE = 2048;
+    // going to try a maximum universe size of 1024 with a new drawing scheme that relies
+    // on calculating relating a viewport to the level being drawn and relies on the max double value
+    // the largest level this can support would be  (from Wolfram)  "input": "Floor[Log2[1.8*10^308]]" "output": "1024"
+    
+    private static final int UNIVERSE_LEVEL_LIMIT = 1024;
     private static final int HASHMAP_LIMIT = 30;
     private static final int MASK_LEFT = 1;
     private static final int MASK_TOP = 2;
     private static final int MASK_RIGHT = 4;
     private static final int MASK_BOTTOM = 8;
-    private static final BigInteger[] _powers = new BigInteger[EMPTY_TREE_CACHE_SIZE];
+    private static final BigInteger[] _powers = new BigInteger[UNIVERSE_LEVEL_LIMIT];
 
     static {// the size of the MathContext
         _powers[0] = BigInteger.ONE;
 
-        for (int i = 1; i < EMPTY_TREE_CACHE_SIZE; i++) {
+        for (int i = 1; i < UNIVERSE_LEVEL_LIMIT; i++) {
             _powers[i] = _powers[i - 1].multiply(BigInteger.TWO);
         }
     }
 
     // return the cached power of 2 - for performance reasons
     public static BigInteger pow2(int x) {
-        if (x >= EMPTY_TREE_CACHE_SIZE) {
-            return BigInteger.valueOf(2).pow(EMPTY_TREE_CACHE_SIZE);
+        if (x >= UNIVERSE_LEVEL_LIMIT) {
+            return BigInteger.valueOf(2).pow(UNIVERSE_LEVEL_LIMIT);
         }
         return _powers[x];
     }
@@ -226,7 +230,7 @@ public class LifeUniverse {
         // Size when the next GC will happen
         this.maxLoad = (int) (this.hashmapSize * LOAD_FACTOR);
         this.hashmap = new HashMap<>();
-        this.emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+        this.emptyTreeCache = new Node[UNIVERSE_LEVEL_LIMIT];
         this.level2Cache = new HashMap<>(0x10000);
         this.root = this.emptyTree(3);
         this.generation = BigInteger.ZERO;
@@ -689,7 +693,7 @@ public class LifeUniverse {
             uncache(false);
 
             // todo: why did this originally exist - it seems empty trees are all the same
-            emptyTreeCache = new Node[EMPTY_TREE_CACHE_SIZE];
+            emptyTreeCache = new Node[UNIVERSE_LEVEL_LIMIT];
            // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
         }
 
@@ -702,7 +706,7 @@ public class LifeUniverse {
      * this.rule_b = b;
      * 
      * this.uncache(true);
-     * emptyTreeCache = new patterning.Node[EMPTY_TREE_CACHE_SIZE];
+     * emptyTreeCache = new patterning.Node[UNIVERSE_SIZE_LIMIT];
      * level2Cache = new HashMap<>(0x10000);
      * }
      * }
