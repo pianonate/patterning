@@ -5,8 +5,6 @@ import processing.event.KeyEvent;
 
 import java.util.Objects;
 
-
-
 public class KeyCombo {
 
     public static ValidOS currentOS = determineCurrentOS();

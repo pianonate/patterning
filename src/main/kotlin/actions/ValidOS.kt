@@ -1,6 +1,6 @@
-package actions;
+package actions
 
-public enum ValidOS {
+enum class ValidOS {
     ANY,
     MAC,
     NON_MAC

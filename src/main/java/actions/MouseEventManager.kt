@@ -1,69 +1,52 @@
-package actions;
+package actions
 
-import ux.DrawRateManager;
+import ux.DrawRateManager
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-public class MouseEventManager {
-    private static MouseEventManager instance;
-
-    private MouseEventManager() {}
-
-    public static MouseEventManager getInstance() {
-        if (instance == null) {
-            instance = new MouseEventManager();
-        }
-        return instance;
+class MouseEventManager private constructor() {
+    private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
+    fun addReceiver(receiver: MouseEventReceiver) {
+        mouseEventReceivers.add(receiver)
     }
 
-    private final List<MouseEventReceiver> mouseEventReceivers = new ArrayList<>();
-
-    public void addReceiver(MouseEventReceiver receiver) {
-        mouseEventReceivers.add(receiver);
+    fun addAll(receivers: Collection<MouseEventReceiver>?) {
+        mouseEventReceivers.addAll(receivers!!)
     }
 
-    public void addAll(Collection<? extends MouseEventReceiver> receivers) {
-        mouseEventReceivers.addAll(receivers);
-    }
+    var isMousePressedOverAnyReceiver = false
+        // kotlin thing - says that isMousePressedOverAnyReceiver can only be read externally but can be written to interanlly
+        private set
 
-    public void removeReceiver(MouseEventReceiver receiver) {
-        mouseEventReceivers.remove(receiver);
-    }
+    private var pressedReceiver: MouseEventReceiver? = null
 
-    private boolean mousePressedOverAny;
-    private MouseEventReceiver pressedReceiver;
-
-    public void onMousePressed(int mouseX, int mouseY) {
-        mousePressedOverAny = false;
-        pressedReceiver = null;
-
-        for (MouseEventReceiver receiver : mouseEventReceivers) {
-            if (!mousePressedOverAny && receiver.mousePressedOverMe()) {
-                mousePressedOverAny = true;
-                pressedReceiver = receiver;
+    fun onMousePressed(mouseX: Int, mouseY: Int) {
+        isMousePressedOverAnyReceiver = false
+        pressedReceiver = null
+        for (receiver in mouseEventReceivers) {
+            if (!isMousePressedOverAnyReceiver && receiver.mousePressedOverMe()) {
+                isMousePressedOverAnyReceiver = true
+                pressedReceiver = receiver
             }
-
-            receiver.onMousePressed();
-
+            receiver.onMousePressed()
         }
     }
 
-    public void onMouseReleased() {
+    fun onMouseReleased() {
         if (pressedReceiver != null) {
-            pressedReceiver.onMouseReleased();
-            DrawRateManager.getInstance().drawImmediately();
-            pressedReceiver = null;
+            pressedReceiver!!.onMouseReleased()
+            DrawRateManager.getInstance().drawImmediately()
+            pressedReceiver = null
         }
     }
 
-    public boolean isMousePressedOverAnyReceiver() {
-        return mousePressedOverAny;
+    companion object {
+        @JvmStatic
+        var instance: MouseEventManager? = null
+            get() {
+                if (field == null) {
+                    field = MouseEventManager()
+                }
+                return field
+            }
+            private set
     }
-
-    public boolean isMouseDraggedOverReceiver() {
-        return (pressedReceiver != null);
-    }
-
 }

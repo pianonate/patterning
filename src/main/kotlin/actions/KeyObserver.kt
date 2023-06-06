@@ -1,5 +1,5 @@
-package actions;
+package actions
 
-public interface KeyObserver {
-    void notifyKeyPress(KeyObservable o);
+interface KeyObserver {
+    fun notifyKeyPress(o: KeyObservable?)
 }

@@ -1,9 +1,22 @@
-plugins {
-    application
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_19
+    targetCompatibility = JavaVersion.VERSION_19
 }
 
-//group 'com.example'
-//version '1.0-SNAPSHOT'
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "19"
+    }
+}
+
+plugins {
+    application
+    kotlin("jvm") version "1.8.21"
+}
+
+
 group = "com.example"
 version = "1.0-SNAPSHOT"
 
@@ -26,7 +39,6 @@ tasks.test {
 
 application {
     mainClass.set("patterning.Patterning")
-
     applicationDefaultJvmArgs = listOf("-XX:+UseZGC")
 }
 
@@ -41,12 +53,13 @@ tasks.register<JavaExec>("profile") {
 }
 
 tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     manifest {
         attributes["Main-Class"] = "patterning.Patterning"
     }
 
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
-
 
 

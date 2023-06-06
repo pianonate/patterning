@@ -1,7 +1,7 @@
-package actions;
+package actions
 
-public interface MouseEventReceiver {
-    void onMousePressed();
-    void onMouseReleased();
-    boolean mousePressedOverMe();
+interface MouseEventReceiver {
+    fun onMousePressed()
+    fun onMouseReleased()
+    fun mousePressedOverMe(): Boolean
 }

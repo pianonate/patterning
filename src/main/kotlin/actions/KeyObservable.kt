@@ -1,7 +1,7 @@
-package actions;
+package actions
 
-public interface KeyObservable {
-    void addObserver(KeyObserver o);
-    void notifyKeyObservers();
-    boolean invokeModeChange();
+interface KeyObservable {
+    fun addObserver(o: KeyObserver?)
+    fun notifyKeyObservers()
+    fun invokeModeChange(): Boolean
 }
