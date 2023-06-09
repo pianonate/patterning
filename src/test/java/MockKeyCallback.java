@@ -1,5 +1,6 @@
 import actions.KeyCallback;
 import actions.KeyCombo;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
 
@@ -26,6 +27,7 @@ class MockKeyCallback extends KeyCallback {
 
     }
 
+    @NotNull
     @Override
     public String getUsageText() {
         return "Mock usage";

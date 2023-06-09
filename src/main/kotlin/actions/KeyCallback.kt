@@ -1,95 +1,54 @@
-package actions;
+package actions
 
-import org.jetbrains.annotations.NotNull;
-import processing.event.KeyEvent;
+import processing.event.KeyEvent
 
-import java.util.*;
-import java.util.stream.Collectors;
+abstract class KeyCallback(private val keyCombos: LinkedHashSet<KeyCombo> = LinkedHashSet()) : KeyObservable {
 
-public abstract class KeyCallback implements KeyObservable {
-    private final LinkedHashSet<KeyCombo> keyCombos;
-    private final Set<KeyObserver> keyObservers = new HashSet<>();
+    private val keyObservers: MutableSet<KeyObserver> = HashSet()
 
-    public KeyCallback(char key) {
-        this(new KeyCombo(key));
+    constructor(key: Char) : this(LinkedHashSet(listOf(KeyCombo(key.code))))
+
+    constructor(keys: Set<Char>) : this(keys.map { KeyCombo(it.code) }.let { LinkedHashSet(it) })
+
+    constructor(vararg keyCombos: KeyCombo) : this(LinkedHashSet(keyCombos.toList()))
+
+    override fun addObserver(observer: KeyObserver) {
+        keyObservers.add(observer)
     }
 
-    /**
-     * Constructor for actions.KeyCallback class that takes a variable number of actions.KeyCombo objects.
-     * The actions.KeyCombo objects are converted into a List, then into a Set to ensure no duplicates,
-     * and finally assigned to the keyCombos field.
-     *
-     * @param keyCombos The variable number of actions.KeyCombo objects
-     */
-    public KeyCallback(KeyCombo... keyCombos) {
-        this.keyCombos = new LinkedHashSet<>(Arrays.asList(keyCombos));
-    }
-
-    /**
-     * Constructor for actions.KeyCallback class that takes a Set of Characters.
-     * Each character is converted to its uppercase equivalent (if not already),
-     * cast to an integer ASCII value, and then used to create a new actions.KeyCombo object.
-     * The resulting set of actions.KeyCombo objects is assigned to the keyCombos field.
-     *
-     * @param keys A set of characters representing the keys
-     */
-    public KeyCallback(Set<Character> keys) {
-
-        List<Character> keyList = new ArrayList<>(keys);
-        keyCombos = keyList.stream()
-                .mapToInt(c -> (int) c)
-                .mapToObj(KeyCombo::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    public void addObserver(@NotNull KeyObserver observer) {
-        keyObservers.add(observer);
-    }
-
-
-    public void notifyKeyObservers() {
-        for (KeyObserver keyObserver : keyObservers) {
-            keyObserver.notifyKeyPress(this);
+    override fun notifyKeyObservers() {
+        for (keyObserver in keyObservers) {
+            keyObserver.notifyKeyPress(this)
         }
     }
 
-    public boolean invokeModeChange() {return false;}
+    override fun invokeModeChange(): Boolean {
+        return false
+    }
 
-    public abstract void invokeFeature();
+    abstract fun invokeFeature()
 
-    public void cleanupFeature() {
+    open fun cleanupFeature() {
         // do nothing by default
     }
 
-    public abstract String getUsageText();
+    abstract fun getUsageText(): String
 
-    public Set<KeyCombo> getKeyCombos() {
-        return keyCombos;
+    fun getKeyCombos(): Set<KeyCombo> {
+        return keyCombos
     }
 
-    public Set<KeyCombo> getValidKeyCombosForCurrentOS() {
-        return keyCombos.stream()
-                .filter(KeyCombo::isValidForCurrentOS)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+    val validKeyCombosForCurrentOS: Set<KeyCombo>
+        get() = keyCombos.filter { it.isValidForCurrentOS }.toSet()
+
+    fun matches(event: KeyEvent): Boolean {
+        return keyCombos.any { it.matches(event) }
     }
 
-    public boolean matches(KeyEvent event) {
-        return keyCombos.stream().anyMatch(kc -> kc.matches(event));
-    }
+    val isValidForCurrentOS: Boolean
+        get() = keyCombos.any { it.isValidForCurrentOS }
 
-    // The isValidForCurrentOS() method is now a part of actions.KeyCombo, so we don't need it here.
-    // However, if you still want to provide a way to check if any actions.KeyCombo is valid for the current OS, you can add a method like this:
-
-    public boolean isValidForCurrentOS() {
-
-        return keyCombos.stream().anyMatch(KeyCombo::isValidForCurrentOS);
-    }
-
-    @Override
-    public String toString() {
-        return getValidKeyCombosForCurrentOS().stream()
-                .map(KeyCombo::toString)
-                .collect(Collectors.joining(", "));
+    override fun toString(): String {
+        return validKeyCombosForCurrentOS.joinToString(", ") { it.toString() }
     }
 }
-

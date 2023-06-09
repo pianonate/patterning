@@ -10,7 +10,7 @@ todo: create a new kind of ContainerPanel called an InformationRadiator that con
 
 
 todo: text box - only uses the list of lines and don't use message - too messy
-
+todo: capture events with javafx (or something else) to allow for trackpad manipulation of the app
 
 todo: should we use futures instead of ComplexCalculationHandler?  it's a little more complicated but it's more standard and it's more flexible - you can cancel a future and you can get a result from it - and you can get a result from it with a timeout - which is what you want for the ComplexCalculationHandler
 
