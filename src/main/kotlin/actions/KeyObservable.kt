@@ -1,7 +1,7 @@
 package actions
 
 interface KeyObservable {
-    fun addObserver(o: KeyObserver?)
+    fun addObserver(observer: KeyObserver)
     fun notifyKeyObservers()
     fun invokeModeChange(): Boolean
 }

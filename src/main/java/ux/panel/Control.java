@@ -1,6 +1,7 @@
 package ux.panel;
 
 import actions.*;
+import org.jetbrains.annotations.NotNull;
 import processing.core.PImage;
 import processing.core.PVector;
 import ux.DrawableManager;
@@ -199,7 +200,7 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
     }
 
     @Override
-    public void notifyKeyPress(KeyObservable o) {
+    public void notifyKeyPress(@NotNull KeyObservable observer) {
         highlightFromKeyPress();
     }
 

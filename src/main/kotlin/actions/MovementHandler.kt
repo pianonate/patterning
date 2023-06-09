@@ -24,32 +24,45 @@ class MovementHandler(private val drawer: PatternDrawer) {
     private fun handleMovementKeys() {
         var moveX = 0f
         var moveY = 0f
-        for (direction in directions) {
-            val isMoving = pressedKeys.contains(direction[0])
-            if (isMoving) {
+
+        directions.forEach { direction ->
+            if (pressedKeys.contains(direction[0])) {
                 moveX += direction[2] * moveAmount / pressedKeys.size
                 moveY += direction[1] * moveAmount / pressedKeys.size
             }
         }
 
-        // Check if the direction has changed
-        var currentDirection = 0
-        for (direction in directions) {
-            val isMoving = pressedKeys.contains(direction[0])
-            if (isMoving) {
-                currentDirection += direction[0]
-            }
-        }
+        val currentDirection = directions.filter { pressedKeys.contains(it[0]) }.sumOf { it[0] }
+
         if (currentDirection != lastDirection) {
-            // Reset moveAmount if direction has changed
             moveAmount = initialMoveAmount
         }
         lastDirection = currentDirection
+
         drawer.move(moveX, moveY)
     }
 
+
     companion object {
+        const val WEST = PApplet.LEFT
+        const val EAST = PApplet.RIGHT
+        const val NORTH = PApplet.UP
+        const val SOUTH = PApplet.DOWN
+        const val NORTHWEST = NORTH + WEST
+        const val NORTHEAST = NORTH + EAST
+        const val SOUTHWEST = SOUTH + WEST
+        const val SOUTHEAST = SOUTH + EAST
+
         private val pressedKeys = KeyHandler.getPressedKeys()
-        private val directions = arrayOf(intArrayOf(PApplet.LEFT, 0, -1), intArrayOf(PApplet.UP, -1, 0), intArrayOf(PApplet.RIGHT, 0, 1), intArrayOf(PApplet.DOWN, 1, 0), intArrayOf(PApplet.UP + PApplet.LEFT, -1, -1), intArrayOf(PApplet.UP + PApplet.RIGHT, -1, 1), intArrayOf(PApplet.DOWN + PApplet.LEFT, 1, -1), intArrayOf(PApplet.DOWN + PApplet.RIGHT, 1, 1))
+        private val directions = arrayOf(
+                intArrayOf(WEST, 0, -1),
+                intArrayOf(NORTH, -1, 0),
+                intArrayOf(EAST, 0, 1),
+                intArrayOf(SOUTH, 1, 0),
+                intArrayOf(NORTHWEST, -1, -1),
+                intArrayOf(NORTHEAST, -1, 1),
+                intArrayOf(SOUTHWEST, 1, -1),
+                intArrayOf(SOUTHEAST, 1, 1)
+        )
     }
 }

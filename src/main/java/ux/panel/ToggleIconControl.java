@@ -32,8 +32,8 @@ public class ToggleIconControl extends Control {
     }
 
     @Override
-    public void notifyKeyPress(KeyObservable o) {
-        if (o.invokeModeChange()) {
+    public void notifyKeyPress(KeyObservable observer) {
+        if (observer.invokeModeChange()) {
             toggleMode();
             if (!iconToggled)
                 toggleIcon();

@@ -1,5 +1,6 @@
 package actions;
 
+import org.jetbrains.annotations.NotNull;
 import processing.event.KeyEvent;
 
 import java.util.*;
@@ -33,10 +34,6 @@ public abstract class KeyCallback implements KeyObservable {
      * @param keys A set of characters representing the keys
      */
     public KeyCallback(Set<Character> keys) {
-       /* keyCombos = keys.stream()
-                .mapToInt(c -> (int) c)
-                .mapToObj(KeyCombo::new)
-                .collect(Collectors.toSet());*/
 
         List<Character> keyList = new ArrayList<>(keys);
         keyCombos = keyList.stream()
@@ -45,8 +42,8 @@ public abstract class KeyCallback implements KeyObservable {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    public void addObserver(KeyObserver o) {
-        keyObservers.add(o);
+    public void addObserver(@NotNull KeyObserver observer) {
+        keyObservers.add(observer);
     }
 
 
@@ -57,10 +54,6 @@ public abstract class KeyCallback implements KeyObservable {
     }
 
     public boolean invokeModeChange() {return false;}
-
-    public void deleteObserver(KeyObserver o) {
-        keyObservers.remove(o);
-    }
 
     public abstract void invokeFeature();
 
@@ -91,14 +84,6 @@ public abstract class KeyCallback implements KeyObservable {
 
         return keyCombos.stream().anyMatch(KeyCombo::isValidForCurrentOS);
     }
-
-    // used to calculate the maximum size to show for usage
- /*   public String getComboTexts() {
-        return keyCombos.stream()
-                .filter(KeyCombo::isValidForCurrentOS)
-                .map(KeyCombo::toString)
-                .collect(Collectors.joining(", "));
-    }*/
 
     @Override
     public String toString() {

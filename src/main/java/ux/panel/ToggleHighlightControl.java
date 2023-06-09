@@ -2,6 +2,7 @@ package ux.panel;
 
 import actions.KeyCallback;
 import actions.KeyObservable;
+import org.jetbrains.annotations.NotNull;
 import ux.informer.DrawingInfoSupplier;
 
 public class ToggleHighlightControl extends Control {
@@ -16,7 +17,7 @@ public class ToggleHighlightControl extends Control {
     }
 
     @Override
-    public void notifyKeyPress(KeyObservable o) {
+    public void notifyKeyPress(@NotNull KeyObservable observer) {
         // Specific behavior for ToggleHighlightControl
         isHighlightFromKeypress = !isHighlightFromKeypress;
     }

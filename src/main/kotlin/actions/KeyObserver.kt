@@ -1,5 +1,5 @@
 package actions
 
 interface KeyObserver {
-    fun notifyKeyPress(o: KeyObservable?)
+    fun notifyKeyPress(observer: KeyObservable)
 }
