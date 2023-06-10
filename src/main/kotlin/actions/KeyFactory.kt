@@ -153,6 +153,8 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     @JvmField
     val callbackZoomInCenter: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_CENTERED) {
         override fun invokeFeature() {
+            // todo - why do we have to call back to patterning
+            //patterning.centerView();
             drawer.zoomXY(true, patterning.getWidth().toFloat() / 2, patterning.getHeight().toFloat() / 2)
         }
 
@@ -165,6 +167,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)
     ) {
         override fun invokeFeature() {
+            //patterning.centerView();
             drawer.zoomXY(false, patterning.getWidth().toFloat() / 2, patterning.getHeight().toFloat() / 2)
         }
 

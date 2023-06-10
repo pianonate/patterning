@@ -1,3 +1,5 @@
+todo: command-W closes the window
+
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
         that each contain a left aligned name and right aligned value - Radiator
         you can display the information radiators anywhere on screen as
@@ -94,4 +96,5 @@ todo: directional big jump
 todo: file manager of RLEs
 todo: undo mouse moves? would it make sense to people
 todo: paste logic - move to separate class to handle - just for the sake of keeping patterning.Patterning clean
+todo: at the end of PatternDrawer.undoMovement maybe you show something fun to indicate you've reached the end of the stack. pulse the screen or something
 OCTREE: https://github.com/thwegene/OCT/tree/master

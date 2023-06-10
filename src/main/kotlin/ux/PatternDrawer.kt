@@ -1,48 +1,43 @@
-package ux;
+package ux
 
-import actions.KeyFactory;
-import actions.MouseEventManager;
-import actions.MovementHandler;
-import patterning.*;
-import processing.core.PApplet;
-import processing.core.PGraphics;
-import processing.core.PVector;
-import ux.informer.DrawingInfoSupplier;
-import ux.informer.DrawingInformer;
-import ux.panel.*;
+import actions.KeyFactory
+import actions.MouseEventManager.Companion.instance
+import actions.MovementHandler
+import patterning.Bounds
+import patterning.LifeUniverse
+import patterning.Node
+import patterning.Patterning
+import processing.core.PApplet
+import processing.core.PGraphics
+import processing.core.PVector
+import ux.informer.DrawingInfoSupplier
+import ux.informer.DrawingInformer
+import ux.panel.*
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.MathContext
+import java.util.*
+import java.util.function.IntSupplier
+import kotlin.collections.ArrayDeque
+import kotlin.math.roundToInt
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
-import java.util.*;
-
-public class PatternDrawer {
-
-    // without this precision on the MathContext, small imprecision propagates at
-    // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
-    // off the screen.  don't skimp on precision!
-    private static final MathContext mc = new MathContext(100);
-    private static final BigDecimal BigTWO = new BigDecimal(2);
-    private static final Stack<CanvasState> previousStates = new Stack<>();
-    private static final int DEFAULT_CELL_WIDTH = 4;
-    final float cellBorderWidthRatio = .05F;
-    private final DrawingInfoSupplier drawingInformer;
-    // for all conversions, this needed to be a number larger than 5 for
+class PatternDrawer(// for all conversions, this needed to be a number larger than 5 for
     // there not to be rounding errors
     // which caused cells to appear outside the bounds
-    private final PApplet processing;
-    private final Patterning patterning;
-    private final DrawRateManager drawRateManager;
-    private final HUDStringBuilder hudInfo;
-    private final MovementHandler movementHandler;
+    private val processing: PApplet,
+    private val drawRateManager: DrawRateManager
+) {
+    private val cellBorderWidthRatio = .05f
+    private val drawingInformer: DrawingInfoSupplier
+    private val patterning: Patterning = processing as Patterning
+    private val hudInfo: HUDStringBuilder
+    private val movementHandler: MovementHandler
+
     // ain't no way to do drawing without a singleton drawables manager
-    private final DrawableManager drawables = DrawableManager.getInstance();
-
-    private final KeyFactory keyFactory;
-
-    float cellBorderWidth = 0.0F;
-    UXThemeManager theme = UXThemeManager.getInstance();
-
+    private val drawables = DrawableManager.getInstance()
+    private val keyFactory: KeyFactory
+    private var cellBorderWidth = 0.0f
+    private var theme: UXThemeManager = UXThemeManager.getInstance()
 
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
@@ -52,309 +47,278 @@ public class PatternDrawer {
     // whenever an image is drawn, ths PVector is reset to 0,0 to match the current image state
     // it's a nifty way to handle things - just follow lifeFormPosition through the code
     // to see what i'm talking about
-    PVector lifeFormPosition = new PVector(0, 0);
-    boolean drawing = false;
-    private CellWidth cellWidth;
-    private TextPanel countdownText;
-    private TextPanel hudText;
-    private PGraphics lifeFormBuffer;
-    private PGraphics UXBuffer;
-    private boolean drawBounds;
-    private BigDecimal canvasOffsetX = BigDecimal.ZERO;
-    private BigDecimal canvasOffsetY = BigDecimal.ZERO;
+    private var lifeFormPosition = PVector(0f, 0f)
+    private var isDrawing = false
+    private var cell: Cell
+    private var countdownText: TextPanel? = null
+    private var hudText: TextPanel? = null
+    private var lifeFormBuffer: PGraphics
+    private var uXBuffer: PGraphics
+    private var drawBounds: Boolean
+    private var canvasOffsetX = BigDecimal.ZERO
+    private var canvasOffsetY = BigDecimal.ZERO
+
     // if we're going to be operating in BigDecimal then we keep these that way so
     // that calculations can be done without conversions until necessary
-    private BigDecimal canvasWidth;
-    private BigDecimal canvasHeight;
+    private var canvasWidth: BigDecimal
+    private var canvasHeight: BigDecimal
 
-    // surprisingly cacheing the result of the half size calculation provides
+    // surprisingly caching the result of the half size calculation provides
     // a remarkable speed boost
-    private final Map<BigDecimal, BigDecimal> halfSizeMap = new HashMap<>();
+    private val halfSizeMap: MutableMap<BigDecimal?, BigDecimal> = HashMap()
 
     // used for resize detection
-    private int prevWidth, prevHeight;
+    private var prevWidth: Int
+    private var prevHeight: Int
 
-
-    public PatternDrawer(PApplet pApplet,
-                         DrawRateManager drawRateManager) {
-
-        this.processing = pApplet;
-        this.patterning = (Patterning) pApplet;
-
-        this.drawRateManager = drawRateManager;
-        this.UXBuffer = getBuffer();
-        this.lifeFormBuffer = getBuffer();
-
-        drawingInformer = new DrawingInformer(
-                this::getUXBuffer,
-                this::isWindowResized,
-                this::isDrawing);
+    init {
+        uXBuffer = buffer
+        lifeFormBuffer = buffer
+        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized }) { isDrawing }
         // resize trackers
-        prevWidth = pApplet.width;
-        prevHeight = pApplet.height;
-
-        this.cellWidth = new CellWidth(DEFAULT_CELL_WIDTH);
-        this.canvasWidth = BigDecimal.valueOf(pApplet.width);
-        this.canvasHeight = BigDecimal.valueOf(pApplet.height);
-
-        this.movementHandler = new MovementHandler(this);
-        this.drawBounds = false;
-        this.hudInfo = new HUDStringBuilder();
-
-        TextPanel startupText = new TextPanel.Builder(drawingInformer, theme.getStartupText(), AlignHorizontal.RIGHT, AlignVertical.TOP)
-                .textSize(theme.getStartupTextSize())
-                .fadeInDuration(theme.getStartupTextFadeInDuration())
-                .fadeOutDuration(theme.getStartupTextFadeOutDuration())
-                .displayDuration(theme.getStartupTextDisplayDuration())
-                .build();
-        drawables.add(startupText);
-
-        this.keyFactory = new KeyFactory(patterning, this);
-        setupControls();
+        prevWidth = processing.width
+        prevHeight = processing.height
+        cell = Cell(DEFAULT_CELL_WIDTH.toFloat())
+        canvasWidth = BigDecimal.valueOf(processing.width.toLong())
+        canvasHeight = BigDecimal.valueOf(processing.height.toLong())
+        movementHandler = MovementHandler(this)
+        drawBounds = false
+        hudInfo = HUDStringBuilder()
+        val startupText =
+            TextPanel.Builder(drawingInformer, theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
+                .textSize(theme.startupTextSize)
+                .fadeInDuration(theme.startupTextFadeInDuration)
+                .fadeOutDuration(theme.startupTextFadeOutDuration)
+                .displayDuration(theme.startupTextDisplayDuration.toLong())
+                .build()
+        drawables.add(startupText)
+        keyFactory = KeyFactory(patterning, this)
+        setupControls()
     }
 
-    private PGraphics getBuffer() {
-        return processing.createGraphics(processing.width, processing.height);
-    }
+    private val buffer: PGraphics
+        get() = processing.createGraphics(processing.width, processing.height)
 
-    private PGraphics getUXBuffer() {
-        return UXBuffer;
-    }
+    private val isWindowResized: Boolean
+        get() {
+            val widthChanged = prevWidth != processing.width
+            val heightChanged = prevHeight != processing.height
+            return widthChanged || heightChanged
+        }
 
-    private boolean isWindowResized() {
-        boolean widthChanged = prevWidth != processing.width;
-        boolean heightChanged = prevHeight != processing.height;
-        return widthChanged || heightChanged;
-    }
-
-    private boolean isDrawing() {
-        return drawing;
-    }
-
-    private void setupControls() {
+    private fun setupControls() {
 
         // all callbacks have to invoke work - either on the Patterning or PatternDrawer
         // so give'em what they need
-        keyFactory.setupKeyHandler();
-        ControlPanel panelLeft, panelTop, panelRight;
-        int transitionDuration = UXThemeManager.getInstance().getControlPanelTransitionDuration();
-        panelLeft = new ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
-                .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
-                .setOrientation(Orientation.VERTICAL)
-                .addControl("zoomIn.png", keyFactory.callbackZoomInCenter)
-                .addControl("zoomOut.png", keyFactory.callbackZoomOutCenter)
-                .addControl("fitToScreen.png", keyFactory.callbackFitUniverseOnScreen)
-                .addControl("center.png", keyFactory.callbackCenterView)
-                .addControl("undo.png", keyFactory.callbackUndoMovement)
-                .build();
-
-        panelTop = new ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
-                .transition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, transitionDuration)
-                .setOrientation(Orientation.HORIZONTAL)
-                .addControl("random.png", keyFactory.callbackRandomLife)
-                .addControl("stepSlower.png", keyFactory.callbackStepSlower)
-                .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-                .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause, keyFactory.callbackSingleStep)
-                .addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-                .addControl("stepFaster.png", keyFactory.callbackStepFaster)
-                .addControl("rewind.png", keyFactory.callbackRewind)
-                .build();
-
-        panelRight = new ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-                .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
-                .setOrientation(Orientation.VERTICAL)
-                .addToggleHighlightControl("boundary.png", keyFactory.callbackDisplayBounds)
-                .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
-                .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
-                .build();
-
-        List<ControlPanel> panels = Arrays.asList(panelLeft, panelTop, panelRight);
-
-        MouseEventManager.getInstance().addAll(panels);
-
-        drawables.addAll(panels);
-
-
+        keyFactory.setupKeyHandler()
+        val panelLeft: ControlPanel
+        val panelTop: ControlPanel
+        val panelRight: ControlPanel
+        val transitionDuration = UXThemeManager.getInstance().controlPanelTransitionDuration
+        panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
+            .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
+            .setOrientation(Orientation.VERTICAL)
+            .addControl("zoomIn.png", keyFactory.callbackZoomInCenter)
+            .addControl("zoomOut.png", keyFactory.callbackZoomOutCenter)
+            .addControl("fitToScreen.png", keyFactory.callbackFitUniverseOnScreen)
+            .addControl("center.png", keyFactory.callbackCenterView)
+            .addControl("undo.png", keyFactory.callbackUndoMovement)
+            .build()
+        panelTop = ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
+            .transition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, transitionDuration)
+            .setOrientation(Orientation.HORIZONTAL)
+            .addControl("random.png", keyFactory.callbackRandomLife)
+            .addControl("stepSlower.png", keyFactory.callbackStepSlower)
+            .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+            .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause, keyFactory.callbackSingleStep)
+            .addControl("drawFaster.png", keyFactory.callbackDrawFaster)
+            .addControl("stepFaster.png", keyFactory.callbackStepFaster)
+            .addControl("rewind.png", keyFactory.callbackRewind)
+            .build()
+        panelRight = ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
+            .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
+            .setOrientation(Orientation.VERTICAL)
+            .addToggleHighlightControl("boundary.png", keyFactory.callbackDisplayBounds)
+            .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
+            .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
+            .build()
+        val panels = listOf(panelLeft, panelTop, panelRight)
+        Objects.requireNonNull(instance)?.addAll(panels)
+        drawables.addAll(panels)
     }
 
-    public void toggleDrawBounds() {
-        drawBounds = !drawBounds;
+    fun toggleDrawBounds() {
+        drawBounds = !drawBounds
     }
 
-    private BigDecimal calcCenterOnResize(BigDecimal dimension, BigDecimal offset) {
-        return (dimension.divide(BigTWO, mc)).subtract(offset);
+    private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
+        return dimension.divide(BigTWO, mc).subtract(offset)
     }
 
-    public void setupNewLife(LifeUniverse life) {
-
-        Bounds bounds = life.getRootBounds();
-
-        center(bounds, true, false);
-
-        if (drawables.isManaging(countdownText)) {
-            drawables.remove(countdownText);
+    private fun createTextPanel(
+        existingTextPanel: TextPanel?, // could be null
+        builderFunction: () -> TextPanel.Builder
+    ): TextPanel {
+        existingTextPanel?.let {
+            if (drawables.isManaging(it)) {
+                drawables.remove(it)
+            }
         }
+
+        return builderFunction()
+            .build()
+            .also { newTextPanel ->
+                drawables.add(newTextPanel)
+            }
+    }
+
+    fun setupNewLife(life: LifeUniverse) {
+
+        val bounds = life.rootBounds
+        center(bounds, fitBounds = true, saveState = false)
 
         // todo: on maximum volatility gun, not clearing the previousStates when doing a setStep seems to cause it to freak out - see if that's causal
-
         // clear image cache and previous states
-        clearCache();
+        clearCache()
 
-        countdownText = new TextPanel.Builder(drawingInformer, theme.getCountdownText(), AlignHorizontal.CENTER, AlignVertical.CENTER)
-                .runMethod(patterning::run)
+        countdownText = createTextPanel(countdownText) {
+            TextPanel.Builder(
+                drawingInformer,
+                theme.countdownText,
+                AlignHorizontal.CENTER,
+                AlignVertical.CENTER
+            )
+                .runMethod { patterning.run() }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .textWidth(Optional.of(() -> canvasWidth.intValue() / 2))
+                .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() / 2 }))
                 .wrap()
                 .textSize(24)
-                .build();
-        drawables.add(countdownText);
-
-        if (null != hudText) {
-            drawables.remove(hudText);
-            System.out.println(String.join("\n", Arrays.toString(Thread.currentThread().getStackTrace()).split(", ")));
         }
 
-        hudText = new TextPanel.Builder(drawingInformer, getHUDMessage(life), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+        hudText = createTextPanel(hudText) {
+            TextPanel.Builder(drawingInformer, getHUDMessage(life), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
-                .textWidth(Optional.of(() -> canvasWidth.intValue() ))
-                .build();
-        drawables.add(hudText);
+                .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
+        }
     }
 
-    public void center(Bounds bounds, boolean fitBounds, boolean saveState) {
-
-
+    fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) {
-            saveUndoState();
+            saveUndoState()
         }
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        BigDecimal patternWidth = new BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE));
-        BigDecimal patternHeight = new BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
-
+        val patternWidth = BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE))
+        val patternHeight = BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
         if (fitBounds) {
-
-            BigDecimal widthRatio = (patternWidth.compareTo(BigDecimal.ZERO) > 0) ? canvasWidth.divide(patternWidth, mc)
-                    : BigDecimal.ONE;
-            BigDecimal heightRatio = (patternHeight.compareTo(BigDecimal.ZERO) > 0)
-                    ? canvasHeight.divide(patternHeight, mc)
-                    : BigDecimal.ONE;
-
-            BigDecimal newCellSize = (widthRatio.compareTo(heightRatio) < 0) ? widthRatio : heightRatio;
-
-            cellWidth.set(newCellSize.floatValue() * .9F);
-
+            // val widthRatio = if (patternWidth.compareTo(BigDecimal.ZERO) > 0) canvasWidth.divide(
+            val widthRatio = if (patternWidth > BigDecimal.ZERO) canvasWidth.divide(
+                patternWidth,
+                mc
+            ) else BigDecimal.ONE
+            val heightRatio = if (patternHeight > BigDecimal.ZERO) canvasHeight.divide(
+                patternHeight,
+                mc
+            ) else BigDecimal.ONE
+            val newCellSize = if (widthRatio < heightRatio) widthRatio else heightRatio
+            cell.width = (newCellSize.toFloat() * .9f)
         }
-
-        BigDecimal bigCell = cellWidth.getAsBigDecimal();
-
-        BigDecimal drawingWidth = patternWidth.multiply(bigCell);
-        BigDecimal drawingHeight = patternHeight.multiply(bigCell);
-
-        BigDecimal halfCanvasWidth = canvasWidth.divide(BigTWO, mc);
-        BigDecimal halfCanvasHeight = canvasHeight.divide(BigTWO, mc);
-
-        BigDecimal halfDrawingWidth = drawingWidth.divide(BigTWO, mc);
-        BigDecimal halfDrawingHeight = drawingHeight.divide(BigTWO, mc);
+        val bigCell = cell.widthBigDecimal
+        val drawingWidth = patternWidth.multiply(bigCell)
+        val drawingHeight = patternHeight.multiply(bigCell)
+        val halfCanvasWidth = canvasWidth.divide(BigTWO, mc)
+        val halfCanvasHeight = canvasHeight.divide(BigTWO, mc)
+        val halfDrawingWidth = drawingWidth.divide(BigTWO, mc)
+        val halfDrawingHeight = drawingHeight.divide(BigTWO, mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        BigDecimal offsetX = halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate());
-        BigDecimal offsetY = halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate());
-
-        canvasOffsetX = offsetX;
-        canvasOffsetY = offsetY;
+        val offsetX =
+            halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate())
+        val offsetY =
+            halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate())
+        canvasOffsetX = offsetX
+        canvasOffsetY = offsetY
     }
 
-    public void clearCache() {
-        previousStates.clear();
+    fun clearCache() {
+        previousStates.clear()
     }
 
-    private String getHUDMessage(LifeUniverse life) {
-
-        PatternInfo patternInfo = life.getPatternInfo();
-
-        hudInfo.addOrUpdate("fps", Math.round(processing.frameRate));
-        hudInfo.addOrUpdate("dps", Math.round(drawRateManager.getCurrentDrawRate()));
-        hudInfo.addOrUpdate("cell", getCellWidth());
-        hudInfo.addOrUpdate("running", (patterning.isRunning()) ? "running" : "stopped");
-
-        hudInfo.addOrUpdate("level ", patternInfo.get("level"));
-        hudInfo.addOrUpdate("step", patternInfo.get("step"));
-        hudInfo.addOrUpdate("generation", patternInfo.get("generation"));
-        hudInfo.addOrUpdate("population", patternInfo.get("population"));
-        hudInfo.addOrUpdate("maxLoad", patternInfo.get("maxLoad"));
-        hudInfo.addOrUpdate("lastID", patternInfo.get("lastId"));
-        hudInfo.addOrUpdate("width", patternInfo.get("width"));
-        hudInfo.addOrUpdate("height", patternInfo.get("height"));
-
-        UXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM);
+    private fun getHUDMessage(life: LifeUniverse): String {
+        val patternInfo = life.patternInfo
+        hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
+        hudInfo.addOrUpdate("dps", drawRateManager.currentDrawRate.roundToInt())
+        hudInfo.addOrUpdate("cell", getCellWidth())
+        hudInfo.addOrUpdate("running", if (patterning.isRunning) "running" else "stopped")
+        hudInfo.addOrUpdate("level ", patternInfo["level"])
+        hudInfo.addOrUpdate("step", patternInfo["step"])
+        hudInfo.addOrUpdate("generation", patternInfo["generation"])
+        hudInfo.addOrUpdate("population", patternInfo["population"])
+        hudInfo.addOrUpdate("maxLoad", patternInfo["maxLoad"])
+        hudInfo.addOrUpdate("lastID", patternInfo["lastId"])
+        hudInfo.addOrUpdate("width", patternInfo["width"])
+        hudInfo.addOrUpdate("height", patternInfo["height"])
+        uXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM)
         // use the default delimiter
-        return hudInfo.getFormattedString(processing.frameCount, 12);
+        return hudInfo.getFormattedString(processing.frameCount, 12)
     }
 
     // called when moves are invoked as there is some trickery in the move handler to move
     // multiple times on key presses and even more so as they are held down
     // we just want to go back to the first one...
-    public void saveUndoState() {
-        previousStates.push(new CanvasState(cellWidth, canvasOffsetX, canvasOffsetY));
+    fun saveUndoState() {
+        previousStates.add(CanvasState(cell, canvasOffsetX, canvasOffsetY))
     }
 
-    public float getCellWidth() {
-        return cellWidth.get();
+    private fun getCellWidth(): Float {
+        return cell.width
     }
 
-    public void handlePause() {
-
+    fun handlePause() {
         if (drawables.isManaging(countdownText)) {
-            countdownText.interruptCountdown();
-            keyFactory.callbackPause.notifyKeyObservers();
+            countdownText?.interruptCountdown()
+            keyFactory.callbackPause.notifyKeyObservers()
         } else {
-            patterning.toggleRun();
+            patterning.toggleRun()
         }
     }
 
-    private void updateWindowResized() {
-
-        BigDecimal bigWidth = BigDecimal.valueOf(processing.width);
-        BigDecimal bigHeight = BigDecimal.valueOf(processing.height);
+    private fun updateWindowResized() {
+        val bigWidth = BigDecimal.valueOf(processing.width.toLong())
+        val bigHeight = BigDecimal.valueOf(processing.height.toLong())
 
         // create new buffers
-        UXBuffer = getBuffer();
-        lifeFormBuffer = getBuffer();
+        uXBuffer = buffer
+        lifeFormBuffer = buffer
 
         // Calculate the center of the visible portion before resizing
-        BigDecimal centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX);
-        BigDecimal centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY);
+        val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
+        val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
 
         // Update the canvas size
-        canvasWidth = bigWidth;
-        canvasHeight = bigHeight;
+        canvasWidth = bigWidth
+        canvasHeight = bigHeight
 
         // Calculate the center of the visible portion after resizing
-        BigDecimal centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX);
-        BigDecimal centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY);
+        val centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX)
+        val centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY)
 
         // Calculate the difference in the visible portion's center
-        BigDecimal offsetX = centerXAfter.subtract(centerXBefore);
-        BigDecimal offsetY = centerYAfter.subtract(centerYBefore);
-
-        updateCanvasOffsets(offsetX, offsetY);
-
+        val offsetX = centerXAfter.subtract(centerXBefore)
+        val offsetY = centerYAfter.subtract(centerYBefore)
+        updateCanvasOffsets(offsetX, offsetY)
     }
 
-    private void fillSquare(float x, float y, float size) {
+    private fun fillSquare(x: Float, y: Float, size: Float) {
+        val width = size - cellBorderWidth
+        uXBuffer.pushStyle()
+        lifeFormBuffer.fill(theme.cellColor)
+        lifeFormBuffer.noStroke()
+        lifeFormBuffer.rect(x, y, width, width)
+        uXBuffer.popStyle()
 
-
-        float width = size - cellBorderWidth;
-
-        UXBuffer.pushStyle();
-        lifeFormBuffer.fill(theme.getCellColor());
-        lifeFormBuffer.noStroke();
-        lifeFormBuffer.rect(x, y, width, width);
-        UXBuffer.popStyle();
-
-/*        // todo, create a keyboard handler to display these values
+        /*        // todo, create a keyboard handler to display these values
         //       or a mouse mode - it can be useful when debugging positioning information
         // you'll be glad you did
         if (false) {
@@ -369,240 +333,225 @@ public class PatternDrawer {
             int nextPos = (int) x + (int) size;
             lifeFormBuffer.text("next: " + nextPos, x, y + 36, width, width);
         }*/
-
     }
 
-    private void drawNode(Node node, BigDecimal size, BigDecimal left, BigDecimal top) {
-
-        if (node.population.equals(BigInteger.ZERO)) {
-            return;
+    private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
+        if (node.population == BigInteger.ZERO) {
+            return
         }
-
-        BigDecimal leftWithOffset = left.add(canvasOffsetX);
-        BigDecimal topWithOffset = top.add(canvasOffsetY);
-        BigDecimal leftWithOffsetAndSize = leftWithOffset.add(size);
-        BigDecimal topWithOffsetAndSize = topWithOffset.add(size);
+        val leftWithOffset = left.add(canvasOffsetX)
+        val topWithOffset = top.add(canvasOffsetY)
+        val leftWithOffsetAndSize = leftWithOffset.add(size)
+        val topWithOffsetAndSize = topWithOffset.add(size)
 
         // no need to draw anything not visible on screen
-        if (leftWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
-                || topWithOffsetAndSize.compareTo(BigDecimal.ZERO) < 0
-                || leftWithOffset.compareTo(canvasWidth) >= 0
-                || topWithOffset.compareTo(canvasHeight) >= 0) {
-            return;
+        if (leftWithOffsetAndSize < BigDecimal.ZERO
+            || topWithOffsetAndSize < BigDecimal.ZERO
+            || leftWithOffset >= canvasWidth
+            || topWithOffset >= canvasHeight
+        ) {
+            return
         }
 
         // if we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
-        if (size.compareTo(BigDecimal.ONE) <= 0) {
-            if (node.population.compareTo(BigInteger.ZERO) > 0) {
+        if (size <= BigDecimal.ONE) {
+            if (node.population > BigInteger.ZERO) {
                 //fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()),1);
-                fillSquare(leftWithOffset.intValue(), topWithOffset.intValue(),1);
+                fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
             }
         } else if (node.level == 0) {
-            if (node.population.equals(BigInteger.ONE)) {
-               // fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), cellWidth.get());
-                fillSquare(leftWithOffset.intValue(), topWithOffset.intValue(), cellWidth.get());
+            if (node.population == BigInteger.ONE) {
+                // fillSquare(Math.round(leftWithOffset.floatValue()), Math.round(topWithOffset.floatValue()), cellWidth.get());
+                fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.width)
             }
         } else {
-
-            BigDecimal halfSize = getHalfSize(size);
-            BigDecimal leftHalfSize = left.add(halfSize);
-            BigDecimal topHalfSize = top.add(halfSize);
-
-            drawNode(node.nw, halfSize, left, top);
-            drawNode(node.ne, halfSize, leftHalfSize, top);
-            drawNode(node.sw, halfSize, left, topHalfSize);
-            drawNode(node.se, halfSize, leftHalfSize, topHalfSize);
-
+            val halfSize = getHalfSize(size)
+            val leftHalfSize = left.add(halfSize)
+            val topHalfSize = top.add(halfSize)
+            drawNode(node.nw, halfSize, left, top)
+            drawNode(node.ne, halfSize, leftHalfSize, top)
+            drawNode(node.sw, halfSize, left, topHalfSize)
+            drawNode(node.se, halfSize, leftHalfSize, topHalfSize)
         }
     }
 
-    public void move(float dx, float dy) {
-        saveUndoState();
-        updateCanvasOffsets(BigDecimal.valueOf(dx), BigDecimal.valueOf(dy));
-        lifeFormPosition.add(dx, dy);
+    fun move(dx: Float, dy: Float) {
+        saveUndoState()
+        updateCanvasOffsets(BigDecimal.valueOf(dx.toDouble()), BigDecimal.valueOf(dy.toDouble()))
+        lifeFormPosition.add(dx, dy)
     }
 
-    private void updateCanvasOffsets(BigDecimal offsetX, BigDecimal offsetY) {
-        canvasOffsetX = canvasOffsetX.add(offsetX);
-        canvasOffsetY = canvasOffsetY.add(offsetY);
+    private fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
+        canvasOffsetX = canvasOffsetX.add(offsetX)
+        canvasOffsetY = canvasOffsetY.add(offsetY)
     }
 
-    public void zoomXY(boolean in, float x, float y) {
-        zoom(in, x, y);
+    fun zoomXY(`in`: Boolean, x: Float, y: Float) {
+        zoom(`in`, x, y)
     }
 
-    public void zoom(boolean zoomIn, float x, float y) {
-        saveUndoState();
-
-        float previousCellWidth = cellWidth.get();
+    private fun zoom(zoomIn: Boolean, x: Float, y: Float) {
+        saveUndoState()
+        val previousCellWidth = cell.width
 
         // Adjust cell width to align with grid
-        if (zoomIn) {
-            cellWidth.set(previousCellWidth * 1.25f);
-        } else {
-            cellWidth.set(previousCellWidth / 1.25f);
-        }
+        cell.zoom(zoomIn)
 
         // Calculate zoom factor
-        float zoomFactor = cellWidth.get() / previousCellWidth;
+        val zoomFactor = cell.width / previousCellWidth
 
         // Calculate the difference in canvas offset-s before and after zoom
-        float offsetX = (1 - zoomFactor) * (x - canvasOffsetX.floatValue());
-        float offsetY = (1 - zoomFactor) * (y - canvasOffsetY.floatValue());
+        val offsetX = (1 - zoomFactor) * (x - canvasOffsetX.toFloat())
+        val offsetY = (1 - zoomFactor) * (y - canvasOffsetY.toFloat())
 
         // Update canvas offsets
-        updateCanvasOffsets(BigDecimal.valueOf(offsetX), BigDecimal.valueOf(offsetY));
-
+        updateCanvasOffsets(BigDecimal.valueOf(offsetX.toDouble()), BigDecimal.valueOf(offsetY.toDouble()))
     }
 
-    /*
-        this will only undo one step. If you want to be able to undo multiple steps,
-         you would need to store all previous states, not just the last one.
-         You could use a Stack<CanvasState> for this purpose.
-     */
-    public void undoMovement() {
-        if (!previousStates.empty()) {
-            CanvasState previous = previousStates.pop();
-
-            cellWidth = previous.cellWidth();
-            canvasOffsetX = previous.canvasOffsetX();
-            canvasOffsetY = previous.canvasOffsetY();
+    fun undoMovement() {
+        if (previousStates.isNotEmpty()) {
+            val previous = previousStates.removeLast()
+            cell = previous.cell
+            canvasOffsetX = previous.canvasOffsetX
+            canvasOffsetY = previous.canvasOffsetY
         }
-
-        // if you want to float something on screen that says nothing more to pop you can
-        // or just make a noise
-        // or show some sparkles or something
     }
 
-    public void drawBounds(LifeUniverse life) {
+    private fun drawBounds(life: LifeUniverse) {
+        if (!drawBounds) return
 
-        if (!drawBounds) return;
-
-        Bounds bounds = life.getRootBounds();
+        val bounds = life.rootBounds
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        Bounds screenBounds = bounds.getScreenBounds(cellWidth.get(), canvasOffsetX, canvasOffsetY);
-
-        lifeFormBuffer.pushStyle();
-        lifeFormBuffer.noFill();
-        lifeFormBuffer.stroke(200);
-        lifeFormBuffer.strokeWeight(1);
-        lifeFormBuffer.rect(screenBounds.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
-                screenBounds.bottomToFloat());
-        lifeFormBuffer.popStyle();
+        val screenBounds = bounds.getScreenBounds(cell.width, canvasOffsetX, canvasOffsetY)
+        lifeFormBuffer.apply {
+            pushStyle()
+            noFill()
+            stroke(200)
+            strokeWeight(1f)
+            rect(
+                screenBounds.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
+                screenBounds.bottomToFloat()
+            )
+            popStyle()
+        }
     }
 
-    public void draw(LifeUniverse life, boolean shouldDraw) {
+    fun draw(life: LifeUniverse, shouldDraw: Boolean) {
 
         // lambdas are interested in this fact
-        drawing = true;
+        isDrawing = true
 
-        boolean resized = isWindowResized();
-
-        if (resized) {
-            updateWindowResized();
+        if (isWindowResized) {
+            updateWindowResized()
         }
 
-        prevWidth = processing.width;
-        prevHeight = processing.height;
-        processing.background(theme.getBackGroundColor());
+        prevWidth = processing.width
+        prevHeight = processing.height
 
-        UXBuffer.beginDraw();
-        UXBuffer.clear();
+        processing.apply {
+            background(theme.backGroundColor)
+        }
 
-        movementHandler.handleRequestedMovement();
+        uXBuffer.apply {
+            beginDraw()
+            clear()
+        }
 
-        cellBorderWidth = (cellBorderWidthRatio * cellWidth.get());
+        movementHandler.handleRequestedMovement()
+        cellBorderWidth = cellBorderWidthRatio * cell.width
 
         // make this threadsafe
-        String hudMessage = getHUDMessage(life);
-        hudText.setMessage(hudMessage);
+        val hudMessage = getHUDMessage(life)
+        hudText?.setMessage(hudMessage)
+        drawables.drawAll(uXBuffer)
 
-        drawables.drawAll(UXBuffer);
-
-        UXBuffer.endDraw();
+        uXBuffer.endDraw()
 
         if (shouldDraw) {
-            Node node = life.root;
-            lifeFormBuffer.beginDraw();
-            lifeFormBuffer.clear();
-            BigDecimal size = new BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cellWidth.getAsBigDecimal(), mc);
-            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate());
-            drawBounds(life);
-            lifeFormBuffer.endDraw();
+            val node = life.root
+            lifeFormBuffer.apply {
+                beginDraw()
+                clear()
+            }
+
+            val size = BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cell.widthBigDecimal, mc)
+            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
+            drawBounds(life)
+
+            lifeFormBuffer.endDraw()
             // reset the position in case you've had mouse moves
-            lifeFormPosition.set(0, 0);
+            lifeFormPosition[0f] = 0f
         }
 
+        processing.apply {
+            image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
+            image(uXBuffer, 0f, 0f)
+        }
 
-        processing.image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y);
-        processing.image(UXBuffer, 0, 0);
-
-        drawing = false;
+        isDrawing = false
     }
 
     // the cell width times 2 ^ level will give you the size of the whole universe
-    // draws the screen size viewport on the universe
+    // you'll need it it to draw the viewport on screen
+    private class Cell {
 
-    private static class CellWidth {
-        private static final float CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f;
-        private static final float CELL_WIDTH_ROUNDING_FACTOR = 1.0F;
-        private float cellWidth;
-        private BigDecimal cellWidthBigDecimal;
-
-        public CellWidth(float cellWidth) {
-            setImpl(cellWidth);
-        }
-
-        private void setImpl(float cellWidth) {
-
-            // Apply rounding conditionally based on a threshold
-            // if it's larger than a pixel then we may see unintended gaps between cells
-            // so round them if they're over the 1 pixel threshold
-            if (cellWidth > CELL_WIDTH_ROUNDING_THRESHOLD) {
-                cellWidth = Math.round(cellWidth * CELL_WIDTH_ROUNDING_FACTOR) / CELL_WIDTH_ROUNDING_FACTOR;
+        var width: Float
+            set(value) {
+                field = if (value > CELL_WIDTH_ROUNDING_THRESHOLD) {
+                    (value * CELL_WIDTH_ROUNDING_FACTOR).roundToInt() / CELL_WIDTH_ROUNDING_FACTOR
+                } else {
+                    value
+                }
+                widthBigDecimal = BigDecimal.valueOf(field.toDouble())
             }
 
-            this.cellWidth = cellWidth;
-            this.cellWidthBigDecimal = BigDecimal.valueOf(cellWidth);
+        var widthBigDecimal: BigDecimal = BigDecimal.ZERO
+            private set
+
+        constructor(width: Float) {
+            this.width = width
         }
 
-        public float get() {
-            return cellWidth;
+        fun zoom(zoomIn: Boolean) {
+            val factor = if (zoomIn) 1.25f else 1 / 1.25f
+            width *= factor
         }
 
-        // private impl created to log before/after
-        // without needing to log on class construction
-        public void set(float cellWidth) {
-            setImpl(cellWidth);
-        }
+        override fun toString() = "Cell{width=$width}"
 
-        public BigDecimal getAsBigDecimal() {
-            return cellWidthBigDecimal;
+        companion object {
+            private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f
+            private const val CELL_WIDTH_ROUNDING_FACTOR = 1.0f
         }
-
-        public String toString() {
-            return "CellWidth{" + cellWidth + "}";
-        }
-
     }
 
-    private record CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
-        private CanvasState(CellWidth cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
-            this.cellWidth = new CellWidth(cellWidth.get());
-            this.canvasOffsetX = canvasOffsetX;
-            this.canvasOffsetY = canvasOffsetY;
+    private class CanvasState(
+        cell: Cell,
+        val canvasOffsetX: BigDecimal,
+        val canvasOffsetY: BigDecimal
+    ) {
+        val cell: Cell
+
+        init {
+            this.cell = Cell(cell.width)
         }
     }
 
     // re-using these really seems to make a difference
-    private BigDecimal getHalfSize(BigDecimal size) {
-        if (!halfSizeMap.containsKey(size)) {
-            BigDecimal halfSize = size.divide(BigTWO, mc);
-            halfSizeMap.put(size, halfSize);
-        }
-        return halfSizeMap.get(size);
+    private fun getHalfSize(size: BigDecimal): BigDecimal {
+        return halfSizeMap.getOrPut(size) { size.divide(BigTWO, mc) }
+    }
+
+    companion object {
+        // without this precision on the MathContext, small imprecision propagates at
+        // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
+        // off the screen.  don't skimp on precision!
+        private val mc = MathContext(100)
+        private val BigTWO = BigDecimal(2)
+        private val previousStates = ArrayDeque<CanvasState>()
+        private const val DEFAULT_CELL_WIDTH = 4
     }
 }
