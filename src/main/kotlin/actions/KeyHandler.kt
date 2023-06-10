@@ -18,20 +18,18 @@ class KeyHandler private constructor(builder: Builder) {
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
         val keyCode = event.keyCode
-        keyCallbacks.values.firstOrNull { callback ->
-            if (callback.matches(event)) {
-                if (event.action == KeyEvent.PRESS) {
-                    _pressedKeys.add(keyCode)
-                    callback.invokeFeature()
-                    callback.notifyKeyObservers()
-                    DrawRateManager.getInstance().drawImmediately()
-                }
-                if (event.action == KeyEvent.RELEASE) {
-                    _pressedKeys.remove(keyCode)
-                    callback.cleanupFeature()
-                }
-                true
-            } else false
+        // elvis operator - if not null, assign to matchingCallback - if null, return
+        val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
+
+        if (event.action == KeyEvent.PRESS) {
+            _pressedKeys.add(keyCode)
+            matchingCallback.invokeFeature()
+            matchingCallback.notifyKeyObservers()
+            DrawRateManager.getInstance().drawImmediately()
+        }
+        if (event.action == KeyEvent.RELEASE) {
+            _pressedKeys.remove(keyCode)
+            matchingCallback.cleanupFeature()
         }
     }
 
@@ -39,9 +37,11 @@ class KeyHandler private constructor(builder: Builder) {
         get() {
             val usageText = StringBuilder("\nKey Usage:\n")
             val processedCallbacks: MutableSet<KeyCallback> = mutableSetOf()
-            val maxKeysWidth = keyCallbacks.values.filter { it.isValidForCurrentOS }.map { callback ->
+
+            val maxKeysWidth = keyCallbacks.values.filter { it.isValidForCurrentOS }.maxOfOrNull { callback ->
                 callback.validKeyCombosForCurrentOS.joinToString(", ").length
-            }.maxOrNull() ?: 0
+            } ?: 0
+
             keyCallbacks.values.filter { callback ->
                 callback.isValidForCurrentOS && !processedCallbacks.contains(callback)
             }.forEach { callback ->
@@ -50,6 +50,7 @@ class KeyHandler private constructor(builder: Builder) {
                 usageText.append("${keysString.padEnd(maxKeysWidth + 1)}: $usageDescription\n")
                 processedCallbacks.add(callback)
             }
+
             return usageText.toString()
         }
 

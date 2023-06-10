@@ -11,6 +11,12 @@ import ux.UXThemeType
 class KeyFactory(private val patterning: Patterning, private val drawer: PatternDrawer) {
     private val processing: PApplet = patterning
 
+    // todo: turn this into a get() for PatternDrawer
+    //       it can be constructed in the init and returned as a val
+    //       then you can move MovementHandler into KeyHandler
+    //       and call handleMovementKeys on KeyHandler and pass it a lambda
+    //       to call back on to do movement when there are movement keys in the mix
+    //       first get PatternDrawer converted to Kotlin
     fun setupKeyHandler() {
         val keyHandler = KeyHandler.Builder(processing)
             .addKeyCallback(callbackPause)
@@ -37,6 +43,12 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         println(keyHandler.usageText)
     }
 
+
+    // to remove @JvmField - you'll have to jump through the hoop of initializing it in init with
+    // a different name such as private val _callbackPause and then use a getter to access it
+    // such as val callbackPause: KeyCallback get() = _callbackPause - which will work
+    // but until Java code is moved to Kotlin it will still need to use getCallbackPause() to access this field
+    // so first migrate PatternDrawer
     @JvmField
     val callbackPause: KeyCallback = object : KeyCallback(SHORTCUT_PAUSE) {
         override fun invokeFeature() {
@@ -51,7 +63,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "pause and play"
         }
     }
-    val callbackLoadLifeForm: KeyCallback = object : KeyCallback(
+    private val callbackLoadLifeForm: KeyCallback = object : KeyCallback(
         LinkedHashSet(mutableListOf('1', '2', '3', '4', '5', '6', '7', '8', '9'))
     ) {
         override fun invokeFeature() {
@@ -283,7 +295,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "in single step mode, advanced one frame at a time"
         }
     }
-
 
     companion object {
         private const val SHORTCUT_CENTER = 'c'

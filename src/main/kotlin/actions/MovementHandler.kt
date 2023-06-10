@@ -14,7 +14,7 @@ class MovementHandler(private val drawer: PatternDrawer) {
     fun handleRequestedMovement() {
         for (key in pressedKeys) {
             when (key) {
-                PApplet.LEFT, PApplet.RIGHT, PApplet.UP, PApplet.DOWN -> handleMovementKeys()
+                WEST, EAST, NORTH, SOUTH -> handleMovementKeys()
                 else ->  // Ignore other keys and set lastDirection to 0
                     lastDirection = 0
             }
@@ -32,6 +32,8 @@ class MovementHandler(private val drawer: PatternDrawer) {
             }
         }
 
+        // todo: get rid of direct access to pressedKeys and instead use a method that tells you what is happening here
+        // it breaks encapsulation otherwise to have to extract it from KeyHandler and peer inside, IMO
         val currentDirection = directions.filter { pressedKeys.contains(it[0]) }.sumOf { it[0] }
 
         if (currentDirection != lastDirection) {
