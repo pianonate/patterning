@@ -1,122 +1,86 @@
-package actions;
+package actions
 
-import processing.core.PApplet;
-import processing.event.KeyEvent;
+import processing.core.PApplet
+import processing.event.KeyEvent
 
-import java.util.Objects;
+class KeyCombo @JvmOverloads constructor(val keyCode: Int, val modifiers: Int = 0, val validOS: ValidOS = ValidOS.ANY) {
 
-public class KeyCombo {
+    // we only want to do the conversion once so cache it in the val
+    // we do it this way so that we can make this a data class and still have val semantics
+    // then the dataclass doesn't need to create an explicit hashCode
+    private val cachedKeyCode: Int = if (Character.isLowerCase(keyCode)) Character.toUpperCase(keyCode) else keyCode
+    private val processingKeyCode: Int
+        get() = cachedKeyCode
 
-    public static ValidOS currentOS = determineCurrentOS();
-    private final int keyCode;
-    private final int modifiers;
-    private final ValidOS validOS;
-    public KeyCombo(int keyCode) {
-        this(keyCode, 0, ValidOS.ANY);
-    }
-    public KeyCombo(int keyCode, int modifiers, ValidOS validOS) {
-        this.keyCode = Character.isLowerCase(keyCode) ? Character.toUpperCase(keyCode) : keyCode;
-        this.modifiers = modifiers;
-        this.validOS = validOS;
-    }
-
-    public KeyCombo(int keyCode, int modifiers) {
-        this(keyCode, modifiers, ValidOS.ANY);
-    }
-
-    public KeyCombo(char keyCode, int modifiers) {
-        this(keyCode, modifiers, ValidOS.ANY);
-    }
-
-    private static ValidOS determineCurrentOS() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("mac")) {
-            return ValidOS.MAC;
-        } else {
-            return ValidOS.NON_MAC;
-        }
-    }
-
-    // use this for testing purposes only
-    public static void setCurrentOS(ValidOS os) {
-        currentOS = os;
-    }
-
-    public ValidOS getValidOS() {
-        return validOS;
-    }
+    constructor(keyCode: Char, modifiers: Int) : this(keyCode.code, modifiers, ValidOS.ANY)
 
     // used at runtime to make sure that the incoming keyEvent matches a particular actions.KeyCombo
-    public boolean matches(KeyEvent event) {
-        return this.getKeyCode() == event.getKeyCode() &&
-                this.getModifiers() == event.getModifiers() &&
-                isValidForCurrentOS();
+    fun matches(event: KeyEvent): Boolean {
+        return processingKeyCode == event.keyCode && modifiers == event.modifiers &&
+                isValidForCurrentOS
     }
 
-    public int getKeyCode() {
-        return keyCode;
-    }
+    val isValidForCurrentOS: Boolean
+        get() = when (validOS) {
+            ValidOS.ANY -> true
+            ValidOS.MAC -> currentOS === ValidOS.MAC
+            ValidOS.NON_MAC -> currentOS === ValidOS.NON_MAC
+        }
 
-    public int getModifiers() {
-        return modifiers;
-    }
-
-    public boolean isValidForCurrentOS() {
-
-        return switch (validOS) {
-            case ANY -> true;
-            case MAC -> currentOS == ValidOS.MAC;
-            case NON_MAC -> currentOS == ValidOS.NON_MAC;
-        };
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(keyCode, modifiers, validOS);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        KeyCombo keyCombo = (KeyCombo) o;
-        return keyCode == keyCombo.keyCode &&
-                modifiers == keyCombo.modifiers &&
-                validOS == keyCombo.validOS;
+    override fun equals(o: Any?): Boolean {
+        if (this === o) return true
+        if (o == null || javaClass != o.javaClass) return false
+        val keyCombo = o as KeyCombo
+        return processingKeyCode == keyCombo.processingKeyCode && modifiers == keyCombo.modifiers && validOS === keyCombo.validOS
     }
 
     // later:  “␛” or better yet: ⎋ - but large enough to see - use it for closing info panels
-    @Override
-    public String toString() {
+    override fun toString(): String {
         // Special case for Shift+=, display as +
-        if ((modifiers & KeyEvent.SHIFT) != 0 && keyCode == '=') {
-            return "+";
+        if (modifiers and KeyEvent.SHIFT != 0 && processingKeyCode == '='.code) {
+            return "+"
         }
+        val keyTextBuilder = StringBuilder()
+        if (modifiers and KeyEvent.META != 0) {
+            keyTextBuilder.append("⌘")
+        }
+        if (modifiers and KeyEvent.CTRL != 0) {
+            keyTextBuilder.append("^")
+        }
+        if (modifiers and KeyEvent.SHIFT != 0) {
+            keyTextBuilder.append("⇧")
+        }
+        if (modifiers and KeyEvent.ALT != 0) {
+            keyTextBuilder.append("⌥")
+        }
+        when (processingKeyCode) {
+            PApplet.UP -> keyTextBuilder.append("↑")
+            PApplet.DOWN -> keyTextBuilder.append("↓")
+            PApplet.LEFT -> keyTextBuilder.append("←")
+            PApplet.RIGHT -> keyTextBuilder.append("→")
+            32 -> keyTextBuilder.append("Space")
+            else -> keyTextBuilder.append(processingKeyCode.toChar())
+        }
+        return keyTextBuilder.toString()
+    }
 
-        StringBuilder keyTextBuilder = new StringBuilder();
+    override fun hashCode(): Int {
+        var result = keyCode
+        result = 31 * result + modifiers
+        result = 31 * result + validOS.hashCode()
+        return result
+    }
 
-        if ((modifiers & KeyEvent.META) != 0) {
-            keyTextBuilder.append("⌘");
-        }
-        if ((modifiers & KeyEvent.CTRL) != 0) {
-            keyTextBuilder.append("^");
-        }
-        if ((modifiers & KeyEvent.SHIFT) != 0) {
-            keyTextBuilder.append("⇧");
-        }
-        if ((modifiers & KeyEvent.ALT) != 0) {
-            keyTextBuilder.append("⌥");
-        }
+    companion object {
+        val currentOS = determineCurrentOS()
 
-        switch (keyCode) {
-            case PApplet.UP -> keyTextBuilder.append("↑");
-            case PApplet.DOWN -> keyTextBuilder.append("↓");
-            case PApplet.LEFT -> keyTextBuilder.append("←");
-            case PApplet.RIGHT -> keyTextBuilder.append("→");
-            case 32 -> keyTextBuilder.append("Space");
-            default -> keyTextBuilder.append((char) keyCode);
+        private fun determineCurrentOS(): ValidOS {
+            val osName = System.getProperty("os.name").lowercase()
+            return if (osName.contains("mac")) {
+                ValidOS.MAC
+            } else {
+                ValidOS.NON_MAC
+            }
         }
-
-        return keyTextBuilder.toString();
     }
 }

@@ -6,21 +6,17 @@ abstract class KeyCallback(private val keyCombos: LinkedHashSet<KeyCombo> = Link
 
     private val keyObservers: MutableSet<KeyObserver> = HashSet()
 
-    constructor(key: Char) : this(LinkedHashSet(listOf(KeyCombo(key.code))))
+    constructor(key: Char) : this(linkedSetOf(KeyCombo(key.code)))
 
-    constructor(keys: Set<Char>) : this(keys.map { KeyCombo(it.code) }.let { LinkedHashSet(it) })
+    constructor(keys: Set<Char>) : this(keys.mapTo(LinkedHashSet(), { KeyCombo(it.code) }))
 
-    constructor(vararg keyCombos: KeyCombo) : this(LinkedHashSet(keyCombos.toList()))
+    constructor(vararg keyCombos: KeyCombo) : this(keyCombos.toCollection(LinkedHashSet()))
 
     override fun addObserver(observer: KeyObserver) {
         keyObservers.add(observer)
     }
 
-    override fun notifyKeyObservers() {
-        for (keyObserver in keyObservers) {
-            keyObserver.notifyKeyPress(this)
-        }
-    }
+    override fun notifyKeyObservers() = keyObservers.forEach { it.notifyKeyPress(this) }
 
     override fun invokeModeChange(): Boolean {
         return false
@@ -34,21 +30,15 @@ abstract class KeyCallback(private val keyCombos: LinkedHashSet<KeyCombo> = Link
 
     abstract fun getUsageText(): String
 
-    fun getKeyCombos(): Set<KeyCombo> {
-        return keyCombos
-    }
+    fun getKeyCombos(): Set<KeyCombo> = keyCombos
 
     val validKeyCombosForCurrentOS: Set<KeyCombo>
         get() = keyCombos.filter { it.isValidForCurrentOS }.toSet()
 
-    fun matches(event: KeyEvent): Boolean {
-        return keyCombos.any { it.matches(event) }
-    }
+    fun matches(event: KeyEvent): Boolean = keyCombos.any { it.matches(event) }
 
     val isValidForCurrentOS: Boolean
         get() = keyCombos.any { it.isValidForCurrentOS }
 
-    override fun toString(): String {
-        return validKeyCombosForCurrentOS.joinToString(", ") { it.toString() }
-    }
+    override fun toString(): String = validKeyCombosForCurrentOS.joinToString(", ") { "$it" }
 }

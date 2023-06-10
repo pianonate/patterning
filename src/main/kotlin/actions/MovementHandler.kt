@@ -42,7 +42,6 @@ class MovementHandler(private val drawer: PatternDrawer) {
         drawer.move(moveX, moveY)
     }
 
-
     companion object {
         const val WEST = PApplet.LEFT
         const val EAST = PApplet.RIGHT
@@ -53,7 +52,7 @@ class MovementHandler(private val drawer: PatternDrawer) {
         const val SOUTHWEST = SOUTH + WEST
         const val SOUTHEAST = SOUTH + EAST
 
-        private val pressedKeys = KeyHandler.getPressedKeys()
+        private val pressedKeys = KeyHandler.pressedKeys
         private val directions = arrayOf(
                 intArrayOf(WEST, 0, -1),
                 intArrayOf(NORTH, -1, 0),
