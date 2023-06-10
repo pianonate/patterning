@@ -21,9 +21,7 @@ import java.util.function.IntSupplier
 import kotlin.collections.ArrayDeque
 import kotlin.math.roundToInt
 
-class PatternDrawer(// for all conversions, this needed to be a number larger than 5 for
-    // there not to be rounding errors
-    // which caused cells to appear outside the bounds
+class PatternDrawer(
     private val processing: PApplet,
     private val drawRateManager: DrawRateManager
 ) {
@@ -65,7 +63,7 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
 
     // surprisingly caching the result of the half size calculation provides
     // a remarkable speed boost
-    private val halfSizeMap: MutableMap<BigDecimal?, BigDecimal> = HashMap()
+    private val halfSizeMap: MutableMap<BigDecimal, BigDecimal> = HashMap()
 
     // used for resize detection
     private var prevWidth: Int
@@ -79,19 +77,20 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         prevWidth = processing.width
         prevHeight = processing.height
         cell = Cell(DEFAULT_CELL_WIDTH.toFloat())
-        canvasWidth = BigDecimal.valueOf(processing.width.toLong())
-        canvasHeight = BigDecimal.valueOf(processing.height.toLong())
+        canvasWidth = processing.width.toBigDecimal()
+        canvasHeight = processing.height.toBigDecimal()
         movementHandler = MovementHandler(this)
         drawBounds = false
         hudInfo = HUDStringBuilder()
-        val startupText =
+
+        createTextPanel(null) {
             TextPanel.Builder(drawingInformer, theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(theme.startupTextSize)
                 .fadeInDuration(theme.startupTextFadeInDuration)
                 .fadeOutDuration(theme.startupTextFadeOutDuration)
                 .displayDuration(theme.startupTextDisplayDuration.toLong())
-                .build()
-        drawables.add(startupText)
+        }
+
         keyFactory = KeyFactory(patterning, this)
         setupControls()
     }
@@ -152,7 +151,7 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
     }
 
     private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
-        return dimension.divide(BigTWO, mc).subtract(offset)
+        return dimension.divide(BigTWO, mc) - offset
     }
 
     private fun createTextPanel(
@@ -178,8 +177,8 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         center(bounds, fitBounds = true, saveState = false)
 
         // todo: on maximum volatility gun, not clearing the previousStates when doing a setStep seems to cause it to freak out - see if that's causal
-        // clear image cache and previous states
-        clearCache()
+        // clear previous states ArrayDeque keeping track of movement and positioning and such
+        clearUndoDeque()
 
         countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
@@ -209,8 +208,10 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         }
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = BigDecimal(bounds.right.subtract(bounds.left).add(BigInteger.ONE))
-        val patternHeight = BigDecimal(bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
+        val patternWidth = BigDecimal(bounds.right - bounds.left + BigInteger.ONE)
+        val patternHeight = BigDecimal(bounds.bottom - bounds.top + BigInteger.ONE)
+
+
         if (fitBounds) {
             // val widthRatio = if (patternWidth.compareTo(BigDecimal.ZERO) > 0) canvasWidth.divide(
             val widthRatio = if (patternWidth > BigDecimal.ZERO) canvasWidth.divide(
@@ -225,50 +226,46 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
             cell.width = (newCellSize.toFloat() * .9f)
         }
         val bigCell = cell.widthBigDecimal
-        val drawingWidth = patternWidth.multiply(bigCell)
-        val drawingHeight = patternHeight.multiply(bigCell)
+        val drawingWidth = patternWidth.multiply(bigCell, mc)
+        val drawingHeight = patternHeight.multiply(bigCell, mc)
         val halfCanvasWidth = canvasWidth.divide(BigTWO, mc)
         val halfCanvasHeight = canvasHeight.divide(BigTWO, mc)
         val halfDrawingWidth = drawingWidth.divide(BigTWO, mc)
         val halfDrawingHeight = drawingHeight.divide(BigTWO, mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX =
-            halfCanvasWidth.subtract(halfDrawingWidth).add(bounds.leftToBigDecimal().multiply(bigCell).negate())
-        val offsetY =
-            halfCanvasHeight.subtract(halfDrawingHeight).add(bounds.topToBigDecimal().multiply(bigCell).negate())
+        val offsetX = halfCanvasWidth - halfDrawingWidth - bounds.leftToBigDecimal() * bigCell.negate()
+        val offsetY = halfCanvasHeight - halfDrawingHeight - bounds.topToBigDecimal() * bigCell.negate()
+
         canvasOffsetX = offsetX
         canvasOffsetY = offsetY
     }
 
-    fun clearCache() {
-        previousStates.clear()
+    fun clearUndoDeque() {
+        undoDeque.clear()
     }
 
     private fun getHUDMessage(life: LifeUniverse): String {
         val patternInfo = life.patternInfo
-        hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
-        hudInfo.addOrUpdate("dps", drawRateManager.currentDrawRate.roundToInt())
-        hudInfo.addOrUpdate("cell", getCellWidth())
-        hudInfo.addOrUpdate("running", if (patterning.isRunning) "running" else "stopped")
-        hudInfo.addOrUpdate("level ", patternInfo["level"])
-        hudInfo.addOrUpdate("step", patternInfo["step"])
-        hudInfo.addOrUpdate("generation", patternInfo["generation"])
-        hudInfo.addOrUpdate("population", patternInfo["population"])
-        hudInfo.addOrUpdate("maxLoad", patternInfo["maxLoad"])
-        hudInfo.addOrUpdate("lastID", patternInfo["lastId"])
-        hudInfo.addOrUpdate("width", patternInfo["width"])
-        hudInfo.addOrUpdate("height", patternInfo["height"])
-        uXBuffer.textAlign(PApplet.RIGHT, PApplet.BOTTOM)
-        // use the default delimiter
+        hudInfo.apply {
+            addOrUpdate("fps", processing.frameRate.roundToInt())
+            addOrUpdate("dps", drawRateManager.currentDrawRate.roundToInt())
+            addOrUpdate("cell", getCellWidth())
+            addOrUpdate("running", if (patterning.isRunning) "running" else "stopped")
+            addOrUpdate("level ", patternInfo["level"])
+            addOrUpdate("step", patternInfo["step"])
+            addOrUpdate("generation", patternInfo["generation"])
+            addOrUpdate("population", patternInfo["population"])
+            addOrUpdate("maxLoad", patternInfo["maxLoad"])
+            addOrUpdate("lastID", patternInfo["lastId"])
+            addOrUpdate("width", patternInfo["width"])
+            addOrUpdate("height", patternInfo["height"])
+        }
         return hudInfo.getFormattedString(processing.frameCount, 12)
     }
 
-    // called when moves are invoked as there is some trickery in the move handler to move
-    // multiple times on key presses and even more so as they are held down
-    // we just want to go back to the first one...
     fun saveUndoState() {
-        previousStates.add(CanvasState(cell, canvasOffsetX, canvasOffsetY))
+        undoDeque.add(CanvasState(cell, canvasOffsetX, canvasOffsetY))
     }
 
     private fun getCellWidth(): Float {
@@ -285,8 +282,9 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
     }
 
     private fun updateWindowResized() {
-        val bigWidth = BigDecimal.valueOf(processing.width.toLong())
-        val bigHeight = BigDecimal.valueOf(processing.height.toLong())
+
+        val bigWidth = processing.width.toBigDecimal()
+        val bigHeight = processing.height.toBigDecimal()
 
         // create new buffers
         uXBuffer = buffer
@@ -304,45 +302,29 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         val centerXAfter = calcCenterOnResize(bigWidth, canvasOffsetX)
         val centerYAfter = calcCenterOnResize(bigHeight, canvasOffsetY)
 
-        // Calculate the difference in the visible portion's center
-        val offsetX = centerXAfter.subtract(centerXBefore)
-        val offsetY = centerYAfter.subtract(centerYBefore)
-        updateCanvasOffsets(offsetX, offsetY)
+        updateCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
     private fun fillSquare(x: Float, y: Float, size: Float) {
         val width = size - cellBorderWidth
-        uXBuffer.pushStyle()
-        lifeFormBuffer.fill(theme.cellColor)
-        lifeFormBuffer.noStroke()
-        lifeFormBuffer.rect(x, y, width, width)
-        uXBuffer.popStyle()
 
-        /*        // todo, create a keyboard handler to display these values
-        //       or a mouse mode - it can be useful when debugging positioning information
-        // you'll be glad you did
-        if (false) {
-            lifeFormBuffer.fill(0xff000000);
-            lifeFormBuffer.textSize(11);
-            lifeFormBuffer.textAlign(processing.LEFT, processing.TOP);
-            lifeFormBuffer.text((int) x + ",  " + (int) y, x, y, width, width);
-            lifeFormBuffer.text(canvasWidth.toString() + ",  " + canvasHeight.toString(), x, y + 12, width, width);
+        lifeFormBuffer.apply {
+            fill(theme.cellColor)
+            noStroke()
+            rect(x, y, width, width)
+        }
 
-            lifeFormBuffer.text("size: " + size, x, y + 24, width, width);
-
-            int nextPos = (int) x + (int) size;
-            lifeFormBuffer.text("next: " + nextPos, x, y + 36, width, width);
-        }*/
     }
 
     private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
         if (node.population == BigInteger.ZERO) {
             return
         }
-        val leftWithOffset = left.add(canvasOffsetX)
-        val topWithOffset = top.add(canvasOffsetY)
-        val leftWithOffsetAndSize = leftWithOffset.add(size)
-        val topWithOffsetAndSize = topWithOffset.add(size)
+
+        val leftWithOffset = left + canvasOffsetX
+        val topWithOffset = top + canvasOffsetY
+        val leftWithOffsetAndSize = leftWithOffset + size
+        val topWithOffsetAndSize = topWithOffset + size
 
         // no need to draw anything not visible on screen
         if (leftWithOffsetAndSize < BigDecimal.ZERO
@@ -367,8 +349,8 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
             }
         } else {
             val halfSize = getHalfSize(size)
-            val leftHalfSize = left.add(halfSize)
-            val topHalfSize = top.add(halfSize)
+            val leftHalfSize = left + halfSize
+            val topHalfSize = top + halfSize
             drawNode(node.nw, halfSize, left, top)
             drawNode(node.ne, halfSize, leftHalfSize, top)
             drawNode(node.sw, halfSize, left, topHalfSize)
@@ -378,13 +360,13 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
 
     fun move(dx: Float, dy: Float) {
         saveUndoState()
-        updateCanvasOffsets(BigDecimal.valueOf(dx.toDouble()), BigDecimal.valueOf(dy.toDouble()))
+        updateCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
         lifeFormPosition.add(dx, dy)
     }
 
     private fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
-        canvasOffsetX = canvasOffsetX.add(offsetX)
-        canvasOffsetY = canvasOffsetY.add(offsetY)
+        canvasOffsetX += offsetX
+        canvasOffsetY += offsetY
     }
 
     fun zoomXY(`in`: Boolean, x: Float, y: Float) {
@@ -406,12 +388,12 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         val offsetY = (1 - zoomFactor) * (y - canvasOffsetY.toFloat())
 
         // Update canvas offsets
-        updateCanvasOffsets(BigDecimal.valueOf(offsetX.toDouble()), BigDecimal.valueOf(offsetY.toDouble()))
+        updateCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
     }
 
     fun undoMovement() {
-        if (previousStates.isNotEmpty()) {
-            val previous = previousStates.removeLast()
+        if (undoDeque.isNotEmpty()) {
+            val previous = undoDeque.removeLast()
             cell = previous.cell
             canvasOffsetX = previous.canvasOffsetX
             canvasOffsetY = previous.canvasOffsetY
@@ -505,7 +487,7 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
                 } else {
                     value
                 }
-                widthBigDecimal = BigDecimal.valueOf(field.toDouble())
+                widthBigDecimal = field.toBigDecimal()
             }
 
         var widthBigDecimal: BigDecimal = BigDecimal.ZERO
@@ -551,7 +533,7 @@ class PatternDrawer(// for all conversions, this needed to be a number larger th
         // off the screen.  don't skimp on precision!
         private val mc = MathContext(100)
         private val BigTWO = BigDecimal(2)
-        private val previousStates = ArrayDeque<CanvasState>()
+        private val undoDeque = ArrayDeque<CanvasState>()
         private const val DEFAULT_CELL_WIDTH = 4
     }
 }

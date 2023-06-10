@@ -269,7 +269,7 @@ public class Patterning extends PApplet {
     private void performComplexCalculationSetStep(Integer step) {
         life.setStep(step);
         // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
-        drawer.clearCache();
+        drawer.clearUndoDeque();
     }
 
     private void performComplexCalculationNextGeneration() {
