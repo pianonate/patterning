@@ -1,6 +1,6 @@
-package ux;
+package ux
 
-public interface Drawable {
+interface Drawable {
     // void draw(PGraphics buffer);
-    void draw();
+    fun draw()
 }

@@ -1,107 +1,94 @@
-package ux;
+package ux
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.text.NumberFormat
 
-public class HUDStringBuilder {
-    private final Map<String, Object> data; // Changed from Number to Object
-    private String cachedFormattedString;
-    private final NumberFormat numberFormat;
-    private final String delimiter;
-    private int lastUpdateFrame;
+class HUDStringBuilder {
+    private val data // Changed from Number to Object
+            : MutableMap<String, Any>
+    private var cachedFormattedString = ""
+    private val numberFormat: NumberFormat
+    private val delimiter = " | "
+    private var lastUpdateFrame = 0
 
-    public HUDStringBuilder() {
-        data = new LinkedHashMap<>(); // Use LinkedHashMap to maintain the insertion order
-        cachedFormattedString = "";
-        lastUpdateFrame = 0;
-        numberFormat = NumberFormat.getInstance();
-        delimiter = " | ";
+    init {
+        data = LinkedHashMap() // Use LinkedHashMap to maintain the insertion order
+        numberFormat = NumberFormat.getInstance()
     }
 
-
-    public void addOrUpdate(String key, Object value) {
-        if (value instanceof Number) {
-            data.put(key, value);
+    fun addOrUpdate(key: String, value: Any?) {
+        if (value is Number) {
+            data[key] = value
         } else {
-            throw new IllegalArgumentException("Value must be a Number or BigInteger.");
+            throw IllegalArgumentException("Value must be a Number or BigInteger.")
         }
     }
 
-    public void addOrUpdate(String key, String value) {
-        data.put(key, value);
+    fun addOrUpdate(key: String, value: String) {
+        data[key] = value
     }
 
-
-    private String formatLargeNumber(Object value) {
-        if (value instanceof BigInteger bigValue) {
-            int exponent = bigValue.toString().length() - 1;
-            return formatLargeNumberUsingExponent(new BigDecimal(bigValue), exponent);
+    private fun formatLargeNumber(value: Any): String {
+        return if (value is BigInteger) {
+            val exponent = value.toString().length - 1
+            formatLargeNumberUsingExponent(BigDecimal(value), exponent)
         } else {
-            Number numValue = (Number) value;
-            double doubleValue = numValue.doubleValue();
-            int exponent = (int) Math.floor(Math.log10(doubleValue));
-            return formatLargeNumberUsingExponent(BigDecimal.valueOf(doubleValue), exponent);
+            val numValue = value as Number
+            val doubleValue = numValue.toDouble()
+            val exponent = Math.floor(Math.log10(doubleValue)).toInt()
+            formatLargeNumberUsingExponent(BigDecimal.valueOf(doubleValue), exponent)
         }
     }
 
-
-    private String formatLargeNumberUsingExponent(BigDecimal value, int exponent) {
-        String[] largeNumberNames = {
-                "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
-                "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
-                "tredecillion", "quattuordecillion"
-        };
-
-        int index = (exponent - 3) / 3;
-
-        if (index < 0) {
-            return numberFormat.format(value);
-        } else if (index < largeNumberNames.length) {
-            BigDecimal divisor = BigDecimal.valueOf(Math.pow(10, index * 3 + 3));
-            BigDecimal shortNumber = value.divide(divisor, 1, RoundingMode.HALF_UP);
-            return String.format("%.1f %s", shortNumber, largeNumberNames[index]);
+    private fun formatLargeNumberUsingExponent(value: BigDecimal, exponent: Int): String {
+        val largeNumberNames = arrayOf(
+            "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
+            "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
+            "tredecillion", "quattuordecillion"
+        )
+        val index = (exponent - 3) / 3
+        return if (index < 0) {
+            numberFormat.format(value)
+        } else if (index < largeNumberNames.size) {
+            val divisor = BigDecimal.valueOf(Math.pow(10.0, (index * 3 + 3).toDouble()))
+            val shortNumber = value.divide(divisor, 1, RoundingMode.HALF_UP)
+            String.format("%.1f %s", shortNumber, largeNumberNames[index])
         } else {
-            return String.format("%.1e", value);
+            String.format("%.1e", value)
         }
     }
 
-    public String getFormattedString(int frameCount, int updateFrequency, String delimiter) {
+    fun getFormattedString(frameCount: Int, updateFrequency: Int, delimiter: String): String {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
-            StringBuilder formattedString = new StringBuilder();
-            for (Map.Entry<String, Object> entry : data.entrySet()) {
-                Object value = entry.getValue();
-                String formattedValue = "";
-
+            val formattedString = StringBuilder()
+            for ((key, value) in data) {
+                var formattedValue = ""
                 if (value != null) {
-                    if (value instanceof Number && ((Number) value).doubleValue() >= Math.pow(10, 9)) {
-                        formattedValue = entry.getKey() + " " + formatLargeNumber(value);
-                    } else if (value instanceof BigInteger && ((BigInteger) value).compareTo(BigInteger.valueOf(1000000000)) >= 0) {
-                        formattedValue = entry.getKey() + " " + formatLargeNumber(value);
-                    } else if (value instanceof String) {
-                        formattedValue = (String) value;
+                    formattedValue = if (value is Number && value.toDouble() >= Math.pow(10.0, 9.0)) {
+                        key + " " + formatLargeNumber(value)
+                    } else if (value is BigInteger && value.compareTo(BigInteger.valueOf(1000000000)) >= 0) {
+                        key + " " + formatLargeNumber(value)
+                    } else if (value is String) {
+                        value
                     } else {
-                        formattedValue = entry.getKey() + " " + numberFormat.format(value);
+                        key + " " + numberFormat.format(value)
                     }
                 }
-
-                formattedString.append(formattedValue).append(delimiter);
+                formattedString.append(formattedValue).append(delimiter)
             }
             // Remove the last delimiter
-            if (formattedString.length() > 0) {
-                formattedString.setLength(formattedString.length() - delimiter.length());
+            if (formattedString.length > 0) {
+                formattedString.setLength(formattedString.length - delimiter.length)
             }
-            cachedFormattedString = formattedString.toString();
-            lastUpdateFrame = frameCount;
+            cachedFormattedString = formattedString.toString()
+            lastUpdateFrame = frameCount
         }
-        return cachedFormattedString;
+        return cachedFormattedString
     }
 
-
-    public String getFormattedString(int frameCount, int updateFrequency) {
-        return getFormattedString(frameCount, updateFrequency, this.delimiter);
+    fun getFormattedString(frameCount: Int, updateFrequency: Int): String {
+        return getFormattedString(frameCount, updateFrequency, delimiter)
     }
 }

@@ -1,142 +1,179 @@
-package ux.panel;
+package ux.panel
 
-import processing.core.PApplet;
-import processing.core.PGraphics;
-import processing.core.PImage;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
+import processing.core.PApplet
+import processing.core.PGraphics
+import ux.UXThemeManager
+import ux.informer.DrawingInfoSupplier
 
-public class Transition {
+class Transition @JvmOverloads constructor(
+    private val drawingInformer: DrawingInfoSupplier,
+    private val direction: TransitionDirection,
+    private val type: TransitionType,
+    private val duration: Int = UXThemeManager.getInstance().shortTransitionDuration
+) {
+    private var transitionStartTime: Long = -1
 
-    private final int duration;
-    private final TransitionDirection direction;
-    private final TransitionType type;
-    private final DrawingInfoSupplier drawingInformer;
-    private long transitionStartTime = -1;
-
-    private boolean isTransitioning = true;
-
-    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type) {
-        this(drawingInformer, direction, type, UXThemeManager.getInstance().getShortTransitionDuration());
-    }
-
-    public Transition(DrawingInfoSupplier drawingInformer, TransitionDirection direction, TransitionType type, int duration) {
-        this.drawingInformer = drawingInformer;
-        this.direction = direction;
-        this.type = type;
-        this.duration = duration;
-    }
-
-
-/*    public void reset() {
+    /*    public void reset() {
         transitionStartTime = -1;
-    }*/
+    }*/ var isTransitioning = true
+        private set
 
-    public boolean isTransitioning() {
-        return isTransitioning;
-    }
-
-    public void image(PGraphics transitionBuffer, float x, float y) {
-        if (transitionStartTime == -1) {
-            transitionStartTime = System.currentTimeMillis();
+    fun image(transitionBuffer: PGraphics, x: Float, y: Float) {
+        if (transitionStartTime == -1L) {
+            transitionStartTime = System.currentTimeMillis()
         }
-
-        PGraphics UXBuffer = drawingInformer.getPGraphics();
-
-        long elapsed = System.currentTimeMillis() - transitionStartTime;
-        float transitionProgress = PApplet.constrain((float) elapsed / duration, 0, 1);
-
-        switch (type) {
-            case EXPANDO -> drawExpandoTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
-            case SLIDE -> drawSlideTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
-            case DIAGONAL -> drawDiagonalTransition(UXBuffer, transitionBuffer, transitionProgress, x, y);
+        val UXBuffer = drawingInformer.pGraphics
+        val elapsed = System.currentTimeMillis() - transitionStartTime
+        val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
+        when (type) {
+            TransitionType.EXPANDO -> drawExpandoTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.SLIDE -> drawSlideTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.DIAGONAL -> drawDiagonalTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
         }
 
         // let it do its last transition above otherwise you get a little screen flicker on the transition
         // from getting cut off too soon apparently
-        if (transitionProgress == 1) {
-            isTransitioning = false;
+        if (transitionProgress == 1f) {
+            isTransitioning = false
         }
     }
 
-    private void drawExpandoTransition(PGraphics UXBuffer, PGraphics transitionBuffer, float animationProgress, float x, float y) {
-        switch (direction) {
-            case LEFT -> {
-                int visibleWidth = (int) (transitionBuffer.width * animationProgress);
-                int revealPointX = (int) (x + transitionBuffer.width - visibleWidth);
-
-                UXBuffer.image(transitionBuffer, revealPointX, y, visibleWidth, transitionBuffer.height);
+    private fun drawExpandoTransition(
+        UXBuffer: PGraphics,
+        transitionBuffer: PGraphics,
+        animationProgress: Float,
+        x: Float,
+        y: Float
+    ) {
+        when (direction) {
+            TransitionDirection.LEFT -> {
+                val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
+                val revealPointX = (x + transitionBuffer.width - visibleWidth).toInt()
+                UXBuffer.image(
+                    transitionBuffer,
+                    revealPointX.toFloat(),
+                    y,
+                    visibleWidth.toFloat(),
+                    transitionBuffer.height.toFloat()
+                )
             }
-            case RIGHT ->
-                    UXBuffer.image(transitionBuffer, x, y, (int) (transitionBuffer.width * animationProgress), transitionBuffer.height);
-            case UP -> {
-                int visibleHeight = (int) (transitionBuffer.height * animationProgress);
-                int revealPointY = (int) (y + transitionBuffer.height - visibleHeight);
 
-                UXBuffer.image(transitionBuffer, x, revealPointY, transitionBuffer.width, visibleHeight);
-            }case DOWN ->
-                    UXBuffer.image(transitionBuffer, x, y, transitionBuffer.width, (int) (transitionBuffer.height * animationProgress));
+            TransitionDirection.RIGHT -> UXBuffer.image(
+                transitionBuffer, x, y, (transitionBuffer.width * animationProgress).toInt()
+                    .toFloat(), transitionBuffer.height.toFloat()
+            )
+
+            TransitionDirection.UP -> {
+                val visibleHeight = (transitionBuffer.height * animationProgress).toInt()
+                val revealPointY = (y + transitionBuffer.height - visibleHeight).toInt()
+                UXBuffer.image(
+                    transitionBuffer,
+                    x,
+                    revealPointY.toFloat(),
+                    transitionBuffer.width.toFloat(),
+                    visibleHeight.toFloat()
+                )
+            }
+
+            TransitionDirection.DOWN -> UXBuffer.image(
+                transitionBuffer,
+                x,
+                y,
+                transitionBuffer.width.toFloat(),
+                (transitionBuffer.height * animationProgress).toInt()
+                    .toFloat()
+            )
         }
     }
 
-    private void drawSlideTransition(PGraphics UXBuffer, PGraphics transitionBuffer, float animationProgress, float x, float y) {
-
-        switch (direction) {
-            case LEFT -> {
-                int visibleWidth = (int) (transitionBuffer.width * animationProgress);
-                int revealPointX = (int) (x + (transitionBuffer.width - visibleWidth));
-
-                PImage visiblePart = transitionBuffer.get(0, 0, visibleWidth, transitionBuffer.height);
-                UXBuffer.image(visiblePart, revealPointX, y);
+    private fun drawSlideTransition(
+        UXBuffer: PGraphics,
+        transitionBuffer: PGraphics,
+        animationProgress: Float,
+        x: Float,
+        y: Float
+    ) {
+        when (direction) {
+            TransitionDirection.LEFT -> {
+                val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
+                val revealPointX = (x + (transitionBuffer.width - visibleWidth)).toInt()
+                val visiblePart = transitionBuffer[0, 0, visibleWidth, transitionBuffer.height]
+                UXBuffer.image(visiblePart, revealPointX.toFloat(), y)
             }
-            case RIGHT -> {
-                int visibleWidth = (int) (transitionBuffer.width * animationProgress);
-                int revealPointX = (int) (x);
 
-                PImage visiblePart = transitionBuffer.get(transitionBuffer.width - visibleWidth, 0, visibleWidth, transitionBuffer.height);
-                UXBuffer.image(visiblePart, revealPointX, y);
+            TransitionDirection.RIGHT -> {
+                val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
+                val revealPointX = x.toInt()
+                val visiblePart =
+                    transitionBuffer[transitionBuffer.width - visibleWidth, 0, visibleWidth, transitionBuffer.height]
+                UXBuffer.image(visiblePart, revealPointX.toFloat(), y)
             }
-            case UP -> {
-                int visibleHeight = (int) (transitionBuffer.height * animationProgress);
-                int revealPointY = (int) (y + (transitionBuffer.height - visibleHeight));
 
-                PImage visiblePart = transitionBuffer.get(0, 0, transitionBuffer.width, visibleHeight);
-                UXBuffer.image(visiblePart, x, revealPointY);
+            TransitionDirection.UP -> {
+                val visibleHeight = (transitionBuffer.height * animationProgress).toInt()
+                val revealPointY = (y + (transitionBuffer.height - visibleHeight)).toInt()
+                val visiblePart = transitionBuffer[0, 0, transitionBuffer.width, visibleHeight]
+                UXBuffer.image(visiblePart, x, revealPointY.toFloat())
             }
-            case DOWN -> {
-                int visibleHeight = (int) (transitionBuffer.height * animationProgress);
-                int revealPointY = (int) (y);
-                PImage visiblePart = transitionBuffer.get(0, transitionBuffer.height - visibleHeight, transitionBuffer.width, visibleHeight);
-                UXBuffer.image(visiblePart, x, revealPointY);
+
+            TransitionDirection.DOWN -> {
+                val visibleHeight = (transitionBuffer.height * animationProgress).toInt()
+                val revealPointY = y.toInt()
+                val visiblePart =
+                    transitionBuffer[0, transitionBuffer.height - visibleHeight, transitionBuffer.width, visibleHeight]
+                UXBuffer.image(visiblePart, x, revealPointY.toFloat())
             }
         }
     }
 
-    private void drawDiagonalTransition(PGraphics UXBuffer, PGraphics transitionBuffer, float animationProgress, float x, float y) {
-        switch (direction) {
-            case LEFT -> {
-                int visibleWidth = (int) (transitionBuffer.width * animationProgress);
-                int revealPointX = (int) (x + (transitionBuffer.width - visibleWidth));
-
-                UXBuffer.image(transitionBuffer.get(transitionBuffer.width - visibleWidth, (int) (transitionBuffer.height * (1 - animationProgress)), visibleWidth, (int) (transitionBuffer.height * animationProgress)), revealPointX, y);
+    private fun drawDiagonalTransition(
+        UXBuffer: PGraphics,
+        transitionBuffer: PGraphics,
+        animationProgress: Float,
+        x: Float,
+        y: Float
+    ) {
+        when (direction) {
+            TransitionDirection.LEFT -> {
+                val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
+                val revealPointX = (x + (transitionBuffer.width - visibleWidth)).toInt()
+                UXBuffer.image(
+                    transitionBuffer[transitionBuffer.width - visibleWidth, (transitionBuffer.height * (1 - animationProgress)).toInt(), visibleWidth, (transitionBuffer.height * animationProgress).toInt()],
+                    revealPointX.toFloat(),
+                    y
+                )
             }
-            case RIGHT ->
-                    UXBuffer.image(transitionBuffer.get((int) (transitionBuffer.width - transitionBuffer.width * animationProgress), (int) (transitionBuffer.height - transitionBuffer.height * animationProgress), (int) (transitionBuffer.width * animationProgress), (int) (transitionBuffer.height * animationProgress)), x, y);
-            case UP ->
-                UXBuffer.image(transitionBuffer.get(0, 0, (int) (transitionBuffer.width * animationProgress), (int) (transitionBuffer.height * animationProgress)), x + (transitionBuffer.width * (1 - animationProgress)), y + (transitionBuffer.height * (1 - animationProgress)));
-            case DOWN ->
-                    UXBuffer.image(transitionBuffer.get(0, (int) (transitionBuffer.height * (1 - animationProgress)), (int) (transitionBuffer.width * animationProgress), (int) (transitionBuffer.height * animationProgress)), x, y);
+
+            TransitionDirection.RIGHT -> UXBuffer.image(
+                transitionBuffer[(transitionBuffer.width - transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height - transitionBuffer.height * animationProgress).toInt(), (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
+                x,
+                y
+            )
+
+            TransitionDirection.UP -> UXBuffer.image(
+                transitionBuffer[0, 0, (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
+                x + transitionBuffer.width * (1 - animationProgress),
+                y + transitionBuffer.height * (1 - animationProgress)
+            )
+
+            TransitionDirection.DOWN -> UXBuffer.image(
+                transitionBuffer[0, (transitionBuffer.height * (1 - animationProgress)).toInt(), (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
+                x,
+                y
+            )
         }
     }
 
-    public enum TransitionDirection {
-        LEFT, RIGHT, UP, DOWN
+    enum class TransitionDirection {
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN
     }
 
-    public enum TransitionType {
-        EXPANDO, SLIDE, DIAGONAL
+    enum class TransitionType {
+        EXPANDO,
+        SLIDE,
+        DIAGONAL
     }
-
-
 }
-

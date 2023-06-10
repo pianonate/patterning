@@ -1,9 +1,7 @@
-package ux.informer;
+package ux.informer
 
-import processing.core.PGraphics;
+import processing.core.PGraphics
 
-@FunctionalInterface
-public interface PGraphicsSupplier {
-    PGraphics get();
-
+fun interface PGraphicsSupplier {
+    fun get(): PGraphics?
 }

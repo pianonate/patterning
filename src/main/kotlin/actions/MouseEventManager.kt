@@ -18,7 +18,7 @@ class MouseEventManager private constructor() {
 
     private var pressedReceiver: MouseEventReceiver? = null
 
-    fun onMousePressed(mouseX: Int, mouseY: Int) {
+    fun onMousePressed() {
         isMousePressedOverAnyReceiver = false
         pressedReceiver = null
         for (receiver in mouseEventReceivers) {

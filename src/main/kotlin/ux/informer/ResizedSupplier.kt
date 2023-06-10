@@ -1,6 +1,5 @@
-package ux.informer;
+package ux.informer
 
-@FunctionalInterface
-public interface ResizedSupplier {
-    boolean isResized();
+fun interface ResizedSupplier {
+    fun isResized(): Boolean
 }

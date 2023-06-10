@@ -189,7 +189,8 @@ public class Patterning extends PApplet {
         last_mouse_x += mouseX;
         last_mouse_y += mouseY;
 
-        mouseEventManager.onMousePressed(mouseX, mouseY);
+        assert mouseEventManager != null;
+        mouseEventManager.onMousePressed();
 
         mousePressedOverReceiver = mouseEventManager.isMousePressedOverAnyReceiver();
 
@@ -208,6 +209,7 @@ public class Patterning extends PApplet {
             drawRateManager.drawImmediately();
         } else {
             mousePressedOverReceiver = false;
+            assert mouseEventManager != null;
             mouseEventManager.onMouseReleased();
         }
         last_mouse_x = 0;

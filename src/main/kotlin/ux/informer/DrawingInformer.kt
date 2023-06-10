@@ -1,37 +1,21 @@
-package ux.informer;
+package ux.informer
 
-import processing.core.PGraphics;
+import processing.core.PGraphics
 
-public class DrawingInformer implements DrawingInfoSupplier {
-
-    private final PGraphicsSupplier graphicsSupplier;
-    private final ResizedSupplier resizedSupplier;
-    private final DrawingSupplier drawingSupplier;
-
-    public DrawingInformer(PGraphicsSupplier graphicsSupplier,
-                           ResizedSupplier resizedSupplier,
-                           DrawingSupplier drawingSupplier)
-    {
-        this.graphicsSupplier = graphicsSupplier;
-        this.resizedSupplier = resizedSupplier;
-        this.drawingSupplier = drawingSupplier;
+class DrawingInformer(
+    private val graphicsSupplier: PGraphicsSupplier,
+    private val resizedSupplier: ResizedSupplier,
+    private val drawingSupplier: DrawingSupplier
+) : DrawingInfoSupplier {
+    override fun getPGraphics(): PGraphics? {
+        return graphicsSupplier.get()
     }
 
-
-
-    @Override
-    public PGraphics getPGraphics() {
-        return graphicsSupplier.get();
+    override fun isResized(): Boolean {
+        return resizedSupplier.isResized()
     }
 
-
-    @Override
-    public boolean isResized() {
-        return resizedSupplier.isResized();
-    }
-
-    @Override
-    public boolean isDrawing() {
-        return drawingSupplier.isDrawing();
+    override fun isDrawing(): Boolean {
+        return drawingSupplier.isDrawing()
     }
 }

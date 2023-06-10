@@ -1,6 +1,5 @@
-package ux.informer;
+package ux.informer
 
-@FunctionalInterface
-public interface DrawingSupplier {
-    boolean isDrawing();
+fun interface DrawingSupplier {
+    fun isDrawing(): Boolean
 }
