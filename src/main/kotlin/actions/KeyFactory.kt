@@ -128,10 +128,8 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     }
     @JvmField
     val callbackRandomLife: KeyCallback = object : KeyCallback(SHORTCUT_RANDOM_FILE) {
-        @Suppress("unused")
         override fun invokeFeature() {
             patterning.getRandomLifeform(true)
-            patterning.destroyAndCreate()
         }
 
         override fun getUsageText(): String {
@@ -219,12 +217,10 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     }
     @JvmField
     val callbackFitUniverseOnScreen: KeyCallback = object : KeyCallback(SHORTCUT_FIT_UNIVERSE) {
-        @Suppress("unused")
         override fun invokeFeature() {
             patterning.fitUniverseOnScreen()
         }
 
-        @Suppress("unused")
         override fun getUsageText(): String {
             return "fit the visible universe on screen"
         }
