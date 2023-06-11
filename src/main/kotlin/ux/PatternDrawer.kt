@@ -84,7 +84,7 @@ class PatternDrawer(
         hudInfo = HUDStringBuilder()
 
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
+            TextPanel.Builder(drawingInformer, theme.startupText!!, AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(theme.startupTextSize)
                 .fadeInDuration(theme.startupTextFadeInDuration)
                 .fadeOutDuration(theme.startupTextFadeOutDuration)
@@ -181,7 +181,7 @@ class PatternDrawer(
         countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
                 drawingInformer,
-                theme.countdownText,
+                theme.countdownText!!,
                 AlignHorizontal.CENTER,
                 AlignVertical.CENTER
             )

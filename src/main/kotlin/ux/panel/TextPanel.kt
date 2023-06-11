@@ -1,275 +1,248 @@
-package ux.panel;
+package ux.panel
 
-import processing.core.PApplet;
-import processing.core.PGraphics;
-import processing.core.PVector;
-import ux.Drawable;
-import ux.DrawableManager;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
-import ux.informer.DrawingInformer;
+import processing.core.PApplet
+import processing.core.PGraphics
+import processing.core.PVector
+import ux.Drawable
+import ux.DrawableManager
+import ux.UXThemeManager
+import ux.informer.DrawingInfoSupplier
+import ux.informer.DrawingInformer
+import java.util.*
+import java.util.function.IntSupplier
 
-import java.util.*;
-import java.util.function.IntSupplier;
+class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawable {
+    val outline: Boolean
 
-public class TextPanel extends Panel implements Drawable {
-
-    private final static UXThemeManager theme = UXThemeManager.getInstance();
-    private final static DrawableManager drawableManager = DrawableManager.getInstance();
-    public final boolean outline;
     // sizes
-    private final int textMargin = theme.getDefaultTextMargin();
-    private final int doubleTextMargin = textMargin * 2;
-    private final float textSize;
-    // optional capabilities
-    private final OptionalInt textWidth;
-    private final Optional<IntSupplier> textWidthSupplier;
-    private final boolean wrap;
-    private final OptionalInt fadeInDuration;
-    private final OptionalInt fadeOutDuration;
-    private final OptionalLong displayDuration; // long to compare to System.currentTimeMillis()
-    // text countdown variables
-    private final OptionalInt countdownFrom;
-    private final Runnable runMethod;
-    private final String initialMessage;
-    private final boolean keepShortCutTogether;
-    private long transitionTime;
-    private int fadeValue;
-    // the message
-    private String message;
-    private String lastMessage;
-    private List<String> messageLines;
-    private State state;
+    private val textMargin = theme.defaultTextMargin
+    private val doubleTextMargin = textMargin * 2
+    private val textSize: Float
 
-    protected TextPanel(TextPanel.Builder builder) {
-        super(builder);
+    // optional capabilities
+    private val textWidth: OptionalInt
+    private val textWidthSupplier: Optional<IntSupplier>
+    private val wrap: Boolean
+    private val fadeInDuration: OptionalInt
+    private val fadeOutDuration: OptionalInt
+    private val displayDuration // long to compare to System.currentTimeMillis()
+            : OptionalLong
+
+    // text countdown variables
+    private val countdownFrom: OptionalInt
+    private val runMethod: Runnable?
+    private val initialMessage: String
+    private val keepShortCutTogether: Boolean
+    private var transitionTime: Long = 0
+    private var fadeValue = 0
+
+    // the message
+    private var message: String
+    private var lastMessage: String
+    private var messageLines: List<String>? = null
+    private var state: State? = null
+
+    init {
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
         // super(builder.alignHorizontal, builder.vAlign);
-
-        this.message = builder.message;
-        this.lastMessage = builder.message;
+        message = builder.message
+        lastMessage = builder.message
 
         // just for keyboard shortcuts for now
-        this.keepShortCutTogether = builder.keepShortCutTogether;
-        this.outline = builder.outline;
-
-        this.textSize = builder.textSize;
-        this.textWidth = builder.textWidth;
-        this.textWidthSupplier = builder.textWidthSupplier;
-        this.wrap = builder.wrap;
-
-        this.displayDuration = builder.displayDuration;
-
-        this.fadeInDuration = builder.fadeInDuration;
-        this.fadeOutDuration = builder.fadeOutDuration;
+        keepShortCutTogether = builder.keepShortCutTogether
+        outline = builder.outline
+        textSize = builder.textSize
+        textWidth = builder.textWidth
+        textWidthSupplier = builder.textWidthSupplier
+        wrap = builder.wrap
+        displayDuration = builder.displayDuration
+        fadeInDuration = builder.fadeInDuration
+        fadeOutDuration = builder.fadeOutDuration
 
         // text countdown variables
-        this.runMethod = builder.runMethod;
-        this.countdownFrom = builder.countdownFrom;
-        this.initialMessage = builder.message;
+        runMethod = builder.runMethod
+        countdownFrom = builder.countdownFrom
+        initialMessage = builder.message
 
         // create initial panelBuffer for the text
-        updatePanelBuffer(drawingInformer.supplyPGraphics(), true);
+        updatePanelBuffer(drawingInformer.supplyPGraphics(), true)
 
         //this.setFill(0xFFFF0000);
 
         // automatically start the display unless we're a countdown
         // which needs to be manually invoked by the caller...
-        if (countdownFrom.isPresent()) {
-            startCountdown();
+        if (countdownFrom.isPresent) {
+            startCountdown()
         } else {
-            startDisplay();
+            startDisplay()
         }
     }
 
-    private void updatePanelBuffer(PGraphics parentBuffer, boolean shouldUpdate) {
+    private fun updatePanelBuffer(parentBuffer: PGraphics, shouldUpdate: Boolean) {
         if (shouldUpdate) {
-            panelBuffer = getTextPanelBuffer(parentBuffer);
+            panelBuffer = getTextPanelBuffer(parentBuffer)
         }
     }
 
     // Countdown methods
-    private void startCountdown() {
-        setMessage(initialMessage);
-        startDisplay();
+    private fun startCountdown() {
+        setMessage(initialMessage)
+        startDisplay()
     }
 
-    private void startDisplay() {
-        this.state = new FadeInState();
-        this.transitionTime = System.currentTimeMillis(); // start displaying immediately
+    private fun startDisplay() {
+        state = FadeInState()
+        transitionTime = System.currentTimeMillis() // start displaying immediately
     }
 
-    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {
-
-        String testMessage = (countdownFrom.isPresent()) ?
-                getCountdownMessage(countdownFrom.getAsInt()) : message;
-
-        messageLines = wrapText(testMessage, parentBuffer);
+    protected fun getTextPanelBuffer(parentBuffer: PGraphics): PGraphics {
+        val testMessage = if (countdownFrom.isPresent) getCountdownMessage(countdownFrom.asInt.toLong()) else message
+        messageLines = wrapText(testMessage, parentBuffer)
 
 
         // Adjust the text size if it exceeds the bounds of the screen
-        float adjustedTextSize = getAdjustedTextSize(parentBuffer, this.messageLines, textSize);
+        val adjustedTextSize = getAdjustedTextSize(parentBuffer, messageLines, textSize)
 
         // Compute the maximum width and total height of all lines in case there is
         // word wrapping
-        float maxWidth = 0;
-        float totalHeight = 0;
-        for (String line : this.messageLines) {
+        var maxWidth = 0f
+        var totalHeight = 0f
+        for (line in messageLines!!) {
             if (parentBuffer.textWidth(line) > maxWidth) {
-                maxWidth = parentBuffer.textWidth(line);
+                maxWidth = parentBuffer.textWidth(line)
             }
-            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent();
+            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent()
         }
 
-       // width = (int) Math.ceil(maxWidth + doubleTextMargin);
+        // width = (int) Math.ceil(maxWidth + doubleTextMargin);
 
         // Adjust the width and height according to the size of the wrapped text
-        height = (int) Math.ceil(totalHeight + textMargin);
+        height = Math.ceil((totalHeight + textMargin).toDouble()).toInt()
 
         // take either the specified width - which has just been sized to fit
         // or the width of the longest line of text in case of word wrapping
-        width = Math.min( getTextWidth(), (int) Math.ceil(maxWidth + doubleTextMargin));
-
-        PGraphics textBuffer = parentBuffer.parent.createGraphics(width, height);
+        width = Math.min(getTextWidth(), Math.ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
+        val textBuffer = parentBuffer.parent.createGraphics(width, height)
 
         // set the font for this PGraphics as it will not change
-        textBuffer.beginDraw();
-        setFont(textBuffer, adjustedTextSize);
-        textBuffer.endDraw();
-
-        return textBuffer;
+        textBuffer.beginDraw()
+        setFont(textBuffer, adjustedTextSize)
+        textBuffer.endDraw()
+        return textBuffer
     }
 
-    public void setMessage(String message) {
-        lastMessage = this.message;
-        this.message = message;
+    fun setMessage(message: String) {
+        lastMessage = this.message
+        this.message = message
     }
 
     // for sizes to be correctly calculated, the font must be the same
     // on both the parent and the new textBuffer
     // necessary because createGraphics doesn't inherit the font from the parent
-    private void setFont(PGraphics buffer, float textSize) {
-
-        DrawingInformer informer = (DrawingInformer) drawingInformer;
-
-        boolean shouldInitialize = !informer.isDrawing();
-
-        if (shouldInitialize) buffer.beginDraw();
-        buffer.textFont(buffer.parent.createFont(theme.getFontName(), textSize));
-        buffer.textSize(textSize);
-        if (shouldInitialize) buffer.endDraw();
-
+    private fun setFont(buffer: PGraphics, textSize: Float) {
+        val informer = drawingInformer as DrawingInformer
+        val shouldInitialize = !informer.isDrawing()
+        if (shouldInitialize) buffer.beginDraw()
+        buffer.textFont(buffer.parent.createFont(theme.fontName, textSize))
+        buffer.textSize(textSize)
+        if (shouldInitialize) buffer.endDraw()
     }
 
-    private String getCountdownMessage(long count) {
-        return initialMessage + ": " + count;
+    private fun getCountdownMessage(count: Long): String {
+        return "$initialMessage: $count"
     }
 
-    private List<String> wrapText(String theMessage, PGraphics buffer) {
-        List<String> words = new ArrayList<>(Arrays.asList(theMessage.split(" ")));
-        List<String> lines = new ArrayList<>();
-        StringBuilder line = new StringBuilder();
-
-        if (!this.wrap) {
-            lines.add(theMessage);
-            return lines;
+    private fun wrapText(theMessage: String, buffer: PGraphics): List<String> {
+        val words: MutableList<String> =
+            ArrayList(Arrays.asList(*theMessage.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()))
+        val lines: MutableList<String> = ArrayList()
+        var line = StringBuilder()
+        if (!wrap) {
+            lines.add(theMessage)
+            return lines
         }
-
-        setFont(buffer, textSize);
-
-        int evalWidth = getTextWidth();
-
+        setFont(buffer, textSize)
+        val evalWidth = getTextWidth()
         while (!words.isEmpty()) {
-            String word = words.get(0);
-            float prospectiveLineWidth = buffer.textWidth(line + word);
+            val word = words[0]
+            val prospectiveLineWidth = buffer.textWidth(line.toString() + word)
 
             // If the word alone is wider than the wordWrapWidth, it should be put on its own line
-            if (prospectiveLineWidth > evalWidth && line.length() == 0) {
-                line.append(word).append(" ");
-                words.remove(0);
+            if (prospectiveLineWidth > evalWidth && line.length == 0) {
+                line.append(word).append(" ")
+                words.removeAt(0)
+            } else if (prospectiveLineWidth <= evalWidth) {
+                line.append(word).append(" ")
+                words.removeAt(0)
+            } else {
+                lines.add(line.toString().trim { it <= ' ' })
+                line = StringBuilder()
             }
-            // Otherwise, if it fits with the current line, add it to the line
-            else if (prospectiveLineWidth <= evalWidth) {
-                line.append(word).append(" ");
-                words.remove(0);
-            }
-            // If it doesn't fit, move to the next line
-            else {
-                lines.add(line.toString().trim());
-                line = new StringBuilder();
-            }
-
             if (keepShortCutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
-                if (words.size() == 2 && buffer.textWidth(line + words.get(0) + " " + words.get(1)) > evalWidth) {
+                if (words.size == 2 && buffer.textWidth(line.toString() + words[0] + " " + words[1]) > evalWidth) {
                     // Add the current line to the lines list
-                    lines.add(line.toString().trim());
-                    line = new StringBuilder();
+                    lines.add(line.toString().trim { it <= ' ' })
+                    line = StringBuilder()
 
                     // Add the last word to the new line
-                    line.append(words.get(0)).append(" ");
-                    words.remove(0);
+                    line.append(words[0]).append(" ")
+                    words.removeAt(0)
                 }
             }
         }
-
-        if (line.length() > 0) {
-            lines.add(line.toString().trim());
+        if (line.length > 0) {
+            lines.add(line.toString().trim { it <= ' ' })
         }
-
-        return lines;
+        return lines
     }
 
-
-
     // used to make sure that a long line will fit on the screen at this size
-    private float getAdjustedTextSize(PGraphics parentBuffer, List<String> lines, float startingSize) {
+    private fun getAdjustedTextSize(parentBuffer: PGraphics, lines: List<String>?, startingSize: Float): Float {
 
         // inherently we can have word wrapped text so make sure that we find the longest line to get the width
         // set the font on the buffer we're using to evaluate text width
-        setFont(parentBuffer, startingSize);
-
-        float adjustedTextSize = startingSize;
-        String longestLine = "";
+        setFont(parentBuffer, startingSize)
+        var adjustedTextSize = startingSize
+        var longestLine: String? = ""
 
         // Determine the longest line
-        for (String line : lines) {
+        for (line in lines!!) {
             if (parentBuffer.textWidth(line) > parentBuffer.textWidth(longestLine)) {
-                longestLine = line;
+                longestLine = line
             }
         }
-
-        int targetWidth = getTextWidth();
+        val targetWidth = getTextWidth()
 
         // fit within the width minus a margin
-        while ((parentBuffer.textWidth(longestLine) > (targetWidth - doubleTextMargin))
-                /*|| ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))*/) {
-            adjustedTextSize -= .1; // smooth baby
-            adjustedTextSize = Math.max(adjustedTextSize, 1); // Prevent the textSize from going below 1
-            parentBuffer.textSize(adjustedTextSize);
+        while (parentBuffer.textWidth(longestLine) > targetWidth - doubleTextMargin /*|| ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))*/) {
+            adjustedTextSize -= .1.toFloat() // smooth baby
+            adjustedTextSize = Math.max(adjustedTextSize, 1f) // Prevent the textSize from going below 1
+            parentBuffer.textSize(adjustedTextSize)
         }
-        return adjustedTextSize;
+        return adjustedTextSize
     }
 
-    private int getTextWidth() {
-        if (textWidth.isPresent()) {
-            return textWidth.getAsInt();
+    private fun getTextWidth(): Int {
+        return if (textWidth.isPresent) {
+            textWidth.asInt
         } else {
-            return textWidthSupplier.map(intSupplier -> OptionalInt.of(intSupplier.getAsInt())).get().getAsInt();
+            textWidthSupplier.map { intSupplier: IntSupplier -> OptionalInt.of(intSupplier.asInt) }.get().asInt
         }
     }
 
-    protected void panelSubclassDraw() {
+    override fun panelSubclassDraw() {
 
         // used for fading in the text and the various states
         // a ux.panel.TextPanel can advance through
-        state.update();
+        state!!.update()
 
         // we update the size of the buffer containing the text
         // if we've resized && there is a supplier of an integer telling us the size of the text can change
         // for example the countdown text is half the screen width so we want to give it a new buffer
-        boolean shouldUpdate = drawingInformer.isResized();//&& textWidthSupplier.isPresent();
+        val shouldUpdate = drawingInformer.isResized() //&& textWidthSupplier.isPresent();
         //updatePanelBuffer(drawingInformer.supplyPGraphics(), shouldUpdate);
 
         // if i cache a panel and then just create a new one when the screen resizes
@@ -282,307 +255,306 @@ public class TextPanel extends Panel implements Drawable {
         // each time - but the performance is acceptable.
         // when you create new text panels that organize the text
         // better - possibly you won't have to do this anymore.
-
-        if (!Objects.equals(lastMessage, message)) {
-            updatePanelBuffer(drawingInformer.supplyPGraphics(), true);
+        if (lastMessage != message) {
+            updatePanelBuffer(drawingInformer.supplyPGraphics(), true)
         }
 
 
         // and if the test actually changed - or in the case of updating the buffer size on resize
         // let's update the word wrapping and font size
-      /*  if (!Objects.equals(lastMessage, message) || shouldUpdate) {
+        /*  if (!Objects.equals(lastMessage, message) || shouldUpdate) {
 
             // getAdjustedTextSize uses the parentBuffer to calculate the sizes for use on the panelBuffer
             // uses the parent to calculate so I guess that's it
             //setFont(drawingInformer.supplyPGraphics(), textSize);
             setFont(panelBuffer, getAdjustedTextSize(drawingInformer.supplyPGraphics(), messageLines, textSize));
             messageLines = wrapText(message, drawingInformer.supplyPGraphics());
-        }*/
-
-        drawMultiLineText();
+        }*/drawMultiLineText()
     }
 
-    void drawMultiLineText() {
+    fun drawMultiLineText() {
 
 
         // Get the colors every time in case the UX theme changes
-        int outlineColor = theme.getTextColorStart(); // black
+        val outlineColor = theme.getTextColorStart() // black
 
         // Interpolate between "black" 0xff000000 and "white" (0xffffffff)
         // fade value goes from 0 to 255 to make this happen
-        int themeColor = theme.getTextColor();
+        val themeColor = theme.getTextColor()
+        val currentColor = panelBuffer.lerpColor(outlineColor, themeColor, fadeValue / 255.0f)
 
-        int currentColor = panelBuffer.lerpColor(outlineColor, themeColor, fadeValue / 255.0F);
-
-    //    System.out.println(System.currentTimeMillis() + " current: " + currentColor + " theme: " + themeColor + " outline: " + outlineColor + " fade: " + fadeValue);
+        //    System.out.println(System.currentTimeMillis() + " current: " + currentColor + " theme: " + themeColor + " outline: " + outlineColor + " fade: " + fadeValue);
 
         // Draw black text slightly offset in each direction to create an outline effect
-        float outlineOffset = 1.0F;
-
-        panelBuffer.beginDraw();
-        panelBuffer.pushStyle();
-
-        assert this.hAlign != null;
-        assert this.vAlign != null;
-        panelBuffer.textAlign(this.hAlign.toPApplet(), this.vAlign.toPApplet());
+        val outlineOffset = 1.0f
+        panelBuffer.beginDraw()
+        panelBuffer.pushStyle()
+        assert(hAlign != null)
+        assert(vAlign != null)
+        panelBuffer.textAlign(hAlign!!.toPApplet(), vAlign!!.toPApplet())
 
         // Determine where to start drawing the text based on the alignment
-        float x = textMargin;
-        float y = 0;
-
-        switch (hAlign) {
-            case LEFT -> x = textMargin;
-            case CENTER -> x = panelBuffer.width / 2f;
-            case RIGHT -> x = panelBuffer.width - textMargin;
+        var x = textMargin.toFloat()
+        var y = 0f
+        when (hAlign) {
+            AlignHorizontal.LEFT -> x = textMargin.toFloat()
+            AlignHorizontal.CENTER -> x = panelBuffer.width / 2f
+            AlignHorizontal.RIGHT -> x = (panelBuffer.width - textMargin).toFloat()
+            else -> {}
         }
 
         // Determine the starting y position based on the alignment
         //todo: for multiline you can use textLeading to control the actual spacing...
-        float lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent();
-        float totalTextHeight = lineHeight * messageLines.size();
-
-        switch (vAlign) {
-            case CENTER -> y = (panelBuffer.height / 2f) - (totalTextHeight / 2f) + doubleTextMargin;
-            case BOTTOM -> y = panelBuffer.height - textMargin;
+        val lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent()
+        val totalTextHeight = lineHeight * messageLines!!.size
+        when (vAlign) {
+            AlignVertical.CENTER -> y = panelBuffer.height / 2f - totalTextHeight / 2f + doubleTextMargin
+            AlignVertical.BOTTOM -> y = (panelBuffer.height - textMargin).toFloat()
+            else -> {}
         }
-
-        for (int i = 0; i < messageLines.size(); i++) {
-            String line = messageLines.get(i);
-            float lineY = y + (lineHeight * i);
-
+        for (i in messageLines!!.indices) {
+            val line = messageLines!![i]
+            val lineY = y + lineHeight * i
             if (outline) {
-                panelBuffer.fill(outlineColor);
-                panelBuffer.text(line, x - outlineOffset, lineY - outlineOffset);
-                panelBuffer.text(line, x + outlineOffset, lineY - outlineOffset);
+                panelBuffer.fill(outlineColor)
+                panelBuffer.text(line, x - outlineOffset, lineY - outlineOffset)
+                panelBuffer.text(line, x + outlineOffset, lineY - outlineOffset)
             }
 
             // Draw the actual text in the calculated color
-            panelBuffer.fill(currentColor);
+            panelBuffer.fill(currentColor)
             //panelBuffer.fill(0xFFFF00FF);
-            panelBuffer.text(line, x, lineY);
+            panelBuffer.text(line, x, lineY)
         }
-
-        panelBuffer.popStyle();
-        panelBuffer.endDraw();
+        panelBuffer.popStyle()
+        panelBuffer.endDraw()
     }
 
-    public void interruptCountdown() {
-        if (runMethod != null) runMethod.run();
-
-        removeFromDrawableList();
+    fun interruptCountdown() {
+        runMethod?.run()
+        removeFromDrawableList()
     }
 
-    private void removeFromDrawableList() {
-        drawableManager.remove(this);
+    private fun removeFromDrawableList() {
+        drawableManager!!.remove(this)
     }
 
     private interface State {
-        void update();
+        fun update()
 
-        @SuppressWarnings("unused")
-        void transition();
+        @Suppress("unused")
+        fun transition()
     }
 
-    public static class Builder extends Panel.Builder<Builder> {
-        private static final UXThemeManager theme = UXThemeManager.getInstance();
-        private final String message;
-        private boolean outline = true;
-        private boolean wrap = false;
-        private float textSize = theme.getDefaultTextSize();
-        private OptionalInt fadeInDuration = OptionalInt.empty();
-        private OptionalInt fadeOutDuration = OptionalInt.empty();
+    class Builder : Panel.Builder<Builder> {
+        internal val message: String
+        internal var outline = true
+        internal var wrap = false
+        internal var textSize = theme.defaultTextSize
+        internal var fadeInDuration = OptionalInt.empty()
+        internal var fadeOutDuration = OptionalInt.empty()
+        internal var displayDuration = OptionalLong.empty()
 
-        private OptionalLong displayDuration = OptionalLong.empty();
         // Countdown variables
-        private OptionalInt countdownFrom = OptionalInt.empty();
+        internal var countdownFrom = OptionalInt.empty()
+        internal var textWidth = OptionalInt.empty()
+        internal var textWidthSupplier = Optional.empty<IntSupplier>()
+        internal var runMethod: Runnable? = null
+        internal var keepShortCutTogether = false
 
-        private OptionalInt textWidth = OptionalInt.empty();
-        private Optional<IntSupplier> textWidthSupplier = Optional.empty();
-
-        private Runnable runMethod;
-        private boolean keepShortCutTogether = false;
-
-        public Builder(DrawingInfoSupplier informer, String message, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(informer, alignHorizontal, vAlign);
-            this.message = message;
+        constructor(
+            informer: DrawingInfoSupplier?,
+            message: String,
+            alignHorizontal: AlignHorizontal?,
+            vAlign: AlignVertical?
+        ) : super(
+            informer!!, alignHorizontal!!, vAlign!!
+        ) {
+            this.message = message
         }
 
-        public Builder(DrawingInfoSupplier informer, String message, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
-            super(informer, position, hAlign, vAlign);
-            this.message = message;
+        constructor(
+            informer: DrawingInfoSupplier?,
+            message: String,
+            position: PVector?,
+            hAlign: AlignHorizontal?,
+            vAlign: AlignVertical?
+        ) : super(
+            informer!!, position!!, hAlign!!, vAlign!!
+        ) {
+            this.message = message
         }
 
-        public Builder textSize(int textSize) {
-            this.textSize = textSize;
-            return this;
+        fun textSize(textSize: Int): Builder {
+            this.textSize = textSize.toFloat()
+            return this
         }
 
-        public Builder fadeInDuration(int fadeInDuration) {
-            this.fadeInDuration = OptionalInt.of(fadeInDuration);
-            return this;
+        fun fadeInDuration(fadeInDuration: Int): Builder {
+            this.fadeInDuration = OptionalInt.of(fadeInDuration)
+            return this
         }
 
-        public Builder fadeOutDuration(int fadeOutDuration) {
-            this.fadeOutDuration = OptionalInt.of(fadeOutDuration);
-            return this;
+        fun fadeOutDuration(fadeOutDuration: Int): Builder {
+            this.fadeOutDuration = OptionalInt.of(fadeOutDuration)
+            return this
         }
 
-        public Builder countdownFrom(int countdownFrom) {
-            this.countdownFrom = OptionalInt.of(countdownFrom);
-            return this;
+        fun countdownFrom(countdownFrom: Int): Builder {
+            this.countdownFrom = OptionalInt.of(countdownFrom)
+            return this
         }
 
-        public Builder textWidth(int textWidth) {
-            this.textWidth = OptionalInt.of(textWidth);
-            if (textWidthSupplier.isPresent())
-                throw new IllegalStateException("Cannot set both int textWidth and Optional<IntSupplier> textWidth");
-            return this;
+        fun textWidth(textWidth: Int): Builder {
+            this.textWidth = OptionalInt.of(textWidth)
+            check(!textWidthSupplier.isPresent) { "Cannot set both int textWidth and Optional<IntSupplier> textWidth" }
+            return this
         }
 
-        public Builder textWidth(Optional<IntSupplier> textWidth) {
-            textWidthSupplier = textWidth;
-            if (this.textWidth.isPresent())
-                throw new IllegalStateException("Cannot set both int textWidth and Optional<IntSupplier> textWidth");
-            return this;
+        fun textWidth(textWidth: Optional<IntSupplier>): Builder {
+            textWidthSupplier = textWidth
+            check(!this.textWidth.isPresent) { "Cannot set both int textWidth and Optional<IntSupplier> textWidth" }
+            return this
         }
 
-        public Builder wrap() {
-            this.wrap = true;
-            return this;
+        fun wrap(): Builder {
+            wrap = true
+            return this
         }
 
-        public Builder keepShortCutTogether() {
-            this.keepShortCutTogether = true;
-            return this;
+        fun keepShortCutTogether(): Builder {
+            keepShortCutTogether = true
+            return this
         }
 
-        public Builder runMethod(Runnable runMethod) {
-            this.runMethod = runMethod;
-            return this;
+        fun runMethod(runMethod: Runnable?): Builder {
+            this.runMethod = runMethod
+            return this
         }
 
-        public Builder displayDuration(long displayDuration) {
-            this.displayDuration = OptionalLong.of(displayDuration);
-            return this;
+        fun displayDuration(displayDuration: Long): Builder {
+            this.displayDuration = OptionalLong.of(displayDuration)
+            return this
         }
 
-        public Builder outline(boolean outline) {
-            this.outline = outline;
-            return this;
+        fun outline(outline: Boolean): Builder {
+            this.outline = outline
+            return this
         }
 
-        @Override
-        protected Builder self() {
-            return this;
+        override fun self(): Builder {
+            return this
         }
 
-        @Override
-        public TextPanel build() {
-            if (textWidth.isEmpty() && textWidthSupplier.isEmpty()) {
-                textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width);
+        override fun build(): TextPanel? {
+            if (textWidth.isEmpty && textWidthSupplier.isEmpty) {
+                textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width)
             }
-            return new TextPanel(this);
+            return TextPanel(this)
+        }
+
+        companion object {
+            private val theme = UXThemeManager.instance
         }
     }
 
-    private class FadeInState implements State {
-        @Override
-        public void update() {
-
-            long elapsedTime = System.currentTimeMillis() - transitionTime;
-            if (fadeInDuration.isPresent()) {
-                fadeValue = PApplet.constrain((int) PApplet.map(elapsedTime, 0, fadeInDuration.getAsInt(), 0, 255), 0, 255);
+    private inner class FadeInState : State {
+        override fun update() {
+            val elapsedTime = System.currentTimeMillis() - transitionTime
+            fadeValue = if (fadeInDuration.isPresent) {
+                PApplet.constrain(
+                    PApplet.map(elapsedTime.toFloat(), 0f, fadeInDuration.asInt.toFloat(), 0f, 255f).toInt(),
+                    0,
+                    255
+                )
             } else {
                 // fade values range from 0 to 255 so the lerpColor will generate a value from 0 to 1
-                fadeValue = 255;
+                255
             }
-            if (fadeInDuration.isEmpty() || elapsedTime >= fadeInDuration.getAsInt()) {
-                transition();
+            if (fadeInDuration.isEmpty || elapsedTime >= fadeInDuration.asInt) {
+                transition()
             }
         }
 
-        @Override
-        public void transition() {
-            if (countdownFrom.isPresent()) {
-                state = new CountdownState();
-                transitionTime = System.currentTimeMillis();
-                state.update(); // Force an immediate update after transitioning to the CountdownState
+        override fun transition() {
+            if (countdownFrom.isPresent) {
+                state = CountdownState()
+                transitionTime = System.currentTimeMillis()
+                (state as CountdownState).update() // Force an immediate update after transitioning to the CountdownState
             } else {
-                state = new DisplayState();
+                state = DisplayState()
             }
-            transitionTime = System.currentTimeMillis();
+            transitionTime = System.currentTimeMillis()
         }
     }
 
-    private class DisplayState implements State {
-        @Override
-        public void update() {
-            long elapsedTime = System.currentTimeMillis() - transitionTime;
-            if (displayDuration.isPresent() && elapsedTime > displayDuration.getAsLong()) {
-                transition();
+    private inner class DisplayState : State {
+        override fun update() {
+            val elapsedTime = System.currentTimeMillis() - transitionTime
+            if (displayDuration.isPresent && elapsedTime > displayDuration.asLong) {
+                transition()
             }
         }
 
-        @Override
-        public void transition() {
-            if (fadeOutDuration.isPresent()) {
-                state = new FadeOutState();
-                transitionTime = System.currentTimeMillis();
+        override fun transition() {
+            if (fadeOutDuration.isPresent) {
+                state = FadeOutState()
+                transitionTime = System.currentTimeMillis()
             } else {
-                removeFromDrawableList();
+                removeFromDrawableList()
             }
         }
     }
 
-    private class CountdownState implements State {
-
+    private inner class CountdownState : State {
         // can only be here if countdownFrom.isPresent()
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        long newCount = countdownFrom.getAsInt();
+        var newCount = countdownFrom.asInt.toLong()
 
-        public CountdownState() {
-            setMessage(getCountdownMessage(newCount));
+        init {
+            setMessage(getCountdownMessage(newCount))
         }
 
-        @Override
-        public void update() {
-            long elapsedTime = System.currentTimeMillis() - transitionTime;
+        override fun update() {
+            val elapsedTime = System.currentTimeMillis() - transitionTime
             if (elapsedTime >= 1000) { // a second has passed
-                transitionTime = System.currentTimeMillis(); // reset transitionTime
-                newCount--;
+                transitionTime = System.currentTimeMillis() // reset transitionTime
+                newCount--
                 if (newCount <= 0) {
                     // Stop the countdown when it reaches 0
-                    transition();
+                    transition()
                 } else {
-                    setMessage(initialMessage + ": " + newCount);
+                    setMessage("$initialMessage: $newCount")
                 }
             }
         }
 
-        @Override
-        public void transition() {
-            interruptCountdown();
-            state = new FadeOutState();
-            transitionTime = System.currentTimeMillis();
+        override fun transition() {
+            interruptCountdown()
+            state = FadeOutState()
+            transitionTime = System.currentTimeMillis()
         }
     }
 
-    private class FadeOutState implements State {
-        @Override
-        public void update() {
-            long elapsedTime = System.currentTimeMillis() - transitionTime;
+    private inner class FadeOutState : State {
+        override fun update() {
+            val elapsedTime = System.currentTimeMillis() - transitionTime
 
             // can't be in FadeOutState unless we have a fadeOutDuration - need for the IDE warning
-            //noinspection OptionalGetWithoutIsPresent
-            fadeValue = PApplet.constrain((int) PApplet.map(elapsedTime, 0, fadeOutDuration.getAsInt(), 255, 0), 0, 255);
-            if (elapsedTime >= fadeOutDuration.getAsInt()) {
-                transition();
+            fadeValue = PApplet.constrain(
+                PApplet.map(elapsedTime.toFloat(), 0f, fadeOutDuration.asInt.toFloat(), 255f, 0f).toInt(), 0, 255
+            )
+            if (elapsedTime >= fadeOutDuration.asInt) {
+                transition()
             }
         }
 
-        @Override
-        public void transition() {
-            removeFromDrawableList();
+        override fun transition() {
+            removeFromDrawableList()
         }
+    }
+
+    companion object {
+        private val theme = UXThemeManager.instance
+        private val drawableManager = DrawableManager.instance
     }
 }
