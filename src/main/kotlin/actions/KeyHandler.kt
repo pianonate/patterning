@@ -58,7 +58,7 @@ class KeyHandler private constructor(builder: Builder) {
         val keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
 
         fun addKeyCallback(callback: KeyCallback): Builder {
-            val keyCombos = callback.getKeyCombos()
+            val keyCombos = callback.keyCombos
             val duplicateKeyCombos = findDuplicateKeyCombos(keyCombos)
             require(duplicateKeyCombos.isEmpty()) {
                 "The following key combos are already associated with another callback: ${duplicateKeyCombos.joinToString(", ")}"
