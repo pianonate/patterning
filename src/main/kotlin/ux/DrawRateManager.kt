@@ -1,155 +1,120 @@
-package ux;
+package ux
 
-public class DrawRateManager {
-    public static final float MAX_FRAME_RATE = 128.0F;
-    private static final float DRAW_RATE_STARTING = 32F;
-    private static final int SINGLE_STEP_SPEED_CHANGE_THRESHOLD = 4;
-    private static final int[] SPEED_VALUES = {1, 2, SINGLE_STEP_SPEED_CHANGE_THRESHOLD, 8, 16, 32, 64,128};
-    // The single instance of the class
-    private static DrawRateManager instance = null;
-    private float targetDrawRate;
-    private float lastKnownHumanTargetDrawRate;
-    private float currentDrawRate;
-    private int numFramesToChangeRate = 0;
-    private float frameRateChangeIncrement = 0;
-    private int rateChangeCounter = 0;
-    private int speedIndex; // Position in the SPEED_UP_VALUES or SLOW_DOWN_VALUES array
-    private float drawCounter;
-    private boolean drawImmediately = false;
+class DrawRateManager private constructor() {
+    private var targetDrawRate: Float
+    var lastKnownRequestedDrawRate: Float
+        private set
+    var currentDrawRate: Float
+        private set
+    private var numFramesToChangeRate = 0
+    private var frameRateChangeIncrement = 0f
+    private var rateChangeCounter = 0
+    private var speedIndex // Position in the SPEED_UP_VALUES or SLOW_DOWN_VALUES array
+            = 8
+    private var drawCounter = 0f
+    private var drawImmediately = false
 
     // sentinel to speed up or slow down
-    private boolean speedChangeActive = false;
+    private var speedChangeActive = false
+
     // we don't want the behavior to be automatically invoked until there has been
     // a change by a human to a specific value
     // better to store the last known human speedIndex request and
     // and try to return to it with the "auto" behavior
-   // private boolean firstChangeInvoked = false;
-    private float currentFrameRate;
+    // private boolean firstChangeInvoked = false;
+    private var currentFrameRate = 0f
 
     // this is used by PApplet in patterning.Patterning class - it's also used here
     // as a limit to the maximum draw rate which can't happen faster than the max
     // frame rate, n'est-ce pas?
-
-    private DrawRateManager() {
-        this.currentDrawRate = DRAW_RATE_STARTING;
-        this.targetDrawRate = DRAW_RATE_STARTING;
-        this.lastKnownHumanTargetDrawRate = DRAW_RATE_STARTING;
-        this.drawCounter = 0;
-        this.speedIndex = 8;
+    init {
+        currentDrawRate = DRAW_RATE_STARTING
+        targetDrawRate = DRAW_RATE_STARTING
+        lastKnownRequestedDrawRate = DRAW_RATE_STARTING
     }
 
-    // Static method to return the instance of the class
-    public static DrawRateManager getInstance() {
-        if (instance == null) {
-            instance = new DrawRateManager();
+    fun goFaster() {
+        if (speedIndex < SPEED_VALUES.size - 1) {
+            speedIndex++
+            targetDrawRate = SPEED_VALUES[speedIndex].toFloat()
+            lastKnownRequestedDrawRate = targetDrawRate
         }
-        return instance;
+        adjustSpeedForFrameRate()
+        speedChangeActive = true
+        // firstChangeInvoked = true;
     }
 
-    public void goFaster() {
-
-        if (speedIndex < SPEED_VALUES.length - 1) {
-            speedIndex++;
-            targetDrawRate = SPEED_VALUES[speedIndex];
-            lastKnownHumanTargetDrawRate = targetDrawRate;
-        }
-
-        adjustSpeedForFrameRate();
-
-        speedChangeActive = true;
-       // firstChangeInvoked = true;
-    }
-
-    public void goSlower() {
-        if (speedIndex > SPEED_VALUES.length / 2) {
-            speedIndex -= 2;
+    fun goSlower() {
+        if (speedIndex > SPEED_VALUES.size / 2) {
+            speedIndex -= 2
         } else if (speedIndex > 0) {
-            speedIndex--;
+            speedIndex--
         } else {
-            speedIndex = 0;
+            speedIndex = 0
         }
-        targetDrawRate = SPEED_VALUES[speedIndex];
-        lastKnownHumanTargetDrawRate = targetDrawRate;
-
-        adjustSpeedForFrameRate();
-
-        speedChangeActive = true;
-      //  firstChangeInvoked = true;
-
+        targetDrawRate = SPEED_VALUES[speedIndex].toFloat()
+        lastKnownRequestedDrawRate = targetDrawRate
+        adjustSpeedForFrameRate()
+        speedChangeActive = true
+        //  firstChangeInvoked = true;
     }
 
-    private void adjustSpeedForFrameRate() {
+    private fun adjustSpeedForFrameRate() {
 
         // this lets adjustSpeedForFrameRate to adjust back
         // to the last human requested value
         // took a while to work out this logic!!
-        if ((targetDrawRate != lastKnownHumanTargetDrawRate) &&
-            (lastKnownHumanTargetDrawRate < currentFrameRate)
-        ) {
-            targetDrawRate = lastKnownHumanTargetDrawRate;
+        if (targetDrawRate != lastKnownRequestedDrawRate && lastKnownRequestedDrawRate < currentFrameRate) {
+            targetDrawRate = lastKnownRequestedDrawRate
         }
 
         // no need to adjust if we're within bounds
         if (targetDrawRate < currentFrameRate) {
-            return;
+            return
         }
-
-        int closestIndex = -1;
-        float closestDiff = Float.MAX_VALUE;
-
-        for (int i = 0; i < SPEED_VALUES.length; i++) {
+        var closestIndex = -1
+        var closestDiff = Float.MAX_VALUE
+        for (i in SPEED_VALUES.indices) {
             if (SPEED_VALUES[i] <= currentFrameRate) {
-                float diff = currentFrameRate - SPEED_VALUES[i];
+                val diff = currentFrameRate - SPEED_VALUES[i]
                 if (diff < closestDiff) {
-                    closestDiff = diff;
-                    closestIndex = i;
+                    closestDiff = diff
+                    closestIndex = i
                 }
             }
         }
-
-        speedIndex = Math.max(0,closestIndex);
-        targetDrawRate = SPEED_VALUES[speedIndex];
+        speedIndex = Math.max(0, closestIndex)
+        targetDrawRate = SPEED_VALUES[speedIndex].toFloat()
     }
 
-    public void drawImmediately() {
-        drawImmediately = true;
+    fun drawImmediately() {
+        drawImmediately = true
     }
 
-    public boolean shouldDraw() {
+    fun shouldDraw(): Boolean {
         if (drawImmediately) {
-            drawImmediately = false; // Reset it for the next calls
-            return true;
+            drawImmediately = false // Reset it for the next calls
+            return true
         }
-
-        drawCounter += currentDrawRate / currentFrameRate;
+        drawCounter += currentDrawRate / currentFrameRate
         if (drawCounter >= 1.0) {
-            drawCounter--;
-            return true;
+            drawCounter--
+            return true
         }
-        return false;
+        return false
     }
 
-    public float getCurrentDrawRate() {
-        return currentDrawRate;
-    }
-
-    public float getLastKnownRequestedDrawRate() {
-        return lastKnownHumanTargetDrawRate;
-    }
-
-    public void adjustDrawRate(float frameRate) {
-
-        currentFrameRate = frameRate;
-
+    fun adjustDrawRate(frameRate: Float) {
+        currentFrameRate = frameRate
         if (!speedChangeActive) {
             // check if either we targeted faster than the current frameRate
             // or if there has been an inadvertent change by this automated behavior
             // because the frameRate slowed down - and so the last known human value is
             // in either case we want to adjustSpeed to get back in sync
-            if (frameRate < targetDrawRate || targetDrawRate != lastKnownHumanTargetDrawRate){
-                adjustSpeedForFrameRate();
-                speedChangeActive = true;
-            } else return; // nothing to do so just bail
+            speedChangeActive = if (frameRate < targetDrawRate || targetDrawRate != lastKnownRequestedDrawRate) {
+                adjustSpeedForFrameRate()
+                true
+            } else return  // nothing to do so just bail
         }
 
         // fall through as we're in active speed change mode either by design or
@@ -161,28 +126,45 @@ public class DrawRateManager {
 
         // if the target is different, then initialized an increment
         if (numFramesToChangeRate == 0) {
-            if (targetDrawRate < SINGLE_STEP_SPEED_CHANGE_THRESHOLD) {
-                numFramesToChangeRate = 1;
+            numFramesToChangeRate = if (targetDrawRate < SINGLE_STEP_SPEED_CHANGE_THRESHOLD) {
+                1
             } else {
                 // change immediately at lower rates
                 // make sure that it's at least 1 otherwise nothing will happen
-                numFramesToChangeRate = (int) Math.max(frameRate,1);
+                Math.max(frameRate, 1f).toInt()
             }
-
-            frameRateChangeIncrement = (targetDrawRate - currentDrawRate) / frameRate;
+            frameRateChangeIncrement = (targetDrawRate - currentDrawRate) / frameRate
         }
-
-        rateChangeCounter++;
-        currentDrawRate = currentDrawRate + frameRateChangeIncrement;
+        rateChangeCounter++
+        currentDrawRate = currentDrawRate + frameRateChangeIncrement
 
         // cleanup on completion
         if (rateChangeCounter == numFramesToChangeRate) {
             // the increment is floating point so just make them exactly the same
-            currentDrawRate = targetDrawRate;
-            numFramesToChangeRate = 0;
-            rateChangeCounter = 0;
-            frameRateChangeIncrement = 0;
-            speedChangeActive = false;
+            currentDrawRate = targetDrawRate
+            numFramesToChangeRate = 0
+            rateChangeCounter = 0
+            frameRateChangeIncrement = 0f
+            speedChangeActive = false
         }
+    }
+
+    companion object {
+        const val MAX_FRAME_RATE = 128.0f
+        private const val DRAW_RATE_STARTING = 32f
+        private const val SINGLE_STEP_SPEED_CHANGE_THRESHOLD = 4
+        private val SPEED_VALUES = intArrayOf(1, 2, SINGLE_STEP_SPEED_CHANGE_THRESHOLD, 8, 16, 32, 64, 128)
+
+        // The single instance of the class
+        @JvmStatic
+        var instance: DrawRateManager? = null
+            // Static method to return the instance of the class
+            get() {
+                if (field == null) {
+                    field = DrawRateManager()
+                }
+                return field
+            }
+            private set
     }
 }

@@ -1,127 +1,70 @@
-package ux;
+package ux
 
-public class UXConstants {
-
-    UXConstants() {
-    }
-
-    // sizes
-    int getControlSize() {
-        return 35;
-    }
-
-    int getControlHighlightCornerRadius() {
-        return 10;
-    }
-
-    int getDefaultTextMargin() {
-        return 5;
-    }
-
-    float getDefaultTextSize() {
-        return 30F;
-    }
-
-    int getHoverTextMargin() {
-        return 5;
-    }
-
-    int getHoverTextMaxWidth() {
-        return 225;
-    }
-
-    int getHoverTextSize() {
-        return 14;
-    }
-
-    int getIconMargin() {
-        return 5;
-    }
-
-    int getStartupTextSize() {
-        return 50;
-    }
-
-    // colors
-
-    int getBackgroundColor() {
-        return 255;
-    }
-
-    int getCellColor() {
-        return 0xFF000000;
-    }
-
-    int getControlColor() {
-        return 0xC8505050; // partially transparent 40
-    }
-
-    int getControlHighlightColor() {
-        return 0xC8909090; // partially transparent 60
-    }
-
-    int getControlMousePressedColor() {
-        return 0xC8E1E1E1; // partially transparent 225
-    }
-
-    int getDefaultPanelColor() {
-        return 0x00FFFFFF;
-    }
-
-    int getTextColorStart() {
-        return 0xFFFFFFFF;
-    }
-
-    int getTextColor() {
-        return 0xFF000000;
-    }
-
-    // durations
-    int getControlHighlightDuration() {
-        return 1000;
-    }
-    int getControlPanelTransitionDuration() { return 1500;}
-    int getShortTransitionDuration() {
-        return 300;
-    }
-
-    int getSingleModeToggleDuration() { return 200; }
-
-    int getStartupTextDisplayDuration() {
-        return 5000;
-    }
-
-    int getStartupTextFadeInDuration() {
-        return 2000;
-    }
-
-    int getStartupTextFadeOutDuration() {
-        return 2000;
-    }
-    int getThemeTransitionDuration() { return 500;}
-
-    // names
-    String getCountdownText() {
-        return "press space to begin immediately";
-    }
-    String getFontName() {
-        return "Verdana";
-    }
-
-    String getIconPath() {
-        return "icon/";
-    }
-
-    String getShortcutParenStart() {
-        return " (";
-    }
-
-    String getShortcutParenEnd() {
-        return ")";
-    }
-
-    String getStartupText() {
-        return "patterning";
-    }
-
+open class UXConstants internal constructor() {
+    val controlSize: Int
+        // sizes
+        get() = 35
+    val controlHighlightCornerRadius: Int
+        get() = 10
+    val defaultTextMargin: Int
+        get() = 5
+    val defaultTextSize: Float
+        get() = 30f
+    val hoverTextMargin: Int
+        get() = 5
+    val hoverTextMaxWidth: Int
+        get() = 225
+    val hoverTextSize: Int
+        get() = 14
+    val iconMargin: Int
+        get() = 5
+    val startupTextSize: Int
+        get() = 50
+    open val backgroundColor: Int
+        // colors
+        get() = 255
+    open val cellColor: Int
+        get() = -0x1000000
+    val controlColor: Int
+        get() = -0x37afafb0 // partially transparent 40
+    val controlHighlightColor: Int
+        get() = -0x376f6f70 // partially transparent 60
+    val controlMousePressedColor: Int
+        get() = -0x371e1e1f // partially transparent 225
+    val defaultPanelColor: Int
+        get() = 0x00FFFFFF
+    open val textColorStart: Int
+        get() = -0x1
+    open val textColor: Int
+        get() = -0x1000000
+    val controlHighlightDuration: Int
+        // durations
+        get() = 1000
+    val controlPanelTransitionDuration: Int
+        get() = 1500
+    val shortTransitionDuration: Int
+        get() = 300
+    val singleModeToggleDuration: Int
+        get() = 200
+    val startupTextDisplayDuration: Int
+        get() = 5000
+    val startupTextFadeInDuration: Int
+        get() = 2000
+    val startupTextFadeOutDuration: Int
+        get() = 2000
+    val themeTransitionDuration: Int
+        get() = 500
+    val countdownText: String
+        // names
+        get() = "press space to begin immediately"
+    val fontName: String
+        get() = "Verdana"
+    val iconPath: String
+        get() = "icon/"
+    val shortcutParenStart: String
+        get() = " ("
+    val shortcutParenEnd: String
+        get() = ")"
+    val startupText: String
+        get() = "patterning"
 }

@@ -1,24 +1,12 @@
-package ux;
+package ux
 
-public class UXDarkConstants extends UXConstants {
-        UXDarkConstants() {};
-
-        @Override
-        int getBackgroundColor() {
-                return 0;
-        }
-        @Override
-        int getCellColor() {
-                return 0xFFFFFFFF;
-        }
-        @Override
-        int getTextColorStart() {
-                return 0xFF000000;
-        }
-
-        @Override
-        int getTextColor() {
-                return 0xFFFFFFFF;
-        }
-
+class UXDarkConstants internal constructor() : UXConstants() {
+    override val backgroundColor: Int
+        get() = 0
+    override val cellColor: Int
+        get() = -0x1
+    override val textColorStart: Int
+        get() = -0x1000000
+    override val textColor: Int
+        get() = -0x1
 }

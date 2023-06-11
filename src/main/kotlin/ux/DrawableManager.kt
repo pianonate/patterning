@@ -1,56 +1,56 @@
-package ux;
+package ux
 
-import processing.core.PGraphics;
+import processing.core.PGraphics
 
-import java.util.ArrayList;
-import java.util.List;
+class DrawableManager private constructor() {
+    private val drawables: MutableList<Drawable>
+    private val toBeAdded: MutableList<Drawable>
+    private val toBeRemoved: MutableList<Drawable>
 
-public class DrawableManager {
-    private static DrawableManager instance;
-    private final List<Drawable> drawables;
-    private final List<Drawable> toBeAdded;
-
-    private final List<Drawable> toBeRemoved;
-
-    private DrawableManager() {
-        drawables = new ArrayList<>();
-        toBeAdded = new ArrayList<>();
-        toBeRemoved = new ArrayList<>();
+    init {
+        drawables = ArrayList()
+        toBeAdded = ArrayList()
+        toBeRemoved = ArrayList()
     }
 
-    public static DrawableManager getInstance() {
-        if (instance == null) {
-            instance = new DrawableManager();
-        }
-        return instance;
+    fun add(drawable: Drawable) {
+        toBeAdded.add(drawable)
     }
 
-    public void add(Drawable drawable) {
-        toBeAdded.add(drawable);
-    }
-    public void addAll(List<? extends Drawable> drawables) {
-        this.toBeAdded.addAll(drawables);
+    fun addAll(drawables: List<Drawable>?) {
+        toBeAdded.addAll(drawables!!)
     }
 
-
-    public void drawAll(PGraphics buffer) {
-        for (Drawable drawable : drawables) {
+    fun drawAll(buffer: PGraphics?) {
+        for (drawable in drawables) {
             // drawable.draw(buffer);
-            drawable.draw();
+            drawable.draw()
         }
         // Add all drawables that need to be added
-        drawables.addAll(toBeAdded);
-        toBeAdded.clear();
+        drawables.addAll(toBeAdded)
+        toBeAdded.clear()
         // clean up drawables that need to be removed
-        drawables.removeAll(toBeRemoved);
-        toBeRemoved.clear();
+        drawables.removeAll(toBeRemoved)
+        toBeRemoved.clear()
     }
 
-    public boolean isManaging(Drawable drawable) {
-        return drawables.contains(drawable);
+    fun isManaging(drawable: Drawable): Boolean {
+        return drawables.contains(drawable)
     }
 
-    public void remove(Drawable drawable) {
-        toBeRemoved.add(drawable);
+    fun remove(drawable: Drawable) {
+        toBeRemoved.add(drawable)
+    }
+
+    companion object {
+        @JvmStatic
+        var instance: DrawableManager? = null
+            get() {
+                if (field == null) {
+                    field = DrawableManager()
+                }
+                return field
+            }
+            private set
     }
 }

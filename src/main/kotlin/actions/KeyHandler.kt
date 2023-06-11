@@ -25,7 +25,7 @@ class KeyHandler private constructor(builder: Builder) {
             _pressedKeys.add(keyCode)
             matchingCallback.invokeFeature()
             matchingCallback.notifyKeyObservers()
-            DrawRateManager.getInstance().drawImmediately()
+            DrawRateManager.instance!!.drawImmediately()
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)

@@ -1,15 +1,17 @@
-package ux.panel;
-import processing.core.PApplet;
+package ux.panel
 
-public enum AlignHorizontal {
-    LEFT, CENTER, RIGHT;
+import processing.core.PApplet
 
-    public int toPApplet() {
-        return switch (this) {
-            case LEFT -> PApplet.LEFT;
-            case CENTER -> PApplet.CENTER;
-            case RIGHT -> PApplet.RIGHT;
-        };
+enum class AlignHorizontal {
+    LEFT,
+    CENTER,
+    RIGHT;
+
+    fun toPApplet(): Int {
+        return when (this) {
+            LEFT -> PApplet.LEFT
+            CENTER -> PApplet.CENTER
+            RIGHT -> PApplet.RIGHT
+        }
     }
-
 }

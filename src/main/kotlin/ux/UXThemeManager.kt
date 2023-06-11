@@ -1,245 +1,169 @@
-package ux;
+package ux
 
-import processing.core.PApplet;
+import processing.core.PApplet
 
-public class UXThemeManager {
-    private static UXThemeManager instance = null;
-
+class UXThemeManager private constructor() {
     // sizes
-    private int controlSize;
-    private int controlHighlightCornerRadius;
-    private int defaultTextMargin;
-    private float defaultTextSize;
-    private int hoverTextSize;
-    private int hoverTextWidth;
-    private int hoverTextMargin;
-    private int iconMargin;
-    private int startupTextSize;
+    // sizes
+    var controlSize = 0
+        private set
+    var controlHighlightCornerRadius = 0
+        private set
+    var defaultTextMargin = 0
+        private set
+    var defaultTextSize = 0f
+        private set
+    var hoverTextSize = 0
+        private set
+    var hoverTextWidth = 0
+        private set
+    var hoverTextMargin = 0
+        private set
+    var iconMargin = 0
+        private set
+    var startupTextSize = 0
+        private set
 
     // colors
-    private final ColorConstant backGroundColor;
-    private final ColorConstant cellColor;
-    private final ColorConstant controlColor;
-    private final ColorConstant controlHighlightColor;
-    private final ColorConstant controlMousePressedColor;
-    private final ColorConstant defaultPanelColor;
-    private final ColorConstant textColor;
-    private final ColorConstant textColorStart; // for lerping purposes
+    private val backGroundColor: ColorConstant
+    private val cellColor: ColorConstant
+    private val controlColor: ColorConstant
+    private val controlHighlightColor: ColorConstant
+    private val controlMousePressedColor: ColorConstant
+    private val defaultPanelColor: ColorConstant
+    private val textColor: ColorConstant
+    private val textColorStart // for lerping purposes
+            : ColorConstant
 
     // durations
-    private int controlHighlightDuration;
-    private int controlPanelTransitionDuration;
-    private int shortTransitionDuration;
-    private int singleModeToggleDuration;
-    private int startupTextDisplayDuration;
-    private int startupTextFadeInDuration;
-    private int startupTextFadeOutDuration;
-    private int themeTransitionDuration;
-
-    // strings
-
-    private String countdownText;
-    private String fontName;
-    private String iconPath;
-    private String shortcutParenStart;
-    private String shortcutParenEnd;
-    private String startupText;
-
-    private UXThemeManager() {
-        backGroundColor = new ColorConstant();
-        cellColor = new ColorConstant();
-        controlColor = new ColorConstant();
-        controlHighlightColor = new ColorConstant();
-        controlMousePressedColor =new ColorConstant();
-        defaultPanelColor = new ColorConstant();
-        textColor = new ColorConstant();
-        textColorStart = new ColorConstant();
-        setTheme(UXThemeType.DARK, null, true);  // Default theme
-    }
-
-    private void setTheme(UXThemeType newTheme, PApplet processing, boolean underConstruction) {
-        UXConstants themeConstants = newTheme.getThemeConstants();
-
-        // sizes and radii
-        controlSize = themeConstants.getControlSize();
-        controlHighlightCornerRadius = themeConstants.getControlHighlightCornerRadius();
-        defaultTextMargin = themeConstants.getDefaultTextMargin();
-        defaultTextSize = themeConstants.getDefaultTextSize();
-        hoverTextSize = themeConstants.getHoverTextSize();
-        hoverTextWidth = themeConstants.getHoverTextMaxWidth();
-        hoverTextMargin = themeConstants.getHoverTextMargin();
-        iconMargin = themeConstants.getIconMargin();
-        startupTextSize = themeConstants.getStartupTextSize();
-
-        // colors
-        backGroundColor.setColor(themeConstants.getBackgroundColor(), processing);
-        cellColor.setColor(themeConstants.getCellColor(), processing);
-        controlColor.setColor(themeConstants.getControlColor(), processing);
-        controlHighlightColor.setColor(themeConstants.getControlHighlightColor(), processing);
-        controlMousePressedColor.setColor(themeConstants.getControlMousePressedColor(), processing);
-        defaultPanelColor.setColor(themeConstants.getDefaultPanelColor(), processing);
-        textColor.setColor(themeConstants.getTextColor(), processing);
-        textColorStart.setColor(themeConstants.getTextColorStart(), processing);
-
-        //durations
-        controlHighlightDuration = themeConstants.getControlHighlightDuration();
-        controlPanelTransitionDuration = themeConstants.getControlPanelTransitionDuration();
-        shortTransitionDuration = themeConstants.getShortTransitionDuration();
-        singleModeToggleDuration = themeConstants.getSingleModeToggleDuration();
-        startupTextDisplayDuration = themeConstants.getStartupTextDisplayDuration();
-        startupTextFadeInDuration = themeConstants.getStartupTextFadeInDuration();
-        startupTextFadeOutDuration = themeConstants.getStartupTextFadeOutDuration();
-        themeTransitionDuration = themeConstants.getThemeTransitionDuration();
-
-        // strings
-        countdownText = themeConstants.getCountdownText();
-        fontName = themeConstants.getFontName();
-        iconPath = themeConstants.getIconPath();
-        shortcutParenStart = themeConstants.getShortcutParenStart();
-        shortcutParenEnd = themeConstants.getShortcutParenEnd();
-        startupText = themeConstants.getStartupText();
-
-    }
-
-    public static UXThemeManager getInstance() {
-        if (instance == null) {
-            instance = new UXThemeManager();
-        }
-        return instance;
-    }
-
-    public void setTheme(UXThemeType newTheme, PApplet processing) {
-        setTheme(newTheme, processing, false);
-    }
-
-    // sizes
-
-    public int getControlSize() {
-        return controlSize;
-    }
-
-    public int getControlHighlightCornerRadius() {
-        return controlHighlightCornerRadius;
-    }
-
-    public int getDefaultTextMargin() {
-        return defaultTextMargin;
-    }
-
-    public float getDefaultTextSize() {
-        return defaultTextSize;
-    }
-
-    public int getHoverTextMargin() {
-        return hoverTextMargin;
-    }
-
-    public int getHoverTextWidth() {
-        return hoverTextWidth;
-    }
-
-    public int getHoverTextSize() {
-        return hoverTextSize;
-    }
-
-    public int getIconMargin() {
-        return iconMargin;
-    }
-
-    public int getStartupTextSize() {
-        return startupTextSize;
-    }
-
-    // colors
-    public int getBackGroundColor() {
-        return backGroundColor.getColor();
-    }
-
-    public int getCellColor() {
-
-        return cellColor.getColor();
-    }
-
-    public int getControlColor() {
-        return controlColor.getColor();
-    }
-
-    public int getControlHighlightColor() {
-        return controlHighlightColor.getColor();
-    }
-
-    public int getControlMousePressedColor() {
-        return controlMousePressedColor.getColor();
-    }
-
-    public int getDefaultPanelColor() {
-        return defaultPanelColor.getColor();
-    }
-
-    public int getTextColor() {
-        return textColor.getColor();
-    }
-
-    public int getTextColorStart() {
-        return textColorStart.getColor();
-    }
-
     // durations
-
-    public int getControlHighlightDuration() {
-        return controlHighlightDuration;
-    }
-
-    public int getControlPanelTransitionDuration() {
-        return controlPanelTransitionDuration;
-    }
-
-    public int getShortTransitionDuration() {
-        return shortTransitionDuration;
-    }
-
-    public int getSingleModeToggleDuration() {
-        return singleModeToggleDuration;
-    }
-
-    public int getStartupTextDisplayDuration() {
-        return startupTextDisplayDuration;
-    }
-
-    public int getStartupTextFadeInDuration() {
-        return startupTextFadeInDuration;
-    }
-
-    public int getStartupTextFadeOutDuration() {
-        return startupTextFadeOutDuration;
-    }
-
-    public int getThemeTransitionDuration() {
-        return themeTransitionDuration;
-    }
+    var controlHighlightDuration = 0
+        private set
+    var controlPanelTransitionDuration = 0
+        private set
+    var shortTransitionDuration = 0
+        private set
+    var singleModeToggleDuration = 0
+        private set
+    var startupTextDisplayDuration = 0
+        private set
+    var startupTextFadeInDuration = 0
+        private set
+    var startupTextFadeOutDuration = 0
+        private set
+    var themeTransitionDuration = 0
+        private set
 
     // names
-    public String getCountdownText() {
-        return countdownText;
-    }
-    public String getFontName() {
-        return fontName;
+    // strings
+    var countdownText: String? = null
+        private set
+    var fontName: String? = null
+        private set
+    var iconPath: String? = null
+        private set
+    var shortcutParenStart: String? = null
+        private set
+    var shortcutParenEnd: String? = null
+        private set
+    var startupText: String? = null
+        private set
+
+    init {
+        backGroundColor = ColorConstant()
+        cellColor = ColorConstant()
+        controlColor = ColorConstant()
+        controlHighlightColor = ColorConstant()
+        controlMousePressedColor = ColorConstant()
+        defaultPanelColor = ColorConstant()
+        textColor = ColorConstant()
+        textColorStart = ColorConstant()
+        setTheme(UXThemeType.DARK, null, true) // Default theme
     }
 
-    public String getIconPath() {
-        return iconPath;
+    private fun setTheme(newTheme: UXThemeType, processing: PApplet?, underConstruction: Boolean) {
+        val themeConstants = newTheme.themeConstants
+
+        // sizes and radii
+        controlSize = themeConstants.controlSize
+        controlHighlightCornerRadius = themeConstants.controlHighlightCornerRadius
+        defaultTextMargin = themeConstants.defaultTextMargin
+        defaultTextSize = themeConstants.defaultTextSize
+        hoverTextSize = themeConstants.hoverTextSize
+        hoverTextWidth = themeConstants.hoverTextMaxWidth
+        hoverTextMargin = themeConstants.hoverTextMargin
+        iconMargin = themeConstants.iconMargin
+        startupTextSize = themeConstants.startupTextSize
+
+        // colors
+        backGroundColor.setColor(themeConstants.backgroundColor, processing)
+        cellColor.setColor(themeConstants.cellColor, processing)
+        controlColor.setColor(themeConstants.controlColor, processing)
+        controlHighlightColor.setColor(themeConstants.controlHighlightColor, processing)
+        controlMousePressedColor.setColor(themeConstants.controlMousePressedColor, processing)
+        defaultPanelColor.setColor(themeConstants.defaultPanelColor, processing)
+        textColor.setColor(themeConstants.textColor, processing)
+        textColorStart.setColor(themeConstants.textColorStart, processing)
+
+        //durations
+        controlHighlightDuration = themeConstants.controlHighlightDuration
+        controlPanelTransitionDuration = themeConstants.controlPanelTransitionDuration
+        shortTransitionDuration = themeConstants.shortTransitionDuration
+        singleModeToggleDuration = themeConstants.singleModeToggleDuration
+        startupTextDisplayDuration = themeConstants.startupTextDisplayDuration
+        startupTextFadeInDuration = themeConstants.startupTextFadeInDuration
+        startupTextFadeOutDuration = themeConstants.startupTextFadeOutDuration
+        themeTransitionDuration = themeConstants.themeTransitionDuration
+
+        // strings
+        countdownText = themeConstants.countdownText
+        fontName = themeConstants.fontName
+        iconPath = themeConstants.iconPath
+        shortcutParenStart = themeConstants.shortcutParenStart
+        shortcutParenEnd = themeConstants.shortcutParenEnd
+        startupText = themeConstants.startupText
     }
 
-    public String getShortcutParenStart() {
-        return shortcutParenStart;
+    fun setTheme(newTheme: UXThemeType, processing: PApplet?) {
+        setTheme(newTheme, processing, false)
     }
 
-    public String getShortcutParenEnd() {
-        return shortcutParenEnd;
+    // colors
+    fun getBackGroundColor(): Int {
+        return backGroundColor.color
     }
 
-    public String getStartupText() {
-        return startupText;
+    fun getCellColor(): Int {
+        return cellColor.color
     }
+
+    fun getControlColor(): Int {
+        return controlColor.color
+    }
+
+    fun getControlHighlightColor(): Int {
+        return controlHighlightColor.color
+    }
+
+    fun getControlMousePressedColor(): Int {
+        return controlMousePressedColor.color
+    }
+
+    fun getDefaultPanelColor(): Int {
+        return defaultPanelColor.color
+    }
+
+    fun getTextColor(): Int {
+        return textColor.color
+    }
+
+    fun getTextColorStart(): Int {
+        return textColorStart.color
+    }
+
+    companion object {
+        @JvmStatic
+        val instance: UXThemeManager by lazy { UXThemeManager() }
+    }
+
 }
-

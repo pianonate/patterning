@@ -1,17 +1,10 @@
-package ux;
+package ux
 
-public enum UXThemeType {
-    DEFAULT(new UXConstants()),
-    DARK(new UXDarkConstants());  //
+enum class UXThemeType(//
     // Add more themes as needed...
+    @JvmField val themeConstants: UXConstants
+) {
+    DEFAULT(UXConstants()),
+    DARK(UXDarkConstants())
 
-    private final UXConstants themeConstants;
-
-    UXThemeType(UXConstants themeConstants) {
-        this.themeConstants = themeConstants;
-    }
-
-    public UXConstants getThemeConstants() {
-        return this.themeConstants;
-    }
 }

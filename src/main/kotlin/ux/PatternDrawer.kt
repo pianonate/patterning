@@ -32,10 +32,10 @@ class PatternDrawer(
     private val movementHandler: MovementHandler
 
     // ain't no way to do drawing without a singleton drawables manager
-    private val drawables = DrawableManager.getInstance()
+    private val drawables = DrawableManager.instance
     private val keyFactory: KeyFactory
     private var cellBorderWidth = 0.0f
-    private var theme: UXThemeManager = UXThemeManager.getInstance()
+    private var theme: UXThemeManager = UXThemeManager.instance
 
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
@@ -113,7 +113,7 @@ class PatternDrawer(
         val panelLeft: ControlPanel
         val panelTop: ControlPanel
         val panelRight: ControlPanel
-        val transitionDuration = UXThemeManager.getInstance().controlPanelTransitionDuration
+        val transitionDuration = UXThemeManager.instance.controlPanelTransitionDuration
         panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
             .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
             .setOrientation(Orientation.VERTICAL)
@@ -143,7 +143,7 @@ class PatternDrawer(
             .build()
         val panels = listOf(panelLeft, panelTop, panelRight)
         Objects.requireNonNull(instance)?.addAll(panels)
-        drawables.addAll(panels)
+        drawables!!.addAll(panels)
     }
 
     fun toggleDrawBounds() {
@@ -159,7 +159,7 @@ class PatternDrawer(
         builderFunction: () -> TextPanel.Builder
     ): TextPanel {
         existingTextPanel?.let {
-            if (drawables.isManaging(it)) {
+            if (drawables!!.isManaging(it)) {
                 drawables.remove(it)
             }
         }
@@ -167,7 +167,7 @@ class PatternDrawer(
         return builderFunction()
             .build()
             .also { newTextPanel ->
-                drawables.add(newTextPanel)
+                drawables!!.add(newTextPanel)
             }
     }
 
@@ -252,7 +252,7 @@ class PatternDrawer(
     }
 
     fun handlePause() {
-        drawables.takeIf { it.isManaging(countdownText) }?.let {
+        drawables.takeIf { it!!.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
             keyFactory.callbackPause.notifyKeyObservers()
         } ?: patterning.toggleRun()
@@ -286,7 +286,7 @@ class PatternDrawer(
         val width = size - cellBorderWidth
 
         lifeFormBuffer.apply {
-            fill(theme.cellColor)
+            fill(theme.getCellColor())
             noStroke()
             rect(x, y, width, width)
         }
@@ -400,7 +400,7 @@ class PatternDrawer(
         prevHeight = processing.height
 
         processing.apply {
-            background(theme.backGroundColor)
+            background(theme.getBackGroundColor())
         }
 
         uXBuffer.apply {
@@ -414,7 +414,7 @@ class PatternDrawer(
         // make this threadsafe
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
-        drawables.drawAll(uXBuffer)
+        drawables!!.drawAll(uXBuffer)
 
         uXBuffer.endDraw()
 

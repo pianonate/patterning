@@ -37,6 +37,6 @@ class ColorConstant {
         }
 
     companion object {
-        private val TRANSITION_DURATION = UXThemeManager.getInstance().themeTransitionDuration // 2 seconds
+        private val TRANSITION_DURATION = UXThemeManager.instance.themeTransitionDuration // 2 seconds
     }
 }

@@ -9,7 +9,7 @@ class Transition @JvmOverloads constructor(
     private val drawingInformer: DrawingInfoSupplier,
     private val direction: TransitionDirection,
     private val type: TransitionType,
-    private val duration: Int = UXThemeManager.getInstance().shortTransitionDuration
+    private val duration: Int = UXThemeManager.instance.shortTransitionDuration
 ) {
     private var transitionStartTime: Long = -1
 

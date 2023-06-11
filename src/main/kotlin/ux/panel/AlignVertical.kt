@@ -1,15 +1,17 @@
-package ux.panel;
+package ux.panel
 
-import processing.core.PApplet;
+import processing.core.PApplet
 
-public enum AlignVertical {
-    TOP, CENTER, BOTTOM;
+enum class AlignVertical {
+    TOP,
+    CENTER,
+    BOTTOM;
 
-    public int toPApplet() {
-        return switch (this) {
-            case TOP -> PApplet.TOP;
-            case CENTER -> PApplet.CENTER;
-            case BOTTOM -> PApplet.BOTTOM;
-        };
+    fun toPApplet(): Int {
+        return when (this) {
+            TOP -> PApplet.TOP
+            CENTER -> PApplet.CENTER
+            BOTTOM -> PApplet.BOTTOM
+        }
     }
 }

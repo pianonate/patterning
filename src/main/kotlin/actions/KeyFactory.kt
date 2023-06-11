@@ -79,7 +79,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)
     ) {
         override fun invokeFeature() {
-            DrawRateManager.getInstance().goSlower()
+            DrawRateManager.instance!!.goSlower()
         }
 
         override fun getUsageText(): String {
@@ -89,7 +89,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     @JvmField
     val callbackDrawFaster: KeyCallback = object : KeyCallback(SHORTCUT_DRAW_SPEED) {
         override fun invokeFeature() {
-            DrawRateManager.getInstance().goFaster()
+            DrawRateManager.instance!!.goFaster()
         }
 
         override fun getUsageText(): String {
@@ -229,8 +229,8 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     val callbackThemeToggle: KeyCallback = object : KeyCallback(SHORTCUT_THEME_TOGGLE) {
         private var toggled = true
         override fun invokeFeature() {
-            if (toggled) UXThemeManager.getInstance()
-                .setTheme(UXThemeType.DEFAULT, processing) else UXThemeManager.getInstance()
+            if (toggled) UXThemeManager.instance
+                .setTheme(UXThemeType.DEFAULT, processing) else UXThemeManager.instance
                 .setTheme(UXThemeType.DARK, processing)
             toggled = !toggled
         }
@@ -272,7 +272,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         override fun cleanupFeature() {
             if (KeyHandler.pressedKeys.isEmpty()) {
                 pressed = false
-                DrawRateManager.getInstance().drawImmediately()
+                DrawRateManager.instance!!.drawImmediately()
             }
         }
 
