@@ -1,5 +1,6 @@
-package ux.panel;
+package ux.panel
 
-public enum Orientation {
-    HORIZONTAL, VERTICAL
+enum class Orientation {
+    HORIZONTAL,
+    VERTICAL
 }

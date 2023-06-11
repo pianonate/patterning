@@ -1,305 +1,326 @@
-package ux.panel;
+package ux.panel
 
-import actions.MouseEventReceiver;
-import patterning.Patterning;
-import processing.core.PApplet;
-import processing.core.PGraphics;
-import processing.core.PVector;
-import ux.Drawable;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
+import actions.MouseEventReceiver
+import patterning.Patterning
+import processing.core.PGraphics
+import processing.core.PVector
+import ux.Drawable
+import ux.UXThemeManager.Companion.instance
+import ux.informer.DrawingInfoSupplier
+import ux.panel.Transition.TransitionDirection
+import ux.panel.Transition.TransitionType
+import java.awt.Component
+import java.awt.MouseInfo
+import java.util.*
 
-import java.awt.*;
-import java.util.OptionalInt;
-
-
-public abstract class Panel implements Drawable, MouseEventReceiver {
-
+abstract class Panel protected constructor(builder: Builder<*>) : Drawable, MouseEventReceiver {
     // alignment
-    protected final boolean alignAble;
-    protected final OptionalInt radius;
-    protected Panel parentPanel;
-    protected DrawingInfoSupplier drawingInformer;
+    protected val alignAble: Boolean
+    protected val radius: OptionalInt
+    @JvmField
+    var parentPanel: Panel? = null
+    @JvmField
+    var drawingInformer: DrawingInfoSupplier
+
     // size & positioning
-    protected PVector position;
-    protected int width, height;
-    protected int fill;
-    protected AlignHorizontal hAlign;
-    protected AlignVertical vAlign;
+    @JvmField
+    var position: PVector? = null
+    @JvmField
+    var width: Int
+    @JvmField
+    var height: Int
+    protected var fill: Int
+    @JvmField
+    var hAlign: AlignHorizontal?
+    @JvmField
+    var vAlign: AlignVertical?
+
     // transition
-    protected boolean transitionAble;
-    protected Transition transition;
+    protected var transitionAble: Boolean
+    protected var transition: Transition? = null
+
     // image buffers and callbacks
-    protected PGraphics panelBuffer;
+    @JvmField
+    protected var panelBuffer: PGraphics
 
     // mouse stuff
-    boolean isPressed = false;
-    boolean isHovering = false;
-    boolean isHoveringPrevious = false;
-    private Transition.TransitionDirection transitionDirection;
-    private Transition.TransitionType transitionType;
-    private int transitionDuration;
-    protected Panel(Builder<?> builder) {
+    @JvmField
+    var isPressed = false
+    @JvmField
+    var isHovering = false
+    @JvmField
+    var isHoveringPrevious = false
+    private var transitionDirection: TransitionDirection?
+    private var transitionType: TransitionType?
+    private var transitionDuration: Int
 
-        setPosition(builder.x, builder.y);
-        this.drawingInformer = builder.drawingInformer;
-        this.width = builder.width;
-        this.height = builder.height;
-        this.radius = builder.radius;
-        this.hAlign = builder.alignHorizontal;
-        this.vAlign = builder.alignVertical;
-        this.alignAble = builder.alignable;
-        this.fill = builder.fill;
-        this.transitionDirection = builder.transitionDirection;
-        this.transitionType = builder.transitionType;
-        this.transitionDuration = builder.transitionDuration;
-        this.transitionAble = (transitionDirection != null && transitionType != null);
-
-        PGraphics parentBuffer = drawingInformer.getPGraphics();
-        panelBuffer = getPanelBuffer(parentBuffer);
-
+    init {
+        setPosition(builder.x, builder.y)
+        drawingInformer = builder.drawingInformer
+        width = builder.width
+        height = builder.height
+        radius = builder.radius
+        hAlign = builder.alignHorizontal
+        vAlign = builder.alignVertical
+        alignAble = builder.alignable
+        fill = builder.fill
+        transitionDirection = builder.transitionDirection
+        transitionType = builder.transitionType
+        transitionDuration = builder.transitionDuration
+        transitionAble = transitionDirection != null && transitionType != null
+        val parentBuffer = drawingInformer.pGraphics
+        panelBuffer = getPanelBuffer(parentBuffer)
         if (transitionAble) {
-            transition = new Transition(drawingInformer, transitionDirection, transitionType, transitionDuration);
+            transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
         }
-
     }
 
-
-    protected void setPosition(int x, int y) {
+    fun setPosition(x: Int, y: Int) {
         if (position == null) {
-            position = new PVector();
+            position = PVector()
         }
-        position.x = x;
-        position.y = y;
+        position!!.x = x.toFloat()
+        position!!.y = y.toFloat()
     }
 
-    protected PGraphics getPanelBuffer(PGraphics parentBuffer) {
-        return parentBuffer.parent.createGraphics(this.width, this.height);
+    protected fun getPanelBuffer(parentBuffer: PGraphics): PGraphics {
+        return parentBuffer.parent.createGraphics(width, height)
     }
 
-    @Override
-    public void onMousePressed() {
-        this.isPressed = isMouseOverMe();
-
+    override fun onMousePressed() {
+        isPressed = isMouseOverMe
         if (isPressed) {
-            isHovering = false;
-            isHoveringPrevious = true;
+            isHovering = false
+            isHoveringPrevious = true
         }
     }
 
-    @Override
-    public void onMouseReleased() {
-        if (isMouseOverMe()) {
-            this.isPressed = false;
+    override fun onMouseReleased() {
+        if (isMouseOverMe) {
+            isPressed = false
         }
     }
 
-    @Override
-    public boolean mousePressedOverMe() {
-        return isMouseOverMe();
+    override fun mousePressedOverMe(): Boolean {
+        return isMouseOverMe
     }
 
-    public void setFill(int fill) {
-        this.fill = fill;
+/*    fun setFill(fill: Int) {
+        this.fill = fill
+    }*/
+
+    @Suppress("unused")
+    fun setTransition(direction: TransitionDirection?, type: TransitionType?, duration: Int) {
+        transitionDirection = direction
+        transitionType = type
+        transitionDuration = duration
+        transitionAble = true
     }
 
-    @SuppressWarnings("unused")
-    public void setTransition(Transition.TransitionDirection direction, Transition.TransitionType type, int duration) {
-        this.transitionDirection = direction;
-        this.transitionType = type;
-        this.transitionDuration = duration;
-        this.transitionAble = true;
-    }
-
-    @Override
     //public void draw(PGraphics parentBuffer) {
-    public void draw() {
-
-        PGraphics parentBuffer = drawingInformer.getPGraphics();
-
-        parentBuffer.pushStyle();
-
-        panelBuffer.beginDraw();
-        panelBuffer.pushStyle();
-
-        panelBuffer.fill(fill);
-         //panelBuffer.fill(0xFFFF0000); // debugging ghost panel
-        panelBuffer.noStroke();
-
-        panelBuffer.clear();
+    override fun draw() {
+        val parentBuffer = drawingInformer.pGraphics
+        parentBuffer.pushStyle()
+        panelBuffer.beginDraw()
+        panelBuffer.pushStyle()
+        panelBuffer.fill(fill)
+        //panelBuffer.fill(0xFFFF0000); // debugging ghost panel
+        panelBuffer.noStroke()
+        panelBuffer.clear()
 
         // handle alignment if requested
         if (alignAble) {
-            updateAlignment(parentBuffer);
+            updateAlignment(parentBuffer)
         }
 
         // output the background Rect for this panel
-        if (radius.isPresent()) {
-            panelBuffer.rect(0, 0, width, height, radius.getAsInt());
+        if (radius.isPresent) {
+            panelBuffer.rect(0f, 0f, width.toFloat(), height.toFloat(), radius.asInt.toFloat())
         } else {
-            panelBuffer.rect(0, 0, width, height);
+            panelBuffer.rect(0f, 0f, width.toFloat(), height.toFloat())
         }
 
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
-        panelSubclassDraw();
-
-        panelBuffer.endDraw();
-
-        parentBuffer.popStyle();
-
-        if (transitionAble && transition.isTransitioning()) {
-            transition.image(panelBuffer, position.x, position.y);
+        panelSubclassDraw()
+        panelBuffer.endDraw()
+        parentBuffer.popStyle()
+        if (transitionAble && transition!!.isTransitioning) {
+            transition!!.image(panelBuffer, position!!.x, position!!.y)
         } else {
-            parentBuffer.image(panelBuffer, position.x, position.y);
+            parentBuffer.image(panelBuffer, position!!.x, position!!.y)
         }
     }
 
-    protected void updateAlignment(PGraphics buffer) {
-        int posX = 0, posY = 0;
-        switch (hAlign) {
-            // case PApplet.LEFT -> posX = 0;
-            case CENTER -> posX = (buffer.width - width) / 2;
-            case RIGHT -> posX = buffer.width - width;
+    protected fun updateAlignment(buffer: PGraphics) {
+        var posX = 0
+        var posY = 0
+        when (hAlign) {
+            AlignHorizontal.CENTER -> posX = (buffer.width - width) / 2
+            AlignHorizontal.RIGHT -> posX = buffer.width - width
+            else -> {}
         }
-
-        switch (vAlign) {
-            // case PApplet.TOP -> posY = 0;
-            case CENTER -> posY = (buffer.height - height) / 2;
-            case BOTTOM -> posY = buffer.height - height;
+        when (vAlign) {
+            AlignVertical.CENTER -> posY = (buffer.height - height) / 2
+            AlignVertical.BOTTOM -> posY = buffer.height - height
+            else -> {}
         }
-
-        setPosition(posX, posY);
+        setPosition(posX, posY)
     }
 
-    protected abstract void panelSubclassDraw();
-
-    private PVector getEffectivePosition() {
-        // used in isMouseOverMe when a Panel contains other Panels
-        // can walk up the hierarchy if you have nested panels
-        if (parentPanel != null) {
-            return new PVector(position.x + parentPanel.getEffectivePosition().x,
-                    position.y + parentPanel.getEffectivePosition().y);
-        } else {
-            return position;
-        }
-    }
-
-    protected boolean isMouseOverMe() {
-        try {
+    protected abstract fun panelSubclassDraw()
+    private val effectivePosition: PVector?
+        private get() =// used in isMouseOverMe when a Panel contains other Panels
+            // can walk up the hierarchy if you have nested panels
+            if (parentPanel != null) {
+                PVector(
+                    position!!.x + parentPanel!!.effectivePosition!!.x,
+                    position!!.y + parentPanel!!.effectivePosition!!.y
+                )
+            } else {
+                position
+            }
+/*    protected val isMouseOverMe: Boolean
+        protected get() = try {
             // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
-            PApplet processing = parentPanel.panelBuffer.parent;
+            val processing = parentPanel!!.panelBuffer.parent
 
             // our Patterning class extends Processing so we can use it here also
-            Patterning patterning = (Patterning) processing;
+            val patterning = processing as Patterning
             if (patterning.draggingDrawing) {
-                return false;
+                return false
             }
-
-            Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-            Point windowPosition = ((java.awt.Component) processing.getSurface().getNative()).getLocationOnScreen();
-
-            int mouseX = mousePosition.x - windowPosition.x;
-            int mouseY = mousePosition.y - windowPosition.y;
-
+            val mousePosition = MouseInfo.getPointerInfo().location
+            val windowPosition = (processing.getSurface().native as Component).locationOnScreen
+            val mouseX = mousePosition.x - windowPosition.x
+            val mouseY = mousePosition.y - windowPosition.y
             if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
-                return false;
+                return false
             }
+            val effectivePosition = effectivePosition
+            mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+        } catch (e: Exception) {
+            false
+        }*/
+protected val isMouseOverMe: Boolean
+    get() {
+        return try {
+            // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
+            val processing = parentPanel!!.panelBuffer.parent
 
-            PVector effectivePosition = getEffectivePosition();
-
-            return mouseX >= effectivePosition.x && mouseX < effectivePosition.x + width &&
-                    mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height;
-
-        } catch (Exception e) {
-            return false;
+            // our Patterning class extends Processing so we can use it here also
+            val patterning = processing as Patterning
+            if (patterning.draggingDrawing) {
+                false
+            } else {
+                val mousePosition = MouseInfo.getPointerInfo().location
+                val windowPosition = (processing.getSurface().native as Component).locationOnScreen
+                val mouseX = mousePosition.x - windowPosition.x
+                val mouseY = mousePosition.y - windowPosition.y
+                if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
+                    false
+                } else {
+                    val effectivePosition = effectivePosition
+                    mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                }
+            }
+        } catch (e: Exception) {
+            false
         }
     }
 
-    public static abstract class Builder<T extends Builder<T>> {
-
-        protected final DrawingInfoSupplier drawingInformer;
-        private int x;
-        private int y;
-        private int width;
-        private int height;
-
-        private boolean alignable;
-        private AlignHorizontal alignHorizontal;
-        private AlignVertical alignVertical;
-        private int fill = UXThemeManager.getInstance().getDefaultPanelColor();
-        private Transition.TransitionDirection transitionDirection;
-        private Transition.TransitionType transitionType;
-        private int transitionDuration;
-
-        private OptionalInt radius = OptionalInt.empty();
-
+    abstract class Builder<T : Builder<T>?> {
+        @JvmField
+        val drawingInformer: DrawingInfoSupplier
+        var x = 0
+        var y = 0
+        var width = 0
+        var height = 0
+        var alignable = false
+        var alignHorizontal: AlignHorizontal? = null
+        var alignVertical: AlignVertical? = null
+        var fill = instance.getDefaultPanelColor()
+        var transitionDirection: TransitionDirection? = null
+        var transitionType: TransitionType? = null
+        var transitionDuration = 0
+        var radius = OptionalInt.empty()
 
         // used by Control
-        public Builder(DrawingInfoSupplier drawingInformer, int width, int height) {
-            setRect(0, 0, width, height); // parent positioned
-            this.drawingInformer = drawingInformer;
+        constructor(drawingInformer: DrawingInfoSupplier, width: Int, height: Int) {
+            setRect(0, 0, width, height) // parent positioned
+            this.drawingInformer = drawingInformer
         }
 
-        private void setRect(int x, int y, int width, int height) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
+        private fun setRect(x: Int, y: Int, width: Int, height: Int) {
+            this.x = x
+            this.y = y
+            this.width = width
+            this.height = height
         }
 
         // used by TextPanel for explicitly positioned text
-        public Builder(DrawingInfoSupplier drawingInformer, PVector position, AlignHorizontal hAlign, AlignVertical vAlign) {
-            setRect((int) position.x, (int) position.y, 0, 0); // parent positioned
-            setAlignment(hAlign, vAlign, false);
-            this.drawingInformer = drawingInformer;
+        constructor(
+            drawingInformer: DrawingInfoSupplier,
+            position: PVector,
+            hAlign: AlignHorizontal,
+            vAlign: AlignVertical
+        ) {
+            setRect(position.x.toInt(), position.y.toInt(), 0, 0) // parent positioned
+            setAlignment(hAlign, vAlign, false)
+            this.drawingInformer = drawingInformer
         }
 
-        private void setAlignment(AlignHorizontal alignHorizontal, AlignVertical vAlign, boolean alignAble) {
-            this.alignable = alignAble;
-            this.alignHorizontal = alignHorizontal;
-            this.alignVertical = vAlign;
+        private fun setAlignment(alignHorizontal: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
+            alignable = alignAble
+            this.alignHorizontal = alignHorizontal
+            alignVertical = vAlign
         }
 
         // used by BasicPanel for demonstration purposes
-        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical alignVertical, int width, int height) {
-            setRect(0, 0, width, height); // we're only using BasicPanel to show that panels are useful...
-            setAlignment(alignHorizontal, alignVertical, true);
-            this.drawingInformer = drawingInformer;
-
+        constructor(
+            drawingInformer: DrawingInfoSupplier,
+            alignHorizontal: AlignHorizontal,
+            alignVertical: AlignVertical,
+            width: Int,
+            height: Int
+        ) {
+            setRect(0, 0, width, height) // we're only using BasicPanel to show that panels are useful...
+            setAlignment(alignHorizontal, alignVertical, true)
+            this.drawingInformer = drawingInformer
         }
 
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
-        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical alignVertical) {
-            setRect(0, 0, 0, 0); // Containers and text, so far, only need to be aligned around the screen
-            setAlignment(alignHorizontal, alignVertical, true);
-            this.drawingInformer = drawingInformer;
+        constructor(
+            drawingInformer: DrawingInfoSupplier,
+            alignHorizontal: AlignHorizontal,
+            alignVertical: AlignVertical
+        ) {
+            setRect(0, 0, 0, 0) // Containers and text, so far, only need to be aligned around the screen
+            setAlignment(alignHorizontal, alignVertical, true)
+            this.drawingInformer = drawingInformer
         }
 
-        public T fill(int fill) {
-            this.fill = fill;
-            return self();
+        fun fill(fill: Int): T {
+            this.fill = fill
+            return self()
         }
 
         // Method to allow subclass builders to return "this" correctly
-        @SuppressWarnings("unchecked")
-        protected T self() {
-            return (T) this;
+        protected open fun self(): T {
+            return this as T
         }
 
-        public T transition(Transition.TransitionDirection direction, Transition.TransitionType type, int duration) {
-            this.transitionDirection = direction;
-            this.transitionType = type;
-            this.transitionDuration = duration;
-            return self();
+        fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int): T {
+            transitionDirection = direction
+            transitionType = type
+            transitionDuration = duration
+            return self()
         }
 
-        public T radius(int radius) {
-            this.radius = OptionalInt.of(radius);
-            return self();
+        fun radius(radius: Int): T {
+            this.radius = OptionalInt.of(radius)
+            return self()
         }
 
-        public abstract Panel build();
+        abstract fun build(): Panel?
     }
-
 }
-

@@ -1,38 +1,28 @@
-package ux.panel;
+package ux.panel
 
-import processing.core.PGraphics;
-import ux.informer.DrawingInfoSupplier;
-import ux.informer.DrawingInformer;
+import processing.core.PGraphics
+import ux.informer.DrawingInfoSupplier
+import ux.informer.DrawingInformer
 
-import java.util.ArrayList;
-import java.util.List;
+abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel(builder) {
+    private val childPanels: List<Panel>
+    @JvmField
+    val orientation: Orientation
 
-public abstract class ContainerPanel extends Panel {
-
-    private final List<Panel> childPanels;
-    protected final Orientation orientation;
-
-    protected ContainerPanel(Builder<?> builder) {
-        super(builder);
-
-        this.childPanels = new ArrayList<>(builder.childPanels);
-
-        if (childPanels.isEmpty()) {
-            throw new IllegalStateException("ContainerPanel must have at least one child panel");
-        }
+    init {
+        childPanels = ArrayList(builder.childPanels)
+        check(!childPanels.isEmpty()) { "ContainerPanel must have at least one child panel" }
 
         // Set parent panel for each child
-        for (Panel child : childPanels) {
+        for (child in childPanels) {
             // child panels need special handling to orient themselves to this container Panel
             // rather than the UXBuffer, which is the more common case...
-            child.parentPanel = this;
+            child.parentPanel = this
             child.drawingInformer =
-                    new DrawingInformer(this::getContainerPanelBuffer, drawingInformer::isResized, drawingInformer::isDrawing);
+                DrawingInformer({ containerPanelBuffer }, { drawingInformer.isResized }) { drawingInformer.isDrawing }
         }
-
-        this.orientation = builder.orientation;
-
-        updatePanelSize();
+        orientation = builder.orientation
+        updatePanelSize()
 
         // super(builder) causes Panel to create an initial panelBuffer
         // to draw into.  However ContainerPanel's don't have a width and height until
@@ -41,71 +31,63 @@ public abstract class ContainerPanel extends Panel {
         // given we've already called super(builder), set
         // as the one created in Panel won't work
         // there's probably a better way but i think it can wait
-        panelBuffer = getPanelBuffer(drawingInformer.getPGraphics());
+        panelBuffer = getPanelBuffer(drawingInformer.pGraphics)
     }
 
-    private PGraphics getContainerPanelBuffer() {
-        return this.panelBuffer;
-    }
+    private val containerPanelBuffer: PGraphics
+        private get() = panelBuffer
 
-    private void updatePanelSize() {
-        int totalWidth = 0, totalHeight = 0;
-        for (Panel child : childPanels) {
-            if (this.orientation == Orientation.HORIZONTAL) {
-                child.setPosition(totalWidth, 0);
-                totalWidth += child.width;
-                totalHeight = Math.max(totalHeight, child.height);
+    private fun updatePanelSize() {
+        var totalWidth = 0
+        var totalHeight = 0
+        for (child in childPanels) {
+            if (orientation === Orientation.HORIZONTAL) {
+                child.setPosition(totalWidth, 0)
+                totalWidth += child.width
+                totalHeight = Math.max(totalHeight, child.height)
             } else { // Orientation.VERTICAL
-                child.setPosition(0, totalHeight);
-                totalHeight += child.height;
-                totalWidth = Math.max(totalWidth, child.width);
+                child.setPosition(0, totalHeight)
+                totalHeight += child.height
+                totalWidth = Math.max(totalWidth, child.width)
             }
         }
 
         // Update parent size
-        this.width = totalWidth;
-        this.height = totalHeight;
+        width = totalWidth
+        height = totalHeight
     }
 
-    @Override
-    protected void panelSubclassDraw() {
+    override fun panelSubclassDraw() {
         // Draw child panels
-        for (Panel child : childPanels) {
-            child.draw();
+        for (child in childPanels) {
+            child.draw()
         }
     }
 
     // public abstract static class Builder extends Panel.Builder<Builder> {
-    public abstract static class Builder<P extends Builder<P>> extends Panel.Builder<P> {
-
-        private final List<Panel> childPanels = new ArrayList<>();
-        protected Orientation orientation = Orientation.HORIZONTAL;
-
-        // Constructor for aligned Panel with default dimensions (0, 0)
-        // addPanel will update the actual dimensions
-        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(drawingInformer, alignHorizontal, vAlign);
+    abstract class Builder<P : Builder<P>>  // Constructor for aligned Panel with default dimensions (0, 0)
+    // addPanel will update the actual dimensions
+        (drawingInformer: DrawingInfoSupplier?, alignHorizontal: AlignHorizontal?, vAlign: AlignVertical?) :
+        Panel.Builder<P>(
+            drawingInformer!!, alignHorizontal!!, vAlign!!
+        ) {
+        val childPanels: MutableList<Panel> = ArrayList()
+        @JvmField
+        var orientation = Orientation.HORIZONTAL
+        protected open fun setOrientation(orientation: Orientation): P {
+            this.orientation = orientation
+            return self()
         }
 
-        protected P setOrientation(Orientation orientation) {
-            this.orientation = orientation;
-            return self();
+        protected fun addPanel(child: Panel): P {
+            childPanels.add(child)
+            return self()
         }
 
-        @SuppressWarnings("UnusedReturnValue")
-        protected P addPanel(Panel child) {
-            this.childPanels.add(child);
-            return self();
+        override fun self(): P {
+            return this as P
         }
 
-        @Override
-        @SuppressWarnings("unchecked")
-        protected P self() {
-            return (P) this;
-        }
-
-        public abstract ContainerPanel build();
-
+        abstract override fun build(): ContainerPanel
     }
 }
-

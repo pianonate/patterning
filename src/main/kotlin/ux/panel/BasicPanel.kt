@@ -1,31 +1,26 @@
-package ux.panel;
+package ux.panel
 
-import ux.informer.DrawingInfoSupplier;
+import ux.informer.DrawingInfoSupplier
 
-public class BasicPanel extends Panel {
-    protected BasicPanel(Builder builder) {
-        super(builder);
+class BasicPanel protected constructor(builder: Builder?) : Panel(builder!!) {
+    override fun panelSubclassDraw() {
     }
 
-    @Override
-    protected void panelSubclassDraw() {
-        ;
-    }
-
-    public static class Builder extends Panel.Builder<Builder> {
-
-        public Builder(DrawingInfoSupplier drawingInfoSupplier, AlignHorizontal alignHorizontal, AlignVertical vAlign, int width, int height) {
-            super(drawingInfoSupplier, alignHorizontal, vAlign, width, height);
+    class Builder(
+        drawingInfoSupplier: DrawingInfoSupplier?,
+        alignHorizontal: AlignHorizontal?,
+        vAlign: AlignVertical?,
+        width: Int,
+        height: Int
+    ) : Panel.Builder<Builder?>(
+        drawingInfoSupplier!!, alignHorizontal!!, vAlign!!, width, height
+    ) {
+        override fun build(): BasicPanel? {
+            return BasicPanel(this)
         }
 
-        @Override
-        public BasicPanel build() {
-            return new BasicPanel(this);
-        }
-
-        @Override
-        protected Builder self() {
-            return this;
+        override fun self(): Builder {
+            return this
         }
     }
 }

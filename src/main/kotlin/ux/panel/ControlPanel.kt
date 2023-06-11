@@ -1,79 +1,63 @@
-package ux.panel;
+package ux.panel
 
+import actions.KeyCallback
+import ux.UXThemeManager.Companion.instance
+import ux.informer.DrawingInfoSupplier
 
-import actions.KeyCallback;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
-
-public class ControlPanel extends ContainerPanel{
-
-    ControlPanel(Builder builder){
-        super(builder);
-    }
-
-    public static class Builder extends ContainerPanel.Builder<Builder>{
-        public Builder(DrawingInfoSupplier drawingInformer, AlignHorizontal alignHorizontal, AlignVertical vAlign) {
-            super(drawingInformer, alignHorizontal, vAlign);
+class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
+    class Builder(drawingInformer: DrawingInfoSupplier?, alignHorizontal: AlignHorizontal?, vAlign: AlignVertical?) :
+        ContainerPanel.Builder<Builder>(drawingInformer, alignHorizontal, vAlign) {
+        public override fun setOrientation(orientation: Orientation): Builder {
+            this.orientation = orientation
+            return this
         }
 
-        public Builder setOrientation(Orientation orientation) {
-            this.orientation = orientation;
-            return this;
+        fun addControl(iconName: String, callback: KeyCallback): Builder {
+            val c = Control.Builder(
+                drawingInformer,
+                callback,
+                iconName,
+                instance.controlSize
+            ).build()
+            addPanel(c!!)
+            return this
         }
 
-        public Builder addControl(String iconName, KeyCallback callback ) {
-
-            Control c = new Control.Builder(
-                    this.drawingInformer,
-                    callback,
-                    iconName,
-                    UXThemeManager.getInstance().getControlSize()
-            ).build();
-
-            addPanel(c);
-
-            return this;
+        fun addToggleHighlightControl(iconName: String, callback: KeyCallback): Builder {
+            val c: Control? = ToggleHighlightControl.Builder(
+                drawingInformer,
+                callback,
+                iconName,
+                instance.controlSize
+            ).build()
+            addPanel(c!!)
+            return this
         }
 
-        public Builder addToggleHighlightControl(String iconName, KeyCallback callback ) {
-
-            Control c = new ToggleHighlightControl.Builder(
-                    this.drawingInformer,
-                    callback,
-                    iconName,
-                    UXThemeManager.getInstance().getControlSize()
-            ).build();
-
-            addPanel(c);
-
-            return this;
+        fun addToggleIconControl(
+            iconName: String,
+            toggledIconName: String,
+            callback: KeyCallback,
+            modeChangeCallback: KeyCallback
+        ): Builder {
+            val c: Control? = ToggleIconControl.Builder(
+                drawingInformer,
+                callback,
+                modeChangeCallback,
+                iconName,
+                toggledIconName,
+                instance.controlSize
+            ).build()
+            addPanel(c!!)
+            return this
         }
 
-        public Builder addToggleIconControl(String iconName, String toggledIconName, KeyCallback callback, KeyCallback modeChangeCallback) {
-
-            Control c = new ToggleIconControl.Builder(
-                    this.drawingInformer,
-                    callback,
-                    modeChangeCallback,
-                    iconName,
-                    toggledIconName,
-                    UXThemeManager.getInstance().getControlSize()
-            ).build();
-
-            addPanel(c);
-
-            return this;
+        override fun build(): ControlPanel {
+            return ControlPanel(this)
         }
 
-        @Override
-        public ControlPanel build() {
-            return new ControlPanel(this);
-        }
-
-        @Override
-        protected Builder self() {
-            return this;
+        override fun self(): Builder {
+            return this
         }
     }
-
 }

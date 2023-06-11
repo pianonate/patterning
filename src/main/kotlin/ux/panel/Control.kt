@@ -1,118 +1,108 @@
-package ux.panel;
+package ux.panel
 
-import actions.*;
-import org.jetbrains.annotations.NotNull;
-import processing.core.PImage;
-import processing.core.PVector;
-import ux.DrawableManager;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
+import actions.*
+import processing.core.PImage
+import processing.core.PVector
+import ux.DrawableManager
+import ux.UXThemeManager
+import ux.informer.DrawingInfoSupplier
+import ux.panel.Transition.TransitionDirection
+import java.util.*
 
-import java.util.Timer;
-import java.util.TimerTask;
+open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
+    private val callback: KeyCallback
+    private val size: Int
+    @JvmField
+    var isHighlightFromKeypress = false
+    protected open lateinit var icon: PImage
+    private var hoverTextPanel: TextPanel? = null
+    private val hoverMessage: String
 
-
-public class Control extends Panel implements KeyObserver, MouseEventReceiver {
-
-    private static final UXThemeManager theme = UXThemeManager.getInstance();
-    private final KeyCallback callback;
-    private final int size;
-    boolean isHighlightFromKeypress = false;
-    protected PImage icon;
-    private TextPanel hoverTextPanel;
-    private final String hoverMessage;
-
-    protected Control(Builder builder) {
-        super(builder);
-
-        this.callback = builder.callback;
-        this.size = builder.size;
-
-        setFill(theme.getControlColor());
-        callback.addObserver(this);
-        MouseEventManager.getInstance().addReceiver(this);
-
-
-        this.icon = loadIcon(builder.iconName);
-
-        String keyCombos = callback.toString();
-
-        hoverMessage = callback.getUsageText() +theme.getShortcutParenStart() + keyCombos + theme.getShortcutParenEnd();
-
+    init {
+        callback = builder.callback
+        size = builder.size
+        fill = theme.getControlColor()
+        callback.addObserver(this)
+        MouseEventManager.instance!!.addReceiver(this)
+        icon = loadIcon(builder.iconName)
+        val keyCombos = callback.toString()
+        hoverMessage = callback.getUsageText() + theme.shortcutParenStart + keyCombos + theme.shortcutParenEnd
     }
 
-    protected PImage loadIcon(String iconName) {
-        PImage icon = panelBuffer.parent.loadImage(theme.getIconPath() + iconName);
-        icon.resize(width - theme.getIconMargin(), height - theme.getIconMargin());
-        return icon;
+    protected fun loadIcon(iconName: String): PImage {
+        val icon = panelBuffer.parent.loadImage(theme.iconPath + iconName)
+        icon.resize(width - theme.iconMargin, height - theme.iconMargin)
+        return icon
     }
 
-    protected PImage getIcon() {
-        return icon;
+    override fun panelSubclassDraw() {
+        mouseHover(isMouseOverMe)
+        drawHover()
+        drawPressed()
+        drawIcon()
     }
 
-    protected void panelSubclassDraw() {
-
-        mouseHover(isMouseOverMe());
-        drawHover();
-        drawPressed();
-        drawIcon();
-    }
-
-    private void drawHover() {
-
+    private fun drawHover() {
         if (isHovering) {
-            drawControlHighlight(theme.getControlHighlightColor());
-            if (null==hoverTextPanel) {
-                hoverTextPanel = getHoverTextPanel();
-                DrawableManager.getInstance().add(hoverTextPanel);
+            drawControlHighlight(theme.getControlHighlightColor())
+            if (null == hoverTextPanel) {
+                hoverTextPanel = getHoverTextPanel()
+                DrawableManager.instance!!.add(hoverTextPanel!!)
             }
         } else {
-            if (null!=hoverTextPanel) {
-                DrawableManager.getInstance().remove(hoverTextPanel);
-                hoverTextPanel = null;
+            if (null != hoverTextPanel) {
+                DrawableManager.instance!!.remove(hoverTextPanel!!)
+                hoverTextPanel = null
             }
         }
     }
 
-    private TextPanel getHoverTextPanel() {
-        int margin = theme.getHoverTextMargin();
-        int hoverTextWidth = theme.getHoverTextWidth();
+    private fun getHoverTextPanel(): TextPanel? {
+        val margin = theme.hoverTextMargin
+        val hoverTextWidth = theme.hoverTextWidth
+        var hoverX = parentPanel!!.position!!.x.toInt()
+        var hoverY = parentPanel!!.position!!.y.toInt()
+        var transitionDirection: TransitionDirection? = null
 
-        int hoverX = (int) parentPanel.position.x;
-        int hoverY = (int) parentPanel.position.y;
+        val localParentPanel = parentPanel
+        val orientation = (localParentPanel as ControlPanel).orientation
 
-        Transition.TransitionDirection transitionDirection = null;
-
-        Orientation orientation = ((ControlPanel)parentPanel).orientation;
-
-        switch (orientation) {
-            case VERTICAL -> {
-                switch(parentPanel.hAlign) {
-
-                    case LEFT, CENTER -> {
-                        hoverX += size + margin;
-                        hoverY += position.y;
-                        transitionDirection = Transition.TransitionDirection.RIGHT;
+        when (orientation) {
+            Orientation.VERTICAL -> {
+                when (localParentPanel!!.hAlign) {
+                    AlignHorizontal.LEFT, AlignHorizontal.CENTER -> {
+                        hoverX += size + margin
+                        hoverY = (hoverY + position!!.y).toInt()
+                        transitionDirection = TransitionDirection.RIGHT
                     }
-                    case RIGHT -> {
-                        hoverX = hoverX - margin - hoverTextWidth;
-                        hoverY += position.y;
-                        transitionDirection = Transition.TransitionDirection.LEFT;
+
+                    AlignHorizontal.RIGHT -> {
+                        hoverX = hoverX - margin - hoverTextWidth
+                        hoverY = (hoverY + position!!.y).toInt()
+                        transitionDirection = TransitionDirection.LEFT
+                    }
+
+                    else -> {
+                        // Handle all other cases here.
                     }
                 }
             }
-            case HORIZONTAL -> {
-                hoverX += position.x;
 
-                switch(parentPanel.vAlign) {
-                    case TOP, CENTER -> {
-                        hoverY = (int) parentPanel.position.y + size + margin;
-                        transitionDirection = Transition.TransitionDirection.DOWN;
+            Orientation.HORIZONTAL -> {
+                hoverX = (hoverX + position!!.x).toInt()
+                when (localParentPanel!!.vAlign) {
+                    AlignVertical.TOP, AlignVertical.CENTER -> {
+                        hoverY = localParentPanel.position!!.y.toInt() + size + margin
+                        transitionDirection = TransitionDirection.DOWN
                     }
-                    case BOTTOM -> {
-                        hoverY = (int) parentPanel.position.y - margin;
-                        transitionDirection = Transition.TransitionDirection.UP;
+
+                    AlignVertical.BOTTOM -> {
+                        hoverY = localParentPanel.position!!.y.toInt() - margin
+                        transitionDirection = TransitionDirection.UP
+                    }
+
+                    else -> {
+                        // Handle all other cases here.
                     }
                 }
             }
@@ -126,16 +116,22 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         // instead we pass the hover text the parent ContainerPanel's DrawingInfoSupplier which comes from
         // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
         // would try to draw itself within the control at a microscopic size
-        TextPanel hoverText = new TextPanel.Builder(parentPanel.drawingInformer, hoverMessage, new PVector(hoverX, hoverY), AlignHorizontal.LEFT, AlignVertical.TOP)
-                .fill(theme.getControlHighlightColor())
-                .radius(theme.getControlHighlightCornerRadius())
-                .textSize(theme.getHoverTextSize())
-                .textWidth(hoverTextWidth)
-                .wrap()
-                .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
-                .transition(transitionDirection, Transition.TransitionType.SLIDE,  theme.getShortTransitionDuration())
-                .outline(false)
-                .build();
+        val hoverText = TextPanel.Builder(
+            localParentPanel.drawingInformer,
+            hoverMessage,
+            PVector(hoverX.toFloat(), hoverY.toFloat()),
+            AlignHorizontal.LEFT,
+            AlignVertical.TOP
+        )
+            .fill(theme.getControlHighlightColor())
+            .radius(theme.controlHighlightCornerRadius)
+            .textSize(theme.hoverTextSize)
+            .textWidth(hoverTextWidth)
+            .wrap()
+            .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
+            .transition(transitionDirection, Transition.TransitionType.SLIDE, theme.shortTransitionDuration)
+            .outline(false)
+            .build()
 
         // hover text is word wrapped and sized to fit
         // we pass in the max and set up the position to display
@@ -146,111 +142,101 @@ public class Control extends Panel implements KeyObserver, MouseEventReceiver {
         //
         // maybe a generic capability of aligning controls to each other
         // could be added in the future if it becomes a common need -for now, we just do it here
-        if (orientation==Orientation.VERTICAL && parentPanel.hAlign == AlignHorizontal.RIGHT) {
-            hoverText.position.x += (hoverTextWidth - hoverText.width);
+        if (orientation === Orientation.VERTICAL && localParentPanel.hAlign === AlignHorizontal.RIGHT) {
+            hoverText!!.position!!.x += (hoverTextWidth - hoverText!!.width).toFloat()
         }
 
         // similar treatment for HORIZONTAL aligned BOTTOM control panels
-        if (orientation==Orientation.HORIZONTAL && parentPanel.vAlign==AlignVertical.BOTTOM) {
-            hoverText.position.y -= (hoverText.height);
+        if (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM) {
+            hoverText!!.position!!.y -= hoverText!!.height.toFloat()
         }
 
         // if the text won't display, make it possible to display
-        int screenWidth = parentPanel.drawingInformer.getPGraphics().width;
-        if (hoverText.position.x + hoverText.width > screenWidth) {
-            hoverText.position.x = screenWidth - hoverText.width;
+        val screenWidth = localParentPanel.drawingInformer.pGraphics.width
+        if (hoverText!!.position!!.x + hoverText.width > screenWidth) {
+            hoverText.position!!.x = (screenWidth - hoverText.width).toFloat()
         }
-
-        return hoverText;
+        return hoverText
     }
 
-
-    void mouseHover(boolean isHovering) {
-
+    fun mouseHover(isHovering: Boolean) {
         if (isPressed && !isHovering) {
             // If pressed and not hovering, reset the pressed state
-            this.isPressed = false;
+            isPressed = false
         } else if (isHovering != isHoveringPrevious) {
             // Only update isHovering if there is a change in hover state
-            this.isHovering = isHovering;
-            isHoveringPrevious = isHovering;
+            this.isHovering = isHovering
+            isHoveringPrevious = isHovering
         }
     }
 
-    private void drawPressed() {
+    private fun drawPressed() {
         if (isPressed || isHighlightFromKeypress) {
-            drawControlHighlight(theme.getControlMousePressedColor());
+            drawControlHighlight(theme.getControlMousePressedColor())
         }
     }
 
-    private void drawIcon() {
-        PImage thisIcon = getIcon();
-
-        float x = (float) (width - thisIcon.width) / 2;
-        float y = (float) (height - thisIcon.height) / 2;
-        panelBuffer.image(thisIcon, x, y);
+    private fun drawIcon() {
+        val thisIcon = icon
+        val x = (width - thisIcon.width).toFloat() / 2
+        val y = (height - thisIcon.height).toFloat() / 2
+        panelBuffer.image(thisIcon, x, y)
     }
 
-    private void drawControlHighlight(int color) {
+    private fun drawControlHighlight(color: Int) {
         // highlight the control with a semi-transparent rect
-        panelBuffer.fill(color); // Semi-transparent gray
-        float roundedRectSize = size;
+        panelBuffer.fill(color) // Semi-transparent gray
+        val roundedRectSize = size.toFloat()
         // Rounded rectangle with radius
-        panelBuffer.rect(0,0, roundedRectSize, roundedRectSize, theme.getControlHighlightCornerRadius());
+        panelBuffer.rect(0f, 0f, roundedRectSize, roundedRectSize, theme.controlHighlightCornerRadius.toFloat())
     }
 
-    @Override
-    public void notifyKeyPress(@NotNull KeyObservable observer) {
-        highlightFromKeyPress();
+    override fun notifyKeyPress(observer: KeyObservable) {
+        highlightFromKeyPress()
     }
 
-    private void highlightFromKeyPress() {
-        isHighlightFromKeypress = true;
-
-        new Timer().schedule(
-                new TimerTask() {
-                    @Override
-                    public void run() {
-                        isHighlightFromKeypress = false;
-                    }
-                },
-                theme.getControlHighlightDuration()
-        );
+    private fun highlightFromKeyPress() {
+        isHighlightFromKeypress = true
+        Timer().schedule(
+            object : TimerTask() {
+                override fun run() {
+                    isHighlightFromKeypress = false
+                }
+            },
+            theme.controlHighlightDuration
+                .toLong()
+        )
     }
 
-    @Override
-    public void onMousePressed() {
-        super.onMousePressed();
+    override fun onMousePressed() {
+        super.onMousePressed()
     }
 
-    @Override
-    public void onMouseReleased() {
-        super.onMouseReleased(); // Calls Panel's onMouseReleased
-        if (isMouseOverMe()) {
-            callback.invokeFeature();  // Specific to Control
-        }
-    }
-    public static class Builder extends Panel.Builder<Builder> {
-        private final KeyCallback callback;
-        private final String iconName;
-        private final int size;
-
-        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, String iconName, int size) {
-            super(drawingInformer, size, size);
-            this.callback = callback;
-            this.iconName = iconName;
-            this.size = size;
-        }
-
-        @Override
-        public Builder self() {
-            return this;
-        }
-
-        @Override
-        public Control build() {
-            return new Control(this);
+    override fun onMouseReleased() {
+        super.onMouseReleased() // Calls Panel's onMouseReleased
+        if (isMouseOverMe) {
+            callback.invokeFeature() // Specific to Control
         }
     }
 
+    open class Builder(
+        drawingInformer: DrawingInfoSupplier?,
+        val callback: KeyCallback,
+        val iconName: String,
+        val size: Int
+    ) : Panel.Builder<Builder?>(
+        drawingInformer!!, size, size
+    ) {
+        public override fun self(): Builder {
+            return this
+        }
+
+        override fun build(): Control? {
+            return Control(this)
+        }
+    }
+
+    companion object {
+        private val theme = UXThemeManager.instance
+    }
 }

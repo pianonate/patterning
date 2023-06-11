@@ -1,3 +1,5 @@
+todo: bug in speed up - always slows down first
+todo: get rid of using TextPanel for HUD - start from scratch on TextPanel...
 todo: command-W closes the window
 
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels

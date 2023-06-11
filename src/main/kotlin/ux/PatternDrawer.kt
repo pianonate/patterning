@@ -166,9 +166,9 @@ class PatternDrawer(
 
         return builderFunction()
             .build()
-            .also { newTextPanel ->
+            ?.also { newTextPanel ->
                 drawables!!.add(newTextPanel)
-            }
+            } ?: throw IllegalStateException("Failed to build TextPanel")
     }
 
     fun setupNewLife(life: LifeUniverse) {
