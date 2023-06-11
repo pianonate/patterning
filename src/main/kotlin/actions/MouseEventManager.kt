@@ -13,7 +13,6 @@ class MouseEventManager private constructor() {
     }
 
     var isMousePressedOverAnyReceiver = false
-        // kotlin thing - says that isMousePressedOverAnyReceiver can only be read externally but can be written to interanlly
         private set
 
     private var pressedReceiver: MouseEventReceiver? = null

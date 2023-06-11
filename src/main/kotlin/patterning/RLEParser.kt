@@ -6,13 +6,12 @@ import java.util.*
 import java.util.regex.Pattern
 
 class RLEParser internal constructor(text: String) {
-    val METADATA_PREFIX = "#"
-    val MIN_BUFFER_SIZE = 64
-    val HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$"
-    val result: LifeForm
+    private val metaDataPrefix = "#"
+    private val minBufferSize = 64
+    private val headerPattern = "^x = \\d+, y = \\d+, rule.*$"
+    val result: LifeForm = LifeForm()
 
     init {
-        result = LifeForm()
         handleMetaData(text)
         handleHeader(text)
         parseInstructions()
@@ -29,16 +28,16 @@ class RLEParser internal constructor(text: String) {
     @Throws(NotLifeException::class)
     fun parseInstructions() {
         val instructions = result.instructions
-        if (instructions.length == 0) {
+        if (instructions.isEmpty()) {
             throw NotLifeException("no life was found in the details of the RLE")
         }
-        var initialSize = MIN_BUFFER_SIZE
+        var initialSize = minBufferSize
         if (result.width > 0 && result.height > 0) {
             val size = result.width * result.height
             if (size > 0) {
-                val DENSITY_ESTIMATE = 1.5f
-                initialSize = Math.max(initialSize.toFloat(), size * DENSITY_ESTIMATE).toInt()
-                initialSize = Math.min(MAX_BUFFER_SIZE, initialSize)
+                val densityEstimate = 1.5f
+                initialSize = initialSize.toFloat().coerceAtLeast(size * densityEstimate).toInt()
+                initialSize = MAX_BUFFER_SIZE.coerceAtMost(initialSize)
             }
         }
         var count = 1
@@ -52,7 +51,7 @@ class RLEParser internal constructor(text: String) {
         var fieldY = IntBuffer.allocate(initialSize)
         for (pos in 0 until len) {
             chr = instructions[pos]
-            if (chr >= '0' && chr <= '9') {
+            if (chr in '0'..'9') {
                 // stay in a number until you're not in a number anymore
                 // once you leave the number you'll either be adding dead, alive or rows (y is the height - counts the rows)
                 if (inNumber) {
@@ -66,7 +65,7 @@ class RLEParser internal constructor(text: String) {
             } else {
                 if (chr == 'b') {
                     x += count
-                } else if (chr >= 'A' && chr <= 'Z' || chr >= 'a' && chr < 'z') {
+                } else if (chr in 'A'..'Z' || chr in 'a'..'y') {
                     if (aliveCount + count > fieldX.capacity()) {
                         fieldX = increaseBufSize(fieldX)
                         fieldY = increaseBufSize(fieldY)
@@ -87,13 +86,13 @@ class RLEParser internal constructor(text: String) {
                 inNumber = false
             }
         }
-        result.field_x = fieldX.slice(0, aliveCount)
-        result.field_y = fieldY.slice(0, aliveCount)
+        result.fieldX = fieldX.slice(0, aliveCount)
+        result.fieldY = fieldY.slice(0, aliveCount)
     }
 
     @Throws(NotLifeException::class)
     fun handleHeader(text: String) {
-        val compiledPattern = Pattern.compile(HEADER_PATTERN, Pattern.MULTILINE)
+        val compiledPattern = Pattern.compile(headerPattern, Pattern.MULTILINE)
         val matcher = compiledPattern.matcher(text)
         val line: String
         if (matcher.find()) {
@@ -114,12 +113,12 @@ class RLEParser internal constructor(text: String) {
                     // parseRuleRLE ensures that the if there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
                     // that's what the true and false are for here
-                    result.rule_s = parseRuleRLE(value, true)
-                    result.rule_b = parseRuleRLE(value, false)
+                    result.rulesS = parseRuleRLE(value, true)
+                    result.ruleB = parseRuleRLE(value, false)
 
                     // add the rule used to the comments list and also to the result object
                     // in a consistent manner
-                    val readable = rule2str(result.rule_s, result.rule_b)
+                    val readable = rule2str(result.rulesS, result.ruleB)
                     result.comments.add("\nRule: $readable\n")
                     result.rule = readable
                 }
@@ -140,7 +139,7 @@ class RLEParser internal constructor(text: String) {
             return parseRule(java.lang.String.join("/", *rule), survived)
         }
         if (rule[0][0].lowercaseChar() == 'b') {
-            Collections.reverse(Arrays.asList(*rule))
+            Arrays.asList(*rule).reverse()
         }
         val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
         return parseRule(parsedRuleStr, survived)
@@ -170,12 +169,11 @@ class RLEParser internal constructor(text: String) {
     fun parseRule(ruleStr: String, survived: Boolean): Int {
         var rule = 0
         val parsed = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[if (survived) 0 else 1]
-        for (i in 0 until parsed.length) {
-            val c = parsed[i]
-            if (c < '0' || c > '9') {
+        for (element in parsed) {
+            if (element < '0' || element > '9') {
                 throw NotLifeException("not a valid rule - non digits in the rule field!: $ruleStr")
             }
-            val n = c.code - '0'.code
+            val n = element.code - '0'.code
             if (rule and (1 shl n) != 0) {
                 throw NotLifeException("not a valid rule - you've got duplicates: $parsed")
             }
@@ -190,33 +188,33 @@ class RLEParser internal constructor(text: String) {
         rule = "B" + parts[1] + "/S" + parts[0];
         return rule;
     }*/
-    fun rule2str(ruleS: Int, ruleB: Int): String {
-        var ruleS = ruleS
-        var ruleB = ruleB
+    private fun rule2str(ruleS: Int, ruleB: Int): String {
+        var _ruleS = ruleS
+        var _ruleB = ruleB
         val rule = StringBuilder()
         run {
             var i = 0
-            while (ruleS != 0) {
-                if (ruleS and 1 != 0) {
+            while (_ruleS != 0) {
+                if (_ruleS and 1 != 0) {
                     rule.append(i)
                 }
-                ruleS = ruleS shr 1
+                _ruleS = _ruleS shr 1
                 i++
             }
         }
         rule.append("/")
         var i = 0
-        while (ruleB != 0) {
-            if (ruleB and 1 != 0) {
+        while (_ruleB != 0) {
+            if (_ruleB and 1 != 0) {
                 rule.append(i)
             }
-            ruleB = ruleB shr 1
+            _ruleB = _ruleB shr 1
             i++
         }
         return rule.toString()
     }
 
-    fun isNumber(test: String): Boolean {
+    private fun isNumber(test: String): Boolean {
         return try {
             test.toInt()
             true
@@ -229,7 +227,7 @@ class RLEParser internal constructor(text: String) {
     fun handleMetaData(text: String?) {
         val lines = PApplet.split(text, '\n')
         for (line in lines) {
-            if (line.startsWith(METADATA_PREFIX) && line.length > 1) {
+            if (line.startsWith(metaDataPrefix) && line.length > 1) {
                 val secondChar = line[1]
                 val remainder = line.substring(2).trim { it <= ' ' }
                 when (secondChar) {

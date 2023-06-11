@@ -4,7 +4,7 @@ import actions.KeyCallback
 import actions.KeyObservable
 import ux.informer.DrawingInfoSupplier
 
-class ToggleHighlightControl protected constructor(builder: Builder?) : Control(
+class ToggleHighlightControl private constructor(builder: Builder?) : Control(
     builder!!
 ) {
     override fun onMouseReleased() {
@@ -19,7 +19,7 @@ class ToggleHighlightControl protected constructor(builder: Builder?) : Control(
 
     class Builder(drawingInformer: DrawingInfoSupplier?, callback: KeyCallback?, iconName: String?, size: Int) :
         Control.Builder(drawingInformer, callback!!, iconName!!, size) {
-        override fun build(): ToggleHighlightControl? {
+        override fun build(): ToggleHighlightControl {
             return ToggleHighlightControl(this)
         }
 

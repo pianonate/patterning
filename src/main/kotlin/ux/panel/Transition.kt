@@ -22,13 +22,13 @@ class Transition @JvmOverloads constructor(
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val UXBuffer = drawingInformer.supplyPGraphics()
+        val uxBuffer = drawingInformer.supplyPGraphics()
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {
-            TransitionType.EXPANDO -> drawExpandoTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
-            TransitionType.SLIDE -> drawSlideTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
-            TransitionType.DIAGONAL -> drawDiagonalTransition(UXBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.EXPANDO -> drawExpandoTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.SLIDE -> drawSlideTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.DIAGONAL -> drawDiagonalTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
         }
 
         // let it do its last transition above otherwise you get a little screen flicker on the transition
@@ -39,7 +39,7 @@ class Transition @JvmOverloads constructor(
     }
 
     private fun drawExpandoTransition(
-        UXBuffer: PGraphics,
+        uxBuffer: PGraphics,
         transitionBuffer: PGraphics,
         animationProgress: Float,
         x: Float,
@@ -49,7 +49,7 @@ class Transition @JvmOverloads constructor(
             TransitionDirection.LEFT -> {
                 val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
                 val revealPointX = (x + transitionBuffer.width - visibleWidth).toInt()
-                UXBuffer.image(
+                uxBuffer.image(
                     transitionBuffer,
                     revealPointX.toFloat(),
                     y,
@@ -58,7 +58,7 @@ class Transition @JvmOverloads constructor(
                 )
             }
 
-            TransitionDirection.RIGHT -> UXBuffer.image(
+            TransitionDirection.RIGHT -> uxBuffer.image(
                 transitionBuffer, x, y, (transitionBuffer.width * animationProgress).toInt()
                     .toFloat(), transitionBuffer.height.toFloat()
             )
@@ -66,7 +66,7 @@ class Transition @JvmOverloads constructor(
             TransitionDirection.UP -> {
                 val visibleHeight = (transitionBuffer.height * animationProgress).toInt()
                 val revealPointY = (y + transitionBuffer.height - visibleHeight).toInt()
-                UXBuffer.image(
+                uxBuffer.image(
                     transitionBuffer,
                     x,
                     revealPointY.toFloat(),
@@ -75,7 +75,7 @@ class Transition @JvmOverloads constructor(
                 )
             }
 
-            TransitionDirection.DOWN -> UXBuffer.image(
+            TransitionDirection.DOWN -> uxBuffer.image(
                 transitionBuffer,
                 x,
                 y,
@@ -87,7 +87,7 @@ class Transition @JvmOverloads constructor(
     }
 
     private fun drawSlideTransition(
-        UXBuffer: PGraphics,
+        uxBuffer: PGraphics,
         transitionBuffer: PGraphics,
         animationProgress: Float,
         x: Float,
@@ -98,7 +98,7 @@ class Transition @JvmOverloads constructor(
                 val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
                 val revealPointX = (x + (transitionBuffer.width - visibleWidth)).toInt()
                 val visiblePart = transitionBuffer[0, 0, visibleWidth, transitionBuffer.height]
-                UXBuffer.image(visiblePart, revealPointX.toFloat(), y)
+                uxBuffer.image(visiblePart, revealPointX.toFloat(), y)
             }
 
             TransitionDirection.RIGHT -> {
@@ -106,14 +106,14 @@ class Transition @JvmOverloads constructor(
                 val revealPointX = x.toInt()
                 val visiblePart =
                     transitionBuffer[transitionBuffer.width - visibleWidth, 0, visibleWidth, transitionBuffer.height]
-                UXBuffer.image(visiblePart, revealPointX.toFloat(), y)
+                uxBuffer.image(visiblePart, revealPointX.toFloat(), y)
             }
 
             TransitionDirection.UP -> {
                 val visibleHeight = (transitionBuffer.height * animationProgress).toInt()
                 val revealPointY = (y + (transitionBuffer.height - visibleHeight)).toInt()
                 val visiblePart = transitionBuffer[0, 0, transitionBuffer.width, visibleHeight]
-                UXBuffer.image(visiblePart, x, revealPointY.toFloat())
+                uxBuffer.image(visiblePart, x, revealPointY.toFloat())
             }
 
             TransitionDirection.DOWN -> {
@@ -121,13 +121,13 @@ class Transition @JvmOverloads constructor(
                 val revealPointY = y.toInt()
                 val visiblePart =
                     transitionBuffer[0, transitionBuffer.height - visibleHeight, transitionBuffer.width, visibleHeight]
-                UXBuffer.image(visiblePart, x, revealPointY.toFloat())
+                uxBuffer.image(visiblePart, x, revealPointY.toFloat())
             }
         }
     }
 
     private fun drawDiagonalTransition(
-        UXBuffer: PGraphics,
+        uxBuffer: PGraphics,
         transitionBuffer: PGraphics,
         animationProgress: Float,
         x: Float,
@@ -137,26 +137,26 @@ class Transition @JvmOverloads constructor(
             TransitionDirection.LEFT -> {
                 val visibleWidth = (transitionBuffer.width * animationProgress).toInt()
                 val revealPointX = (x + (transitionBuffer.width - visibleWidth)).toInt()
-                UXBuffer.image(
+                uxBuffer.image(
                     transitionBuffer[transitionBuffer.width - visibleWidth, (transitionBuffer.height * (1 - animationProgress)).toInt(), visibleWidth, (transitionBuffer.height * animationProgress).toInt()],
                     revealPointX.toFloat(),
                     y
                 )
             }
 
-            TransitionDirection.RIGHT -> UXBuffer.image(
+            TransitionDirection.RIGHT -> uxBuffer.image(
                 transitionBuffer[(transitionBuffer.width - transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height - transitionBuffer.height * animationProgress).toInt(), (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
                 x,
                 y
             )
 
-            TransitionDirection.UP -> UXBuffer.image(
+            TransitionDirection.UP -> uxBuffer.image(
                 transitionBuffer[0, 0, (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
                 x + transitionBuffer.width * (1 - animationProgress),
                 y + transitionBuffer.height * (1 - animationProgress)
             )
 
-            TransitionDirection.DOWN -> UXBuffer.image(
+            TransitionDirection.DOWN -> uxBuffer.image(
                 transitionBuffer[0, (transitionBuffer.height * (1 - animationProgress)).toInt(), (transitionBuffer.width * animationProgress).toInt(), (transitionBuffer.height * animationProgress).toInt()],
                 x,
                 y

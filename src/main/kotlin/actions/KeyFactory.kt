@@ -1,5 +1,6 @@
 package actions
 
+import kotlinx.coroutines.runBlocking
 import patterning.Patterning
 import processing.core.PApplet
 import processing.event.KeyEvent
@@ -43,13 +44,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         println(keyHandler.usageText)
     }
 
-
-    // to remove @JvmField - you'll have to jump through the hoop of initializing it in init with
-    // a different name such as private val _callbackPause and then use a getter to access it
-    // such as val callbackPause: KeyCallback get() = _callbackPause - which will work
-    // but until Java code is moved to Kotlin it will still need to use getCallbackPause() to access this field
-    // so first migrate PatternDrawer
-    @JvmField
     val callbackPause: KeyCallback = object : KeyCallback(SHORTCUT_PAUSE) {
         override fun invokeFeature() {
             // the encapsulation is messy to ask the drawer to stop displaying countdown text
@@ -67,14 +61,13 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         LinkedHashSet(mutableListOf('1', '2', '3', '4', '5', '6', '7', '8', '9'))
     ) {
         override fun invokeFeature() {
-            patterning.getNumberedLifeForm()
+            patterning.numberedLifeForm
         }
 
         override fun getUsageText(): String {
             return "press a # key to load one of the first 9 embedded RLE resource files"
         }
     }
-    @JvmField
     val callbackDrawSlower: KeyCallback = object : KeyCallback(
         KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)
     ) {
@@ -86,7 +79,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "slow the animation down"
         }
     }
-    @JvmField
     val callbackDrawFaster: KeyCallback = object : KeyCallback(SHORTCUT_DRAW_SPEED) {
         override fun invokeFeature() {
             DrawRateManager.instance!!.goFaster()
@@ -96,7 +88,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "speed the animation up"
         }
     }
-    @JvmField
     val callbackStepFaster: KeyCallback = object : KeyCallback(SHORTCUT_STEP_FASTER) {
         override fun invokeFeature() {
             patterning.handleStep(true)
@@ -106,7 +97,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "double the generations per draw"
         }
     }
-    @JvmField
     val callbackStepSlower: KeyCallback = object : KeyCallback(SHORTCUT_STEP_SLOWER) {
         override fun invokeFeature() {
             patterning.handleStep(false)
@@ -116,73 +106,71 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "cut in half the generations per draw"
         }
     }
-    @JvmField
     val callbackRewind: KeyCallback = object : KeyCallback(SHORTCUT_REWIND) {
         override fun invokeFeature() {
-            patterning.destroyAndCreate()
+            runBlocking { patterning.destroyAndCreate() }
         }
 
         override fun getUsageText(): String {
             return "rewind the current life form back to generation 0"
         }
     }
-    @JvmField
     val callbackRandomLife: KeyCallback = object : KeyCallback(SHORTCUT_RANDOM_FILE) {
         override fun invokeFeature() {
-            patterning.getRandomLifeform(true)
+            runBlocking { patterning.getRandomLifeform(true) }
         }
 
         override fun getUsageText(): String {
             return "get a random life form from the built-in library"
         }
     }
-    val callbackZoomIn: KeyCallback = object : KeyCallback(
+    private val callbackZoomIn: KeyCallback = object : KeyCallback(
         KeyCombo(SHORTCUT_ZOOM_IN.code),
         KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)
     ) {
         override fun invokeFeature() {
-            drawer.zoomXY(true, patterning.getMouseX().toFloat(), patterning.getMouseY().toFloat())
+            drawer.zoomXY(true, patterning.mouseX.toFloat(), patterning.mouseY.toFloat())
         }
 
         override fun getUsageText(): String {
             return "zoom in centered on the mouse"
         }
     }
-    @JvmField
+
     val callbackZoomInCenter: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_CENTERED) {
         override fun invokeFeature() {
             // todo - why do we have to call back to patterning
             //patterning.centerView();
-            drawer.zoomXY(true, patterning.getWidth().toFloat() / 2, patterning.getHeight().toFloat() / 2)
+            drawer.zoomXY(true, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2)
         }
 
         override fun getUsageText(): String {
             return "zoom in centered on the middle of the screen"
         }
     }
-    @JvmField
+
     val callbackZoomOutCenter: KeyCallback = object : KeyCallback(
         KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)
     ) {
         override fun invokeFeature() {
             //patterning.centerView();
-            drawer.zoomXY(false, patterning.getWidth().toFloat() / 2, patterning.getHeight().toFloat() / 2)
+            drawer.zoomXY(false, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2)
         }
 
         override fun getUsageText(): String {
             return "zoom out centered on the middle of the screen"
         }
     }
-    val callbackZoomOut: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_OUT) {
+    private val callbackZoomOut: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_OUT) {
         override fun invokeFeature() {
-            drawer.zoomXY(false, patterning.getMouseX().toFloat(), patterning.getMouseY().toFloat())
+            drawer.zoomXY(false, patterning.mouseX.toFloat(), patterning.mouseY.toFloat())
         }
 
         override fun getUsageText(): String {
             return "zoom out centered on the mouse"
         }
     }
-    @JvmField
+
     val callbackDisplayBounds: KeyCallback = object : KeyCallback(SHORTCUT_DISPLAY_BOUNDS) {
         override fun invokeFeature() {
             drawer.toggleDrawBounds()
@@ -192,7 +180,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "draw a border around the part of the universe containing living cells"
         }
     }
-    @JvmField
+
     val callbackCenterView: KeyCallback = object : KeyCallback(SHORTCUT_CENTER) {
         override fun invokeFeature() {
             patterning.centerView()
@@ -202,7 +190,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "center the view on the universe - regardless of its size"
         }
     }
-    @JvmField
+
     val callbackUndoMovement: KeyCallback = object : KeyCallback(
         KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
         KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
@@ -215,7 +203,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "undo various movement actions such as centering or fitting to screen"
         }
     }
-    @JvmField
     val callbackFitUniverseOnScreen: KeyCallback = object : KeyCallback(SHORTCUT_FIT_UNIVERSE) {
         override fun invokeFeature() {
             patterning.fitUniverseOnScreen()
@@ -225,7 +212,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "fit the visible universe on screen"
         }
     }
-    @JvmField
     val callbackThemeToggle: KeyCallback = object : KeyCallback(SHORTCUT_THEME_TOGGLE) {
         private var toggled = true
         override fun invokeFeature() {
@@ -239,7 +225,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "toggle between dark and light themes"
         }
     }
-    val callbackPaste: KeyCallback = object : KeyCallback(
+    private val callbackPaste: KeyCallback = object : KeyCallback(
         KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
         KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
     ) {
@@ -251,7 +237,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms"
         }
     }
-    val callbackMovement: KeyCallback = object : KeyCallback(
+    private val callbackMovement: KeyCallback = object : KeyCallback(
         setOf(
             MovementHandler.WEST,
             MovementHandler.EAST,
@@ -280,7 +266,6 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
             return "use arrow keys to move the image around. hold down two keys to move diagonally"
         }
     }
-    @JvmField
     val callbackSingleStep: KeyCallback = object : KeyCallback(SHORTCUT_SINGLE_STEP) {
         override fun invokeFeature() {
             patterning.toggleSingleStep()

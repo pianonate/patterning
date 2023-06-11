@@ -2,7 +2,7 @@ package ux.panel
 
 import ux.informer.DrawingInfoSupplier
 
-class BasicPanel protected constructor(builder: Builder?) : Panel(builder!!) {
+class BasicPanel private constructor(builder: Builder?) : Panel(builder!!) {
     override fun panelSubclassDraw() {
     }
 
@@ -15,7 +15,7 @@ class BasicPanel protected constructor(builder: Builder?) : Panel(builder!!) {
     ) : Panel.Builder<Builder?>(
         drawingInfoSupplier!!, alignHorizontal!!, vAlign!!, width, height
     ) {
-        override fun build(): BasicPanel? {
+        override fun build(): BasicPanel {
             return BasicPanel(this)
         }
 

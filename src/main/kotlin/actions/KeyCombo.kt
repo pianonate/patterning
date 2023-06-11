@@ -3,7 +3,7 @@ package actions
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyCombo @JvmOverloads constructor(val keyCode: Int, val modifiers: Int = 0, val validOS: ValidOS = ValidOS.ANY) {
+class KeyCombo @JvmOverloads constructor(private val keyCode: Int, private val modifiers: Int = 0, private val validOS: ValidOS = ValidOS.ANY) {
 
     // we only want to do the conversion once so cache it in the val
     // we do it this way so that we can make this a data class and still have val semantics

@@ -1,7 +1,5 @@
 package ux
 
-import processing.core.PGraphics
-
 class DrawableManager private constructor() {
     private val drawables: MutableList<Drawable>
     private val toBeAdded: MutableList<Drawable>
@@ -21,9 +19,8 @@ class DrawableManager private constructor() {
         toBeAdded.addAll(drawables!!)
     }
 
-    fun drawAll(buffer: PGraphics?) {
+    fun drawAll() {
         for (drawable in drawables) {
-            // drawable.draw(buffer);
             drawable.draw()
         }
         // Add all drawables that need to be added

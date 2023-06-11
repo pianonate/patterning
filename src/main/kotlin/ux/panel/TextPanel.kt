@@ -10,9 +10,10 @@ import ux.informer.DrawingInfoSupplier
 import ux.informer.DrawingInformer
 import java.util.*
 import java.util.function.IntSupplier
+import kotlin.math.ceil
 
-class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawable {
-    val outline: Boolean
+class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable {
+    private val outline: Boolean
 
     // sizes
     private val textMargin = theme.defaultTextMargin
@@ -96,7 +97,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
         transitionTime = System.currentTimeMillis() // start displaying immediately
     }
 
-    protected fun getTextPanelBuffer(parentBuffer: PGraphics): PGraphics {
+    private fun getTextPanelBuffer(parentBuffer: PGraphics): PGraphics {
         val testMessage = if (countdownFrom.isPresent) getCountdownMessage(countdownFrom.asInt.toLong()) else message
         messageLines = wrapText(testMessage, parentBuffer)
 
@@ -118,11 +119,11 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
         // width = (int) Math.ceil(maxWidth + doubleTextMargin);
 
         // Adjust the width and height according to the size of the wrapped text
-        height = Math.ceil((totalHeight + textMargin).toDouble()).toInt()
+        height = ceil((totalHeight + textMargin).toDouble()).toInt()
 
         // take either the specified width - which has just been sized to fit
         // or the width of the longest line of text in case of word wrapping
-        width = Math.min(getTextWidth(), Math.ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
+        width = getTextWidth().coerceAtMost(ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
         val textBuffer = parentBuffer.parent.createGraphics(width, height)
 
         // set the font for this PGraphics as it will not change
@@ -155,7 +156,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
 
     private fun wrapText(theMessage: String, buffer: PGraphics): List<String> {
         val words: MutableList<String> =
-            ArrayList(Arrays.asList(*theMessage.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
+            ArrayList(listOf(*theMessage.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
                 .toTypedArray()))
         val lines: MutableList<String> = ArrayList()
         var line = StringBuilder()
@@ -165,12 +166,12 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
         }
         setFont(buffer, textSize)
         val evalWidth = getTextWidth()
-        while (!words.isEmpty()) {
+        while (words.isNotEmpty()) {
             val word = words[0]
             val prospectiveLineWidth = buffer.textWidth(line.toString() + word)
 
             // If the word alone is wider than the wordWrapWidth, it should be put on its own line
-            if (prospectiveLineWidth > evalWidth && line.length == 0) {
+            if (prospectiveLineWidth > evalWidth && line.isEmpty()) {
                 line.append(word).append(" ")
                 words.removeAt(0)
             } else if (prospectiveLineWidth <= evalWidth) {
@@ -193,7 +194,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
                 }
             }
         }
-        if (line.length > 0) {
+        if (line.isNotEmpty()) {
             lines.add(line.toString().trim { it <= ' ' })
         }
         return lines
@@ -219,7 +220,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
         // fit within the width minus a margin
         while (parentBuffer.textWidth(longestLine) > targetWidth - doubleTextMargin /*|| ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))*/) {
             adjustedTextSize -= .1.toFloat() // smooth baby
-            adjustedTextSize = Math.max(adjustedTextSize, 1f) // Prevent the textSize from going below 1
+            adjustedTextSize = adjustedTextSize.coerceAtLeast(1f) // Prevent the textSize from going below 1
             parentBuffer.textSize(adjustedTextSize)
         }
         return adjustedTextSize
@@ -272,7 +273,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
         }*/drawMultiLineText()
     }
 
-    fun drawMultiLineText() {
+    private fun drawMultiLineText() {
 
 
         // Get the colors every time in case the UX theme changes
@@ -341,8 +342,6 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
 
     private interface State {
         fun update()
-
-        @Suppress("unused")
         fun transition()
     }
 
@@ -446,7 +445,7 @@ class TextPanel protected constructor(builder: Builder) : Panel(builder), Drawab
             return this
         }
 
-        override fun build(): TextPanel? {
+        override fun build(): TextPanel {
             if (textWidth.isEmpty && textWidthSupplier.isEmpty) {
                 textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width)
             }

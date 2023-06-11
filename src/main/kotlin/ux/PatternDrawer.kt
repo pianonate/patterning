@@ -166,9 +166,9 @@ class PatternDrawer(
 
         return builderFunction()
             .build()
-            ?.also { newTextPanel ->
+            .also { newTextPanel ->
                 drawables!!.add(newTextPanel)
-            } ?: throw IllegalStateException("Failed to build TextPanel")
+            }
     }
 
     fun setupNewLife(life: LifeUniverse) {
@@ -207,8 +207,10 @@ class PatternDrawer(
         val patternHeight = BigDecimal(bounds.bottom - bounds.top + BigInteger.ONE)
 
         if (fitBounds) {
-            val widthRatio = patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvasWidth.divide(it, mc) } ?: BigDecimal.ONE
-            val heightRatio = patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
+            val widthRatio =
+                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvasWidth.divide(it, mc) } ?: BigDecimal.ONE
+            val heightRatio =
+                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
             cell.width = (widthRatio.coerceAtMost(heightRatio).toFloat() * .9f)
         }
 
@@ -264,22 +266,19 @@ class PatternDrawer(
         uXBuffer = buffer
         lifeFormBuffer = buffer
 
-        with(processing) {
+        // Calculate the center of the visible portion before resizing
+        val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
+        val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
 
-            // Calculate the center of the visible portion before resizing
-            val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
-            val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
+        // Update the canvas size
+        canvasWidth = processing.width.toBigDecimal()
+        canvasHeight = processing.height.toBigDecimal()
 
-            // Update the canvas size
-            canvasWidth = width.toBigDecimal()
-            canvasHeight = height.toBigDecimal()
+        // Calculate the center of the visible portion after resizing
+        val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
+        val centerYAfter = calcCenterOnResize(canvasHeight, canvasOffsetY)
 
-            // Calculate the center of the visible portion after resizing
-            val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
-            val centerYAfter = calcCenterOnResize(canvasHeight, canvasOffsetY)
-
-            updateCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
-        }
+        updateCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
     private fun fillSquare(x: Float, y: Float, size: Float) {
@@ -414,7 +413,7 @@ class PatternDrawer(
         // make this threadsafe
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
-        drawables!!.drawAll(uXBuffer)
+        drawables!!.drawAll()
 
         uXBuffer.endDraw()
 

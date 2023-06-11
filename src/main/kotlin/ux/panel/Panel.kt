@@ -15,40 +15,32 @@ import java.util.*
 
 abstract class Panel protected constructor(builder: Builder<*>) : Drawable, MouseEventReceiver {
     // alignment
-    protected val alignAble: Boolean
-    protected val radius: OptionalInt
-    @JvmField
+    private val alignAble: Boolean
+    private val radius: OptionalInt
+
+
+
     var parentPanel: Panel? = null
-    @JvmField
     var drawingInformer: DrawingInfoSupplier
 
     // size & positioning
-    @JvmField
     var position: PVector? = null
-    @JvmField
     var width: Int
-    @JvmField
     var height: Int
     protected var fill: Int
-    @JvmField
     var hAlign: AlignHorizontal?
-    @JvmField
     var vAlign: AlignVertical?
 
     // transition
-    protected var transitionAble: Boolean
-    protected var transition: Transition? = null
+    private var transitionAble: Boolean
+    private var transition: Transition? = null
 
     // image buffers and callbacks
-    @JvmField
     protected var panelBuffer: PGraphics
 
     // mouse stuff
-    @JvmField
     var isPressed = false
-    @JvmField
     var isHovering = false
-    @JvmField
     var isHoveringPrevious = false
     private var transitionDirection: TransitionDirection?
     private var transitionType: TransitionType?
@@ -109,7 +101,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         this.fill = fill
     }*/
 
-    @Suppress("unused")
     fun setTransition(direction: TransitionDirection?, type: TransitionType?, duration: Int) {
         transitionDirection = direction
         transitionType = type
@@ -151,7 +142,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         }
     }
 
-    protected fun updateAlignment(buffer: PGraphics) {
+    private fun updateAlignment(buffer: PGraphics) {
         var posX = 0
         var posY = 0
         when (hAlign) {
@@ -169,7 +160,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
 
     protected abstract fun panelSubclassDraw()
     private val effectivePosition: PVector?
-        private get() =// used in isMouseOverMe when a Panel contains other Panels
+        get() =// used in isMouseOverMe when a Panel contains other Panels
             // can walk up the hierarchy if you have nested panels
             if (parentPanel != null) {
                 PVector(
@@ -242,7 +233,7 @@ protected val isMouseOverMe: Boolean
         var transitionDirection: TransitionDirection? = null
         var transitionType: TransitionType? = null
         var transitionDuration = 0
-        var radius = OptionalInt.empty()
+        var radius: OptionalInt = OptionalInt.empty()
 
         // used by Control
         constructor(drawingInformer: DrawingInfoSupplier, width: Int, height: Int) {

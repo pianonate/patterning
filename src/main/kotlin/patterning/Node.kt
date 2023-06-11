@@ -3,26 +3,17 @@ package patterning
 import java.math.BigInteger
 
 class Node {
-    @JvmField
+    private val step: Int
+
     var nw: Node? = null
-    @JvmField
     var ne: Node? = null
-    @JvmField
     var sw: Node? = null
-    @JvmField
     var se: Node? = null
-    @JvmField
     var id: Int
-    @JvmField
     val level: Int
-    @JvmField
     val population: BigInteger
-    val step: Int
-    @JvmField
     var cache: Node? = null
-    @JvmField
     var quickCache: Node? = null
-    @JvmField
     var hashmapNext: Node? = null
 
     // falseLeaf, trueLeaf constructors
@@ -44,7 +35,7 @@ class Node {
         population = nw.population.add(ne.population).add(sw.population).add(se.population)
     }
 
-    fun hasChanged(): Boolean {
+   /* private fun hasChanged(): Boolean {
         return hasChanged(this)
     }
 
@@ -68,22 +59,20 @@ class Node {
             count += se!!.countChangedNodes()
         }
         return count
-    }
+    }*/
 
     companion object {
         private val changedNodes = HashSet<Node>()
-        @JvmStatic
         fun addChanged(node: Node) {
             changedNodes.add(node)
         }
 
-        @JvmStatic
         fun clearChanged() {
             changedNodes.clear()
         }
 
-        private fun hasChanged(node: Node): Boolean {
+/*        private fun hasChanged(node: Node): Boolean {
             return changedNodes.contains(node)
-        }
+        }*/
     }
 }

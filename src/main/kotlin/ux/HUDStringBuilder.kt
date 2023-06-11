@@ -4,6 +4,9 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
 import java.text.NumberFormat
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
 
 class HUDStringBuilder {
     private val data // Changed from Number to Object
@@ -37,7 +40,7 @@ class HUDStringBuilder {
         } else {
             val numValue = value as Number
             val doubleValue = numValue.toDouble()
-            val exponent = Math.floor(Math.log10(doubleValue)).toInt()
+            val exponent = floor(log10(doubleValue)).toInt()
             formatLargeNumberUsingExponent(BigDecimal.valueOf(doubleValue), exponent)
         }
     }
@@ -52,7 +55,7 @@ class HUDStringBuilder {
         return if (index < 0) {
             numberFormat.format(value)
         } else if (index < largeNumberNames.size) {
-            val divisor = BigDecimal.valueOf(Math.pow(10.0, (index * 3 + 3).toDouble()))
+            val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
             val shortNumber = value.divide(divisor, 1, RoundingMode.HALF_UP)
             String.format("%.1f %s", shortNumber, largeNumberNames[index])
         } else {
@@ -60,26 +63,23 @@ class HUDStringBuilder {
         }
     }
 
-    fun getFormattedString(frameCount: Int, updateFrequency: Int, delimiter: String): String {
+    private fun getFormattedString(frameCount: Int, updateFrequency: Int, delimiter: String): String {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
             val formattedString = StringBuilder()
             for ((key, value) in data) {
-                var formattedValue = ""
-                if (value != null) {
-                    formattedValue = if (value is Number && value.toDouble() >= Math.pow(10.0, 9.0)) {
-                        key + " " + formatLargeNumber(value)
-                    } else if (value is BigInteger && value.compareTo(BigInteger.valueOf(1000000000)) >= 0) {
-                        key + " " + formatLargeNumber(value)
-                    } else if (value is String) {
-                        value
-                    } else {
-                        key + " " + numberFormat.format(value)
-                    }
+                val formattedValue = if (value is Number && value.toDouble() >= 10.0.pow(9.0)) {
+                    key + " " + formatLargeNumber(value)
+                } else if (value is BigInteger && value >= BigInteger.valueOf(1000000000)) {
+                    key + " " + formatLargeNumber(value)
+                } else if (value is String) {
+                    value
+                } else {
+                    key + " " + numberFormat.format(value)
                 }
                 formattedString.append(formattedValue).append(delimiter)
             }
             // Remove the last delimiter
-            if (formattedString.length > 0) {
+            if (formattedString.isNotEmpty()) {
                 formattedString.setLength(formattedString.length - delimiter.length)
             }
             cachedFormattedString = formattedString.toString()

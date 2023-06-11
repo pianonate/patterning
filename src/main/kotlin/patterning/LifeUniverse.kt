@@ -4,11 +4,11 @@ import patterning.Node.Companion.addChanged
 import patterning.Node.Companion.clearChanged
 import java.math.BigInteger
 import java.nio.IntBuffer
+import kotlin.math.ceil
+import kotlin.math.ln
 
 /*
-
  great article:  https://www.dev-mind.blog/hashlife/ and code: https://github.com/ngmsoftware/hashlife
-
 
 * this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
 - better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
@@ -127,22 +127,32 @@ consider asking about using MurmurHash if you want fewer hash collisions to star
 
  */
 class LifeUniverse internal constructor() {
-    var lastId: Int
+    private var lastId: Int
     private var hashmapSize: Int
-    var maxLoad: Int
+    private var maxLoad: Int
     private var hashmap: HashMap<Int, Node?>
     private var emptyTreeCache: Array<Node?>
     private val level2Cache: HashMap<Int, Node>
-    private val _bitcounts: ByteArray
-    private val rule_b: Int
-    private val rule_s: Int
-    var root: Node?
-    @JvmField
-    var step: Int
-    var generation: BigInteger
+    private val _bitcounts: ByteArray = ByteArray(0x758)
+    private val ruleB: Int
+    private val rulesS: Int
+    private var generation: BigInteger
     private val falseLeaf: Node
     private val trueLeaf: Node
-    val patternInfo: PatternInfo
+
+    var root: Node?
+    val patternInfo: PatternInfo = PatternInfo()
+    var step: Int = 0
+        set(value) {
+            if (value != field) {
+                field = value
+                uncache(/*false*/)
+
+                // todo: why did this originally exist - it seems empty trees are all the same
+                emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
+                // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
+            }
+        }
 
     /*
      * Note that Java doesn't have a bitwise logical shift operator
@@ -152,7 +162,7 @@ class LifeUniverse internal constructor() {
      * we can use the regular right shift operator (>>) instead without any issues.
      */
     private fun evalMask(bitmask: Int): Int {
-        val rule = if (bitmask and 32 != 0) rule_s else rule_b
+        val rule = if (bitmask and 32 != 0) rulesS else ruleB
         return rule shr _bitcounts[bitmask and 0x757].toInt() and 1
     }
 
@@ -213,7 +223,7 @@ class LifeUniverse internal constructor() {
         bounds.top = bounds.top.add(offsetY);
         bounds.bottom = bounds.bottom.add(offsetY);
     }*/
-    fun moveField(fieldX: IntBuffer, fieldY: IntBuffer, offsetX: Int, offsetY: Int) {
+    private fun moveField(fieldX: IntBuffer, fieldY: IntBuffer, offsetX: Int, offsetY: Int) {
         for (i in 0 until fieldX.capacity()) {
             val x = fieldX[i]
             val y = fieldY[i]
@@ -226,8 +236,7 @@ class LifeUniverse internal constructor() {
         if (emptyTreeCache[level] != null) {
             return emptyTreeCache[level]
         }
-        val t: Node?
-        t = if (level == 1) {
+        val t: Node? = if (level == 1) {
             falseLeaf
         } else {
             emptyTree(level - 1)
@@ -254,17 +263,12 @@ class LifeUniverse internal constructor() {
      * additional growth
      *
      * Here's the process of creating the new root node with increased level:
-     *
-     * Create an empty tree t with level node.level - 1.
-     *
+     * Create an empty tree t with level node.level - 1
      * Create new trees for each quadrant, with the original node's
      * quadrants shifted to the corner and empty space added to the other corners.
-     *
      * Combine these new trees using the createTree method.
      *
-     *
-     * So, the new root node will have a level one greater than the original root
-     * node,
+     * So, the new root node will have a level one greater than the original root node,
      * as it combines the new trees created with an extra level of hierarchy.
      */
     private fun expandUniverse(node: Node?): Node {
@@ -284,21 +288,21 @@ class LifeUniverse internal constructor() {
     // (I believe) that the rule set was changed.
     // right now i don't know why it's otherwise okay to preserve
     // need to think more about this
-    private fun uncache(alsoQuick: Boolean) {
+    private fun uncache(/*alsoQuick: Boolean*/) {
         hashmap.values.parallelStream().forEach { node: Node? ->
             if (node != null) {
                 node.cache = null
                 node.hashmapNext = null
-                if (alsoQuick) {
+/*                if (alsoQuick) {
                     node.quickCache = null
-                }
+                }*/
             }
         }
     }
 
     // return false if not in the hash map
     // which means it could be in the linked list associated with the hashmap
-    fun inHashmap(n: Node?): Boolean {
+    private fun inHashmap(n: Node?): Boolean {
         val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
         var node = hashmap[hash]
         while (node != null) {
@@ -342,7 +346,7 @@ class LifeUniverse internal constructor() {
      * maintained by the hashmapInsert method.
      */
     // called only on garbageCollect
-    fun nodeHash(node: Node?) {
+    private fun nodeHash(node: Node?) {
         if (!inHashmap(node)) {
             // Update the id. We have looked for an old id, as
             // the hashmap has been cleared and ids have been
@@ -367,7 +371,7 @@ class LifeUniverse internal constructor() {
     }
 
     // insert a node into the hashmap
-    fun hashmapInsert(n: Node?) {
+    private fun hashmapInsert(n: Node?) {
         val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
         var node = hashmap[hash]
         var prev: Node? = null
@@ -382,7 +386,7 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    fun garbageCollect() {
+    private fun garbageCollect() {
         // if rewinding just keep things as they are
         if (hashmapSize < (1 shl HASHMAP_LIMIT) - 1) {
             hashmapSize = hashmapSize shl 1 or 1
@@ -400,18 +404,18 @@ class LifeUniverse internal constructor() {
      * return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
      * }
      */
-    fun calcHash(nw_id: Int, ne_id: Int, sw_id: Int, se_id: Int): Int {
+    private fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {
         var result = 17
-        result = 31 * result xor nw_id
-        result = 31 * result xor ne_id
-        result = 31 * result xor sw_id
-        result = 31 * result xor se_id
+        result = 31 * result xor nwId
+        result = 31 * result xor neId
+        result = 31 * result xor swId
+        result = 31 * result xor seId
         return result
     }
 
     // this is just used when setting up the field initially unless I'm missing
     // something
-    fun getBounds(fieldX: IntBuffer, fieldY: IntBuffer): Bounds {
+    private fun getBounds(fieldX: IntBuffer, fieldY: IntBuffer): Bounds {
         if (fieldX.capacity() == 0) {
             return Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
         }
@@ -433,21 +437,21 @@ class LifeUniverse internal constructor() {
         for (i in 1 until len) {
             val x = BigInteger.valueOf(fieldX[i].toLong())
             val y = BigInteger.valueOf(fieldY[i].toLong())
-            if (x.compareTo(bounds.left) < 0) {
+            if (x < bounds.left) {
                 bounds.left = x
-            } else if (x.compareTo(bounds.right) > 0) {
+            } else if (x > bounds.right) {
                 bounds.right = x
             }
-            if (y.compareTo(bounds.top) < 0) {
+            if (y < bounds.top) {
                 bounds.top = y
-            } else if (y.compareTo(bounds.bottom) > 0) {
+            } else if (y > bounds.bottom) {
                 bounds.bottom = y
             }
         }
         return bounds
     }
 
-    fun getLevelFromBounds(bounds: Bounds): Int {
+    private fun getLevelFromBounds(bounds: Bounds): Int {
         var max = 4
         val keys = arrayOf("top", "left", "bottom", "right")
         for (key in keys) {
@@ -459,13 +463,13 @@ class LifeUniverse internal constructor() {
                 "right" -> coordinate = bounds.right
                 else -> {}
             }
-            if (coordinate.add(BigInteger.ONE).compareTo(BigInteger.valueOf(max.toLong())) > 0) {
+            if (coordinate.add(BigInteger.ONE) > BigInteger.valueOf(max.toLong())) {
                 max = coordinate.add(BigInteger.ONE).toInt()
-            } else if (coordinate.negate().compareTo(BigInteger.valueOf(max.toLong())) > 0) {
+            } else if (coordinate.negate() > BigInteger.valueOf(max.toLong())) {
                 max = coordinate.negate().toInt()
             }
         }
-        return Math.ceil(Math.log(max.toDouble()) / Math.log(2.0)).toInt() + 1
+        return ceil(ln(max.toDouble()) / ln(2.0)).toInt() + 1
     }
 
     fun setupField(fieldX: IntBuffer, fieldY: IntBuffer) {
@@ -475,7 +479,7 @@ class LifeUniverse internal constructor() {
         val count = fieldX.capacity()
         moveField(fieldX, fieldY, offset.toInt(), offset.toInt())
         root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level)
-        updatePatternInfo(true)
+        updatePatternInfo()
     }
 
     private fun partition(start: Int, end: Int, testField: IntBuffer, otherField: IntBuffer, offset: Int): Int {
@@ -504,7 +508,7 @@ class LifeUniverse internal constructor() {
         return i
     }
 
-    fun setupFieldRecurse(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer, recurseLevel: Int): Node? {
+    private fun setupFieldRecurse(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer, recurseLevel: Int): Node? {
         var level = recurseLevel
         if (start > end) {
             return emptyTree(level)
@@ -525,7 +529,7 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): Node? {
+    private fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): Node? {
         var set = 0
         var x: Int
         var y: Int
@@ -547,17 +551,6 @@ class LifeUniverse internal constructor() {
         )
         level2Cache[set] = tree
         return tree
-    }
-
-    fun setStep(step: Int) {
-        if (step != this.step) {
-            this.step = step
-            uncache(false)
-
-            // todo: why did this originally exist - it seems empty trees are all the same
-            emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
-            // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
-        }
     }
 
     /*
@@ -628,7 +621,7 @@ class LifeUniverse internal constructor() {
      * }
      * }
      */
-    fun node_level2_next(node: Node?): Node {
+    private fun nodeLevel2Next(node: Node?): Node {
         val nw = node!!.nw
         val ne = node.ne
         val sw = node.sw
@@ -741,26 +734,20 @@ class LifeUniverse internal constructor() {
         this.root = nodeNextGeneration(root)
         val generationIncrease = pow2(step) // BigInteger.valueOf(2).pow(this.step);
         generation = generation.add(generationIncrease)
-
-        // there are some patterns that got down completely
-        // after a short while to be able to do getRootBounds()
-        // other similarly large patterns don't have this issue
-        // what's the story?
-        updatePatternInfo(true)
+        updatePatternInfo()
     }
 
-    private fun updatePatternInfo(everything: Boolean) {
+    private fun updatePatternInfo() {
         patternInfo.addOrUpdate("level", root!!.level)
         patternInfo.addOrUpdate("step", pow2(step)!!)
         patternInfo.addOrUpdate("generation", generation)
         patternInfo.addOrUpdate("population", root!!.population)
         patternInfo.addOrUpdate("maxLoad", maxLoad)
         patternInfo.addOrUpdate("lastId", lastId)
-        if (everything) {
-            val bounds = rootBounds
-            patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE))
-            patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
-        }
+        val bounds = rootBounds
+        patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE))
+        patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
+
     }
 
     private fun nodeNextGeneration(node: Node?): Node? {
@@ -780,7 +767,7 @@ class LifeUniverse internal constructor() {
         // todo: see what happens when you have a blank canvas and use setbit...
         if (node.level == 2) {
             if (node.quickCache == null) {
-                node.quickCache = node_level2_next(node)
+                node.quickCache = nodeLevel2Next(node)
             }
             return node.quickCache
         }
@@ -814,8 +801,6 @@ class LifeUniverse internal constructor() {
     private var quickgen: Long = 0
 
     init {
-        patternInfo = PatternInfo()
-        _bitcounts = ByteArray(0x758)
         _bitcounts[0] = 0
         _bitcounts[1] = 1
         _bitcounts[2] = 1
@@ -838,8 +823,8 @@ class LifeUniverse internal constructor() {
         }
 
         // current rule setting
-        rule_b = 1 shl 3
-        rule_s = 1 shl 2 or (1 shl 3)
+        ruleB = 1 shl 3
+        rulesS = 1 shl 2 or (1 shl 3)
         this.root = null
 
         // number of generations to calculate at one time, written as 2^n
@@ -876,7 +861,7 @@ class LifeUniverse internal constructor() {
             return node.quickCache
         }
         if (node.level == 2) {
-            return node_level2_next(node).also { node.quickCache = it }
+            return nodeLevel2Next(node).also { node.quickCache = it }
         }
         val nw = node.nw
         val ne = node.ne
@@ -943,9 +928,10 @@ class LifeUniverse internal constructor() {
         } else {
             val offset = pow2(node.level - 1)
             val doubledOffset = pow2(node.level)
-            if (left.compareTo(boundary.left) >= 0 && left.add(doubledOffset)
-                    .compareTo(boundary.right) <= 0 && top.compareTo(boundary.top) >= 0 && top.add(doubledOffset)
-                    .compareTo(boundary.bottom) <= 0
+            if (left >= boundary.left &&
+                left.add(doubledOffset) <= boundary.right &&
+                top >= boundary.top &&
+                top.add(doubledOffset) <= boundary.bottom
             ) {
                 // This square is already inside the found boundary
                 return
@@ -981,71 +967,11 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    private fun newNodeGetBoundary(
-        node: Node?,
-        left: BigInteger,
-        top: BigInteger,
-        findMask: Int,
-        boundary: Bounds,
-        lock: Any
-    ) {
-        if (node!!.population == BigInteger.ZERO || findMask == 0) {
-            return
-        }
-        if (node.level == 0) {
-            synchronized(lock) {
-                boundary.left = boundary.left.min(left)
-                boundary.right = boundary.right.max(left)
-                boundary.top = boundary.top.min(top)
-                boundary.bottom = boundary.bottom.max(top)
-            }
-        } else {
-            val offset = pow2(node.level - 1)
-            if (left.compareTo(boundary.left) >= 0 && left.add(offset!!.multiply(BigInteger.valueOf(2)))
-                    .compareTo(boundary.right) <= 0 && top.compareTo(boundary.top) >= 0 && top.add(
-                    offset.multiply(BigInteger.valueOf(2))
-                ).compareTo(boundary.bottom) <= 0
-            ) {
-                // This square is already inside the found boundary
-                return
-            }
-            var findNW = findMask
-            var findSW = findMask
-            var findNE = findMask
-            var findSE = findMask
-            if (node.nw!!.population != BigInteger.ZERO) {
-                findSW = findSW and MASK_TOP.inv()
-                findNE = findNE and MASK_LEFT.inv()
-                findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
-            }
-            if (node.sw!!.population != BigInteger.ZERO) {
-                findSE = findSE and MASK_LEFT.inv()
-                findNW = findNW and MASK_BOTTOM.inv()
-                findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
-            }
-            if (node.ne!!.population != BigInteger.ZERO) {
-                findNW = findNW and MASK_RIGHT.inv()
-                findSE = findSE and MASK_TOP.inv()
-                findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
-            }
-            if (node.se!!.population != BigInteger.ZERO) {
-                findSW = findSW and MASK_RIGHT.inv()
-                findNE = findNE and MASK_BOTTOM.inv()
-                findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
-            }
-            newNodeGetBoundary(node.nw, left, top, findNW, boundary, lock)
-            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, lock)
-            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, lock)
-            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, lock)
-        }
-    }
-
     companion object {
         private const val LOAD_FACTOR = 0.95
         private const val INITIAL_SIZE = 16
 
-        // this is extremely large but can be maybe reached if you fix problems with
-        // nodeQuickNextGeneration
+        // this is extremely large but can be maybe reached if you fix problems with nodeQuickNextGeneration
         // going to try a maximum universe size of 1024 with a new drawing scheme that relies
         // on calculating relating a viewport to the level being drawn and relies on the max double value
         // the largest level this can support would be  (from Wolfram)  "input": "Floor[Log2[1.8*10^308]]" "output": "1024"
@@ -1064,7 +990,6 @@ class LifeUniverse internal constructor() {
             }
         }
 
-        // return the cached power of 2 - for performance reasons
         fun pow2(x: Int): BigInteger? {
             return if (x >= UNIVERSE_LEVEL_LIMIT) {
                 BigInteger.valueOf(2).pow(UNIVERSE_LEVEL_LIMIT)

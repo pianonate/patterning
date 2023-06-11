@@ -2,8 +2,7 @@ package ux
 
 class DrawRateManager private constructor() {
     private var targetDrawRate: Float
-    var lastKnownRequestedDrawRate: Float
-        private set
+    private var lastKnownRequestedDrawRate: Float
     var currentDrawRate: Float
         private set
     private var numFramesToChangeRate = 0
@@ -83,7 +82,7 @@ class DrawRateManager private constructor() {
                 }
             }
         }
-        speedIndex = Math.max(0, closestIndex)
+        speedIndex = 0.coerceAtLeast(closestIndex)
         targetDrawRate = SPEED_VALUES[speedIndex].toFloat()
     }
 
@@ -131,12 +130,12 @@ class DrawRateManager private constructor() {
             } else {
                 // change immediately at lower rates
                 // make sure that it's at least 1 otherwise nothing will happen
-                Math.max(frameRate, 1f).toInt()
+                frameRate.coerceAtLeast(1f).toInt()
             }
             frameRateChangeIncrement = (targetDrawRate - currentDrawRate) / frameRate
         }
         rateChangeCounter++
-        currentDrawRate = currentDrawRate + frameRateChangeIncrement
+        currentDrawRate += frameRateChangeIncrement
 
         // cleanup on completion
         if (rateChangeCounter == numFramesToChangeRate) {

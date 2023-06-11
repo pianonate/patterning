@@ -24,13 +24,13 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
         }
 
         fun addToggleHighlightControl(iconName: String, callback: KeyCallback): Builder {
-            val c: Control? = ToggleHighlightControl.Builder(
+            val c: Control = ToggleHighlightControl.Builder(
                 drawingInformer,
                 callback,
                 iconName,
                 instance.controlSize
             ).build()
-            addPanel(c!!)
+            addPanel(c)
             return this
         }
 
@@ -40,7 +40,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             callback: KeyCallback,
             modeChangeCallback: KeyCallback
         ): Builder {
-            val c: Control? = ToggleIconControl.Builder(
+            val c: Control = ToggleIconControl.Builder(
                 drawingInformer,
                 callback,
                 modeChangeCallback,
@@ -48,7 +48,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 toggledIconName,
                 instance.controlSize
             ).build()
-            addPanel(c!!)
+            addPanel(c)
             return this
         }
 

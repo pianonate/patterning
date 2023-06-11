@@ -25,17 +25,15 @@ class UXThemeManager private constructor() {
         private set
 
     // colors
-    private val backGroundColor: ColorConstant
-    private val cellColor: ColorConstant
-    private val controlColor: ColorConstant
-    private val controlHighlightColor: ColorConstant
-    private val controlMousePressedColor: ColorConstant
-    private val defaultPanelColor: ColorConstant
-    private val textColor: ColorConstant
-    private val textColorStart // for lerping purposes
-            : ColorConstant
+    private val backGroundColor: ColorConstant = ColorConstant()
+    private val cellColor: ColorConstant = ColorConstant()
+    private val controlColor: ColorConstant = ColorConstant()
+    private val controlHighlightColor: ColorConstant = ColorConstant()
+    private val controlMousePressedColor: ColorConstant = ColorConstant()
+    private val defaultPanelColor: ColorConstant = ColorConstant()
+    private val textColor: ColorConstant = ColorConstant()
+    private val textColorStart : ColorConstant = ColorConstant() // for lerping purposes
 
-    // durations
     // durations
     var controlHighlightDuration = 0
         private set
@@ -55,7 +53,6 @@ class UXThemeManager private constructor() {
         private set
 
     // names
-    // strings
     var countdownText: String? = null
         private set
     var fontName: String? = null
@@ -70,18 +67,10 @@ class UXThemeManager private constructor() {
         private set
 
     init {
-        backGroundColor = ColorConstant()
-        cellColor = ColorConstant()
-        controlColor = ColorConstant()
-        controlHighlightColor = ColorConstant()
-        controlMousePressedColor = ColorConstant()
-        defaultPanelColor = ColorConstant()
-        textColor = ColorConstant()
-        textColorStart = ColorConstant()
-        setTheme(UXThemeType.DARK, null, true) // Default theme
+        setTheme(UXThemeType.DARK, null) // Default theme
     }
 
-    private fun setTheme(newTheme: UXThemeType, processing: PApplet?, underConstruction: Boolean) {
+    fun setTheme(newTheme: UXThemeType, processing: PApplet?) {
         val themeConstants = newTheme.themeConstants
 
         // sizes and radii
@@ -122,10 +111,6 @@ class UXThemeManager private constructor() {
         shortcutParenStart = themeConstants.shortcutParenStart
         shortcutParenEnd = themeConstants.shortcutParenEnd
         startupText = themeConstants.startupText
-    }
-
-    fun setTheme(newTheme: UXThemeType, processing: PApplet?) {
-        setTheme(newTheme, processing, false)
     }
 
     // colors

@@ -8,7 +8,7 @@ abstract class KeyCallback(private val keyCombos: LinkedHashSet<KeyCombo> = Link
 
     constructor(key: Char) : this(linkedSetOf(KeyCombo(key.code)))
 
-    constructor(keys: Set<Char>) : this(keys.mapTo(LinkedHashSet(), { KeyCombo(it.code) }))
+    constructor(keys: Set<Char>) : this(keys.mapTo(LinkedHashSet()) { KeyCombo(it.code) })
 
     constructor(vararg keyCombos: KeyCombo) : this(keyCombos.toCollection(LinkedHashSet()))
 

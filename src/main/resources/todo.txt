@@ -1,3 +1,4 @@
+todo: toggleIcon should still highlight from keyPress as well as toggle the icon to display
 todo: bug in speed up - always slows down first
 todo: get rid of using TextPanel for HUD - start from scratch on TextPanel...
 todo: command-W closes the window

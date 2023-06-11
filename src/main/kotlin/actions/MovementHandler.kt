@@ -49,10 +49,10 @@ class MovementHandler(private val drawer: PatternDrawer) {
         const val EAST = PApplet.RIGHT
         const val NORTH = PApplet.UP
         const val SOUTH = PApplet.DOWN
-        const val NORTHWEST = NORTH + WEST
-        const val NORTHEAST = NORTH + EAST
-        const val SOUTHWEST = SOUTH + WEST
-        const val SOUTHEAST = SOUTH + EAST
+        private const val NORTHWEST = NORTH + WEST
+        private const val NORTHEAST = NORTH + EAST
+        private const val SOUTHWEST = SOUTH + WEST
+        private const val SOUTHEAST = SOUTH + EAST
 
         private val pressedKeys = KeyHandler.pressedKeys
         private val directions = arrayOf(

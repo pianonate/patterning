@@ -46,7 +46,7 @@ class ResourceManager private constructor() {
                 val name = entries.nextElement().name
                 if (name.startsWith(matchPath)) { // filter according to the directory
                     val filename = name.substring(matchPath.length)
-                    if (!filename.isEmpty()) { // Ignore directory
+                    if (filename.isNotEmpty()) { // Ignore directory
                         filenames.add("$directoryName/$filename")
                     }
                 }
@@ -82,11 +82,11 @@ class ResourceManager private constructor() {
     }
 
     private val classLoader: ClassLoader
-        private get() = ResourceManager::class.java.classLoader
+        get() = ResourceManager::class.java.classLoader
 
     @Throws(IOException::class, URISyntaxException::class)
-    fun getResourceAtFileIndexAsString(directoryName: String, number: Int): String {
-        var number = number
+    fun getResourceAtFileIndexAsString(directoryName: String, fileIndex: Int): String {
+        var number = fileIndex
         val files = getResourceFilePaths(directoryName)
         if (files.isEmpty()) {
             throw IOException("No files found in directory: $directoryName")

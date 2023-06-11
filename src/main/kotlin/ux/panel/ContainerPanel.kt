@@ -11,7 +11,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
 
     init {
         childPanels = ArrayList(builder.childPanels)
-        check(!childPanels.isEmpty()) { "ContainerPanel must have at least one child panel" }
+        check(childPanels.isNotEmpty()) { "ContainerPanel must have at least one child panel" }
 
         // Set parent panel for each child
         for (child in childPanels) {
@@ -35,7 +35,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
     }
 
     private val containerPanelBuffer: PGraphics
-        private get() = panelBuffer
+        get() = panelBuffer
 
     private fun updatePanelSize() {
         var totalWidth = 0
@@ -44,11 +44,11 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             if (orientation === Orientation.HORIZONTAL) {
                 child.setPosition(totalWidth, 0)
                 totalWidth += child.width
-                totalHeight = Math.max(totalHeight, child.height)
+                totalHeight = totalHeight.coerceAtLeast(child.height)
             } else { // Orientation.VERTICAL
                 child.setPosition(0, totalHeight)
                 totalHeight += child.height
-                totalWidth = Math.max(totalWidth, child.width)
+                totalWidth = totalWidth.coerceAtLeast(child.width)
             }
         }
 
@@ -84,6 +84,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             return self()
         }
 
+        @Suppress("UNCHECKED_CAST")
         override fun self(): P {
             return this as P
         }

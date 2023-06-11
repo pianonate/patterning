@@ -6,30 +6,15 @@ import java.nio.IntBuffer
 // currently only RLE formats are parsed - either pasted in or loaded from a prior
 // exit/load of the app - a long way to go here...
 class LifeForm internal constructor() {
-    @JvmField
     var width = 0
-    @JvmField
     var height = 0
-    @JvmField
-    var rule_s = 0
-    @JvmField
-    var rule_b = 0
-    @JvmField
+    var rulesS = 0
+    var ruleB = 0
     var title = ""
-    @JvmField
     var author = ""
-    @JvmField
     var rule = ""
-    @JvmField
-    val comments: ArrayList<String>
-    @JvmField
+    val comments: ArrayList<String> = ArrayList()
     var instructions = ""
-    @JvmField
-    var field_x: IntBuffer? = null
-    @JvmField
-    var field_y: IntBuffer? = null
-
-    init {
-        comments = ArrayList()
-    }
+    var fieldX: IntBuffer? = null
+    var fieldY: IntBuffer? = null
 }

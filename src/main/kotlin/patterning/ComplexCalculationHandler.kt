@@ -1,52 +1,56 @@
 package patterning
 
-import java.util.concurrent.locks.ReentrantLock
-import java.util.function.BiFunction
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import java.util.concurrent.atomic.AtomicBoolean
 
-class ComplexCalculationHandler<P>(private val method: BiFunction<P, Void?, Void>) {
-    var isCalculationInProgress = false
-        private set
+class ComplexCalculationHandler<P>(private val method: suspend (P) -> Unit) {
+    private var calculationInProgress = AtomicBoolean(false)
     private var parameter: P? = null
+    private val handlerScope = CoroutineScope(Dispatchers.Default)
+    private var calculationJob: Job? = null
+
+    val isCalculationInProgress: Boolean
+        get() = calculationInProgress.get()
 
     fun startCalculation(parameter: P) {
-        lock()
-        try {
-            if (isCalculationInProgress) {
+        synchronized(this) {
+            if (calculationInProgress.get()) {
                 return
             }
-            isCalculationInProgress = true
             this.parameter = parameter
-            Thread(ComplexCalculationTask()).start()
-        } finally {
-            unlock()
+            calculationInProgress.set(true)
+            calculationJob = handlerScope.launch {
+                runCalculation()
+            }
         }
     }
 
-    private inner class ComplexCalculationTask : Runnable {
-        override fun run() {
-            parameter?.let {
-                method.apply(it, null)
-            }
-            lock()
-            try {
-                isCalculationInProgress = false
-            } finally {
-                unlock()
-            }
+    private suspend fun runCalculation() {
+        parameter?.let {
+            method(it)
+            calculationInProgress.set(false)
         }
     }
+
+    // maybe you want to cancel on instantiating new life...
+/*    fun cancel() {
+        calculationJob?.cancel()
+        calculationInProgress.set(false)
+    }*/
 
     companion object {
-        private val lock = ReentrantLock()
+        private val mutex = Mutex()
 
-        @JvmStatic
-        fun lock() {
-            lock.lock()
+        suspend fun lock() {
+            mutex.lock()
         }
 
-        @JvmStatic
         fun unlock() {
-            lock.unlock()
+            mutex.unlock()
         }
     }
 }

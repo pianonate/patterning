@@ -12,9 +12,8 @@ import java.util.*
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
     private val callback: KeyCallback
     private val size: Int
-    @JvmField
     var isHighlightFromKeypress = false
-    protected open lateinit var icon: PImage
+    protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
 
@@ -63,7 +62,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
     }
 
-    private fun getHoverTextPanel(): TextPanel? {
+    private fun getHoverTextPanel(): TextPanel {
         val margin = theme.hoverTextMargin
         val hoverTextWidth = theme.hoverTextWidth
         var hoverX = parentPanel!!.position!!.x.toInt()
@@ -75,7 +74,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
         when (orientation) {
             Orientation.VERTICAL -> {
-                when (localParentPanel!!.hAlign) {
+                when (localParentPanel.hAlign) {
                     AlignHorizontal.LEFT, AlignHorizontal.CENTER -> {
                         hoverX += size + margin
                         hoverY = (hoverY + position!!.y).toInt()
@@ -96,7 +95,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
             Orientation.HORIZONTAL -> {
                 hoverX = (hoverX + position!!.x).toInt()
-                when (localParentPanel!!.vAlign) {
+                when (localParentPanel.vAlign) {
                     AlignVertical.TOP, AlignVertical.CENTER -> {
                         hoverY = localParentPanel.position!!.y.toInt() + size + margin
                         transitionDirection = TransitionDirection.DOWN
@@ -149,23 +148,23 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // maybe a generic capability of aligning controls to each other
         // could be added in the future if it becomes a common need -for now, we just do it here
         if (orientation === Orientation.VERTICAL && localParentPanel.hAlign === AlignHorizontal.RIGHT) {
-            hoverText!!.position!!.x += (hoverTextWidth - hoverText!!.width).toFloat()
+            hoverText.position!!.x += (hoverTextWidth - hoverText.width).toFloat()
         }
 
         // similar treatment for HORIZONTAL aligned BOTTOM control panels
         if (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM) {
-            hoverText!!.position!!.y -= hoverText!!.height.toFloat()
+            hoverText.position!!.y -= hoverText.height.toFloat()
         }
 
         // if the text won't display, make it possible to display
         val screenWidth = localParentPanel.drawingInformer.supplyPGraphics().width
-        if (hoverText!!.position!!.x + hoverText.width > screenWidth) {
+        if (hoverText.position!!.x + hoverText.width > screenWidth) {
             hoverText.position!!.x = (screenWidth - hoverText.width).toFloat()
         }
         return hoverText
     }
 
-    fun mouseHover(isHovering: Boolean) {
+    private fun mouseHover(isHovering: Boolean) {
         if (isPressed && !isHovering) {
             // If pressed and not hovering, reset the pressed state
             isPressed = false
@@ -216,10 +215,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             theme.controlHighlightDuration
                 .toLong()
         )
-    }
-
-    override fun onMousePressed() {
-        super.onMousePressed()
     }
 
     override fun onMouseReleased() {

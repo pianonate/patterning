@@ -1,9 +1,15 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val patterningMain: String = "patterning.Main"
+
+group = "com.example"
+version = "1.0-SNAPSHOT"
+
 java {
     sourceCompatibility = JavaVersion.VERSION_19
     targetCompatibility = JavaVersion.VERSION_19
 }
+
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
@@ -16,10 +22,6 @@ plugins {
     kotlin("jvm") version "1.8.21"
 }
 
-
-group = "com.example"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
     maven(url = "https://jitpack.io")
@@ -31,6 +33,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
     implementation("com.processing:processing:4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
 }
 
 tasks.test {
@@ -38,7 +41,7 @@ tasks.test {
 }
 
 application {
-    mainClass.set("patterning.Patterning")
+    mainClass.set(patterningMain)
     applicationDefaultJvmArgs = listOf("-XX:+UseZGC")
 }
 
@@ -56,10 +59,8 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     manifest {
-        attributes["Main-Class"] = "patterning.Patterning"
+        attributes["Main-Class"] = patterningMain
     }
 
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
-
-
