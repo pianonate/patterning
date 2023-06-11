@@ -70,7 +70,7 @@ public class TextPanel extends Panel implements Drawable {
         this.initialMessage = builder.message;
 
         // create initial panelBuffer for the text
-        updatePanelBuffer(drawingInformer.getPGraphics(), true);
+        updatePanelBuffer(drawingInformer.supplyPGraphics(), true);
 
         //this.setFill(0xFFFF0000);
 
@@ -100,7 +100,7 @@ public class TextPanel extends Panel implements Drawable {
         this.transitionTime = System.currentTimeMillis(); // start displaying immediately
     }
 
-    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {;
+    protected PGraphics getTextPanelBuffer(PGraphics parentBuffer) {
 
         String testMessage = (countdownFrom.isPresent()) ?
                 getCountdownMessage(countdownFrom.getAsInt()) : message;
@@ -269,8 +269,8 @@ public class TextPanel extends Panel implements Drawable {
         // we update the size of the buffer containing the text
         // if we've resized && there is a supplier of an integer telling us the size of the text can change
         // for example the countdown text is half the screen width so we want to give it a new buffer
-        boolean shouldUpdate = drawingInformer.isResized() ;//&& textWidthSupplier.isPresent();
-        //updatePanelBuffer(drawingInformer.getPGraphics(), shouldUpdate);
+        boolean shouldUpdate = drawingInformer.isResized();//&& textWidthSupplier.isPresent();
+        //updatePanelBuffer(drawingInformer.supplyPGraphics(), shouldUpdate);
 
         // if i cache a panel and then just create a new one when the screen resizes
         // the hud text jumps around too much.
@@ -284,7 +284,7 @@ public class TextPanel extends Panel implements Drawable {
         // better - possibly you won't have to do this anymore.
 
         if (!Objects.equals(lastMessage, message)) {
-            updatePanelBuffer(drawingInformer.getPGraphics(), true);
+            updatePanelBuffer(drawingInformer.supplyPGraphics(), true);
         }
 
 
@@ -294,9 +294,9 @@ public class TextPanel extends Panel implements Drawable {
 
             // getAdjustedTextSize uses the parentBuffer to calculate the sizes for use on the panelBuffer
             // uses the parent to calculate so I guess that's it
-            //setFont(drawingInformer.getPGraphics(), textSize);
-            setFont(panelBuffer, getAdjustedTextSize(drawingInformer.getPGraphics(), messageLines, textSize));
-            messageLines = wrapText(message, drawingInformer.getPGraphics());
+            //setFont(drawingInformer.supplyPGraphics(), textSize);
+            setFont(panelBuffer, getAdjustedTextSize(drawingInformer.supplyPGraphics(), messageLines, textSize));
+            messageLines = wrapText(message, drawingInformer.supplyPGraphics());
         }*/
 
         drawMultiLineText();
@@ -322,6 +322,8 @@ public class TextPanel extends Panel implements Drawable {
         panelBuffer.beginDraw();
         panelBuffer.pushStyle();
 
+        assert this.hAlign != null;
+        assert this.vAlign != null;
         panelBuffer.textAlign(this.hAlign.toPApplet(), this.vAlign.toPApplet());
 
         // Determine where to start drawing the text based on the alignment
@@ -477,7 +479,7 @@ public class TextPanel extends Panel implements Drawable {
         @Override
         public TextPanel build() {
             if (textWidth.isEmpty() && textWidthSupplier.isEmpty()) {
-                textWidth = OptionalInt.of((int) drawingInformer.getPGraphics().width);
+                textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width);
             }
             return new TextPanel(this);
         }

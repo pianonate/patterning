@@ -1,10 +1,9 @@
-package ux.informer;
+package ux.informer
 
-import processing.core.PGraphics;
+import processing.core.PGraphics
 
-public interface DrawingInfoSupplier {
-    PGraphics getPGraphics();
-    boolean isResized();
-    boolean isDrawing();
-
+interface DrawingInfoSupplier {
+    fun supplyPGraphics(): PGraphics
+    fun isResized(): Boolean
+    fun isDrawing(): Boolean
 }

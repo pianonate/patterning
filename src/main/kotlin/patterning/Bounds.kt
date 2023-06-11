@@ -1,146 +1,108 @@
-package patterning;
+package patterning
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal
+import java.math.BigInteger
 
-public class Bounds {
-    private final static Map<String, Bounds> cache = new HashMap<>();
-    private static long cacheHits = 0;
-    private static long cacheMisses = 0;
-    private final float maxFloat = Float.MAX_VALUE;
-    private final BigDecimal maxFloatAsDecimal = BigDecimal.valueOf(maxFloat);
-    public BigInteger top, left, bottom, right;
-    private BigDecimal topDecimal, leftDecimal, bottomDecimal, rightDecimal;
+class Bounds @JvmOverloads constructor(
+    @JvmField var top: BigInteger,
+    @JvmField var left: BigInteger,
+    @JvmField var bottom: BigInteger = top,
+    @JvmField var right: BigInteger = left
+) {
+    private val maxFloat = Float.MAX_VALUE
+    private val maxFloatAsDecimal = BigDecimal.valueOf(maxFloat.toDouble())
+    private var topDecimal: BigDecimal? = null
+    private var leftDecimal: BigDecimal? = null
+    private var bottomDecimal: BigDecimal? = null
+    private var rightDecimal: BigDecimal? = null
 
-    public Bounds(BigInteger top, BigInteger left, BigInteger bottom, BigInteger right) {
-        this.top = top;
-        this.left = left;
-        this.bottom = bottom;
-        this.right = right;
+    constructor(top: BigDecimal, left: BigDecimal, bottom: BigDecimal, right: BigDecimal) : this(
+        top.toBigInteger(),
+        left.toBigInteger(),
+        bottom.toBigInteger(),
+        right.toBigInteger()
+    ) {
+        topDecimal = top
+        leftDecimal = left
+        bottomDecimal = bottom
+        rightDecimal = right
     }
 
-    public Bounds(BigDecimal top, BigDecimal left, BigDecimal bottom, BigDecimal right) {
-        this(top.toBigInteger(), left.toBigInteger(), bottom.toBigInteger(), right.toBigInteger());
-        this.topDecimal = top;
-        this.leftDecimal = left;
-        this.bottomDecimal = bottom;
-        this.rightDecimal = right;
-    }
-
-    public Bounds(BigInteger top, BigInteger left) {
-        this(top, left, top, left);
-    }
-
-
-    public Bounds getScreenBounds(float cellWidth, BigDecimal canvasOffsetX, BigDecimal canvasOffsetY) {
-
-        String cacheKey = generateCacheKey(this, cellWidth, canvasOffsetX, canvasOffsetY);
-
+    fun getScreenBounds(cellWidth: Float, canvasOffsetX: BigDecimal, canvasOffsetY: BigDecimal): Bounds? {
+        val cacheKey = generateCacheKey(this, cellWidth, canvasOffsetX, canvasOffsetY)
         if (cache.containsKey(cacheKey)) {
-            cacheHits++;
-
+            cacheHits++
         } else {
-            cacheMisses++;
-
-            BigDecimal cellWidthDecimal = BigDecimal.valueOf(cellWidth);
-
-            BigDecimal leftDecimal = this.leftToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetX);
-            BigDecimal topDecimal = this.topToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetY);
-
-            BigDecimal rightDecimal = this.rightToBigDecimal()
-                    .subtract(this.leftToBigDecimal())
-                    .multiply(cellWidthDecimal)
-                    .add(cellWidthDecimal);
-            BigDecimal bottomDecimal = this.bottomToBigDecimal()
-                    .subtract(this.topToBigDecimal())
-                    .multiply(cellWidthDecimal)
-                    .add(cellWidthDecimal);
-
-            Bounds newBounds = new Bounds(topDecimal, leftDecimal, bottomDecimal, rightDecimal);
-
-            cache.put(cacheKey, newBounds);
+            cacheMisses++
+            val cellWidthDecimal = BigDecimal.valueOf(cellWidth.toDouble())
+            val leftDecimal = leftToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetX)
+            val topDecimal = topToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetY)
+            val rightDecimal = rightToBigDecimal()
+                .subtract(leftToBigDecimal())
+                .multiply(cellWidthDecimal)
+                .add(cellWidthDecimal)
+            val bottomDecimal = bottomToBigDecimal()
+                .subtract(topToBigDecimal())
+                .multiply(cellWidthDecimal)
+                .add(cellWidthDecimal)
+            val newBounds = Bounds(topDecimal, leftDecimal, bottomDecimal, rightDecimal)
+            cache[cacheKey] = newBounds
         }
-
-        return cache.get(cacheKey);
+        return cache[cacheKey]
     }
 
-    private String generateCacheKey(Bounds bounds, float cellWidth, BigDecimal offsetX, BigDecimal offsetY) {
-        return cellWidth + "_" + offsetX + "_" + offsetY + "_" + bounds.top + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right;
+    private fun generateCacheKey(bounds: Bounds, cellWidth: Float, offsetX: BigDecimal, offsetY: BigDecimal): String {
+        return cellWidth.toString() + "_" + offsetX + "_" + offsetY + "_" + bounds.top + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right
     }
 
-    public BigDecimal getSize(float cellWidth) {
-        BigDecimal cellWidthDecimal = BigDecimal.valueOf(cellWidth);
-        return rightToBigDecimal().subtract(leftToBigDecimal()).multiply(cellWidthDecimal);
+    fun leftToBigDecimal(): BigDecimal {
+        if (leftDecimal == null) leftDecimal = BigDecimal(left)
+        return leftDecimal!!
     }
 
-    public double getCacheHitPercentage() {
-
-        long totalRequests = cacheHits + cacheMisses;
-        if (totalRequests == 0) {
-            return 0;
-        }
-        return ((double) cacheHits) / totalRequests * 100;
+    fun leftToFloat(): Float {
+        return if (leftToBigDecimal() > maxFloatAsDecimal) maxFloat else left.toFloat()
     }
 
-    public BigDecimal leftToBigDecimal() {
-
-        if (this.leftDecimal == null)
-            this.leftDecimal = new BigDecimal(this.left);
-
-        return leftDecimal;
+    private fun rightToBigDecimal(): BigDecimal {
+        if (rightDecimal == null) rightDecimal = BigDecimal(right)
+        return rightDecimal!!
     }
 
-    public float leftToFloat() {
-        return (leftToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : left.floatValue();
+    fun rightToFloat(): Float {
+        return if (rightToBigDecimal() > maxFloatAsDecimal) maxFloat else right.toFloat()
     }
 
-
-    public BigDecimal rightToBigDecimal() {
-
-        if (this.rightDecimal == null) {
-            this.rightDecimal = new BigDecimal(this.right);
-        }
-
-        return this.rightDecimal;
+    fun topToBigDecimal(): BigDecimal {
+        if (topDecimal == null) topDecimal = BigDecimal(top)
+        return topDecimal!!
     }
 
-    public float rightToFloat() {
-        return (rightToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : right.floatValue();
+    fun topToFloat(): Float {
+        return if (topToBigDecimal() > maxFloatAsDecimal) maxFloat else top.toFloat()
     }
 
-    public BigDecimal topToBigDecimal() {
-
-        if (this.topDecimal == null)
-            this.topDecimal = new BigDecimal(this.top);
-
-        return topDecimal;
+    private fun bottomToBigDecimal(): BigDecimal {
+        if (bottomDecimal == null) bottomDecimal = BigDecimal(bottom)
+        return bottomDecimal!!
     }
 
-    public float topToFloat() {
-        return (topToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : top.floatValue();
+    fun bottomToFloat(): Float {
+        return if (bottomToBigDecimal() > maxFloatAsDecimal) maxFloat else bottom.toFloat()
     }
 
-    public BigDecimal bottomToBigDecimal() {
-
-        if (this.bottomDecimal == null)
-            this.bottomDecimal = new BigDecimal(this.bottom);
-
-        return bottomDecimal;
-    }
-
-    public float bottomToFloat() {
-        return (bottomToBigDecimal().compareTo(maxFloatAsDecimal) > 0) ? maxFloat : bottom.floatValue();
-    }
-
-    @Override
-    public String toString() {
+    override fun toString(): String {
         return "patterning.Bounds{" +
                 "top=" + top.toString() +
                 ", left=" + left.toString() +
                 ", bottom=" + bottom.toString() +
                 ", right=" + right.toString() +
-                '}';
+                '}'
+    }
+
+    companion object {
+        private val cache: MutableMap<String, Bounds> = HashMap()
+        private var cacheHits: Long = 0
+        private var cacheMisses: Long = 0
     }
 }

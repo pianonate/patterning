@@ -1,8 +1,10 @@
-package patterning;
+package patterning
 
-import java.math.BigInteger;
-import java.nio.IntBuffer;
-import java.util.HashMap;
+import patterning.Node.Companion.addChanged
+import patterning.Node.Companion.clearChanged
+import java.math.BigInteger
+import java.nio.IntBuffer
+
 /*
 
  great article:  https://www.dev-mind.blog/hashlife/ and code: https://github.com/ngmsoftware/hashlife
@@ -30,7 +32,6 @@ If the result is found in the memoization cache, it can be retrieved directly wi
 Memoization in Hashlife allows the algorithm to reuse the intermediate results for generations that have already been computed, avoiding redundant computations and significantly speeding up the simulation.
 
  */
-
 /* 
    to facilitate migration, create a Cache or HashMapManager and create tests for it that prove that it's working
    including creating the two implementations and making sure that both return the same results
@@ -125,121 +126,23 @@ consider asking about using MurmurHash if you want fewer hash collisions to star
 
 
  */
-
-public class LifeUniverse {
-    private static final double LOAD_FACTOR = 0.95;
-    private static final int INITIAL_SIZE = 16;
-
-    // this is extremely large but can be maybe reached if you fix problems with
-    // nodeQuickNextGeneration
-    // going to try a maximum universe size of 1024 with a new drawing scheme that relies
-    // on calculating relating a viewport to the level being drawn and relies on the max double value
-    // the largest level this can support would be  (from Wolfram)  "input": "Floor[Log2[1.8*10^308]]" "output": "1024"
-    
-    private static final int UNIVERSE_LEVEL_LIMIT = 1024;
-    private static final int HASHMAP_LIMIT = 30;
-    private static final int MASK_LEFT = 1;
-    private static final int MASK_TOP = 2;
-    private static final int MASK_RIGHT = 4;
-    private static final int MASK_BOTTOM = 8;
-    private static final BigInteger[] _powers = new BigInteger[UNIVERSE_LEVEL_LIMIT];
-
-    static {// the size of the MathContext
-        _powers[0] = BigInteger.ONE;
-
-        for (int i = 1; i < UNIVERSE_LEVEL_LIMIT; i++) {
-            _powers[i] = _powers[i - 1].multiply(BigInteger.TWO);
-        }
-    }
-
-    // return the cached power of 2 - for performance reasons
-    public static BigInteger pow2(int x) {
-        if (x >= UNIVERSE_LEVEL_LIMIT) {
-            return BigInteger.valueOf(2).pow(UNIVERSE_LEVEL_LIMIT);
-        }
-        return _powers[x];
-    }
-
-    public int lastId;
-    private int hashmapSize;
-    public int maxLoad;
-    private HashMap<Integer, Node> hashmap;
-    private Node[] emptyTreeCache;
-    private HashMap<Integer, Node> level2Cache;
-
-    private final byte[] _bitcounts;
-    private final int rule_b;
-    private final int rule_s;
-    public Node root;
-    public int step;
-    public BigInteger generation;
-
-    private final Node falseLeaf;
-    private final Node trueLeaf;
-
-    private final PatternInfo patternInfo;
-
-    LifeUniverse() {
-        patternInfo = new PatternInfo();
-        this._bitcounts = new byte[0x758];
-        this._bitcounts[0] = 0;
-        this._bitcounts[1] = 1;
-        this._bitcounts[2] = 1;
-        this._bitcounts[3] = 2;
-        this._bitcounts[4] = 1;
-        this._bitcounts[5] = 2;
-        this._bitcounts[6] = 2;
-        this._bitcounts[7] = 3;
-        this._bitcounts[8] = 1;
-        this._bitcounts[9] = 2;
-        this._bitcounts[10] = 2;
-        this._bitcounts[11] = 3;
-        this._bitcounts[12] = 2;
-        this._bitcounts[13] = 3;
-        this._bitcounts[14] = 3;
-        this._bitcounts[15] = 4;
-
-        for (int i = 0x10; i < 0x758; i++) {
-            this._bitcounts[i] = (byte) (this._bitcounts[i & 0xF] + this._bitcounts[i >> 4 & 0xF]
-                    + this._bitcounts[i >> 8]);
-        }
-
-        // current rule setting
-        this.rule_b = 1 << 3;
-        this.rule_s = 1 << 2 | 1 << 3;
-
-        this.root = null;
-
-        // number of generations to calculate at one time, written as 2^n
-        this.step = 0;
-
-        // in which generation are we
-        this.generation = BigInteger.ZERO;
-
-        this.falseLeaf = new Node(3, BigInteger.ZERO, 0);
-        this.trueLeaf = new Node(2, BigInteger.ONE, 0);
-
-        // the final necessary setup bits
-
-        // last id for nodes
-        this.lastId = 4;
-
-        // Size of the hashmap - Always a power of 2 minus 1
-        this.hashmapSize = (1 << INITIAL_SIZE) - 1;
-
-        // Size when the next GC will happen
-        this.maxLoad = (int) (this.hashmapSize * LOAD_FACTOR);
-        this.hashmap = new HashMap<>();
-        this.emptyTreeCache = new Node[UNIVERSE_LEVEL_LIMIT];
-        this.level2Cache = new HashMap<>(0x10000);
-        this.root = this.emptyTree(3);
-        this.generation = BigInteger.ZERO;
-        this.step = 0;
-    }
-
-    public PatternInfo getPatternInfo() {
-        return patternInfo;
-    }
+class LifeUniverse internal constructor() {
+    var lastId: Int
+    private var hashmapSize: Int
+    var maxLoad: Int
+    private var hashmap: HashMap<Int, Node?>
+    private var emptyTreeCache: Array<Node?>
+    private val level2Cache: HashMap<Int, Node>
+    private val _bitcounts: ByteArray
+    private val rule_b: Int
+    private val rule_s: Int
+    var root: Node?
+    @JvmField
+    var step: Int
+    var generation: BigInteger
+    private val falseLeaf: Node
+    private val trueLeaf: Node
+    val patternInfo: PatternInfo
 
     /*
      * Note that Java doesn't have a bitwise logical shift operator
@@ -248,17 +151,18 @@ public class LifeUniverse {
      * However, since the _bitcounts array contains only positive values,
      * we can use the regular right shift operator (>>) instead without any issues.
      */
-    private int evalMask(int bitmask) {
-        int rule = ((bitmask & 32) != 0) ? this.rule_s : this.rule_b;
-        return (rule >> this._bitcounts[bitmask & 0x757]) & 1;
+    private fun evalMask(bitmask: Int): Int {
+        val rule = if (bitmask and 32 != 0) rule_s else rule_b
+        return rule shr _bitcounts[bitmask and 0x757].toInt() and 1
     }
 
-    private Node level1Create(int bitmask) {
+    private fun level1Create(bitmask: Int): Node {
         return createTree(
-                (bitmask & 1) != 0 ? trueLeaf : falseLeaf,
-                (bitmask & 2) != 0 ? trueLeaf : falseLeaf,
-                (bitmask & 4) != 0 ? trueLeaf : falseLeaf,
-                (bitmask & 8) != 0 ? trueLeaf : falseLeaf);
+            if (bitmask and 1 != 0) trueLeaf else falseLeaf,
+            if (bitmask and 2 != 0) trueLeaf else falseLeaf,
+            if (bitmask and 4 != 0) trueLeaf else falseLeaf,
+            if (bitmask and 8 != 0) trueLeaf else falseLeaf
+        )
     }
 
     /*
@@ -292,10 +196,7 @@ public class LifeUniverse {
      * }
      * }
      */
-
-
-
-/*    public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
+    /*    public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
         BigInteger offsetX = bounds.left.subtract(bounds.right)
                 .divide(BigInteger.valueOf(2))
                 .subtract(bounds.left)
@@ -312,33 +213,27 @@ public class LifeUniverse {
         bounds.top = bounds.top.add(offsetY);
         bounds.bottom = bounds.bottom.add(offsetY);
     }*/
-
-    public void moveField(IntBuffer fieldX, IntBuffer fieldY, int offsetX, int offsetY) {
-        for (int i = 0; i < fieldX.capacity(); i++) {
-            int x = fieldX.get(i);
-            int y = fieldY.get(i);
-
-            fieldX.put(i, x + offsetX);
-            fieldY.put(i, y + offsetY);
+    fun moveField(fieldX: IntBuffer, fieldY: IntBuffer, offsetX: Int, offsetY: Int) {
+        for (i in 0 until fieldX.capacity()) {
+            val x = fieldX[i]
+            val y = fieldY[i]
+            fieldX.put(i, x + offsetX)
+            fieldY.put(i, y + offsetY)
         }
     }
 
-    private Node emptyTree(int level) {
+    private fun emptyTree(level: Int): Node? {
         if (emptyTreeCache[level] != null) {
-            return emptyTreeCache[level];
+            return emptyTreeCache[level]
         }
-
-        Node t;
-
-        if (level == 1) {
-            t = falseLeaf;
+        val t: Node?
+        t = if (level == 1) {
+            falseLeaf
         } else {
-            t = emptyTree(level - 1);
+            emptyTree(level - 1)
         }
-
-        emptyTreeCache[level] = createTree(t, t, t, t);
-
-        return emptyTreeCache[level];
+        emptyTreeCache[level] = createTree(t, t, t, t)
+        return emptyTreeCache[level]
     }
 
     /*
@@ -372,18 +267,15 @@ public class LifeUniverse {
      * node,
      * as it combines the new trees created with an extra level of hierarchy.
      */
-
-    private Node expandUniverse(Node node) {
+    private fun expandUniverse(node: Node?): Node {
         // System.out.println("expanding universe");
-
-        Node t = emptyTree(node.level - 1);
-
+        val t = emptyTree(node!!.level - 1)
         return createTree(
-                createTree(t, t, t, node.nw),
-                createTree(t, t, node.ne, t),
-                createTree(t, node.sw, t, t),
-                createTree(node.se, t, t, t)
-        );
+            createTree(t, t, t, node.nw),
+            createTree(t, t, node.ne, t),
+            createTree(t, node.sw, t, t),
+            createTree(node.se, t, t, t)
+        )
     }
 
     // Preserve the tree, but remove all cached
@@ -392,36 +284,30 @@ public class LifeUniverse {
     // (I believe) that the rule set was changed.
     // right now i don't know why it's otherwise okay to preserve
     // need to think more about this
-    private void uncache(boolean alsoQuick) {
-
-        hashmap.values().parallelStream().forEach(node -> {
+    private fun uncache(alsoQuick: Boolean) {
+        hashmap.values.parallelStream().forEach { node: Node? ->
             if (node != null) {
-                node.cache = null;
-                node.clearBinaryBitArray();
-                node.hashmapNext = null;
+                node.cache = null
+                node.hashmapNext = null
                 if (alsoQuick) {
-                    node.quickCache = null;
+                    node.quickCache = null
                 }
             }
-        });
+        }
     }
 
     // return false if not in the hash map
     // which means it could be in the linked list associated with the hashmap
-
-    public boolean inHashmap(Node n) {
-
-        int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
-        Node node = hashmap.get(hash);
-
+    fun inHashmap(n: Node?): Boolean {
+        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
+        var node = hashmap[hash]
         while (node != null) {
-            if (node.equals(n)) {
-                return true;
+            if (node == n) {
+                return true
             }
-            node = node.hashmapNext;
+            node = node.hashmapNext
         }
-
-        return false;
+        return false
     }
 
     /*
@@ -455,65 +341,57 @@ public class LifeUniverse {
      * into the hashmap. The linked list resulting from hash collisions is
      * maintained by the hashmapInsert method.
      */
-
     // called only on garbageCollect
-    public void nodeHash(Node node) {
-        if (!this.inHashmap(node)) {
+    fun nodeHash(node: Node?) {
+        if (!inHashmap(node)) {
             // Update the id. We have looked for an old id, as
             // the hashmap has been cleared and ids have been
             // reset, but this cannot be avoided without iterating
             // the tree twice.
-            node.id = lastId++;
-            node.hashmapNext = null;
-
+            node!!.id = lastId++
+            node.hashmapNext = null
             if (node.level > 1) {
-                nodeHash(node.nw);
-                nodeHash(node.ne);
-                nodeHash(node.sw);
-                nodeHash(node.se);
-
+                nodeHash(node.nw)
+                nodeHash(node.ne)
+                nodeHash(node.sw)
+                nodeHash(node.se)
                 if (node.cache != null) {
-                    nodeHash(node.cache);
+                    nodeHash(node.cache)
                 }
                 if (node.quickCache != null) {
-                    nodeHash(node.quickCache);
+                    nodeHash(node.quickCache)
                 }
             }
-
-            hashmapInsert(node);
+            hashmapInsert(node)
         }
     }
 
     // insert a node into the hashmap
-    public void hashmapInsert(Node n) {
-        int hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) & hashmapSize;
-        Node node = hashmap.get(hash);
-        Node prev = null;
-
+    fun hashmapInsert(n: Node?) {
+        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
+        var node = hashmap[hash]
+        var prev: Node? = null
         while (node != null) {
-            prev = node;
-            node = node.hashmapNext;
+            prev = node
+            node = node.hashmapNext
         }
-
         if (prev != null) {
-            prev.hashmapNext = n;
+            prev.hashmapNext = n
         } else {
-            hashmap.put(hash, n);
+            hashmap[hash] = n
         }
     }
 
-    public void garbageCollect() {
+    fun garbageCollect() {
         // if rewinding just keep things as they are
-        if (hashmapSize < (1 << HASHMAP_LIMIT) - 1) {
-            hashmapSize = (hashmapSize << 1) | 1;
-            hashmap = new HashMap<>(hashmapSize + 1);
+        if (hashmapSize < (1 shl HASHMAP_LIMIT) - 1) {
+            hashmapSize = hashmapSize shl 1 or 1
+            hashmap = HashMap(hashmapSize + 1)
         }
-        maxLoad = (int) (hashmapSize * LOAD_FACTOR);
-        hashmap.clear();
-
-        lastId = 4;
-        nodeHash(root);
-
+        maxLoad = (hashmapSize * LOAD_FACTOR).toInt()
+        hashmap.clear()
+        lastId = 4
+        nodeHash(root)
     }
 
     /*
@@ -522,21 +400,20 @@ public class LifeUniverse {
      * return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
      * }
      */
-
-    int calcHash(int nw_id, int ne_id, int sw_id, int se_id) {
-        int result = 17;
-        result = 31 * result ^ nw_id;
-        result = 31 * result ^ ne_id;
-        result = 31 * result ^ sw_id;
-        result = 31 * result ^ se_id;
-        return result;
+    fun calcHash(nw_id: Int, ne_id: Int, sw_id: Int, se_id: Int): Int {
+        var result = 17
+        result = 31 * result xor nw_id
+        result = 31 * result xor ne_id
+        result = 31 * result xor sw_id
+        result = 31 * result xor se_id
+        return result
     }
 
     // this is just used when setting up the field initially unless I'm missing
     // something
-    public Bounds getBounds(IntBuffer fieldX, IntBuffer fieldY) {
+    fun getBounds(fieldX: IntBuffer, fieldY: IntBuffer): Bounds {
         if (fieldX.capacity() == 0) {
-            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
+            return Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
         }
 
         // this sets up a bounds that just has an initial top and bottom that are the
@@ -544,159 +421,143 @@ public class LifeUniverse {
         // the RLEBuffer creates x and y to be the same size regardless of source width
         // and height - it will make it
         // the size of the bounding box
-        Bounds bounds = new Bounds(BigInteger.valueOf(fieldY.get(0)), BigInteger.valueOf(fieldX.get(0)));
-        int len = fieldX.capacity();
+        val bounds = Bounds(
+            BigInteger.valueOf(fieldY[0].toLong()), BigInteger.valueOf(
+                fieldX[0].toLong()
+            )
+        )
+        val len = fieldX.capacity()
 
         // todo: pass in varied width and heights and look at the field size they
         // actually generate
-        for (int i = 1; i < len; i++) {
-            BigInteger x = BigInteger.valueOf(fieldX.get(i));
-            BigInteger y = BigInteger.valueOf(fieldY.get(i));
-
+        for (i in 1 until len) {
+            val x = BigInteger.valueOf(fieldX[i].toLong())
+            val y = BigInteger.valueOf(fieldY[i].toLong())
             if (x.compareTo(bounds.left) < 0) {
-                bounds.left = x;
+                bounds.left = x
             } else if (x.compareTo(bounds.right) > 0) {
-                bounds.right = x;
+                bounds.right = x
             }
-
             if (y.compareTo(bounds.top) < 0) {
-                bounds.top = y;
+                bounds.top = y
             } else if (y.compareTo(bounds.bottom) > 0) {
-                bounds.bottom = y;
+                bounds.bottom = y
             }
         }
-
-        return bounds;
+        return bounds
     }
 
-    public int getLevelFromBounds(Bounds bounds) {
-        int max = 4;
-        String[] keys = { "top", "left", "bottom", "right" };
-
-        for (String key : keys) {
-            BigInteger coordinate = BigInteger.ZERO;
-
-            switch (key) {
-                case "top" -> coordinate = bounds.top;
-                case "left" -> coordinate = bounds.left;
-                case "bottom" -> coordinate = bounds.bottom;
-                case "right" -> coordinate = bounds.right;
-                default -> {
-                }
+    fun getLevelFromBounds(bounds: Bounds): Int {
+        var max = 4
+        val keys = arrayOf("top", "left", "bottom", "right")
+        for (key in keys) {
+            var coordinate = BigInteger.ZERO
+            when (key) {
+                "top" -> coordinate = bounds.top
+                "left" -> coordinate = bounds.left
+                "bottom" -> coordinate = bounds.bottom
+                "right" -> coordinate = bounds.right
+                else -> {}
             }
-
-            if (coordinate.add(BigInteger.ONE).compareTo(BigInteger.valueOf(max)) > 0) {
-                max = coordinate.add(BigInteger.ONE).intValue();
-            } else if (coordinate.negate().compareTo(BigInteger.valueOf(max)) > 0) {
-                max = coordinate.negate().intValue();
+            if (coordinate.add(BigInteger.ONE).compareTo(BigInteger.valueOf(max.toLong())) > 0) {
+                max = coordinate.add(BigInteger.ONE).toInt()
+            } else if (coordinate.negate().compareTo(BigInteger.valueOf(max.toLong())) > 0) {
+                max = coordinate.negate().toInt()
             }
         }
-
-        return (int) Math.ceil(Math.log(max) / Math.log(2)) + 1;
+        return Math.ceil(Math.log(max.toDouble()) / Math.log(2.0)).toInt() + 1
     }
 
-    public void setupField(IntBuffer fieldX, IntBuffer fieldY) {
-
-        Bounds bounds = getBounds(fieldX, fieldY);
-        int level = getLevelFromBounds(bounds);
-
-        BigInteger offset = BigInteger.valueOf(2).pow(level - 1);
-
-        int count = fieldX.capacity();
-
-        moveField(fieldX, fieldY, offset.intValue(), offset.intValue());
-
-        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level);
-
-        updatePatternInfo(true);
+    fun setupField(fieldX: IntBuffer, fieldY: IntBuffer) {
+        val bounds = getBounds(fieldX, fieldY)
+        val level = getLevelFromBounds(bounds)
+        val offset = BigInteger.valueOf(2).pow(level - 1)
+        val count = fieldX.capacity()
+        moveField(fieldX, fieldY, offset.toInt(), offset.toInt())
+        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level)
+        updatePatternInfo(true)
     }
 
-    private int partition(int start, int end, IntBuffer testField, IntBuffer otherField, int offset) {
-        int i = start, j = end, swap;
-
+    private fun partition(start: Int, end: Int, testField: IntBuffer, otherField: IntBuffer, offset: Int): Int {
+        var i = start
+        var j = end
+        var swap: Int
         while (i <= j) {
-            while (i <= end && (testField.get(i) & offset) == 0) {
-                i++;
+            while (i <= end && testField[i] and offset == 0) {
+                i++
             }
-            while (j > start && (testField.get(j) & offset) != 0) {
-                j--;
+            while (j > start && testField[j] and offset != 0) {
+                j--
             }
             if (i >= j) {
-                break;
+                break
             }
-            swap = testField.get(i);
-            testField.put(i, testField.get(j));
-            testField.put(j, swap);
-
-            swap = otherField.get(i);
-            otherField.put(i, otherField.get(j));
-            otherField.put(j, swap);
-
-            i++;
-            j--;
+            swap = testField[i]
+            testField.put(i, testField[j])
+            testField.put(j, swap)
+            swap = otherField[i]
+            otherField.put(i, otherField[j])
+            otherField.put(j, swap)
+            i++
+            j--
         }
-
-        return i;
+        return i
     }
 
-    public Node setupFieldRecurse(int start, int end, IntBuffer fieldX, IntBuffer fieldY, int level) {
+    fun setupFieldRecurse(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer, recurseLevel: Int): Node? {
+        var level = recurseLevel
         if (start > end) {
-            return emptyTree(level);
+            return emptyTree(level)
         }
         if (level == 2) {
-            return level2Setup(start, end, fieldX, fieldY);
+            return level2Setup(start, end, fieldX, fieldY)
         }
-        level--;
-        int offset = 1 << level;
-        int part3 = partition(start, end, fieldY, fieldX, offset);
-        int part2 = partition(start, part3 - 1, fieldX, fieldY, offset);
-        int part4 = partition(part3, end, fieldX, fieldY, offset);
-
+        level--
+        val offset = 1 shl level
+        val part3 = partition(start, end, fieldY, fieldX, offset)
+        val part2 = partition(start, part3 - 1, fieldX, fieldY, offset)
+        val part4 = partition(part3, end, fieldX, fieldY, offset)
         return createTree(
-                setupFieldRecurse(start, part2 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part2, part3 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part3, part4 - 1, fieldX, fieldY, level),
-                setupFieldRecurse(part4, end, fieldX, fieldY, level));
+            setupFieldRecurse(start, part2 - 1, fieldX, fieldY, level),
+            setupFieldRecurse(part2, part3 - 1, fieldX, fieldY, level),
+            setupFieldRecurse(part3, part4 - 1, fieldX, fieldY, level),
+            setupFieldRecurse(part4, end, fieldX, fieldY, level)
+        )
     }
 
-    public Node level2Setup(int start, int end, IntBuffer fieldX, IntBuffer fieldY) {
-        int set = 0, x, y;
-
-        for (int i = start; i <= end; i++) {
-            x = fieldX.get(i);
-            y = fieldY.get(i);
+    fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): Node? {
+        var set = 0
+        var x: Int
+        var y: Int
+        for (i in start..end) {
+            x = fieldX[i]
+            y = fieldY[i]
 
             // interleave 2-bit x and y values
-            set |= 1 << (x & 1 | (y & 1 | x & 2) << 1 | (y & 2) << 2);
+            set = set or (1 shl (x and 1 or (y and 1 or (x and 2) shl 1) or (y and 2 shl 2)))
         }
-
         if (level2Cache.containsKey(set)) {
-            return level2Cache.get(set);
+            return level2Cache[set]
         }
-
-        Node tree = createTree(
-                level1Create(set),
-                level1Create(set >> 4),
-                level1Create(set >> 8),
-                level1Create(set >> 12));
-
-        level2Cache.put(set, tree);
-        return tree;
+        val tree = createTree(
+            level1Create(set),
+            level1Create(set shr 4),
+            level1Create(set shr 8),
+            level1Create(set shr 12)
+        )
+        level2Cache[set] = tree
+        return tree
     }
 
-    public void setStep(int step) {
-
-            if (step != this.step) {
-
-            this.step = step;
-
-            uncache(false);
+    fun setStep(step: Int) {
+        if (step != this.step) {
+            this.step = step
+            uncache(false)
 
             // todo: why did this originally exist - it seems empty trees are all the same
-            emptyTreeCache = new Node[UNIVERSE_LEVEL_LIMIT];
-           // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
+            emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
+            // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
         }
-
     }
 
     /*
@@ -711,7 +572,6 @@ public class LifeUniverse {
      * }
      * }
      */
-
     /*
      * private patterning.Node nodeSetBit(patterning.Node node, BigInteger x, BigInteger y, boolean
      * living) {
@@ -768,68 +628,61 @@ public class LifeUniverse {
      * }
      * }
      */
-
-    public Node node_level2_next(Node node) {
-        Node nw = node.nw;
-        Node ne = node.ne;
-        Node sw = node.sw;
-        Node se = node.se;
-
-        BigInteger bitmask = nw.nw.population.shiftLeft(15).or(nw.ne.population.shiftLeft(14))
-                .or(ne.nw.population.shiftLeft(13)).or(ne.ne.population.shiftLeft(12))
-                .or(nw.sw.population.shiftLeft(11)).or(nw.se.population.shiftLeft(10)).or(ne.sw.population.shiftLeft(9))
-                .or(ne.se.population.shiftLeft(8))
-                .or(sw.nw.population.shiftLeft(7)).or(sw.ne.population.shiftLeft(6)).or(se.nw.population.shiftLeft(5))
-                .or(se.ne.population.shiftLeft(4))
-                .or(sw.sw.population.shiftLeft(3)).or(sw.se.population.shiftLeft(2)).or(se.sw.population.shiftLeft(1))
-                .or(se.se.population);
-
-        int result = evalMask(bitmask.shiftRight(5).intValue()) |
-                evalMask(bitmask.shiftRight(4).intValue()) << 1 |
-                evalMask(bitmask.shiftRight(1).intValue()) << 2 |
-                evalMask(bitmask.intValue()) << 3;
-
-        return level1Create(result);
+    fun node_level2_next(node: Node?): Node {
+        val nw = node!!.nw
+        val ne = node.ne
+        val sw = node.sw
+        val se = node.se
+        val bitmask = nw!!.nw!!.population.shiftLeft(15).or(nw.ne!!.population.shiftLeft(14))
+            .or(ne!!.nw!!.population.shiftLeft(13)).or(ne.ne!!.population.shiftLeft(12))
+            .or(nw.sw!!.population.shiftLeft(11)).or(nw.se!!.population.shiftLeft(10))
+            .or(ne.sw!!.population.shiftLeft(9))
+            .or(ne.se!!.population.shiftLeft(8))
+            .or(sw!!.nw!!.population.shiftLeft(7)).or(sw.ne!!.population.shiftLeft(6))
+            .or(se!!.nw!!.population.shiftLeft(5))
+            .or(se.ne!!.population.shiftLeft(4))
+            .or(sw.sw!!.population.shiftLeft(3)).or(sw.se!!.population.shiftLeft(2)).or(se.sw!!.population.shiftLeft(1))
+            .or(se.se!!.population)
+        val result = evalMask(bitmask.shiftRight(5).toInt()) or (
+                evalMask(bitmask.shiftRight(4).toInt()) shl 1) or (
+                evalMask(bitmask.shiftRight(1).toInt()) shl 2) or (
+                evalMask(bitmask.toInt()) shl 3)
+        return level1Create(result)
     }
 
     // create or search for a tree node given its children
-    private Node createTree(Node nw, Node ne, Node sw, Node se) {
-
-        int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
-        Node node = hashmap.get(hash);
-        Node prev = null;
-
+    private fun createTree(nw: Node?, ne: Node?, sw: Node?, se: Node?): Node {
+        val hash = calcHash(nw!!.id, ne!!.id, sw!!.id, se!!.id) and hashmapSize
+        var node = hashmap[hash]
+        var prev: Node? = null
         while (node != null) {
             if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
-                return node;
+                return node
             }
-            prev = node;
-            node = node.hashmapNext;
+            prev = node
+            node = node.hashmapNext
         }
-
         if (lastId > maxLoad) {
-            garbageCollect();
+            garbageCollect()
             // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is
             // returning a new tree because createTree was about to just make a new one, but
             // now it's calling itself recursively rather than just making a new node and
             // returning it
-            return createTree(nw, ne, sw, se);
+            return createTree(nw, ne, sw, se)
         }
-
-        Node newNode = new Node(nw, ne, sw, se, lastId++, this.step);
+        val newNode = Node(nw, ne, sw, se, lastId++, step)
         if (prev != null) {
-            prev.hashmapNext = newNode;
+            prev.hashmapNext = newNode
         } else {
-            hashmap.put(hash, newNode);
+            hashmap[hash] = newNode
         }
-
-        return newNode;
+        return newNode
     }
 
-    public void nextGeneration() {
-        Node root = this.root;
+    fun nextGeneration() {
+        var root = this.root
 
-       /* // the following is a new mechanism to only expandUniverse as far as you need to
+        /* // the following is a new mechanism to only expandUniverse as far as you need to
         // and not just merely to match up to the current step size
         // this seems to work but if it ever doesn't this might be the culprit
         // you  have to go back to
@@ -872,61 +725,53 @@ public class LifeUniverse {
               Then, you could create a test that steps this pattern forward by a large number
                of generations and checks the resulting state against a known correct result.
                 This could help you figure out if the issue is with the size of the root node or with recentering the universe.
-         */
-
-        while ( (root.level <= this.step + 2) || 
-                !root.nw.population.equals(root.nw.se.se.population) ||
-                !root.ne.population.equals(root.ne.sw.sw.population) ||
-                !root.sw.population.equals(root.sw.ne.ne.population) ||
-                !root.se.population.equals(root.se.nw.nw.population)) {
-            root = this.expandUniverse(root);
+         */while (root!!.level <= step + 2 ||
+            root.nw!!.population != root.nw!!.se!!.se!!.population ||
+            root.ne!!.population != root.ne!!.sw!!.sw!!.population ||
+            root.sw!!.population != root.sw!!.ne!!.ne!!.population ||
+            root.se!!.population != root.se!!.nw!!.nw!!.population
+        ) {
+            root = expandUniverse(root)
         }
         // patterning.Node maintains a per generation set of nodes that were newly created
         // clear them so the drawing routine can use unchanged nodes as a key to a cache
         // associated with their
         // drawing
-        Node.clearChanged();
-
-        this.root = nodeNextGeneration(root);
-
-        BigInteger generationIncrease = pow2(this.step); // BigInteger.valueOf(2).pow(this.step);
-
-        this.generation = this.generation.add(generationIncrease);
+        clearChanged()
+        this.root = nodeNextGeneration(root)
+        val generationIncrease = pow2(step) // BigInteger.valueOf(2).pow(this.step);
+        generation = generation.add(generationIncrease)
 
         // there are some patterns that got down completely
         // after a short while to be able to do getRootBounds()
         // other similarly large patterns don't have this issue
         // what's the story?
-        updatePatternInfo(true);
+        updatePatternInfo(true)
     }
 
-    private void updatePatternInfo(boolean everything) {
-
-        patternInfo.addOrUpdate("level", root.level);
-        patternInfo.addOrUpdate("step", LifeUniverse.pow2(step));
-        patternInfo.addOrUpdate("generation", generation);
-        patternInfo.addOrUpdate("population", root.population);
-        patternInfo.addOrUpdate("maxLoad", maxLoad);
-        patternInfo.addOrUpdate("lastId", lastId);
-
+    private fun updatePatternInfo(everything: Boolean) {
+        patternInfo.addOrUpdate("level", root!!.level)
+        patternInfo.addOrUpdate("step", pow2(step)!!)
+        patternInfo.addOrUpdate("generation", generation)
+        patternInfo.addOrUpdate("population", root!!.population)
+        patternInfo.addOrUpdate("maxLoad", maxLoad)
+        patternInfo.addOrUpdate("lastId", lastId)
         if (everything) {
-            Bounds bounds = getRootBounds();
-            patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE));
-            patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE));
+            val bounds = rootBounds
+            patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE))
+            patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
         }
     }
 
-    private Node nodeNextGeneration(Node node) {
-
-        if (node.cache != null) {
-            return node.cache;
+    private fun nodeNextGeneration(node: Node?): Node? {
+        if (node!!.cache != null) {
+            return node.cache
         }
-
-        if (this.step == node.level - 2) {
-            quickgen = 0;
+        if (step == node.level - 2) {
+            quickgen = 0
             // System.out.println("root.level: " + root.level + " step: " + this.step + "
             // node.level: " + node.level);
-           return nodeQuickNextGeneration(node, 0);
+            return nodeQuickNextGeneration(node, 0)
         }
 
         // right now i have seen a nodeNextGeneration where
@@ -935,211 +780,295 @@ public class LifeUniverse {
         // todo: see what happens when you have a blank canvas and use setbit...
         if (node.level == 2) {
             if (node.quickCache == null) {
-                node.quickCache = node_level2_next(node);
+                node.quickCache = node_level2_next(node)
             }
-            return node.quickCache;
+            return node.quickCache
         }
-
-        Node nw = node.nw;
-        Node ne = node.ne;
-        Node sw = node.sw;
-        Node se = node.se;
-
-        Node n00 = createTree(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw);
-        Node n01 = createTree(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw);
-        Node n02 = createTree(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw);
-        Node n10 = createTree(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw);
-        Node n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw);
-        Node n12 = createTree(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw);
-        Node n20 = createTree(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw);
-        Node n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw);
-        Node n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw);
-
-        Node newNW = nodeNextGeneration(createTree(n00, n01, n10, n11));
-        Node newNE = nodeNextGeneration(createTree(n01, n02, n11, n12));
-        Node newSW = nodeNextGeneration(createTree(n10, n11, n20, n21));
-        Node newSE = nodeNextGeneration(createTree(n11, n12, n21, n22));
-
-        Node result = createTree(newNW, newNE, newSW, newSE);
+        val nw = node.nw
+        val ne = node.ne
+        val sw = node.sw
+        val se = node.se
+        val n00 = createTree(nw!!.nw!!.se, nw.ne!!.sw, nw.sw!!.ne, nw.se!!.nw)
+        val n01 = createTree(nw.ne!!.se, ne!!.nw!!.sw, nw.se!!.ne, ne.sw!!.nw)
+        val n02 = createTree(ne.nw!!.se, ne.ne!!.sw, ne.sw!!.ne, ne.se!!.nw)
+        val n10 = createTree(nw.sw!!.se, nw.se!!.sw, sw!!.nw!!.ne, sw.ne!!.nw)
+        val n11 = createTree(nw.se!!.se, ne.sw!!.sw, sw.ne!!.ne, se!!.nw!!.nw)
+        val n12 = createTree(ne.sw!!.se, ne.se!!.sw, se.nw!!.ne, se.ne!!.nw)
+        val n20 = createTree(sw.nw!!.se, sw.ne!!.sw, sw.sw!!.ne, sw.se!!.nw)
+        val n21 = createTree(sw.ne!!.se, se.nw!!.sw, sw.se!!.ne, se.sw!!.nw)
+        val n22 = createTree(se.nw!!.se, se.ne!!.sw, se.sw!!.ne, se.se!!.nw)
+        val newNW = nodeNextGeneration(createTree(n00, n01, n10, n11))
+        val newNE = nodeNextGeneration(createTree(n01, n02, n11, n12))
+        val newSW = nodeNextGeneration(createTree(n10, n11, n20, n21))
+        val newSE = nodeNextGeneration(createTree(n11, n12, n21, n22))
+        val result = createTree(newNW, newNE, newSW, newSE)
 
         // cascade it up the tree
-        Node.addChanged(node);
+        addChanged(node)
         // mark the new one changed
-        Node.addChanged(result);
-
-        node.cache = result;
-
-
-
-        return result;
+        addChanged(result)
+        node.cache = result
+        return result
     }
 
-    private long quickgen;
+    private var quickgen: Long = 0
 
-    public Node nodeQuickNextGeneration(Node node, int depth) throws IllegalStateException {
-        quickgen += 1;
-
-        if (node.quickCache != null) {
-            return node.quickCache;
+    init {
+        patternInfo = PatternInfo()
+        _bitcounts = ByteArray(0x758)
+        _bitcounts[0] = 0
+        _bitcounts[1] = 1
+        _bitcounts[2] = 1
+        _bitcounts[3] = 2
+        _bitcounts[4] = 1
+        _bitcounts[5] = 2
+        _bitcounts[6] = 2
+        _bitcounts[7] = 3
+        _bitcounts[8] = 1
+        _bitcounts[9] = 2
+        _bitcounts[10] = 2
+        _bitcounts[11] = 3
+        _bitcounts[12] = 2
+        _bitcounts[13] = 3
+        _bitcounts[14] = 3
+        _bitcounts[15] = 4
+        for (i in 0x10..0x757) {
+            _bitcounts[i] = (_bitcounts[i and 0xF] + _bitcounts[i shr 4 and 0xF]
+                    + _bitcounts[i shr 8]).toByte()
         }
 
+        // current rule setting
+        rule_b = 1 shl 3
+        rule_s = 1 shl 2 or (1 shl 3)
+        this.root = null
+
+        // number of generations to calculate at one time, written as 2^n
+        step = 0
+
+        // in which generation are we
+        generation = BigInteger.ZERO
+        falseLeaf = Node(3, BigInteger.ZERO, 0)
+        trueLeaf = Node(2, BigInteger.ONE, 0)
+
+        // the final necessary setup bits
+
+        // last id for nodes
+        lastId = 4
+
+        // Size of the hashmap - Always a power of 2 minus 1
+        hashmapSize = (1 shl INITIAL_SIZE) - 1
+
+        // Size when the next GC will happen
+        maxLoad = (hashmapSize * LOAD_FACTOR).toInt()
+        hashmap = HashMap()
+        emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
+        level2Cache = HashMap(0x10000)
+        this.root = emptyTree(3)
+        generation = BigInteger.ZERO
+        step = 0
+    }
+
+    @Throws(IllegalStateException::class)
+    fun nodeQuickNextGeneration(node: Node?, recurseDepth: Int): Node? {
+        var depth = recurseDepth
+        quickgen += 1
+        if (node!!.quickCache != null) {
+            return node.quickCache
+        }
         if (node.level == 2) {
-            return node.quickCache = this.node_level2_next(node);
+            return node_level2_next(node).also { node.quickCache = it }
         }
-
-        Node nw = node.nw;
-        Node ne = node.ne;
-        Node sw = node.sw;
-        Node se = node.se;
-
-        depth = depth + 1;
-
-        Node n00 = this.nodeQuickNextGeneration(nw, depth);
-        Node n01 = this.nodeQuickNextGeneration(createTree(nw.ne, ne.nw, nw.se, ne.sw),
-                depth);
-        Node n02 = this.nodeQuickNextGeneration(ne, depth);
-        Node n10 = this.nodeQuickNextGeneration(createTree(nw.sw, nw.se, sw.nw, sw.ne),
-                depth);
-        Node n11 = this.nodeQuickNextGeneration(createTree(nw.se, ne.sw, sw.ne, se.nw),
-                depth);
-        Node n12 = this.nodeQuickNextGeneration(createTree(ne.sw, ne.se, se.nw, se.ne),
-                depth);
-        Node n20 = this.nodeQuickNextGeneration(sw, depth);
-        Node n21 = this.nodeQuickNextGeneration(createTree(sw.ne, se.nw, sw.se, se.sw),
-                depth);
-        Node n22 = this.nodeQuickNextGeneration(se, depth);
-
-        return node.quickCache = this.createTree(
-                this.nodeQuickNextGeneration(createTree(n00, n01, n10, n11), depth),
-                this.nodeQuickNextGeneration(createTree(n01, n02, n11, n12), depth),
-                this.nodeQuickNextGeneration(createTree(n10, n11, n20, n21), depth),
-                this.nodeQuickNextGeneration(createTree(n11, n12, n21, n22), depth));
+        val nw = node.nw
+        val ne = node.ne
+        val sw = node.sw
+        val se = node.se
+        depth += 1
+        val n00 = nodeQuickNextGeneration(nw, depth)
+        val n01 = nodeQuickNextGeneration(
+            createTree(nw!!.ne, ne!!.nw, nw.se, ne.sw),
+            depth
+        )
+        val n02 = nodeQuickNextGeneration(ne, depth)
+        val n10 = nodeQuickNextGeneration(
+            createTree(nw.sw, nw.se, sw!!.nw, sw.ne),
+            depth
+        )
+        val n11 = nodeQuickNextGeneration(
+            createTree(nw.se, ne.sw, sw.ne, se!!.nw),
+            depth
+        )
+        val n12 = nodeQuickNextGeneration(
+            createTree(ne.sw, ne.se, se.nw, se.ne),
+            depth
+        )
+        val n20 = nodeQuickNextGeneration(sw, depth)
+        val n21 = nodeQuickNextGeneration(
+            createTree(sw.ne, se.nw, sw.se, se.sw),
+            depth
+        )
+        val n22 = nodeQuickNextGeneration(se, depth)
+        return createTree(
+            nodeQuickNextGeneration(createTree(n00, n01, n10, n11), depth),
+            nodeQuickNextGeneration(createTree(n01, n02, n11, n12), depth),
+            nodeQuickNextGeneration(createTree(n10, n11, n20, n21), depth),
+            nodeQuickNextGeneration(createTree(n11, n12, n21, n22), depth)
+        ).also { node.quickCache = it }
     }
 
-   public Bounds getRootBounds() {
-        if (root.population.equals(BigInteger.ZERO)) {
-            return new Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
+    val rootBounds: Bounds
+        get() {
+            if (root!!.population == BigInteger.ZERO) {
+                return Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
+            }
+
+            // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
+            val offset = pow2(root!!.level - 1)
+            val bounds = Bounds(offset!!, offset, offset.negate(), offset.negate())
+            nodeGetBoundary(
+                root, offset.negate(), offset.negate(),
+                MASK_TOP or MASK_LEFT or MASK_BOTTOM or MASK_RIGHT, bounds
+            )
+            return bounds
         }
 
-       // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
-       BigInteger offset = pow2(root.level-1);
-
-       Bounds bounds = new Bounds(offset, offset, offset.negate(), offset.negate());
-
-       nodeGetBoundary(root, offset.negate(), offset.negate(),
-                MASK_TOP | MASK_LEFT | MASK_BOTTOM | MASK_RIGHT, bounds);
-
-       return bounds;
-    }
-
-    private void nodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary) {
-        if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
-            return;
+    private fun nodeGetBoundary(node: Node?, left: BigInteger, top: BigInteger, findMask: Int, boundary: Bounds) {
+        if (node!!.population == BigInteger.ZERO || findMask == 0) {
+            return
         }
-
         if (node.level == 0) {
-                boundary.left = boundary.left.min(left);
-                boundary.right = boundary.right.max(left);
-                boundary.top = boundary.top.min(top);
-                boundary.bottom = boundary.bottom.max(top);
+            boundary.left = boundary.left.min(left)
+            boundary.right = boundary.right.max(left)
+            boundary.top = boundary.top.min(top)
+            boundary.bottom = boundary.bottom.max(top)
         } else {
-            BigInteger offset = pow2(node.level - 1);
-            BigInteger doubledOffset = pow2(node.level);
-
-            if (left.compareTo(boundary.left) >= 0
-                    && left.add(doubledOffset).compareTo(boundary.right) <= 0 &&
-                    top.compareTo(boundary.top) >= 0
-                    && top.add(doubledOffset).compareTo(boundary.bottom) <= 0) {
+            val offset = pow2(node.level - 1)
+            val doubledOffset = pow2(node.level)
+            if (left.compareTo(boundary.left) >= 0 && left.add(doubledOffset)
+                    .compareTo(boundary.right) <= 0 && top.compareTo(boundary.top) >= 0 && top.add(doubledOffset)
+                    .compareTo(boundary.bottom) <= 0
+            ) {
                 // This square is already inside the found boundary
-                return;
+                return
             }
-
-            int findNW = findMask;
-            int findSW = findMask;
-            int findNE = findMask;
-            int findSE = findMask;
-
-            if (!node.nw.population.equals(BigInteger.ZERO)) {
-                findSW &= ~MASK_TOP;
-                findNE &= ~MASK_LEFT;
-                findSE &= ~(MASK_TOP | MASK_LEFT);
+            var findNW = findMask
+            var findSW = findMask
+            var findNE = findMask
+            var findSE = findMask
+            if (node.nw!!.population != BigInteger.ZERO) {
+                findSW = findSW and MASK_TOP.inv()
+                findNE = findNE and MASK_LEFT.inv()
+                findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
             }
-            if (!node.sw.population.equals(BigInteger.ZERO)) {
-                findSE &= ~MASK_LEFT;
-                findNW &= ~MASK_BOTTOM;
-                findNE &= ~(MASK_BOTTOM | MASK_LEFT);
+            if (node.sw!!.population != BigInteger.ZERO) {
+                findSE = findSE and MASK_LEFT.inv()
+                findNW = findNW and MASK_BOTTOM.inv()
+                findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
             }
-            if (!node.ne.population.equals(BigInteger.ZERO)) {
-                findNW &= ~MASK_RIGHT;
-                findSE &= ~MASK_TOP;
-                findSW &= ~(MASK_TOP | MASK_RIGHT);
+            if (node.ne!!.population != BigInteger.ZERO) {
+                findNW = findNW and MASK_RIGHT.inv()
+                findSE = findSE and MASK_TOP.inv()
+                findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
             }
-            if (!node.se.population.equals(BigInteger.ZERO)) {
-                findSW &= ~MASK_RIGHT;
-                findNE &= ~MASK_BOTTOM;
-                findNW &= ~(MASK_BOTTOM | MASK_RIGHT);
+            if (node.se!!.population != BigInteger.ZERO) {
+                findSW = findSW and MASK_RIGHT.inv()
+                findNE = findNE and MASK_BOTTOM.inv()
+                findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
             }
-
-            nodeGetBoundary(node.nw, left, top, findNW, boundary);
-            nodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary);
-            nodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary);
-            nodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary);
+            nodeGetBoundary(node.nw, left, top, findNW, boundary)
+            nodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary)
+            nodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary)
+            nodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary)
         }
     }
 
-    private void newNodeGetBoundary(Node node, BigInteger left, BigInteger top, int findMask, Bounds  boundary, Object lock) {
-        if (node.population.equals(BigInteger.ZERO) || findMask == 0) {
-            return;
+    private fun newNodeGetBoundary(
+        node: Node?,
+        left: BigInteger,
+        top: BigInteger,
+        findMask: Int,
+        boundary: Bounds,
+        lock: Any
+    ) {
+        if (node!!.population == BigInteger.ZERO || findMask == 0) {
+            return
         }
-
         if (node.level == 0) {
-            synchronized (lock) {
-                boundary.left = boundary.left.min(left);
-                boundary.right = boundary.right.max(left);
-                boundary.top = boundary.top.min(top);
-                boundary.bottom = boundary.bottom.max(top);
+            synchronized(lock) {
+                boundary.left = boundary.left.min(left)
+                boundary.right = boundary.right.max(left)
+                boundary.top = boundary.top.min(top)
+                boundary.bottom = boundary.bottom.max(top)
             }
         } else {
-            BigInteger offset = pow2(node.level - 1);
-
-            if (left.compareTo(boundary.left) >= 0
-                    && left.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.right) <= 0 &&
-                    top.compareTo(boundary.top) >= 0
-                    && top.add(offset.multiply(BigInteger.valueOf(2))).compareTo(boundary.bottom) <= 0) {
+            val offset = pow2(node.level - 1)
+            if (left.compareTo(boundary.left) >= 0 && left.add(offset!!.multiply(BigInteger.valueOf(2)))
+                    .compareTo(boundary.right) <= 0 && top.compareTo(boundary.top) >= 0 && top.add(
+                    offset.multiply(BigInteger.valueOf(2))
+                ).compareTo(boundary.bottom) <= 0
+            ) {
                 // This square is already inside the found boundary
-                return;
+                return
             }
+            var findNW = findMask
+            var findSW = findMask
+            var findNE = findMask
+            var findSE = findMask
+            if (node.nw!!.population != BigInteger.ZERO) {
+                findSW = findSW and MASK_TOP.inv()
+                findNE = findNE and MASK_LEFT.inv()
+                findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
+            }
+            if (node.sw!!.population != BigInteger.ZERO) {
+                findSE = findSE and MASK_LEFT.inv()
+                findNW = findNW and MASK_BOTTOM.inv()
+                findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
+            }
+            if (node.ne!!.population != BigInteger.ZERO) {
+                findNW = findNW and MASK_RIGHT.inv()
+                findSE = findSE and MASK_TOP.inv()
+                findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
+            }
+            if (node.se!!.population != BigInteger.ZERO) {
+                findSW = findSW and MASK_RIGHT.inv()
+                findNE = findNE and MASK_BOTTOM.inv()
+                findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
+            }
+            newNodeGetBoundary(node.nw, left, top, findNW, boundary, lock)
+            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, lock)
+            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, lock)
+            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, lock)
+        }
+    }
 
-            int findNW = findMask;
-            int findSW = findMask;
-            int findNE = findMask;
-            int findSE = findMask;
+    companion object {
+        private const val LOAD_FACTOR = 0.95
+        private const val INITIAL_SIZE = 16
 
-            if (!node.nw.population.equals(BigInteger.ZERO)) {
-                findSW &= ~MASK_TOP;
-                findNE &= ~MASK_LEFT;
-                findSE &= ~(MASK_TOP | MASK_LEFT);
-            }
-            if (!node.sw.population.equals(BigInteger.ZERO)) {
-                findSE &= ~MASK_LEFT;
-                findNW &= ~MASK_BOTTOM;
-                findNE &= ~(MASK_BOTTOM | MASK_LEFT);
-            }
-            if (!node.ne.population.equals(BigInteger.ZERO)) {
-                findNW &= ~MASK_RIGHT;
-                findSE &= ~MASK_TOP;
-                findSW &= ~(MASK_TOP | MASK_RIGHT);
-            }
-            if (!node.se.population.equals(BigInteger.ZERO)) {
-                findSW &= ~MASK_RIGHT;
-                findNE &= ~MASK_BOTTOM;
-                findNW &= ~(MASK_BOTTOM | MASK_RIGHT);
-            }
+        // this is extremely large but can be maybe reached if you fix problems with
+        // nodeQuickNextGeneration
+        // going to try a maximum universe size of 1024 with a new drawing scheme that relies
+        // on calculating relating a viewport to the level being drawn and relies on the max double value
+        // the largest level this can support would be  (from Wolfram)  "input": "Floor[Log2[1.8*10^308]]" "output": "1024"
+        private const val UNIVERSE_LEVEL_LIMIT = 1024
+        private const val HASHMAP_LIMIT = 30
+        private const val MASK_LEFT = 1
+        private const val MASK_TOP = 2
+        private const val MASK_RIGHT = 4
+        private const val MASK_BOTTOM = 8
+        private val _powers = arrayOfNulls<BigInteger>(UNIVERSE_LEVEL_LIMIT)
 
-            newNodeGetBoundary(node.nw, left, top, findNW, boundary, lock);
-            newNodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary, lock);
-            newNodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary, lock);
-            newNodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary, lock);
+        init { // the size of the MathContext
+            _powers[0] = BigInteger.ONE
+            for (i in 1 until UNIVERSE_LEVEL_LIMIT) {
+                _powers[i] = _powers[i - 1]!!.multiply(BigInteger.TWO)
+            }
+        }
+
+        // return the cached power of 2 - for performance reasons
+        fun pow2(x: Int): BigInteger? {
+            return if (x >= UNIVERSE_LEVEL_LIMIT) {
+                BigInteger.valueOf(2).pow(UNIVERSE_LEVEL_LIMIT)
+            } else _powers[x]
         }
     }
 }

@@ -20,7 +20,7 @@ public class Patterning extends PApplet {
     private LifeUniverse life;
     private DrawRateManager drawRateManager;
     private ComplexCalculationHandler<Integer> complexCalculationHandlerSetStep;
-    private ComplexCalculationHandler<Void> complexCalculationHandlerNextGeneration;
+    private ComplexCalculationHandler<Integer> complexCalculationHandlerNextGeneration;
     private final MouseEventManager mouseEventManager = MouseEventManager.getInstance();
     private PatternDrawer drawer;
     // used to control dragging the image around the screen with the mouse
@@ -164,8 +164,10 @@ public class Patterning extends PApplet {
         if (!running)
             return;
 
+
         if (shouldStartComplexCalculationNextGeneration()) {
-            complexCalculationHandlerNextGeneration.startCalculation(null);
+            int dummy = 0;
+            complexCalculationHandlerNextGeneration.startCalculation(dummy);
         }
 
         if (running && singleStepMode)
@@ -366,13 +368,13 @@ public class Patterning extends PApplet {
     // or get a random one from the well...
     public void destroyAndCreate() {
 
-        ComplexCalculationHandler.lock();
+        ComplexCalculationHandler.Companion.lock();
         try {
 
             instantiateLifeform();
 
         } finally {
-            ComplexCalculationHandler.unlock();
+            ComplexCalculationHandler.Companion.unlock();
         }
     }
 

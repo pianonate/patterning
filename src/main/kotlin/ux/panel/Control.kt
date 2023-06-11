@@ -18,6 +18,10 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
 
+    open fun afterInit() {
+        // todo: hack for ToggleIconControl which eventually we'll fix
+    }
+
     init {
         callback = builder.callback
         size = builder.size
@@ -27,7 +31,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         icon = loadIcon(builder.iconName)
         val keyCombos = callback.toString()
         hoverMessage = callback.getUsageText() + theme.shortcutParenStart + keyCombos + theme.shortcutParenEnd
+        this.afterInit()
     }
+
 
     protected fun loadIcon(iconName: String): PImage {
         val icon = panelBuffer.parent.loadImage(theme.iconPath + iconName)
@@ -152,7 +158,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
 
         // if the text won't display, make it possible to display
-        val screenWidth = localParentPanel.drawingInformer.pGraphics.width
+        val screenWidth = localParentPanel.drawingInformer.supplyPGraphics().width
         if (hoverText!!.position!!.x + hoverText.width > screenWidth) {
             hoverText.position!!.x = (screenWidth - hoverText.width).toFloat()
         }
@@ -176,8 +182,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
     }
 
+    protected open fun getCurrentIcon(): PImage {
+        return icon
+    }
+
     private fun drawIcon() {
-        val thisIcon = icon
+        val thisIcon = getCurrentIcon()
         val x = (width - thisIcon.width).toFloat() / 2
         val y = (height - thisIcon.height).toFloat() / 2
         panelBuffer.image(thisIcon, x, y)

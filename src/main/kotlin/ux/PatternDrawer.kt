@@ -293,8 +293,8 @@ class PatternDrawer(
 
     }
 
-    private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
-        node.population.takeIf { it > BigInteger.ZERO } ?: return
+    private fun drawNode(node: Node?, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
+        node!!.population.takeIf { it > BigInteger.ZERO } ?: return
 
         val leftWithOffset = left + canvasOffsetX
         val topWithOffset = top + canvasOffsetY
@@ -380,7 +380,7 @@ class PatternDrawer(
             stroke(200)
             strokeWeight(1f)
             rect(
-                screenBounds.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
+                screenBounds!!.leftToFloat(), screenBounds.topToFloat(), screenBounds.rightToFloat(),
                 screenBounds.bottomToFloat()
             )
             popStyle()
@@ -425,7 +425,7 @@ class PatternDrawer(
                 clear()
             }
 
-            val size = BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cell.widthBigDecimal, mc)
+            val size = BigDecimal(LifeUniverse.pow2(node!!.level - 1), mc).multiply(cell.widthBigDecimal, mc)
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
             drawBounds(life)
 

@@ -1,125 +1,113 @@
-package patterning;
+package patterning
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Random;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.stream.Collectors;
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.net.URISyntaxException
+import java.net.URL
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.*
+import java.util.jar.JarFile
+import java.util.stream.Collectors
 
-public class ResourceManager {
-
-    public static String RLE_DIRECTORY = "rle";
-
-    private static ResourceManager instance;
-
-    private ResourceManager() {}
-
-    public static ResourceManager getInstance() {
-        if (instance == null) {
-            instance = new ResourceManager();
-        }
-        return instance;
-    }
-
-
-    public String getRandomResourceAsString(String directoryName) throws IOException, URISyntaxException {
-        List<String> files = getResourceFilePaths(directoryName);
+class ResourceManager private constructor() {
+    @Throws(IOException::class, URISyntaxException::class)
+    fun getRandomResourceAsString(directoryName: String): String {
+        val files = getResourceFilePaths(directoryName)
         if (files.isEmpty()) {
-            throw new IOException("No files found in directory: " + directoryName);
+            throw IOException("No files found in directory: $directoryName")
         }
-        String randomFile = files.get(new Random().nextInt(files.size()));
-        return getResourceAsString(randomFile);
+        val randomFile = files[Random().nextInt(files.size)]
+        return getResourceAsString(randomFile)
     }
 
-
-    private List<String> getResourceFilePaths(String directoryName) throws IOException, URISyntaxException {
-        URL url = getClassLoader().getResource(directoryName);
-        if (url == null) {
-            throw new IOException("Directory not found: " + directoryName);
+    @Throws(IOException::class, URISyntaxException::class)
+    private fun getResourceFilePaths(directoryName: String): List<String> {
+        val url = classLoader.getResource(directoryName) ?: throw IOException("Directory not found: $directoryName")
+        return when (url.protocol) {
+            "jar" -> getResourceFilePathsFromJar(url, directoryName)
+            "file" -> getResourceFilePathsFromFileSystem(url, directoryName)
+            else -> throw IOException("Cannot list files for URL $url")
         }
-
-        return switch (url.getProtocol()) {
-            case "jar" -> getResourceFilePathsFromJar(url, directoryName);
-            case "file" -> getResourceFilePathsFromFileSystem(url, directoryName);
-            default -> throw new IOException("Cannot list files for URL " + url);
-        };
     }
 
-    private List<String> getResourceFilePathsFromJar(URL url, String directoryName) throws IOException {
-        String dirPath = url.getPath();
-        String jarPath = dirPath.substring(5, dirPath.indexOf("!")); // strip out only the JAR file
-        List<String> filenames = new ArrayList<>();
-
-        try (JarFile jar = new JarFile(URLDecoder.decode(jarPath, StandardCharsets.UTF_8))) {
-            Enumeration<JarEntry> entries = jar.entries(); // gives ALL entries in jar
-            String matchPath = directoryName + "/";
+    @Throws(IOException::class)
+    private fun getResourceFilePathsFromJar(url: URL, directoryName: String): List<String> {
+        val dirPath = url.path
+        val jarPath = dirPath.substring(5, dirPath.indexOf("!")) // strip out only the JAR file
+        val filenames: MutableList<String> = ArrayList()
+        JarFile(URLDecoder.decode(jarPath, StandardCharsets.UTF_8)).use { jar ->
+            val entries = jar.entries() // gives ALL entries in jar
+            val matchPath = "$directoryName/"
             while (entries.hasMoreElements()) {
-                String name = entries.nextElement().getName();
+                val name = entries.nextElement().name
                 if (name.startsWith(matchPath)) { // filter according to the directory
-                    String filename = name.substring(matchPath.length());
+                    val filename = name.substring(matchPath.length)
                     if (!filename.isEmpty()) { // Ignore directory
-                        filenames.add(directoryName + "/" + filename);
+                        filenames.add("$directoryName/$filename")
                     }
                 }
             }
         }
-
-        return filenames;
+        return filenames
     }
 
-    private List<String> getResourceFilePathsFromFileSystem(URL url, String directoryName) throws IOException, URISyntaxException {
-        Path dirPath = Paths.get(url.toURI());
-        List<String> filenames = new ArrayList<>();
-
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath)) {
-            for (Path path : stream) {
+    @Throws(IOException::class, URISyntaxException::class)
+    private fun getResourceFilePathsFromFileSystem(url: URL, directoryName: String): List<String> {
+        val dirPath = Paths.get(url.toURI())
+        val filenames: MutableList<String> = ArrayList()
+        Files.newDirectoryStream(dirPath).use { stream ->
+            for (path in stream) {
                 if (!Files.isDirectory(path)) { // Ignore subdirectories
-                    filenames.add(directoryName + "/" + path.getFileName().toString());
+                    filenames.add(directoryName + "/" + path.fileName.toString())
                 }
             }
         }
-
-        return filenames;
+        return filenames
     }
 
-    private String getResourceAsString(String resourceName) throws IOException {
-        try (InputStream is = getClassLoader().getResourceAsStream(resourceName)) {
-            if (is == null) {
-                throw new IOException("Resource not found: " + resourceName);
+    @Throws(IOException::class)
+    private fun getResourceAsString(resourceName: String): String {
+        classLoader.getResourceAsStream(resourceName).use { `is` ->
+            if (`is` == null) {
+                throw IOException("Resource not found: $resourceName")
             }
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-                return reader.lines().collect(Collectors.joining("\n"));
+            BufferedReader(InputStreamReader(`is`)).use { reader ->
+                return reader.lines().collect(Collectors.joining("\n"))
             }
         }
     }
 
-    private ClassLoader getClassLoader() {
-        return ResourceManager.class.getClassLoader();
-    }
+    private val classLoader: ClassLoader
+        private get() = ResourceManager::class.java.classLoader
 
-    public String getResourceAtFileIndexAsString(String directoryName, int number) throws IOException, URISyntaxException {
-        List<String> files = getResourceFilePaths(directoryName);
+    @Throws(IOException::class, URISyntaxException::class)
+    fun getResourceAtFileIndexAsString(directoryName: String, number: Int): String {
+        var number = number
+        val files = getResourceFilePaths(directoryName)
         if (files.isEmpty()) {
-            throw new IOException("No files found in directory: " + directoryName);
+            throw IOException("No files found in directory: $directoryName")
         }
-        if (files.size() < number){
-            number = files.size();
+        if (files.size < number) {
+            number = files.size
         }
+        return getResourceAsString(files[number - 1])
+    }
 
-        return getResourceAsString(files.get(number -1));
+    companion object {
+        @JvmField
+        var RLE_DIRECTORY = "rle"
+        @JvmStatic
+        var instance: ResourceManager? = null
+            get() {
+                if (field == null) {
+                    field = ResourceManager()
+                }
+                return field
+            }
+            private set
     }
 }

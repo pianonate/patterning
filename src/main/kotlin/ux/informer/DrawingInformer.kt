@@ -7,7 +7,7 @@ class DrawingInformer(
     private val resizedSupplier: ResizedSupplier,
     private val drawingSupplier: DrawingSupplier
 ) : DrawingInfoSupplier {
-    override fun getPGraphics(): PGraphics? {
+    override fun supplyPGraphics(): PGraphics {
         return graphicsSupplier.get()
     }
 

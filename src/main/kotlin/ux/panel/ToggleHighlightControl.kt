@@ -1,42 +1,30 @@
-package ux.panel;
+package ux.panel
 
-import actions.KeyCallback;
-import actions.KeyObservable;
-import org.jetbrains.annotations.NotNull;
-import ux.informer.DrawingInfoSupplier;
+import actions.KeyCallback
+import actions.KeyObservable
+import ux.informer.DrawingInfoSupplier
 
-public class ToggleHighlightControl extends Control {
-    protected ToggleHighlightControl(Builder builder) {
-        super(builder);
+class ToggleHighlightControl protected constructor(builder: Builder?) : Control(
+    builder!!
+) {
+    override fun onMouseReleased() {
+        super.onMouseReleased()
+        isHighlightFromKeypress = !isHighlightFromKeypress
     }
 
-    @Override
-    public void onMouseReleased() {
-        super.onMouseReleased();
-        isHighlightFromKeypress = !isHighlightFromKeypress;
-    }
-
-    @Override
-    public void notifyKeyPress(@NotNull KeyObservable observer) {
+    override fun notifyKeyPress(observer: KeyObservable) {
         // Specific behavior for ToggleHighlightControl
-        isHighlightFromKeypress = !isHighlightFromKeypress;
+        isHighlightFromKeypress = !isHighlightFromKeypress
     }
 
-    public static class Builder extends Control.Builder {
-
-        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, String iconName, int size) {
-            super(drawingInformer, callback, iconName, size);
+    class Builder(drawingInformer: DrawingInfoSupplier?, callback: KeyCallback?, iconName: String?, size: Int) :
+        Control.Builder(drawingInformer, callback!!, iconName!!, size) {
+        override fun build(): ToggleHighlightControl? {
+            return ToggleHighlightControl(this)
         }
 
-        @Override
-        public ToggleHighlightControl build() {
-            return new ToggleHighlightControl(this);
+        override fun self(): Builder {
+            return this
         }
-
-        @Override
-        public Builder self() {
-            return this;
-        }
-
     }
 }

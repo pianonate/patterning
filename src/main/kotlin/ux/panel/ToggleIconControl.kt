@@ -1,93 +1,80 @@
-package ux.panel;
+package ux.panel
 
-import actions.KeyCallback;
-import actions.KeyObservable;
-import processing.core.PImage;
-import ux.UXThemeManager;
-import ux.informer.DrawingInfoSupplier;
+import actions.KeyCallback
+import actions.KeyObservable
+import processing.core.PImage
+import ux.UXThemeManager.Companion.instance
+import ux.informer.DrawingInfoSupplier
+import java.util.*
 
-import java.util.Timer;
-import java.util.TimerTask;
+class ToggleIconControl(builder: Builder) : Control(builder) {
+    private var toggledIcon // right now only used with play / pause
+            : PImage
+    private var iconToggled = false
+    private var singleMode = false
+    private lateinit var currentIcon: PImage
+    private var modeChangeCallback: KeyCallback
 
-public class ToggleIconControl extends Control {
-    PImage toggledIcon; // right now only used with play / pause
-    boolean iconToggled = false;
-
-    boolean singleMode = false;
-    PImage currentIcon;
-
-    KeyCallback modeChangeCallback;
-
-    protected ToggleIconControl(Builder builder) {
-        super(builder);
-        this.currentIcon = icon;
-        this.toggledIcon = loadIcon(builder.toggledIconName);
-        this.modeChangeCallback = builder.modeChangeCallback;
-        modeChangeCallback.addObserver(this);
+    init {
+        toggledIcon = loadIcon(builder.toggledIconName)
+        modeChangeCallback = builder.modeChangeCallback
+        modeChangeCallback.addObserver(this)
     }
 
-    @Override
-    protected PImage getIcon() {
-        return iconToggled ? toggledIcon : icon;
+    override fun afterInit() {
+        currentIcon = icon
     }
 
-    @Override
-    public void notifyKeyPress(KeyObservable observer) {
+    override fun getCurrentIcon(): PImage {
+        return if (iconToggled) toggledIcon else super.getCurrentIcon()
+    }
+
+    override fun notifyKeyPress(observer: KeyObservable) {
         if (observer.invokeModeChange()) {
-            toggleMode();
-            if (!iconToggled)
-                toggleIcon();
-        }
-        else
-            toggleIcon();
+            toggleMode()
+            if (!iconToggled) toggleIcon()
+        } else toggleIcon()
     }
 
-    @Override
-    public void onMouseReleased() {
-        super.onMouseReleased();
-        toggleIcon();
+    override fun onMouseReleased() {
+        super.onMouseReleased()
+        toggleIcon()
     }
 
-    private void toggleIcon() {
-        currentIcon = (iconToggled) ? icon : toggledIcon;
-        iconToggled = !iconToggled;
-
+    private fun toggleIcon() {
+        currentIcon = if (iconToggled) icon else toggledIcon
+        iconToggled = !iconToggled
         if (singleMode && !iconToggled) {
-            new Timer().schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            toggleIcon();
-                        }
-                    },
-                    UXThemeManager.getInstance().getSingleModeToggleDuration()
-            );
+            Timer().schedule(
+                object : TimerTask() {
+                    override fun run() {
+                        toggleIcon()
+                    }
+                },
+                instance.singleModeToggleDuration
+                    .toLong()
+            )
         }
     }
 
-    private void toggleMode() {
-        singleMode = !singleMode;
+    private fun toggleMode() {
+        singleMode = !singleMode
     }
 
-    public static class Builder extends Control.Builder {
-        private final String toggledIconName;
-        private final KeyCallback modeChangeCallback;
-
-        public Builder(DrawingInfoSupplier drawingInformer, KeyCallback callback, KeyCallback modeChangeCallback, String iconName, String tooggledIcontName, int size) {
-            super(drawingInformer, callback, iconName, size);
-            this.toggledIconName = tooggledIcontName;
-            this.modeChangeCallback = modeChangeCallback;
+    class Builder(
+        drawingInformer: DrawingInfoSupplier?,
+        callback: KeyCallback?,
+        val modeChangeCallback: KeyCallback,
+        iconName: String?,
+        val toggledIconName: String,
+        size: Int
+    ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
+        override fun self(): Builder {
+            return this
         }
 
-        @Override
-        public Builder self() {
-            return this;
+        override fun build(): ToggleIconControl {
+            return ToggleIconControl(this)
         }
-
-        @Override
-        public ToggleIconControl build() {
-            return new ToggleIconControl(this);
-        }
-
     }
 }

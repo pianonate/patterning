@@ -1,174 +1,152 @@
-package patterning;
+package patterning
 
-import processing.core.PApplet;
+import processing.core.PApplet
+import java.nio.IntBuffer
+import java.util.*
+import java.util.regex.Pattern
 
-import java.nio.IntBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+class RLEParser internal constructor(text: String) {
+    val METADATA_PREFIX = "#"
+    val MIN_BUFFER_SIZE = 64
+    val HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$"
+    val result: LifeForm
 
-public class RLEParser {
-    final String METADATA_PREFIX = "#";
-
-    final int MIN_BUFFER_SIZE = 64;
-
-    final String HEADER_PATTERN = "^x = \\d+, y = \\d+, rule.*$";
-    private  static final int MAX_BUFFER_SIZE = 1048576;
-
-    private final LifeForm lifeForm;
-
-    RLEParser(String text) throws NotLifeException {
-        lifeForm = new LifeForm();
-
-        handleMetaData(text);
-        handleHeader(text);
-        parseInstructions();
+    init {
+        result = LifeForm()
+        handleMetaData(text)
+        handleHeader(text)
+        parseInstructions()
     }
 
-    private  IntBuffer increaseBufSize(IntBuffer original) {
-        int newLength = (int) (original.capacity() * 1.5);
-        IntBuffer newBuffer = IntBuffer.allocate(newLength);
-        original.rewind();
-        newBuffer.put(original);
-        return newBuffer;
+    private fun increaseBufSize(original: IntBuffer): IntBuffer {
+        val newLength = (original.capacity() * 1.5).toInt()
+        val newBuffer = IntBuffer.allocate(newLength)
+        original.rewind()
+        newBuffer.put(original)
+        return newBuffer
     }
 
-    void parseInstructions() throws NotLifeException {
-
-        String instructions = lifeForm.instructions;
-        if (instructions.length()==0) {
-            throw new NotLifeException("no life was found in the details of the RLE");
+    @Throws(NotLifeException::class)
+    fun parseInstructions() {
+        val instructions = result.instructions
+        if (instructions.length == 0) {
+            throw NotLifeException("no life was found in the details of the RLE")
         }
-
-        int initialSize = MIN_BUFFER_SIZE;
-
-        if (lifeForm.width > 0 && lifeForm.height > 0) {
-            int size = lifeForm.width * lifeForm.height;
-
+        var initialSize = MIN_BUFFER_SIZE
+        if (result.width > 0 && result.height > 0) {
+            val size = result.width * result.height
             if (size > 0) {
-                float DENSITY_ESTIMATE = 1.5f;
-                initialSize = (int) Math.max(initialSize, size * DENSITY_ESTIMATE);
-                initialSize = Math.min(MAX_BUFFER_SIZE, initialSize);
+                val DENSITY_ESTIMATE = 1.5f
+                initialSize = Math.max(initialSize.toFloat(), size * DENSITY_ESTIMATE).toInt()
+                initialSize = Math.min(MAX_BUFFER_SIZE, initialSize)
             }
         }
-
-        int count = 1, x = 0, y = 0, aliveCount = 0, len = instructions.length();
-        boolean inNumber = false;
-        char chr;
-        IntBuffer fieldX = IntBuffer.allocate(initialSize);
-        IntBuffer fieldY = IntBuffer.allocate(initialSize);
-
-        for (int pos = 0; pos < len; pos++) {
-            chr = instructions.charAt(pos);
-
+        var count = 1
+        var x = 0
+        var y = 0
+        var aliveCount = 0
+        val len = instructions.length
+        var inNumber = false
+        var chr: Char
+        var fieldX = IntBuffer.allocate(initialSize)
+        var fieldY = IntBuffer.allocate(initialSize)
+        for (pos in 0 until len) {
+            chr = instructions[pos]
             if (chr >= '0' && chr <= '9') {
                 // stay in a number until you're not in a number anymore
                 // once you leave the number you'll either be adding dead, alive or rows (y is the height - counts the rows)
                 if (inNumber) {
                     // every position in a number multiplies its place by 10 - clever
-                    count *= 10;
-                    count += chr - '0';
+                    count *= 10
+                    count += chr.code - '0'.code
                 } else {
-                    count = chr - '0';
-                    inNumber = true;
+                    count = chr.code - '0'.code
+                    inNumber = true
                 }
             } else {
                 if (chr == 'b') {
-                    x += count;
-                } else if ((chr >= 'A' && chr <= 'Z') || (chr >= 'a' && chr < 'z')) {
+                    x += count
+                } else if (chr >= 'A' && chr <= 'Z' || chr >= 'a' && chr < 'z') {
                     if (aliveCount + count > fieldX.capacity()) {
-                        fieldX = increaseBufSize(fieldX);
-                        fieldY = increaseBufSize(fieldY);
+                        fieldX = increaseBufSize(fieldX)
+                        fieldY = increaseBufSize(fieldY)
                     }
-
                     while (count-- > 0) {
-                        fieldX.put(aliveCount, x++);
-                        fieldY.put(aliveCount, y);
-                        aliveCount++;
+                        fieldX.put(aliveCount, x++)
+                        fieldY.put(aliveCount, y)
+                        aliveCount++
                     }
                 } else if (chr == '$') {
                     // skipping rows
-                    y += count;
-                    x = 0;
+                    y += count
+                    x = 0
                 } else if (chr == '!') {
-                    break;
+                    break
                 }
-
-                count = 1;
-                inNumber = false;
+                count = 1
+                inNumber = false
             }
         }
-
-        lifeForm.field_x= fieldX.slice(0, aliveCount);
-        lifeForm.field_y = fieldY.slice(0, aliveCount);
+        result.field_x = fieldX.slice(0, aliveCount)
+        result.field_y = fieldY.slice(0, aliveCount)
     }
 
-    void handleHeader(String text) throws NotLifeException {
-
-        Pattern compiledPattern = Pattern.compile(HEADER_PATTERN, Pattern.MULTILINE);
-        Matcher matcher = compiledPattern.matcher(text);
-
-        String line;
+    @Throws(NotLifeException::class)
+    fun handleHeader(text: String) {
+        val compiledPattern = Pattern.compile(HEADER_PATTERN, Pattern.MULTILINE)
+        val matcher = compiledPattern.matcher(text)
+        val line: String
         if (matcher.find()) {
-            line = matcher.group();
-            lifeForm.instructions = text.substring(matcher.end());
+            line = matcher.group()
+            result.instructions = text.substring(matcher.end())
         } else {
-            throw new NotLifeException("can't find the header line");
+            throw NotLifeException("can't find the header line")
         }
-
-        String[] header = PApplet.split(line, ", ");
-
-        for (String headerLine : header) {
-
-            String[] components = PApplet.split(headerLine, ' ');
-
-            String component = components[0];
-            String value = components[2];
-
-            switch (component) {
-                case "x" -> lifeForm.width = PApplet.parseInt(value);
-                case "y" -> lifeForm.height = PApplet.parseInt(value);
-                case "rule" -> {
+        val header = PApplet.split(line, ", ")
+        for (headerLine in header) {
+            val components = PApplet.split(headerLine, ' ')
+            val component = components[0]
+            val value = components[2]
+            when (component) {
+                "x" -> result.width = PApplet.parseInt(value)
+                "y" -> result.height = PApplet.parseInt(value)
+                "rule" -> {
                     // parseRuleRLE ensures that the if there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
                     // that's what the true and false are for here
-                    lifeForm.rule_s = parseRuleRLE(value, true);
-                    lifeForm.rule_b = parseRuleRLE(value, false);
+                    result.rule_s = parseRuleRLE(value, true)
+                    result.rule_b = parseRuleRLE(value, false)
 
                     // add the rule used to the comments list and also to the result object
                     // in a consistent manner
-                    String readable = rule2str(lifeForm.rule_s, lifeForm.rule_b);
-                    lifeForm.comments.add("\nRule: " + readable + "\n");
-                    lifeForm.rule = readable;
+                    val readable = rule2str(result.rule_s, result.rule_b)
+                    result.comments.add("\nRule: $readable\n")
+                    result.rule = readable
                 }
-                default ->
-                    // if we got here we don't have something we know about
-                        throw new NotLifeException("invalid header: " + line);
+
+                else ->  // if we got here we don't have something we know about
+                    throw NotLifeException("invalid header: $line")
             }
         }
     }
 
-    int parseRuleRLE(String ruleStr, boolean survived) throws NotLifeException {
-        String[] rule = ruleStr.split("/");
-
-        if (rule.length < 2 || rule[1].isEmpty()) {
-            throw new NotLifeException("invalid rule: " + ruleStr);
+    @Throws(NotLifeException::class)
+    fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
+        val rule = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        if (rule.size < 2 || rule[1].isEmpty()) {
+            throw NotLifeException("invalid rule: $ruleStr")
         }
-
         if (isNumber(rule[0])) {
-            return parseRule(String.join("/", rule), survived);
+            return parseRule(java.lang.String.join("/", *rule), survived)
         }
-
-        if (Character.toLowerCase(rule[0].charAt(0)) == 'b') {
-            Collections.reverse(Arrays.asList(rule));
+        if (rule[0][0].lowercaseChar() == 'b') {
+            Collections.reverse(Arrays.asList(*rule))
         }
-
-        String parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1);
-        return parseRule(parsedRuleStr, survived);
+        val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
+        return parseRule(parsedRuleStr, survived)
     }
 
-  /* Why all the nonsense?  because the patterning.LifeUniverse uses the rules to form the eval bitmask
+    /* Why all the nonsense?  because the patterning.LifeUniverse uses the rules to form the eval bitmask
    necessary to calculate neighbors and aliveness. The rule string parked on the rule field
    is what comes out of the RLE file so just look at that if you want to debug
    
@@ -188,88 +166,83 @@ public class RLEParser {
    If all characters in the parsed string have been successfully parsed and no duplicates
    have been found, the rule variable contains a bit mask
    representing the unique integers in the string.*/
-
-    public int parseRule(String ruleStr, boolean survived) throws NotLifeException {
-
-        int rule = 0;
-        String parsed = ruleStr.split("/")[survived ? 0 : 1];
-
-        for (int i = 0; i < parsed.length(); i++) {
-            char c = parsed.charAt(i);
-
+    @Throws(NotLifeException::class)
+    fun parseRule(ruleStr: String, survived: Boolean): Int {
+        var rule = 0
+        val parsed = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[if (survived) 0 else 1]
+        for (i in 0 until parsed.length) {
+            val c = parsed[i]
             if (c < '0' || c > '9') {
-                throw new NotLifeException("not a valid rule - non digits in the rule field!: " + ruleStr);
+                throw NotLifeException("not a valid rule - non digits in the rule field!: $ruleStr")
             }
-
-            int n = c - '0';
-
-            if ((rule & (1 << n)) != 0) {
-                throw new NotLifeException("not a valid rule - you've got duplicates: " + parsed);
+            val n = c.code - '0'.code
+            if (rule and (1 shl n) != 0) {
+                throw NotLifeException("not a valid rule - you've got duplicates: $parsed")
             }
-
-            rule |= 1 << n;
+            rule = rule or (1 shl n)
         }
-
-        return rule;
+        return rule
     }
 
-/*    public String rule2strRle(int ruleS, int ruleB) {
+    /*    public String rule2strRle(int ruleS, int ruleB) {
         String rule = rule2str(ruleS, ruleB);
         String[] parts = rule.split("/");
         rule = "B" + parts[1] + "/S" + parts[0];
         return rule;
     }*/
-
-    public String rule2str(int ruleS, int ruleB) {
-        StringBuilder rule = new StringBuilder();
-
-        for (int i = 0; ruleS != 0; ruleS >>= 1, i++) {
-            if ((ruleS & 1) != 0) {
-                rule.append(i);
+    fun rule2str(ruleS: Int, ruleB: Int): String {
+        var ruleS = ruleS
+        var ruleB = ruleB
+        val rule = StringBuilder()
+        run {
+            var i = 0
+            while (ruleS != 0) {
+                if (ruleS and 1 != 0) {
+                    rule.append(i)
+                }
+                ruleS = ruleS shr 1
+                i++
             }
         }
-
-        rule.append("/");
-
-        for (int i = 0; ruleB != 0; ruleB >>= 1, i++) {
-            if ((ruleB & 1) != 0) {
-                rule.append(i);
+        rule.append("/")
+        var i = 0
+        while (ruleB != 0) {
+            if (ruleB and 1 != 0) {
+                rule.append(i)
             }
+            ruleB = ruleB shr 1
+            i++
         }
-
-        return rule.toString();
+        return rule.toString()
     }
 
-    boolean isNumber(String test) {
-        try {
-            Integer.parseInt(test);
-            return true;
-        }
-        catch (NumberFormatException e) {
-            return false;
+    fun isNumber(test: String): Boolean {
+        return try {
+            test.toInt()
+            true
+        } catch (e: NumberFormatException) {
+            false
         }
     }
 
-    void handleMetaData(String text) throws NotLifeException {
-        String[] lines = PApplet.split(text, '\n');
-
-        for (String line : lines) {
-            if (line.startsWith(METADATA_PREFIX) && line.length()>1) {
-
-                char secondChar = line.charAt(1);
-                String remainder = line.substring(2).trim();
-
-                switch (secondChar) {
-                    case 'N' -> lifeForm.title = remainder;
-                    case 'O' -> lifeForm.author = remainder;
-                    case 'C', 'D' -> lifeForm.comments.add(remainder);
-                    default -> throw new NotLifeException("unknown metadata type: " + line);
+    @Throws(NotLifeException::class)
+    fun handleMetaData(text: String?) {
+        val lines = PApplet.split(text, '\n')
+        for (line in lines) {
+            if (line.startsWith(METADATA_PREFIX) && line.length > 1) {
+                val secondChar = line[1]
+                val remainder = line.substring(2).trim { it <= ' ' }
+                when (secondChar) {
+                    'N' -> result.title = remainder
+                    'O' -> result.author = remainder
+                    'C', 'D' -> result.comments.add(remainder)
+                    else -> throw NotLifeException("unknown metadata type: $line")
                 }
             }
         }
     }
 
-    LifeForm getResult() {
-        return lifeForm;
+    companion object {
+        private const val MAX_BUFFER_SIZE = 1048576
     }
 }

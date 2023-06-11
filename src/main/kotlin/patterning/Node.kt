@@ -1,126 +1,89 @@
-package patterning;
+package patterning
 
-import java.math.BigInteger;
-import java.util.HashSet;
+import java.math.BigInteger
 
-public class Node {
-
-    private final static HashSet<Node> changedNodes = new HashSet<>();
-
-    public static void addChanged(Node node) {
-        changedNodes.add(node);
-    }
-
-    public static void clearChanged() {
-        changedNodes.clear();
-    }
-
-    private static boolean hasChanged(Node node) {
-        return changedNodes.contains(node);
-    }
-
-    public Node nw;
-    public Node ne;
-    public Node sw;
-    public Node se;
-
-    public int id;
-    public final int level;
-    public final BigInteger population;
-
-    public final int step;
-
-    public Node cache = null;
-    public Node quickCache = null;
-    public Node hashmapNext = null;
-
-    private boolean[][] binaryBitArray;
+class Node {
+    @JvmField
+    var nw: Node? = null
+    @JvmField
+    var ne: Node? = null
+    @JvmField
+    var sw: Node? = null
+    @JvmField
+    var se: Node? = null
+    @JvmField
+    var id: Int
+    @JvmField
+    val level: Int
+    @JvmField
+    val population: BigInteger
+    val step: Int
+    @JvmField
+    var cache: Node? = null
+    @JvmField
+    var quickCache: Node? = null
+    @JvmField
+    var hashmapNext: Node? = null
 
     // falseLeaf, trueLeaf constructors
-    public Node(int id, BigInteger population, int level) {
-        this.id = id;
-        this.population = population;
-        this.level = level;
-        this.step = 0;
+    constructor(id: Int, population: BigInteger, level: Int) {
+        this.id = id
+        this.population = population
+        this.level = level
+        step = 0
     }
 
-    public Node(Node nw, Node ne, Node sw, Node se, int id, int step) {
-        this.nw = nw;
-        this.ne = ne;
-        this.sw = sw;
-        this.se = se;
-        this.id = id;
-        this.step = step;
-
-        this.level = nw.level + 1;
-
-        this.population = nw.population.add(ne.population).add(sw.population).add(se.population);
+    constructor(nw: Node, ne: Node, sw: Node, se: Node, id: Int, step: Int) {
+        this.nw = nw
+        this.ne = ne
+        this.sw = sw
+        this.se = se
+        this.id = id
+        this.step = step
+        level = nw.level + 1
+        population = nw.population.add(ne.population).add(sw.population).add(se.population)
     }
 
-
-    public boolean hasChanged() {
-        return Node.hasChanged(this);
+    fun hasChanged(): Boolean {
+        return hasChanged(this)
     }
 
-    public int countNodes() {
-        int count = 1;
-
+    fun countNodes(): Int {
+        var count = 1
         if (nw != null) {
-            count += nw.countNodes();
-            count += ne.countNodes();
-            count += sw.countNodes();
-            count += se.countNodes();
+            count += nw!!.countNodes()
+            count += ne!!.countNodes()
+            count += sw!!.countNodes()
+            count += se!!.countNodes()
         }
-
-        return count;
+        return count
     }
 
-    public int countChangedNodes() {
-        int count = hasChanged() ? 1 : 0;
-
+    fun countChangedNodes(): Int {
+        var count = if (hasChanged()) 1 else 0
         if (nw != null) {
-            count += nw.countChangedNodes();
-            count += ne.countChangedNodes();
-            count += sw.countChangedNodes();
-            count += se.countChangedNodes();
+            count += nw!!.countChangedNodes()
+            count += ne!!.countChangedNodes()
+            count += sw!!.countChangedNodes()
+            count += se!!.countChangedNodes()
+        }
+        return count
+    }
+
+    companion object {
+        private val changedNodes = HashSet<Node>()
+        @JvmStatic
+        fun addChanged(node: Node) {
+            changedNodes.add(node)
         }
 
-        return count;
-    }
-
-    // you have to make sure that you don't call this on a top level node - it will puke
-    public boolean[][] getBinaryBitArray() {
-
-        if (binaryBitArray==null) {
-
-            int arraySize = (int) Math.pow(2, level);
-            binaryBitArray = new boolean[arraySize][arraySize];
-
-            fillBinaryBitArray(this, binaryBitArray, 0, 0, arraySize);
+        @JvmStatic
+        fun clearChanged() {
+            changedNodes.clear()
         }
 
-        return binaryBitArray;
-    }
-
-    public void clearBinaryBitArray() {
-        binaryBitArray = null;
-    }
-
-    private void fillBinaryBitArray(Node node, boolean[][] binaryBitArray, int x, int y, int size) {
-
-        if (node.level == 0) {
-            if (node.population.equals(BigInteger.ONE)) {
-                binaryBitArray[y][x] = true;
-            }
-            return;
+        private fun hasChanged(node: Node): Boolean {
+            return changedNodes.contains(node)
         }
-
-        int halfSize = size / 2;
-        fillBinaryBitArray(node.nw, binaryBitArray, x, y, halfSize);
-        fillBinaryBitArray(node.ne, binaryBitArray, x + halfSize, y, halfSize);
-        fillBinaryBitArray(node.sw, binaryBitArray, x, y + halfSize, halfSize);
-        fillBinaryBitArray(node.se, binaryBitArray, x + halfSize, y + halfSize, halfSize);
     }
-
-
 }

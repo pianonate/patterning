@@ -68,7 +68,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         transitionType = builder.transitionType
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
-        val parentBuffer = drawingInformer.pGraphics
+        val parentBuffer = drawingInformer.supplyPGraphics()
         panelBuffer = getPanelBuffer(parentBuffer)
         if (transitionAble) {
             transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
@@ -119,7 +119,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
 
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
-        val parentBuffer = drawingInformer.pGraphics
+        val parentBuffer = drawingInformer.supplyPGraphics()
         parentBuffer.pushStyle()
         panelBuffer.beginDraw()
         panelBuffer.pushStyle()

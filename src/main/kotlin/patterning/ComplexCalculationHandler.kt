@@ -1,57 +1,52 @@
-package patterning;
+package patterning
 
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiFunction;
+import java.util.concurrent.locks.ReentrantLock
+import java.util.function.BiFunction
 
-public class ComplexCalculationHandler<P> {
+class ComplexCalculationHandler<P>(private val method: BiFunction<P, Void?, Void>) {
+    var isCalculationInProgress = false
+        private set
+    private var parameter: P? = null
 
-    // ensure that only one calculation can be in progress at a time
-    private static final ReentrantLock lock = new ReentrantLock();
-
-    public static void lock() {
-        lock.lock();
-    }
-
-    public static void unlock() {
-        lock.unlock();
-    }
-
-    private boolean calculationInProgress = false;
-    private final BiFunction<P, Void, Void> calculationMethod;
-    private P parameter;
-
-    public ComplexCalculationHandler(BiFunction<P, Void, Void> calculationMethod) {
-        this.calculationMethod = calculationMethod;
-    }
-
-    public void startCalculation(P parameter) {
-        lock.lock();
+    fun startCalculation(parameter: P) {
+        lock()
         try {
-            if (calculationInProgress) {
-                return;
+            if (isCalculationInProgress) {
+                return
             }
-            calculationInProgress = true;
-            this.parameter = parameter;
-            new Thread(new ComplexCalculationTask()).start();
+            isCalculationInProgress = true
+            this.parameter = parameter
+            Thread(ComplexCalculationTask()).start()
         } finally {
-            lock.unlock();
+            unlock()
         }
     }
 
-    public boolean isCalculationInProgress() {
-        return calculationInProgress;
+    private inner class ComplexCalculationTask : Runnable {
+        override fun run() {
+            parameter?.let {
+                method.apply(it, null)
+            }
+            lock()
+            try {
+                isCalculationInProgress = false
+            } finally {
+                unlock()
+            }
+        }
     }
 
-    private class ComplexCalculationTask implements Runnable {
-        @Override
-        public void run() {
-            Void result = calculationMethod.apply(parameter, null);
-            lock.lock();
-            try {
-                calculationInProgress = false;
-            } finally {
-                lock.unlock();
-            }
+    companion object {
+        private val lock = ReentrantLock()
+
+        @JvmStatic
+        fun lock() {
+            lock.lock()
+        }
+
+        @JvmStatic
+        fun unlock() {
+            lock.unlock()
         }
     }
 }

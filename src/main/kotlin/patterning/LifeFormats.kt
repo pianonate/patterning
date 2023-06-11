@@ -1,12 +1,12 @@
-package patterning;
+package patterning
 
 /**
  * you exist because there are more to come
  */
-public final class LifeFormats {
-
+class LifeFormats {
     // first of many parsers
-    LifeForm parseRLE(String text) throws NotLifeException {
-        return new RLEParser(text).getResult();
+    @Throws(NotLifeException::class)
+    fun parseRLE(text: String): LifeForm {
+        return RLEParser(text).result
     }
 }

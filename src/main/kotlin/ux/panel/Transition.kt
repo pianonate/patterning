@@ -22,7 +22,7 @@ class Transition @JvmOverloads constructor(
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val UXBuffer = drawingInformer.pGraphics
+        val UXBuffer = drawingInformer.supplyPGraphics()
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {
