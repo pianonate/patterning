@@ -36,31 +36,27 @@ class KeyCombo @JvmOverloads constructor(private val keyCode: Int, private val m
 
     // later:  “␛” or better yet: ⎋ - but large enough to see - use it for closing info panels
     override fun toString(): String {
-        // Special case for Shift+=, display as +
-        if (modifiers and KeyEvent.SHIFT != 0 && processingKeyCode == '='.code) {
-            return "+"
-        }
+
         val keyTextBuilder = StringBuilder()
-        if (modifiers and KeyEvent.META != 0) {
-            keyTextBuilder.append("⌘")
+
+        when {
+            modifiers and KeyEvent.META != 0 -> keyTextBuilder.append("⌘")
+            modifiers and KeyEvent.CTRL != 0 -> keyTextBuilder.append("^")
+            modifiers and KeyEvent.SHIFT != 0 -> keyTextBuilder.append("⇧")
+            modifiers and KeyEvent.ALT != 0 -> keyTextBuilder.append("⌥")
         }
-        if (modifiers and KeyEvent.CTRL != 0) {
-            keyTextBuilder.append("^")
-        }
-        if (modifiers and KeyEvent.SHIFT != 0) {
-            keyTextBuilder.append("⇧")
-        }
-        if (modifiers and KeyEvent.ALT != 0) {
-            keyTextBuilder.append("⌥")
-        }
-        when (processingKeyCode) {
-            PApplet.UP -> keyTextBuilder.append("↑")
-            PApplet.DOWN -> keyTextBuilder.append("↓")
-            PApplet.LEFT -> keyTextBuilder.append("←")
-            PApplet.RIGHT -> keyTextBuilder.append("→")
-            32 -> keyTextBuilder.append("Space")
+
+        when {
+            //Special case for Shift+=, display as +
+            modifiers and KeyEvent.SHIFT != 0 && processingKeyCode == '='.code -> keyTextBuilder.append("+")
+            processingKeyCode == PApplet.UP -> keyTextBuilder.append("↑")
+            processingKeyCode == PApplet.DOWN -> keyTextBuilder.append("↓")
+            processingKeyCode == PApplet.LEFT -> keyTextBuilder.append("←")
+            processingKeyCode == PApplet.RIGHT -> keyTextBuilder.append("→")
+            processingKeyCode == 32 -> keyTextBuilder.append("Space")
             else -> keyTextBuilder.append(processingKeyCode.toChar())
         }
+
         return keyTextBuilder.toString()
     }
 
