@@ -371,7 +371,7 @@ class PatternDrawer(
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val screenBounds = bounds.getScreenBounds(cell.width, canvasOffsetX, canvasOffsetY)
+        val screenBounds = bounds.getScreenBounds(cell.widthBigDecimal, canvasOffsetX, canvasOffsetY)
         lifeFormBuffer.apply {
             pushStyle()
             noFill()
@@ -424,8 +424,9 @@ class PatternDrawer(
             }
 
             val size = BigDecimal(LifeUniverse.pow2(node!!.level - 1), mc).multiply(cell.widthBigDecimal, mc)
-            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
             drawBounds(life)
+            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
+
 
             lifeFormBuffer.endDraw()
             // reset the position in case you've had mouse moves

@@ -91,7 +91,12 @@ object Theme {
     var startupTextSize = 0
         private set
 
+    var currentThemeType: ThemeType = ThemeType.DARK
+        private set
+
     fun setTheme(newTheme: ThemeType) {
+        currentThemeType = newTheme
+
         val themeConstants = newTheme.themeConstants
         // colors
         _backgroundColor.setColor(themeConstants.backgroundColor)

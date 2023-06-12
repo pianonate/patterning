@@ -28,32 +28,36 @@ class Bounds @JvmOverloads constructor(
         rightDecimal = right
     }
 
-    fun getScreenBounds(cellWidth: Float, canvasOffsetX: BigDecimal, canvasOffsetY: BigDecimal): Bounds? {
-        val cacheKey = generateCacheKey(this, cellWidth, canvasOffsetX, canvasOffsetY)
+    fun getScreenBounds(cellSize: BigDecimal, canvasOffsetX: BigDecimal, canvasOffsetY: BigDecimal): Bounds? {
+        val cacheKey = generateCacheKey(this, canvasOffsetX, canvasOffsetY)
+        //val cacheKey = generateCacheKey(this)
         if (cache.containsKey(cacheKey)) {
             cacheHits++
         } else {
             cacheMisses++
-            val cellWidthDecimal = BigDecimal.valueOf(cellWidth.toDouble())
-            val leftDecimal = leftToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetX)
-            val topDecimal = topToBigDecimal().multiply(cellWidthDecimal).add(canvasOffsetY)
+            val leftDecimal = leftToBigDecimal().multiply(cellSize).add(canvasOffsetX)
+            val topDecimal = topToBigDecimal().multiply(cellSize).add(canvasOffsetY)
             val rightDecimal = rightToBigDecimal()
                 .subtract(leftToBigDecimal())
-                .multiply(cellWidthDecimal)
-                .add(cellWidthDecimal)
+                .multiply(cellSize)
+                .add(cellSize)
             val bottomDecimal = bottomToBigDecimal()
                 .subtract(topToBigDecimal())
-                .multiply(cellWidthDecimal)
-                .add(cellWidthDecimal)
+                .multiply(cellSize)
+                .add(cellSize)
             val newBounds = Bounds(topDecimal, leftDecimal, bottomDecimal, rightDecimal)
             cache[cacheKey] = newBounds
         }
         return cache[cacheKey]
     }
 
-    private fun generateCacheKey(bounds: Bounds, cellWidth: Float, offsetX: BigDecimal, offsetY: BigDecimal): String {
-        return cellWidth.toString() + "_" + offsetX + "_" + offsetY + "_" + bounds.top + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right
+    private fun generateCacheKey(bounds: Bounds, offsetX: BigDecimal, offsetY: BigDecimal): String {
+        return offsetX.toString() + "_" + offsetY + "_" + bounds.top + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right
     }
+
+/*    private fun generateCacheKey(bounds: Bounds): String {
+        return  bounds.top.toString() + "_" + bounds.left + "_" + bounds.bottom + "_" + bounds.right
+    }*/
 
     fun leftToBigDecimal(): BigDecimal {
         if (leftDecimal == null) leftDecimal = BigDecimal(left)

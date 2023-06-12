@@ -1,9 +1,21 @@
+bug: at very large universe sizes the float cell.width goes to zero on a fitbounds - let's keep it bigdecimal until it has to be converted to float
+      it only disappears when it's fitbounds
+      something you did slowed things wayyyy down - when zoomed in - so undo patterndrawer changes and see what's up
+
+bug: in speed up - always slows down first
+
+bug: toggleIcon should still highlight from keyPress as well as toggle the icon to display
+
+bug: Text disappears at bottom of screen - redo TextPanel thinking...
+
+bug: bounds is not perfect-it has to be perfect - it could be that the toInt().toFloat() is causing the cells to be off from the bounds
+     if so then drawing the bounds should do the same thing...
+
+
 todo: right now Theme has a chicken/egg situation with initializing ColorConstant objects before Theme.themeTransitionDuration is set
       so i have to call it every time when it's executing. this seems wrong.  possibly ColorConstants should be handled differently than everything else as they are the only ones that actually change each go around.  the rest are constant throughout the application execution
-todo: toggleIcon should still highlight from keyPress as well as toggle the icon to display
-todo: bug in speed up - always slows down first
+
 todo: get rid of using TextPanel for HUD - start from scratch on TextPanel...
-todo: command-W closes the window
 
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
         that each contain a left aligned name and right aligned value - Radiator
@@ -13,8 +25,6 @@ todo: create a new kind of ContainerPanel called an InformationRadiator that con
                 for now, recreate the ableton experience
                 anyone that wants to provide info to the ableton experience can implement the DetailsProvider interface
                 And the AbletonPanel will have to register an Observer/Observable relationship with the DetailsProvider
-
-
 
 todo: text box - only uses the list of lines and don't use message - too messy
 todo: capture events with javafx (or something else) to allow for trackpad manipulation of the app
@@ -85,8 +95,9 @@ todo: display pasted in metadata in a HUD section
 todo: smooth zoom - is that possible? seems to me it would have to be possible.
 todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
 todo: Add mc parser support
+
 todo: do you need to manage the size of the hashmap?
-todo: possibly simplification create an alternate implementation - extend the hashmap class and override resize method to capture the timing of the resize
+
 todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on,
         you can see the details at a much higher zoom level
 todo: save all pasted in valid RLEs in a folder. check if it's already there and if it's different.

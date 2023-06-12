@@ -44,239 +44,168 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         println(keyHandler.usageText)
     }
 
-    val callbackPause: KeyCallback = object : KeyCallback(SHORTCUT_PAUSE) {
-        override fun invokeFeature() {
-            // the encapsulation is messy to ask the drawer to stop displaying countdown text
-            // and just continue running, or toggle the running state...
-            // but CountdownText already reaches back to patterning.Patterning.run()
-            // so there aren't that many complex paths to deal with here...
-            drawer.handlePause()
-        }
-
-        override fun getUsageText(): String {
-            return "pause and play"
-        }
-    }
-    private val callbackLoadLifeForm: KeyCallback = object : KeyCallback(
-        LinkedHashSet(mutableListOf('1', '2', '3', '4', '5', '6', '7', '8', '9'))
-    ) {
-        override fun invokeFeature() {
-            patterning.numberedLifeForm
-        }
-
-        override fun getUsageText(): String {
-            return "press a # key to load one of the first 9 embedded RLE resource files"
-        }
-    }
-    val callbackDrawSlower: KeyCallback = object : KeyCallback(
-        KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)
-    ) {
-        override fun invokeFeature() {
-            DrawRateManager.instance!!.goSlower()
-        }
-
-        override fun getUsageText(): String {
-            return "slow the animation down"
-        }
-    }
-    val callbackDrawFaster: KeyCallback = object : KeyCallback(SHORTCUT_DRAW_SPEED) {
-        override fun invokeFeature() {
-            DrawRateManager.instance!!.goFaster()
-        }
-
-        override fun getUsageText(): String {
-            return "speed the animation up"
-        }
-    }
-    val callbackStepFaster: KeyCallback = object : KeyCallback(SHORTCUT_STEP_FASTER) {
-        override fun invokeFeature() {
-            patterning.handleStep(true)
-        }
-
-        override fun getUsageText(): String {
-            return "double the generations per draw"
-        }
-    }
-    val callbackStepSlower: KeyCallback = object : KeyCallback(SHORTCUT_STEP_SLOWER) {
-        override fun invokeFeature() {
-            patterning.handleStep(false)
-        }
-
-        override fun getUsageText(): String {
-            return "cut in half the generations per draw"
-        }
-    }
-    val callbackRewind: KeyCallback = object : KeyCallback(SHORTCUT_REWIND) {
-        override fun invokeFeature() {
-            runBlocking { patterning.destroyAndCreate() }
-        }
-
-        override fun getUsageText(): String {
-            return "rewind the current life form back to generation 0"
-        }
-    }
-    val callbackRandomLife: KeyCallback = object : KeyCallback(SHORTCUT_RANDOM_FILE) {
-        override fun invokeFeature() {
-            runBlocking { patterning.getRandomLifeform(true) }
-        }
-
-        override fun getUsageText(): String {
-            return "get a random life form from the built-in library"
-        }
-    }
-    private val callbackZoomIn: KeyCallback = object : KeyCallback(
-        KeyCombo(SHORTCUT_ZOOM_IN.code),
-        KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)
-    ) {
-        override fun invokeFeature() {
-            drawer.zoomXY(true, patterning.mouseX.toFloat(), patterning.mouseY.toFloat())
-        }
-
-        override fun getUsageText(): String {
-            return "zoom in centered on the mouse"
-        }
+    private fun createKeyCallback(
+        key: Char,
+        invokeFeatureLambda: () -> Unit,
+        getUsageTextLambda: () -> String,
+        invokeModeChangeLambda: (() -> Boolean)? = null,
+        cleanupFeatureLambda: (() -> Unit)? = null
+    ): KeyCallback {
+        return object : ExtendedKeyCallback(linkedSetOf(KeyCombo(key.code)), invokeFeatureLambda, getUsageTextLambda, invokeModeChangeLambda, cleanupFeatureLambda) {}
     }
 
-    val callbackZoomInCenter: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_CENTERED) {
-        override fun invokeFeature() {
-            // todo - why do we have to call back to patterning
-            //patterning.centerView();
-            drawer.zoomXY(true, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2)
-        }
-
-        override fun getUsageText(): String {
-            return "zoom in centered on the middle of the screen"
-        }
+    private fun createKeyCallback(
+        keys: Set<Char>,
+        invokeFeatureLambda: () -> Unit,
+        getUsageTextLambda: () -> String,
+        invokeModeChangeLambda: (() -> Boolean)? = null,
+        cleanupFeatureLambda: (() -> Unit)? = null
+    ): KeyCallback {
+        val keyCombos = keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) }
+        return object : ExtendedKeyCallback(keyCombos, invokeFeatureLambda, getUsageTextLambda, invokeModeChangeLambda, cleanupFeatureLambda) {}
     }
 
-    val callbackZoomOutCenter: KeyCallback = object : KeyCallback(
-        KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)
-    ) {
-        override fun invokeFeature() {
-            //patterning.centerView();
-            drawer.zoomXY(false, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2)
-        }
-
-        override fun getUsageText(): String {
-            return "zoom out centered on the middle of the screen"
-        }
-    }
-    private val callbackZoomOut: KeyCallback = object : KeyCallback(SHORTCUT_ZOOM_OUT) {
-        override fun invokeFeature() {
-            drawer.zoomXY(false, patterning.mouseX.toFloat(), patterning.mouseY.toFloat())
-        }
-
-        override fun getUsageText(): String {
-            return "zoom out centered on the mouse"
-        }
+    private fun createKeyCallback(
+        keyCombos: Collection<KeyCombo>,
+        invokeFeatureLambda: () -> Unit,
+        getUsageTextLambda: () -> String,
+        invokeModeChangeLambda: (() -> Boolean)? = null,
+        cleanupFeatureLambda: (() -> Unit)? = null
+    ): KeyCallback {
+        return object : ExtendedKeyCallback(LinkedHashSet(keyCombos), invokeFeatureLambda, getUsageTextLambda, invokeModeChangeLambda, cleanupFeatureLambda) {}
     }
 
-    val callbackDisplayBounds: KeyCallback = object : KeyCallback(SHORTCUT_DISPLAY_BOUNDS) {
-        override fun invokeFeature() {
-            drawer.toggleDrawBounds()
-        }
+    val callbackPause: KeyCallback = createKeyCallback(
+        key = SHORTCUT_PAUSE,
+        invokeFeatureLambda = {drawer.handlePause()},
+        getUsageTextLambda = {"pause and play"}
+    )
+    private val callbackLoadLifeForm: KeyCallback = createKeyCallback(
+        keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
+        invokeFeatureLambda = {patterning.numberedLifeForm},
+        getUsageTextLambda = {"press a # key to load one of the first 9 embedded RLE resource files"}
+    )
 
-        override fun getUsageText(): String {
-            return "draw a border around the part of the universe containing living cells"
-        }
-    }
+   val callbackDrawSlower = createKeyCallback(
+       keyCombos = setOf(KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)),
+       invokeFeatureLambda = { DrawRateManager.instance!!.goSlower() },
+       getUsageTextLambda = { "slow the animation down" }
+   )
 
-    val callbackCenterView: KeyCallback = object : KeyCallback(SHORTCUT_CENTER) {
-        override fun invokeFeature() {
-            patterning.centerView()
-        }
+    val callbackDrawFaster = createKeyCallback(
+        key = SHORTCUT_DRAW_SPEED,
+        invokeFeatureLambda = { DrawRateManager.instance!!.goFaster() },
+        getUsageTextLambda = { "speed the animation up" }
+    )
 
-        override fun getUsageText(): String {
-            return "center the view on the universe - regardless of its size"
-        }
-    }
+    val callbackStepFaster = createKeyCallback(
+        key = SHORTCUT_STEP_FASTER,
+        invokeFeatureLambda = { patterning.handleStep(true) },
+        getUsageTextLambda = { "double the generations per draw" }
+    )
 
-    val callbackUndoMovement: KeyCallback = object : KeyCallback(
-        KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
-        KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
-    ) {
-        override fun invokeFeature() {
-            drawer.undoMovement()
-        }
+    val callbackStepSlower = createKeyCallback(
+        key = SHORTCUT_STEP_SLOWER,
+        invokeFeatureLambda = { patterning.handleStep(false) },
+        getUsageTextLambda = { "cut in half the generations per draw" }
+    )
 
-        override fun getUsageText(): String {
-            return "undo various movement patterning.actions such as centering or fitting to screen"
-        }
-    }
-    val callbackFitUniverseOnScreen: KeyCallback = object : KeyCallback(SHORTCUT_FIT_UNIVERSE) {
-        override fun invokeFeature() {
-            patterning.fitUniverseOnScreen()
-        }
+    val callbackRewind = createKeyCallback(
+        key = SHORTCUT_REWIND,
+        invokeFeatureLambda = { runBlocking { patterning.destroyAndCreate() } },
+        getUsageTextLambda = { "rewind the current life form back to generation 0" }
+    )
 
-        override fun getUsageText(): String {
-            return "fit the visible universe on screen"
-        }
-    }
-    val callbackThemeToggle: KeyCallback = object : KeyCallback(SHORTCUT_THEME_TOGGLE) {
-        private var toggled = true
-        override fun invokeFeature() {
-            if (toggled) Theme.setTheme(ThemeType.DEFAULT) else Theme.setTheme(ThemeType.DARK)
-            toggled = !toggled
-        }
+    val callbackRandomLife = createKeyCallback(
+        key = SHORTCUT_RANDOM_FILE,
+        invokeFeatureLambda = { runBlocking { patterning.getRandomLifeform(true) } },
+        getUsageTextLambda = { "get a random life form from the built-in library" }
+    )
 
-        override fun getUsageText(): String {
-            return "toggle between dark and light themes"
-        }
-    }
-    private val callbackPaste: KeyCallback = object : KeyCallback(
-        KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
-        KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
-    ) {
-        override fun invokeFeature() {
-            patterning.pasteLifeForm()
-        }
+    private val callbackZoomIn = createKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
+        invokeFeatureLambda = { drawer.zoomXY(true, patterning.mouseX.toFloat(), patterning.mouseY.toFloat()) },
+        getUsageTextLambda = { "zoom in centered on the mouse" }
+    )
 
-        override fun getUsageText(): String {
-            return "paste a new lifeform into the app - currently only supports RLE encoded lifeforms"
-        }
-    }
-    private val callbackMovement: KeyCallback = object : KeyCallback(
-        setOf(
-            MovementHandler.WEST,
-            MovementHandler.EAST,
-            MovementHandler.NORTH,
-            MovementHandler.SOUTH)
-            .map { keyCode -> KeyCombo(keyCode) }
-            .toCollection(LinkedHashSet())) {
-        private var pressed = false
-        override fun invokeFeature() {
-            if (!pressed) {
-                pressed = true
-                // we only want to save the undo state for key presses when we start them
-                // no need to save again until they're all released
+    val callbackZoomInCenter = createKeyCallback(
+        key = SHORTCUT_ZOOM_CENTERED,
+        invokeFeatureLambda = { drawer.zoomXY(true, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2) },
+        getUsageTextLambda = { "zoom in centered on the middle of the screen" }
+    )
+
+    val callbackZoomOutCenter = createKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
+        invokeFeatureLambda = { drawer.zoomXY(false, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2) },
+        getUsageTextLambda =  { "zoom out centered on the middle of the screen" }
+    )
+
+    val callbackZoomOut = createKeyCallback(
+        key = SHORTCUT_ZOOM_OUT,
+        invokeFeatureLambda = { drawer.zoomXY(false, patterning.mouseX.toFloat(), patterning.mouseY.toFloat()) },
+        getUsageTextLambda = { "zoom out centered on the mouse" }
+    )
+
+    val callbackDisplayBounds = createKeyCallback(
+        key = SHORTCUT_DISPLAY_BOUNDS,
+        invokeFeatureLambda = { drawer.toggleDrawBounds() },
+        getUsageTextLambda =  { "draw a border around the part of the universe containing living cells" }
+    )
+
+    val callbackCenterView = createKeyCallback(
+        key = SHORTCUT_CENTER,
+        invokeFeatureLambda = { patterning.centerView() },
+        getUsageTextLambda = { "center the view on the universe - regardless of its size" }
+    )
+
+    val callbackUndoMovement = createKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC), KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)),
+        invokeFeatureLambda = { drawer.undoMovement() },
+        getUsageTextLambda = { "undo various movement patterning.actions such as centering or fitting to screen" }
+    )
+
+    val callbackFitUniverseOnScreen = createKeyCallback(
+        key = SHORTCUT_FIT_UNIVERSE,
+        invokeFeatureLambda = { patterning.fitUniverseOnScreen() },
+        getUsageTextLambda = { "fit the visible universe on screen" }
+    )
+
+    val callbackThemeToggle = createKeyCallback(
+        key = SHORTCUT_THEME_TOGGLE,
+        invokeFeatureLambda = {
+            if (Theme.currentThemeType == ThemeType.DEFAULT) Theme.setTheme(ThemeType.DARK)
+            else Theme.setTheme(ThemeType.DEFAULT)
+        },
+        getUsageTextLambda = { "toggle between dark and light themes" }
+    )
+
+    private val callbackPaste = createKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC), KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)),
+        invokeFeatureLambda = { patterning.pasteLifeForm() },
+        getUsageTextLambda = { "paste a new lifeform into the app - currently only supports RLE encoded lifeforms" }
+    )
+
+    private val callbackMovement = createKeyCallback(
+        keyCombos = setOf(MovementHandler.WEST, MovementHandler.EAST, MovementHandler.NORTH, MovementHandler.SOUTH).map { KeyCombo(it) }.toSet(),
+        invokeFeatureLambda = {
+            if (!KeyHandler.pressedKeys.any { it in listOf(MovementHandler.WEST, MovementHandler.EAST, MovementHandler.NORTH, MovementHandler.SOUTH) }) {
                 drawer.saveUndoState()
             }
-        }
-
-        override fun cleanupFeature() {
+        },
+        getUsageTextLambda = { "use arrow keys to move the image around. hold down two keys to move diagonally" },
+        cleanupFeatureLambda = {
             if (KeyHandler.pressedKeys.isEmpty()) {
-                pressed = false
                 DrawRateManager.instance!!.drawImmediately()
             }
         }
+    )
 
-        override fun getUsageText(): String {
-            return "use arrow keys to move the image around. hold down two keys to move diagonally"
-        }
-    }
-    val callbackSingleStep: KeyCallback = object : KeyCallback(SHORTCUT_SINGLE_STEP) {
-        override fun invokeFeature() {
-            patterning.toggleSingleStep()
-        }
-
-        override fun invokeModeChange(): Boolean {
-            return true
-        }
-
-        override fun getUsageText(): String {
-            return "in single step mode, advanced one frame at a time"
-        }
-    }
+    val callbackSingleStep = createKeyCallback(
+        key = SHORTCUT_SINGLE_STEP,
+        invokeFeatureLambda = {  patterning.toggleSingleStep() },
+        getUsageTextLambda = { "in single step mode, advanced one frame at a time" },
+        invokeModeChangeLambda = { true }
+    )
 
     companion object {
         private const val SHORTCUT_CENTER = 'c'
