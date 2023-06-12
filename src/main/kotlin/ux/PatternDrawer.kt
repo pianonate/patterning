@@ -35,7 +35,6 @@ class PatternDrawer(
     private val drawables = DrawableManager.instance
     private val keyFactory: KeyFactory
     private var cellBorderWidth = 0.0f
-    private var theme: UXThemeManager = UXThemeManager.instance
 
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
@@ -84,11 +83,11 @@ class PatternDrawer(
         hudInfo = HUDStringBuilder()
 
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, theme.startupText!!, AlignHorizontal.RIGHT, AlignVertical.TOP)
-                .textSize(theme.startupTextSize)
-                .fadeInDuration(theme.startupTextFadeInDuration)
-                .fadeOutDuration(theme.startupTextFadeOutDuration)
-                .displayDuration(theme.startupTextDisplayDuration.toLong())
+            TextPanel.Builder(drawingInformer, Theme.startupText!!, AlignHorizontal.RIGHT, AlignVertical.TOP)
+                .textSize(Theme.startupTextSize)
+                .fadeInDuration(Theme.startupTextFadeInDuration)
+                .fadeOutDuration(Theme.startupTextFadeOutDuration)
+                .displayDuration(Theme.startupTextDisplayDuration.toLong())
         }
 
         keyFactory = KeyFactory(patterning, this)
@@ -113,7 +112,7 @@ class PatternDrawer(
         val panelLeft: ControlPanel
         val panelTop: ControlPanel
         val panelRight: ControlPanel
-        val transitionDuration = UXThemeManager.instance.controlPanelTransitionDuration
+        val transitionDuration = Theme.controlPanelTransitionDuration
         panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
             .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
             .setOrientation(Orientation.VERTICAL)
@@ -181,7 +180,7 @@ class PatternDrawer(
         countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
                 drawingInformer,
-                theme.countdownText!!,
+                Theme.countdownText!!,
                 AlignHorizontal.CENTER,
                 AlignVertical.CENTER
             )
@@ -285,7 +284,7 @@ class PatternDrawer(
         val width = size - cellBorderWidth
 
         lifeFormBuffer.apply {
-            fill(theme.getCellColor())
+            fill(Theme.cellColor)
             noStroke()
             rect(x, y, width, width)
         }
@@ -399,7 +398,7 @@ class PatternDrawer(
         prevHeight = processing.height
 
         processing.apply {
-            background(theme.getBackGroundColor())
+            background(Theme.backGroundColor)
         }
 
         uXBuffer.apply {

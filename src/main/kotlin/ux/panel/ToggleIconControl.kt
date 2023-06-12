@@ -3,7 +3,7 @@ package ux.panel
 import actions.KeyCallback
 import actions.KeyObservable
 import processing.core.PImage
-import ux.UXThemeManager.Companion.instance
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 import java.util.*
 
@@ -51,7 +51,7 @@ class ToggleIconControl(builder: Builder) : Control(builder) {
                         toggleIcon()
                     }
                 },
-                instance.singleModeToggleDuration
+                Theme.singleModeToggleDuration
                     .toLong()
             )
         }

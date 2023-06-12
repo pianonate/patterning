@@ -8,6 +8,7 @@ import processing.core.PApplet
 import processing.data.JSONObject
 import ux.DrawRateManager
 import ux.PatternDrawer
+import ux.Theme
 import java.awt.Component
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
@@ -71,6 +72,12 @@ class Patterning : PApplet() {
     }
 
     override fun setup() {
+        try {
+            Theme.initialize(this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         surface.setResizable(true)
         frameRate(DrawRateManager.MAX_FRAME_RATE)
         targetStep = 0

@@ -2,14 +2,14 @@ package ux.panel
 
 import processing.core.PApplet
 import processing.core.PGraphics
-import ux.UXThemeManager
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 
 class Transition @JvmOverloads constructor(
     private val drawingInformer: DrawingInfoSupplier,
     private val direction: TransitionDirection,
     private val type: TransitionType,
-    private val duration: Int = UXThemeManager.instance.shortTransitionDuration
+    private val duration: Int = Theme.shortTransitionDuration
 ) {
     private var transitionStartTime: Long = -1
 

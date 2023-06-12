@@ -1,7 +1,7 @@
 package ux.panel
 
 import actions.KeyCallback
-import ux.UXThemeManager.Companion.instance
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
@@ -17,7 +17,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 drawingInformer,
                 callback,
                 iconName,
-                instance.controlSize
+                Theme.controlSize
             ).build()
             addPanel(c!!)
             return this
@@ -28,7 +28,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 drawingInformer,
                 callback,
                 iconName,
-                instance.controlSize
+                Theme.controlSize
             ).build()
             addPanel(c)
             return this
@@ -46,7 +46,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 modeChangeCallback,
                 iconName,
                 toggledIconName,
-                instance.controlSize
+                Theme.controlSize
             ).build()
             addPanel(c)
             return this

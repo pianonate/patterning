@@ -2,19 +2,18 @@ package ux
 
 import processing.core.PApplet
 
-class ColorConstant {
+class ColorConstant(private val p: PApplet) {
     private var currentColor = 0
     private var previousColor = 0
     private var transitionStartTime: Long = 0
     private var transitionInProgress = false
-    private var p: PApplet? = null
     private var isInitialized = false
-    fun setColor(newColor: Int, p: PApplet?) {
+
+    fun setColor(newColor: Int) {
         if (isInitialized) {
             previousColor = currentColor
             transitionInProgress = true
             transitionStartTime = System.currentTimeMillis()
-            this.p = p
         } else {
             previousColor = newColor
             this.isInitialized = true
@@ -24,19 +23,15 @@ class ColorConstant {
 
     val color: Int
         get() {
-            if (p == null || !transitionInProgress) {
+            if (!transitionInProgress) {
                 return currentColor
             }
-            val t = (System.currentTimeMillis() - transitionStartTime).toFloat() / TRANSITION_DURATION
+            val t = (System.currentTimeMillis() - transitionStartTime).toFloat() / Theme.themeTransitionDuration
             return if (t < 1.0) {
-                p!!.lerpColor(previousColor, currentColor, t)
+                p.lerpColor(previousColor, currentColor, t)
             } else {
                 transitionInProgress = false
                 currentColor
             }
         }
-
-    companion object {
-        private val TRANSITION_DURATION = UXThemeManager.instance.themeTransitionDuration // 2 seconds
-    }
 }

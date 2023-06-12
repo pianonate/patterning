@@ -6,8 +6,8 @@ import processing.core.PApplet
 import processing.event.KeyEvent
 import ux.DrawRateManager
 import ux.PatternDrawer
-import ux.UXThemeManager
-import ux.UXThemeType
+import ux.Theme
+import ux.ThemeType
 
 class KeyFactory(private val patterning: Patterning, private val drawer: PatternDrawer) {
     private val processing: PApplet = patterning
@@ -215,9 +215,7 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
     val callbackThemeToggle: KeyCallback = object : KeyCallback(SHORTCUT_THEME_TOGGLE) {
         private var toggled = true
         override fun invokeFeature() {
-            if (toggled) UXThemeManager.instance
-                .setTheme(UXThemeType.DEFAULT, processing) else UXThemeManager.instance
-                .setTheme(UXThemeType.DARK, processing)
+            if (toggled) Theme.setTheme(ThemeType.DEFAULT) else Theme.setTheme(ThemeType.DARK)
             toggled = !toggled
         }
 
@@ -298,4 +296,11 @@ class KeyFactory(private val patterning: Patterning, private val drawer: Pattern
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
     }
+}
+
+abstract class ExtendedKeyCallback(
+    keys: LinkedHashSet<KeyCombo>
+) : KeyCallback(keys) {
+    abstract override fun invokeFeature()
+    abstract override fun getUsageText(): String
 }

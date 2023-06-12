@@ -1,8 +1,8 @@
 package ux
 
-enum class UXThemeType(//
+enum class ThemeType(//
     // Add more themes as needed...
-    @JvmField val themeConstants: UXConstants
+    val themeConstants: UXConstants
 ) {
     DEFAULT(UXConstants()),
     DARK(UXDarkConstants())

@@ -5,7 +5,7 @@ import patterning.Patterning
 import processing.core.PGraphics
 import processing.core.PVector
 import ux.Drawable
-import ux.UXThemeManager.Companion.instance
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 import ux.panel.Transition.TransitionDirection
 import ux.panel.Transition.TransitionType
@@ -229,7 +229,7 @@ protected val isMouseOverMe: Boolean
         var alignable = false
         var alignHorizontal: AlignHorizontal? = null
         var alignVertical: AlignVertical? = null
-        var fill = instance.getDefaultPanelColor()
+        var fill = Theme.defaultPanelColor
         var transitionDirection: TransitionDirection? = null
         var transitionType: TransitionType? = null
         var transitionDuration = 0

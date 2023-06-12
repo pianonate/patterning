@@ -5,7 +5,7 @@ import processing.core.PGraphics
 import processing.core.PVector
 import ux.Drawable
 import ux.DrawableManager
-import ux.UXThemeManager
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 import ux.informer.DrawingInformer
 import java.util.*
@@ -16,7 +16,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private val outline: Boolean
 
     // sizes
-    private val textMargin = theme.defaultTextMargin
+    private val textMargin = Theme.defaultTextMargin
     private val doubleTextMargin = textMargin * 2
     private val textSize: Float
 
@@ -145,7 +145,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         val informer = drawingInformer as DrawingInformer
         val shouldInitialize = !informer.isDrawing()
         if (shouldInitialize) buffer.beginDraw()
-        buffer.textFont(buffer.parent.createFont(theme.fontName, textSize))
+        buffer.textFont(buffer.parent.createFont(Theme.fontName, textSize))
         buffer.textSize(textSize)
         if (shouldInitialize) buffer.endDraw()
     }
@@ -277,11 +277,11 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
 
         // Get the colors every time in case the UX theme changes
-        val outlineColor = theme.getTextColorStart() // black
+        val outlineColor = Theme.textColorStart // black
 
         // Interpolate between "black" 0xff000000 and "white" (0xffffffff)
         // fade value goes from 0 to 255 to make this happen
-        val themeColor = theme.getTextColor()
+        val themeColor = Theme.textColor
         val currentColor = panelBuffer.lerpColor(outlineColor, themeColor, fadeValue / 255.0f)
 
         //    System.out.println(System.currentTimeMillis() + " current: " + currentColor + " theme: " + themeColor + " outline: " + outlineColor + " fade: " + fadeValue);
@@ -349,7 +349,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal val message: String
         internal var outline = true
         internal var wrap = false
-        internal var textSize = theme.defaultTextSize
+        internal var textSize = Theme.defaultTextSize
         internal var fadeInDuration = OptionalInt.empty()
         internal var fadeOutDuration = OptionalInt.empty()
         internal var displayDuration = OptionalLong.empty()
@@ -451,10 +451,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             }
             return TextPanel(this)
         }
-
-        companion object {
-            private val theme = UXThemeManager.instance
-        }
     }
 
     private inner class FadeInState : State {
@@ -553,7 +549,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     companion object {
-        private val theme = UXThemeManager.instance
         private val drawableManager = DrawableManager.instance
     }
 }

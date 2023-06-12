@@ -4,7 +4,7 @@ import actions.*
 import processing.core.PImage
 import processing.core.PVector
 import ux.DrawableManager
-import ux.UXThemeManager
+import ux.Theme
 import ux.informer.DrawingInfoSupplier
 import ux.panel.Transition.TransitionDirection
 import java.util.*
@@ -24,19 +24,19 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     init {
         callback = builder.callback
         size = builder.size
-        fill = theme.getControlColor()
+        fill = Theme.controlColor
         callback.addObserver(this)
         MouseEventManager.instance!!.addReceiver(this)
         icon = loadIcon(builder.iconName)
         val keyCombos = callback.toString()
-        hoverMessage = callback.getUsageText() + theme.shortcutParenStart + keyCombos + theme.shortcutParenEnd
+        hoverMessage = callback.getUsageText() + Theme.shortcutParenStart + keyCombos + Theme.shortcutParenEnd
         this.afterInit()
     }
 
 
     protected fun loadIcon(iconName: String): PImage {
-        val icon = panelBuffer.parent.loadImage(theme.iconPath + iconName)
-        icon.resize(width - theme.iconMargin, height - theme.iconMargin)
+        val icon = panelBuffer.parent.loadImage(Theme.iconPath + iconName)
+        icon.resize(width - Theme.iconMargin, height - Theme.iconMargin)
         return icon
     }
 
@@ -49,7 +49,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
     private fun drawHover() {
         if (isHovering) {
-            drawControlHighlight(theme.getControlHighlightColor())
+            drawControlHighlight(Theme.controlHighlightColor)
             if (null == hoverTextPanel) {
                 hoverTextPanel = getHoverTextPanel()
                 DrawableManager.instance!!.add(hoverTextPanel!!)
@@ -63,8 +63,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
 
     private fun getHoverTextPanel(): TextPanel {
-        val margin = theme.hoverTextMargin
-        val hoverTextWidth = theme.hoverTextWidth
+        val margin = Theme.hoverTextMargin
+        val hoverTextWidth = Theme.hoverTextWidth
         var hoverX = parentPanel!!.position!!.x.toInt()
         var hoverY = parentPanel!!.position!!.y.toInt()
         var transitionDirection: TransitionDirection? = null
@@ -128,13 +128,13 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             AlignHorizontal.LEFT,
             AlignVertical.TOP
         )
-            .fill(theme.getControlHighlightColor())
-            .radius(theme.controlHighlightCornerRadius)
-            .textSize(theme.hoverTextSize)
+            .fill(Theme.controlHighlightColor)
+            .radius(Theme.controlHighlightCornerRadius)
+            .textSize(Theme.hoverTextSize)
             .textWidth(hoverTextWidth)
             .wrap()
             .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
-            .transition(transitionDirection, Transition.TransitionType.SLIDE, theme.shortTransitionDuration)
+            .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
             .outline(false)
             .build()
 
@@ -177,7 +177,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
     private fun drawPressed() {
         if (isPressed || isHighlightFromKeypress) {
-            drawControlHighlight(theme.getControlMousePressedColor())
+            drawControlHighlight(Theme.controlMousePressedColor)
         }
     }
 
@@ -197,7 +197,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelBuffer.fill(color) // Semi-transparent gray
         val roundedRectSize = size.toFloat()
         // Rounded rectangle with radius
-        panelBuffer.rect(0f, 0f, roundedRectSize, roundedRectSize, theme.controlHighlightCornerRadius.toFloat())
+        panelBuffer.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
 
     override fun notifyKeyPress(observer: KeyObservable) {
@@ -212,7 +212,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                     isHighlightFromKeypress = false
                 }
             },
-            theme.controlHighlightDuration
+            Theme.controlHighlightDuration
                 .toLong()
         )
     }
@@ -241,7 +241,4 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
     }
 
-    companion object {
-        private val theme = UXThemeManager.instance
-    }
 }
