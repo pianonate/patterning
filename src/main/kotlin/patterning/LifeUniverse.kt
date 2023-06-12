@@ -13,119 +13,8 @@ import kotlin.math.ln
 * this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
 - better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
 - also: https://web.archive.org/web/20220131050938/https://jennyhasahat.github.io/hashlife.html
-
-
-* from chat gpt - i think that possibly what is going on in CreateTree is the hash caching and what is going on with the quick_cache is memoization
-
- * Hash Caching in Hashlife:
-
-In Hashlife, each unique configuration of a quadtree node is hashed to generate a hash key. The hash key represents the state or configuration of the node.
-The hash key is used as a lookup in a hash table or cache, where the previously computed results are stored.
-If the result for a particular node configuration is found in the cache, it can be retrieved directly without recomputing it.
-Hash caching in Hashlife helps avoid redundant computations by reusing the results for previously encountered node configurations.
-
-Memoization in Hashlife:
-
-Hashlife employs memoization to store intermediate results of the simulation, specifically for the generations in between the power-of-two steps.
-During the simulation, when computing the next generation of a node, the algorithm checks if the result for that specific node and the current generation has already been memoized.
-If the result is found in the memoization cache, it can be retrieved directly without recomputing it.
-Memoization in Hashlife allows the algorithm to reuse the intermediate results for generations that have already been computed, avoiding redundant computations and significantly speeding up the simulation.
-
  */
-/* 
-   to facilitate migration, create a Cache or HashMapManager and create tests for it that prove that it's working
-   including creating the two implementations and making sure that both return the same results
 
-  to migrate to a newHashMap that allows us to jettison hashmapNext and simplify the code, you can use this to compare
- * This method should now work correctly with the linked list structure in the old hashmap. It iterates through the linked 
- * list of nodes associated with each integer key and compares their populations with the corresponding NodeKey in the new hashmap. 
- * If all nodes match and have equal populations, the method returns true.
- * 
- 
- public boolean compareHashmaps(HashMap<Integer, patterning.Node> oldHashmap, HashMap<NodeKey, patterning.Node> newHashmap) {
-    int oldHashmapNodeCount = 0;
-    for (Map.Entry<Integer, patterning.Node> oldEntry : oldHashmap.entrySet()) {
-        patterning.Node oldNode = oldEntry.getValue();
-
-        while (oldNode != null) {
-            oldHashmapNodeCount++;
-
-            // Check if there's an equivalent NodeKey in the new hashmap
-            NodeKey keyToFind = new NodeKey(oldNode.nw, oldNode.ne, oldNode.sw, oldNode.se, oldEntry.getKey());
-            patterning.Node newNode = newHashmap.get(keyToFind);
-
-            // If there's no equivalent NodeKey or the populations are different, return false
-            if (newNode == null || !oldNode.population.equals(newNode.population)) {
-                return false;
-            }
-
-            oldNode = oldNode.hashmapNext;
-        }
-    }
-
-    return oldHashmapNodeCount == newHashmap.size();
-}
-
-use the following to make the new tree side by side with the old (probably use different name - like createTree new - and call it from within createTree)
-update names to use the new hashmap<NodeKey, patterning.Node>
-
-private patterning.Node createTree(patterning.Node nw, patterning.Node ne, patterning.Node sw, patterning.Node se) {
-    int hash = calcHash(nw.id, ne.id, sw.id, se.id) & hashmapSize;
-    
-    // Create a key object to store the nodes and hash
-    NodeKey key = new NodeKey(nw, ne, sw, se, hash);
-    
-    // Check if the hashmap contains the key, if so return the corresponding node
-    if (hashmap.containsKey(key)) {
-        return hashmap.get(key);
-    }
-    
-    // If lastId exceeds maxLoad, garbageCollect and try again
-    // you can skip this bit until you've actually replaced the old one...
-    if (lastId > maxLoad) {
-        garbageCollect();
-        return createTree(nw, ne, sw, se);
-    }
-    
-    // Create a new node and put it in the hashmap
-    patterning.Node newNode = new patterning.Node(nw, ne, sw, se, lastId++, this.step);
-    hashmap.put(key, newNode);
-    
-    return newNode;
-}
-
-// Define NodeKey class
-class NodeKey {
-    patterning.Node nw, ne, sw, se;
-    int hash;
-
-    NodeKey(patterning.Node nw, patterning.Node ne, patterning.Node sw, patterning.Node se, int hash) {
-        this.nw = nw;
-        this.ne = ne;
-        this.sw = sw;
-        this.se = se;
-        this.hash = hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof NodeKey) {
-            NodeKey other = (NodeKey) obj;
-            return nw == other.nw && ne == other.ne && sw == other.sw && se == other.se;
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
-    }
-}
-
-consider asking about using MurmurHash if you want fewer hash collisions to start
-
-
- */
 class LifeUniverse internal constructor() {
     private var lastId: Int
     private var hashmapSize: Int
@@ -175,54 +64,6 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    /*
-     * // these were used in the original to draw on screen - maybe you'll get there
-     * someday...
-     * private void setBit(BigInteger x, BigInteger y, boolean living) {
-     * int level = getLevelFromBounds(new patterning.Bounds(y, x));
-     * 
-     * if (living) {
-     * while (level > root.level) {
-     * root = expandUniverse(root);
-     * }
-     * } else {
-     * if (level > root.level) {
-     * // no need to delete pixels outside the universe
-     * return;
-     * }
-     * }
-     * 
-     * root = nodeSetBit(root, x, y, living);
-     * }
-     * 
-     * 
-     * public boolean getBit(BigInteger x, BigInteger y) {
-     * int level = getLevelFromBounds(new patterning.Bounds(y, x));
-     * 
-     * if (level > root.level) {
-     * return false;
-     * } else {
-     * return nodeGetBit(root, x, y);
-     * }
-     * }
-     */
-    /*    public void makeCenter(IntBuffer fieldX, IntBuffer fieldY, Bounds bounds) {
-        BigInteger offsetX = bounds.left.subtract(bounds.right)
-                .divide(BigInteger.valueOf(2))
-                .subtract(bounds.left)
-                .negate();
-        BigInteger offsetY = bounds.top.subtract(bounds.bottom)
-                .divide(BigInteger.valueOf(2))
-                .subtract(bounds.top)
-                .negate();
-
-        moveField(fieldX, fieldY, offsetX.intValue(), offsetY.intValue());
-
-        bounds.left = bounds.left.add(offsetX);
-        bounds.right = bounds.right.add(offsetX);
-        bounds.top = bounds.top.add(offsetY);
-        bounds.bottom = bounds.bottom.add(offsetY);
-    }*/
     private fun moveField(fieldX: IntBuffer, fieldY: IntBuffer, offsetX: Int, offsetY: Int) {
         for (i in 0 until fieldX.capacity()) {
             val x = fieldX[i]
@@ -285,7 +126,7 @@ class LifeUniverse internal constructor() {
     // Preserve the tree, but remove all cached
     // generations forward
     // alsoQuick came from the original algorithm and was used when
-    // (I believe) that the rule set was changed.
+    // (I believe) that the rule set was changed to allow for different birth/survival rules
     // right now i don't know why it's otherwise okay to preserve
     // need to think more about this
     private fun uncache(/*alsoQuick: Boolean*/) {
@@ -969,7 +810,7 @@ class LifeUniverse internal constructor() {
 
     companion object {
         private const val LOAD_FACTOR = 0.95
-        private const val INITIAL_SIZE = 16
+        private const val INITIAL_SIZE = 26
 
         // this is extremely large but can be maybe reached if you fix problems with nodeQuickNextGeneration
         // going to try a maximum universe size of 1024 with a new drawing scheme that relies

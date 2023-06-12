@@ -1,14 +1,14 @@
 package patterning
 
-import actions.MouseEventManager
 import kotlinx.coroutines.runBlocking
 import patterning.ComplexCalculationHandler.Companion.lock
 import patterning.ComplexCalculationHandler.Companion.unlock
+import patterning.actions.MouseEventManager
+import patterning.ux.DrawRateManager
+import patterning.ux.PatternDrawer
+import patterning.ux.Theme
 import processing.core.PApplet
 import processing.data.JSONObject
-import ux.DrawRateManager
-import ux.PatternDrawer
-import ux.Theme
 import java.awt.Component
 import java.awt.Frame
 import java.awt.GraphicsEnvironment

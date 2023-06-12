@@ -60,7 +60,7 @@ todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em
 todo: magnifier over mouseX
 todo: smooth combination of zoom/center
 todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
-todo: move all drawing into ux.PatternDrawer
+todo: move all drawing into patterning.ux.PatternDrawer
 todo: somewhere on the screen show fade in the target step and the current
      step until they're one and the same and then fade out
 todo: move imagery around cached images into the ImageCacheEntry routine
@@ -73,7 +73,7 @@ todo: click on node and it will tell you the information about it at the last se
 todo: show what level you have zoomed to using fade in face out text on screen
 todo: indicate you have just done a rewind
 todo: label bounding box with actual universe size in pixels and meters based on current cellSize - compare to what % of the known universe this would be in size
-todo: create the mc in ux.PatternDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
+todo: create the mc in patterning.ux.PatternDrawer suitable to the 2^1024 possible width (maybe you don't need that) make it a constant so that you
 todo: cache of Boolean array of any unchanged node that has visibility on screen of what is visible and what are its bounds and blast that out to the screen
 todo: single step mode
 todo: out of memory error
@@ -93,7 +93,7 @@ todo: save all pasted in valid RLEs in a folder. check if it's already there and
 todo: allow for creation and then saving as an RLE with associated metadata - from the same place where you allow editing
 todo: allow for rotating the images for visual appeal
 todo: copy / paste selections
-todo: create a test for ux.PatternDrawer that allows you to know if it actually is improved in performance
+todo: create a test for patterning.ux.PatternDrawer that allows you to know if it actually is improved in performance
 todo: double click to zoom
 todo: smooth zoom
 todo: click for info
