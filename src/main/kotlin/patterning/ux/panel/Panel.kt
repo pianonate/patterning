@@ -1,6 +1,6 @@
 package patterning.ux.panel
 
-import patterning.Patterning
+import patterning.Processing
 import patterning.actions.MouseEventReceiver
 import patterning.ux.Drawable
 import patterning.ux.Theme
@@ -199,7 +199,7 @@ protected val isMouseOverMe: Boolean
             val processing = parentPanel!!.panelBuffer.parent
 
             // our Patterning class extends Processing so we can use it here also
-            val patterning = processing as Patterning
+            val patterning = processing as Processing
             if (patterning.draggingDrawing) {
                 false
             } else {

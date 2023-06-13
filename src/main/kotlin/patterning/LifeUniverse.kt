@@ -267,17 +267,15 @@ class LifeUniverse internal constructor() {
         // and height - it will make it
         // the size of the bounding box
         val bounds = Bounds(
-            BigInteger.valueOf(fieldY[0].toLong()), BigInteger.valueOf(
-                fieldX[0].toLong()
-            )
+            fieldY[0].toBigInteger(), fieldX[0].toBigInteger()
         )
         val len = fieldX.capacity()
 
         // todo: pass in varied width and heights and look at the field size they
         // actually generate
         for (i in 1 until len) {
-            val x = BigInteger.valueOf(fieldX[i].toLong())
-            val y = BigInteger.valueOf(fieldY[i].toLong())
+            val x = fieldX[i].toBigInteger()
+            val y = fieldY[i].toBigInteger()
             if (x < bounds.left) {
                 bounds.left = x
             } else if (x > bounds.right) {
@@ -304,9 +302,9 @@ class LifeUniverse internal constructor() {
                 "right" -> coordinate = bounds.right
                 else -> {}
             }
-            if (coordinate.add(BigInteger.ONE) > BigInteger.valueOf(max.toLong())) {
-                max = coordinate.add(BigInteger.ONE).toInt()
-            } else if (coordinate.negate() > BigInteger.valueOf(max.toLong())) {
+            if (coordinate + BigInteger.ONE > max.toBigInteger() ) {
+                max = (coordinate + BigInteger.ONE).toInt()
+            } else if (coordinate.negate() > max.toBigInteger()) {
                 max = coordinate.negate().toInt()
             }
         }

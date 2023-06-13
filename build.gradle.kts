@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val patterningMain: String = "patterning.Main"
+val patterningMain: String = "patterning.Patterning"
 
 group = "com.example"
 version = "1.0-SNAPSHOT"
