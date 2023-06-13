@@ -1,7 +1,3 @@
-bug: at very large universe sizes the float cell.width goes to zero on a fitbounds - let's keep it bigdecimal until it has to be converted to float
-      it only disappears when it's fitbounds
-      something you did slowed things wayyyy down - when zoomed in - so undo patterndrawer changes and see what's up
-
 bug: in speed up - always slows down first
 
 bug: toggleIcon should still highlight from keyPress as well as toggle the icon to display
