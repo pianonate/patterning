@@ -29,7 +29,10 @@ data class KeyCombo @JvmOverloads constructor(
 
     // later:  “␛” or better yet: ⎋ - but large enough to see - use it for closing info panels
     override fun toString(): String {
-
+        // Special case for Shift+=, display as +
+        if (modifiers and KeyEvent.SHIFT != 0 && keyCode == '='.code) {
+            return "+"
+        }
         val keyTextBuilder = StringBuilder()
 
         when {
@@ -40,7 +43,6 @@ data class KeyCombo @JvmOverloads constructor(
         }
 
         when (processingKeyCode) {
-            '+'.code -> if (modifiers and KeyEvent.SHIFT != 0) keyTextBuilder.append("+")
             PApplet.UP -> keyTextBuilder.append("↑")
             PApplet.DOWN -> keyTextBuilder.append("↓")
             PApplet.LEFT -> keyTextBuilder.append("←")
