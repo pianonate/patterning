@@ -1,6 +1,6 @@
-bug: in speed up - always slows down first
-
 bug: toggleIcon should still highlight from keyPress as well as toggle the icon to display
+
+bug: DPS should show you actual draws per second - also see if you can troubleshoot the long running thread issues that are reported - maybe there's a better way to deal with this
 
 bug: Text disappears at bottom of screen - redo TextPanel thinking...
 

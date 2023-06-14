@@ -32,7 +32,7 @@ class MouseEventManager private constructor() {
     fun onMouseReleased() {
         if (pressedReceiver != null) {
             pressedReceiver!!.onMouseReleased()
-            DrawRateManager.instance!!.drawImmediately()
+            DrawRateManager.drawImmediately()
             pressedReceiver = null
         }
     }

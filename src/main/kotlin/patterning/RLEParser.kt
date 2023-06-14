@@ -90,8 +90,7 @@ class RLEParser internal constructor(text: String) {
         result.fieldY = fieldY.slice(0, aliveCount)
     }
 
-    @Throws(NotLifeException::class)
-    fun handleHeader(text: String) {
+    private fun handleHeader(text: String) {
         val compiledPattern = Pattern.compile(headerPattern, Pattern.MULTILINE)
         val matcher = compiledPattern.matcher(text)
         val line: String
@@ -129,21 +128,29 @@ class RLEParser internal constructor(text: String) {
         }
     }
 
-    @Throws(NotLifeException::class)
-    fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
-        val rule = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+    /*    private fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
+            val rule = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (rule.size < 2 || rule[1].isEmpty()) {
+                throw NotLifeException("invalid rule: $ruleStr")
+            }
+            if (isNumber(rule[0])) {
+                return parseRule(rule.joinToString("/"), survived)
+            }
+            val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
+            return parseRule(parsedRuleStr, survived)
+        }*/
+    private fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
+        val rule = ruleStr.split("/").filter { it.isNotEmpty() }
         if (rule.size < 2 || rule[1].isEmpty()) {
             throw NotLifeException("invalid rule: $ruleStr")
         }
         if (isNumber(rule[0])) {
-            return parseRule(java.lang.String.join("/", *rule), survived)
-        }
-        if (rule[0][0].lowercaseChar() == 'b') {
-            Arrays.asList(*rule).reverse()
+            return parseRule(rule.joinToString("/"), survived)
         }
         val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
         return parseRule(parsedRuleStr, survived)
     }
+
 
     /* Why all the nonsense?  because the patterning.LifeUniverse uses the rules to form the eval bitmask
    necessary to calculate neighbors and aliveness. The rule string parked on the rule field
@@ -165,8 +172,7 @@ class RLEParser internal constructor(text: String) {
    If all characters in the parsed string have been successfully parsed and no duplicates
    have been found, the rule variable contains a bit mask
    representing the unique integers in the string.*/
-    @Throws(NotLifeException::class)
-    fun parseRule(ruleStr: String, survived: Boolean): Int {
+    private fun parseRule(ruleStr: String, survived: Boolean): Int {
         var rule = 0
         val parsed = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[if (survived) 0 else 1]
         for (element in parsed) {
@@ -223,8 +229,7 @@ class RLEParser internal constructor(text: String) {
         }
     }
 
-    @Throws(NotLifeException::class)
-    fun handleMetaData(text: String?) {
+    private fun handleMetaData(text: String?) {
         val lines = PApplet.split(text, '\n')
         for (line in lines) {
             if (line.startsWith(metaDataPrefix) && line.length > 1) {

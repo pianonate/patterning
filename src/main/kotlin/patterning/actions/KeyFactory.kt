@@ -58,13 +58,13 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
    val callbackDrawSlower = KeyCallback.createKeyCallback(
        keyCombos = setOf(KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)),
-       invokeFeatureLambda = { DrawRateManager.instance!!.goSlower() },
+       invokeFeatureLambda = { DrawRateManager.goSlower() },
        getUsageTextLambda = { "slow the animation down" }
    )
 
     val callbackDrawFaster = KeyCallback.createKeyCallback(
         key = SHORTCUT_DRAW_SPEED,
-        invokeFeatureLambda = { DrawRateManager.instance!!.goFaster() },
+        invokeFeatureLambda = { DrawRateManager.goFaster() },
         getUsageTextLambda = { "speed the animation up" }
     )
 
@@ -165,7 +165,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
         getUsageTextLambda = { "use arrow keys to move the image around. hold down two keys to move diagonally" },
         cleanupFeatureLambda = {
             if (KeyHandler.pressedKeys.isEmpty()) {
-                DrawRateManager.instance!!.drawImmediately()
+                DrawRateManager.drawImmediately()
             }
         }
     )

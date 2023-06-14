@@ -23,7 +23,6 @@ import kotlin.math.roundToInt
 class Processing : PApplet() {
     var draggingDrawing = false
     private var life: LifeUniverse? = null
-    private var drawRateManager: DrawRateManager? = null
     private var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>? = null
     private var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>? = null
     private val mouseEventManager = MouseEventManager.instance
@@ -90,8 +89,7 @@ class Processing : PApplet() {
         }
 
         loadSavedWindowPositions()
-        drawRateManager = DrawRateManager.instance
-        drawer = PatternDrawer(this, drawRateManager!!)
+        drawer = PatternDrawer(this)
 
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
@@ -107,12 +105,11 @@ class Processing : PApplet() {
     override fun draw() {
 
 
+        val isThreadSafe = lifeIsThreadSafe()
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
-        drawRateManager!!.adjustDrawRate(frameRate)
-        val shouldDraw = drawRateManager!!.shouldDraw()
-        val shouldDrawLifeForm = shouldDraw && lifeIsThreadSafe()
+        val shouldDraw = DrawRateManager.shouldDraw(frameRate)
 
         // goForwardInTime (below) requests a nextGeneration and or a step change
         // both of which can take a while
@@ -122,7 +119,7 @@ class Processing : PApplet() {
         // and we tell the drawer whether it is still updating life since the last frame
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
-        drawer!!.draw(life!!, shouldDrawLifeForm)
+        drawer!!.draw(life!!, shouldDraw && isThreadSafe)
 
 
         // as mentioned above - this runs on a separate thread
@@ -187,7 +184,7 @@ class Processing : PApplet() {
             // we used to have drawImmediately() called in move
             // but it had a negative effect of freezing the screen while drawing
             // this is a good enough compromise as most of the time DPS is not really low
-            drawRateManager!!.drawImmediately()
+            DrawRateManager.drawImmediately()
         } else {
             mousePressedOverReceiver = false
             assert(mouseEventManager != null)

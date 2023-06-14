@@ -23,8 +23,7 @@ import kotlin.collections.ArrayDeque
 import kotlin.math.roundToInt
 
 class PatternDrawer(
-    private val processing: PApplet,
-    private val drawRateManager: DrawRateManager
+    private val processing: PApplet
 ) {
     private val cellBorderWidthRatio = .05f
     private val drawingInformer: DrawingInfoSupplier
@@ -248,7 +247,7 @@ class PatternDrawer(
 
         return hudInfo.apply {
             addOrUpdate("fps", processing.frameRate.roundToInt())
-            addOrUpdate("dps", drawRateManager.currentDrawRate.roundToInt())
+            addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
             addOrUpdate("cell", cell.size)
             addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
 
