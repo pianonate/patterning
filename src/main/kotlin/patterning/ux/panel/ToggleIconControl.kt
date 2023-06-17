@@ -30,6 +30,7 @@ class ToggleIconControl(builder: Builder) : Control(builder) {
     }
 
     override fun notifyKeyPress(observer: KeyObservable) {
+        highlightFromKeyPress()
         if (observer.invokeModeChange()) {
             toggleMode()
             if (!iconToggled) toggleIcon()

@@ -204,7 +204,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         highlightFromKeyPress()
     }
 
-    private fun highlightFromKeyPress() {
+    internal fun highlightFromKeyPress() {
         isHighlightFromKeypress = true
         Timer().schedule(
             object : TimerTask() {

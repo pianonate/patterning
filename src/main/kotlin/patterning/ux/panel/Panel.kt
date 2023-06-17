@@ -159,6 +159,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     }
 
     protected abstract fun panelSubclassDraw()
+
     private val effectivePosition: PVector?
         get() =// used in isMouseOverMe when a Panel contains other Panels
             // can walk up the hierarchy if you have nested panels
