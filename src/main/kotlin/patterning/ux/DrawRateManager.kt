@@ -6,9 +6,11 @@ object DrawRateManager {
     private const val DRAW_RATE_STARTING = 32f
     private val speedValues = intArrayOf(1, 2, SINGLE_STEP_SPEED_CHANGE_THRESHOLD, 8, 16, 32, 64)
     private var speedIndex = speedValues.indexOf(DRAW_RATE_STARTING.toInt())
+
     private var frameCounter = 0
     // true if the frame counter is past the warm up period
     private val isWarmedUp get() = frameCounter >= DRAW_RATE_STARTING.toInt()
+
 
     private var targetDrawRate = DRAW_RATE_STARTING
     private var lastKnownRequestedDrawRate = DRAW_RATE_STARTING
@@ -25,6 +27,19 @@ object DrawRateManager {
     private var speedChangeActive = false
     private var currentFrameRate = 0f
 
+    var actualDrawRate = 0
+    private var lastUpdateTime = System.currentTimeMillis()
+
+
+    fun performDraw() {
+        actualDrawRate++
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastUpdateTime >= 1000) { // Check if a second has passed
+            println("Actual draw rate: $actualDrawRate frames/sec")
+            actualDrawRate = 0
+            lastUpdateTime = currentTime
+        }
+    }
 
     fun goFaster() {
         if (speedIndex < speedValues.size - 1) {
@@ -48,6 +63,8 @@ object DrawRateManager {
         adjustSpeedForFrameRate()
         speedChangeActive = true
     }
+
+
 
     private fun adjustSpeedForFrameRate() {
 
@@ -87,13 +104,16 @@ object DrawRateManager {
     }
 
     fun shouldDraw(frameRate: Float): Boolean {
+
         adjustDrawRate(frameRate)
+
+        if (!isWarmedUp) return true
 
         if (drawImmediately) {
             drawImmediately = false // Reset it for the next calls
             return true
         }
-        drawCounter += currentDrawRate / currentFrameRate
+        drawCounter += currentDrawRate / currentFrameRate.coerceAtLeast(1f)
         if (drawCounter >= 1.0) {
             drawCounter--
             return true
@@ -101,7 +121,7 @@ object DrawRateManager {
         return false
     }
 
-    fun adjustDrawRate(frameRate: Float) {
+    private fun adjustDrawRate(frameRate: Float) {
         // Increase the frame counter each time this method is called
         frameCounter++
 
