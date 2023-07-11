@@ -6,20 +6,20 @@ group = "com.example"
 version = "1.0-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_19
-    targetCompatibility = JavaVersion.VERSION_19
+    sourceCompatibility = JavaVersion.VERSION_20
+    targetCompatibility = JavaVersion.VERSION_20
 }
 
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        jvmTarget = "19"
+        jvmTarget = "20"
     }
 }
 
 plugins {
     application
-    kotlin("jvm") version "1.8.21"
+    kotlin("jvm") version "1.9.0"
 }
 
 repositories {
@@ -29,9 +29,6 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.3")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.3")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
     implementation("com.processing:processing:4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
 }

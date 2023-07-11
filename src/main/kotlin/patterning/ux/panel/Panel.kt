@@ -298,6 +298,7 @@ protected val isMouseOverMe: Boolean
 
         // Method to allow subclass builders to return "this" correctly
         protected open fun self(): T {
+            @Suppress("UNCHECKED_CAST")
             return this as T
         }
 

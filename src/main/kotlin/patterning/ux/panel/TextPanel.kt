@@ -243,7 +243,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // we update the size of the buffer containing the text
         // if we've resized && there is a supplier of an integer telling us the size of the text can change
         // for example the countdown text is half the screen width so we want to give it a new buffer
-        val shouldUpdate = drawingInformer.isResized() //&& textWidthSupplier.isPresent();
+
+
+        //val shouldUpdate = drawingInformer.isResized() //&& textWidthSupplier.isPresent();
         //updatePanelBuffer(drawingInformer.supplyPGraphics(), shouldUpdate);
 
         // if i cache a panel and then just create a new one when the screen resizes
