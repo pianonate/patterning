@@ -63,8 +63,14 @@ class HUDStringBuilder {
         }
     }
 
-    private fun getFormattedString(frameCount: Int, updateFrequency: Int, delimiter: String): String {
+    private fun getFormattedString(
+        frameCount: Int,
+        updateFrequency: Int,
+        delimiter: String,
+        updateFn: () -> Unit
+    ): String {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
+            updateFn()
             val formattedString = StringBuilder()
             for ((key, value) in data) {
                 val formattedValue = if (value is Number && value.toDouble() >= 10.0.pow(9.0)) {
@@ -88,7 +94,7 @@ class HUDStringBuilder {
         return cachedFormattedString
     }
 
-    fun getFormattedString(frameCount: Int, updateFrequency: Int): String {
-        return getFormattedString(frameCount, updateFrequency, delimiter)
+    fun getFormattedString(frameCount: Int, updateFrequency: Int, updateFn: () -> Unit): String {
+        return getFormattedString(frameCount, updateFrequency, delimiter, updateFn)
     }
 }

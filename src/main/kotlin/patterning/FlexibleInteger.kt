@@ -4,14 +4,36 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 
-// class FlexibleInteger(initialValue: BigInteger) {
-    class FlexibleInteger(private val value: Number) : Comparable<FlexibleInteger> {
+class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
+// class FlexibleInteger(private val value: Number) : Comparable<FlexibleInteger> {
 
-   /* private var value: Number = when (initialValue) {
+    /* private var value: Number = when (initialValue) {
         in Int.MIN_VALUE.toBigInteger()..Int.MAX_VALUE.toBigInteger() -> initialValue.toInt()
         in Long.MIN_VALUE.toBigInteger()..Long.MAX_VALUE.toBigInteger() -> initialValue.toLong()
         else -> initialValue
     }*/
+
+    private val value: Number = when (initialValue) {
+        is BigInteger -> {
+            when (initialValue) {
+                in INT_MIN_BIG_INTEGER..INT_MAX_BIG_INTEGER -> initialValue.toInt()
+                in LONG_MIN_BIG_INTEGER..LONG_MAX_BIG_INTEGER -> initialValue.toLong()
+                else -> initialValue
+            }
+        }
+
+        is Long -> {
+            when (initialValue) {
+                in INT_MIN..INT_MAX -> initialValue.toInt()
+                else -> initialValue
+            }
+        }
+
+        is Int -> initialValue
+
+        else -> throw IllegalArgumentException("Unsupported number type")
+    }
+
 
     operator fun plus(other: FlexibleInteger): FlexibleInteger {
         return when {
@@ -190,6 +212,13 @@ import java.math.BigInteger
     companion object {
         val ONE = FlexibleInteger(1)
         val ZERO = FlexibleInteger(0)
+        private const val INT_MIN = Int.MIN_VALUE
+        private const val INT_MAX = Int.MAX_VALUE
+        private val INT_MIN_BIG_INTEGER = Int.MIN_VALUE.toBigInteger()
+        private val INT_MAX_BIG_INTEGER = Int.MAX_VALUE.toBigInteger()
+        private val LONG_MIN_BIG_INTEGER = Long.MIN_VALUE.toBigInteger()
+        private val LONG_MAX_BIG_INTEGER = Long.MAX_VALUE.toBigInteger()
+
     }
 
 }

@@ -32,9 +32,12 @@ class LifeUniverse internal constructor() {
     private val trueLeaf: Node
 
     var root: Node?
-    val patternInfo: PatternInfo = PatternInfo()
+
+    // val patternInfo: PatternInfo = PatternInfo()
+    val patternInfo = PatternInfo(this::updatePatternInfo)
     var step: Int = 0
         set(value) {
+            println("step: $step")
             if (value != field) {
                 field = value
                 uncache(/*false*/)
@@ -43,6 +46,7 @@ class LifeUniverse internal constructor() {
                 emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
                 // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
             }
+            println("finished step: $step")
         }
 
     /*
@@ -132,15 +136,17 @@ class LifeUniverse internal constructor() {
     // right now i don't know why it's otherwise okay to preserve
     // need to think more about this
     private fun uncache(/*alsoQuick: Boolean*/) {
-        hashmap.values.parallelStream().forEach { node: Node? ->
-            if (node != null) {
-                node.cache = null
-                node.hashmapNext = null
-                /*                if (alsoQuick) {
-                    node.quickCache = null
-                }*/
+
+        hashmap.values.forEach { node ->
+            node.let {
+                it.cache = null
+                it.hashmapNext = null
+                // if (alsoQuick) {
+                //     it.quickCache = null
+                // }
             }
         }
+
     }
 
     // return false if not in the hash map
@@ -325,7 +331,6 @@ class LifeUniverse internal constructor() {
         val count = fieldX.capacity()
         moveField(fieldX, fieldY, offset.toInt(), offset.toInt())
         root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level)
-        updatePatternInfo()
     }
 
     private fun partition(start: Int, end: Int, testField: IntBuffer, otherField: IntBuffer, offset: Int): Int {
@@ -595,7 +600,6 @@ class LifeUniverse internal constructor() {
         this.root = nodeNextGeneration(root)
         val generationIncrease = pow2(step) // BigInteger.valueOf(2).pow(this.step);
         generation = generation.add(generationIncrease)
-        updatePatternInfo()
     }
 
     private fun updatePatternInfo() {
@@ -608,10 +612,10 @@ class LifeUniverse internal constructor() {
         val bounds = rootBounds
         patternInfo.addOrUpdate("width", (bounds.right - bounds.left).addOne().get())
         patternInfo.addOrUpdate("height", (bounds.bottom - bounds.top).addOne().get())
-
     }
 
     private fun nodeNextGeneration(node: Node?): Node? {
+        println("nodeNextGeneration: ${node?.id}")
         if (node!!.cache != null) {
             return node.cache
         }
@@ -690,9 +694,6 @@ class LifeUniverse internal constructor() {
         rulesS = 1 shl 2 or (1 shl 3)
         this.root = null
 
-        // number of generations to calculate at one time, written as 2^n
-        step = 0
-
         // in which generation are we
         generation = BigInteger.ZERO
         falseLeaf = Node(3, FlexibleInteger.ZERO, 0)
@@ -713,6 +714,8 @@ class LifeUniverse internal constructor() {
         level2Cache = HashMap(0x10000)
         this.root = emptyTree(3)
         generation = BigInteger.ZERO
+
+        // number of generations to calculate at one time, written as 2^n
         step = 0
     }
 

@@ -191,7 +191,7 @@ class PatternDrawer(
                 .textSize(24)
         }
         hudText = createTextPanel(hudText) {
-            TextPanel.Builder(drawingInformer, getHUDMessage(life), AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+            TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
                 .textSize(24)
                 .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
         }
@@ -242,7 +242,7 @@ class PatternDrawer(
     }
 
     private fun getHUDMessage(life: LifeUniverse): String {
-        val patternInfo = life.patternInfo.getData()  // Use the new getData() method
+        /*val patternInfo = life.patternInfo.getData()  // Use the new getData() method
 
         return hudInfo.apply {
             addOrUpdate("fps", processing.frameRate.roundToInt())
@@ -253,7 +253,20 @@ class PatternDrawer(
             patternInfo.forEach { (key, value) ->
                 addOrUpdate(key, value)
             }
-        }.getFormattedString(processing.frameCount, 12)
+        }.getFormattedString(processing.frameCount, 12)*/
+        return hudInfo.getFormattedString(
+            processing.frameCount,
+            24
+        ) {
+            hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
+            hudInfo.addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
+            hudInfo.addOrUpdate("cell", cell.size)
+            hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
+            val patternInfo = life.patternInfo.getData()  // Use the new getData() method
+            patternInfo.forEach { (key, value) ->
+                hudInfo.addOrUpdate(key, value)
+            }
+        }
     }
 
     fun saveUndoState() {
@@ -433,8 +446,6 @@ class PatternDrawer(
 
         return BoundingBox(drawingLeft, drawingTop, drawingWidth, drawingHeight)
     }
-
-
 
 
     fun draw(life: LifeUniverse, shouldDraw: Boolean) {
