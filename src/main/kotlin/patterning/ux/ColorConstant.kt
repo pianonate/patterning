@@ -3,13 +3,13 @@ package patterning.ux
 import processing.core.PApplet
 
 class ColorConstant(private val p: PApplet) {
-    private var currentColor = 0
-    private var previousColor = 0
+    private var currentColor = 0u
+    private var previousColor = 0u
     private var transitionStartTime: Long = 0
     private var transitionInProgress = false
     private var isInitialized = false
 
-    fun setColor(newColor: Int) {
+    fun setColor(newColor: UInt) {
         if (isInitialized) {
             previousColor = currentColor
             transitionInProgress = true
@@ -24,14 +24,14 @@ class ColorConstant(private val p: PApplet) {
     val color: Int
         get() {
             if (!transitionInProgress) {
-                return currentColor
+                return currentColor.toInt()
             }
             val t = (System.currentTimeMillis() - transitionStartTime).toFloat() / Theme.themeTransitionDuration
             return if (t < 1.0) {
-                p.lerpColor(previousColor, currentColor, t)
+                p.lerpColor(previousColor.toInt(), currentColor.toInt(), t)
             } else {
                 transitionInProgress = false
-                currentColor
+                currentColor.toInt()
             }
         }
 }

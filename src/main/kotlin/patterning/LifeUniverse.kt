@@ -19,9 +19,11 @@ class LifeUniverse internal constructor() {
     private var lastId: Int
     private var hashmapSize: Int
     private var maxLoad: Int
-    private var hashmap: HashMap<Int, Node?>
+   // private var hashmap: HashMap<Int, Node>
+    private var hashmap: MutableMap<Int, Node> = mutableMapOf()
     private var emptyTreeCache: Array<Node?>
-    private val level2Cache: HashMap<Int, Node>
+    // private val level2Cache: HashMap<Int, Node>
+    private val level2Cache: MutableMap<Int, Node>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
     private val rulesS: Int
@@ -134,7 +136,7 @@ class LifeUniverse internal constructor() {
             if (node != null) {
                 node.cache = null
                 node.hashmapNext = null
-/*                if (alsoQuick) {
+                /*                if (alsoQuick) {
                     node.quickCache = null
                 }*/
             }
@@ -144,7 +146,7 @@ class LifeUniverse internal constructor() {
     // return false if not in the hash map
     // which means it could be in the linked list associated with the hashmap
     private fun inHashmap(n: Node?): Boolean {
-        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
+        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) // and hashmapSize
         var node = hashmap[hash]
         while (node != null) {
             if (node == n) {
@@ -213,7 +215,7 @@ class LifeUniverse internal constructor() {
 
     // insert a node into the hashmap
     private fun hashmapInsert(n: Node?) {
-        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) and hashmapSize
+        val hash = calcHash(n!!.nw!!.id, n.ne!!.id, n.sw!!.id, n.se!!.id) // and hashmapSize
         var node = hashmap[hash]
         var prev: Node? = null
         while (node != null) {
@@ -251,14 +253,19 @@ class LifeUniverse internal constructor() {
         result = 31 * result xor neId
         result = 31 * result xor swId
         result = 31 * result xor seId
-        return result
+        return result and hashmapSize
     }
 
     // this is just used when setting up the field initially unless I'm missing
     // something
     private fun getBounds(fieldX: IntBuffer, fieldY: IntBuffer): Bounds {
         if (fieldX.capacity() == 0) {
-            return Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
+            return Bounds(
+                FlexibleInteger.ZERO,
+                FlexibleInteger.ZERO,
+                FlexibleInteger.ZERO,
+                FlexibleInteger.ZERO,
+            )
         }
 
         // this sets up a bounds that just has an initial top and bottom that are the
@@ -267,15 +274,15 @@ class LifeUniverse internal constructor() {
         // and height - it will make it
         // the size of the bounding box
         val bounds = Bounds(
-            fieldY[0].toBigInteger(), fieldX[0].toBigInteger()
+            FlexibleInteger(fieldY[0]), FlexibleInteger(fieldX[0])
         )
         val len = fieldX.capacity()
 
         // todo: pass in varied width and heights and look at the field size they
         // actually generate
         for (i in 1 until len) {
-            val x = fieldX[i].toBigInteger()
-            val y = fieldY[i].toBigInteger()
+            val x = FlexibleInteger(fieldX[i])
+            val y = FlexibleInteger(fieldY[i])
             if (x < bounds.left) {
                 bounds.left = x
             } else if (x > bounds.right) {
@@ -294,7 +301,7 @@ class LifeUniverse internal constructor() {
         var max = 4
         val keys = arrayOf("top", "left", "bottom", "right")
         for (key in keys) {
-            var coordinate = BigInteger.ZERO
+            var coordinate = FlexibleInteger.ZERO
             when (key) {
                 "top" -> coordinate = bounds.top
                 "left" -> coordinate = bounds.left
@@ -302,9 +309,9 @@ class LifeUniverse internal constructor() {
                 "right" -> coordinate = bounds.right
                 else -> {}
             }
-            if (coordinate + BigInteger.ONE > max.toBigInteger() ) {
-                max = (coordinate + BigInteger.ONE).toInt()
-            } else if (coordinate.negate() > max.toBigInteger()) {
+            if (coordinate.addOne() > FlexibleInteger(max)) {
+                max = (coordinate.addOne()).toInt()
+            } else if (coordinate.negate() > FlexibleInteger(max)) {
                 max = coordinate.negate().toInt()
             }
         }
@@ -347,7 +354,13 @@ class LifeUniverse internal constructor() {
         return i
     }
 
-    private fun setupFieldRecurse(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer, recurseLevel: Int): Node? {
+    private fun setupFieldRecurse(
+        start: Int,
+        end: Int,
+        fieldX: IntBuffer,
+        fieldY: IntBuffer,
+        recurseLevel: Int
+    ): Node? {
         var level = recurseLevel
         if (start > end) {
             return emptyTree(level)
@@ -465,26 +478,32 @@ class LifeUniverse internal constructor() {
         val ne = node.ne
         val sw = node.sw
         val se = node.se
-        val bitmask = nw!!.nw!!.population.shiftLeft(15).or(nw.ne!!.population.shiftLeft(14))
-            .or(ne!!.nw!!.population.shiftLeft(13)).or(ne.ne!!.population.shiftLeft(12))
-            .or(nw.sw!!.population.shiftLeft(11)).or(nw.se!!.population.shiftLeft(10))
+        val bitmask = nw!!.nw!!.population.shiftLeft(15)
+            .or(nw.ne!!.population.shiftLeft(14))
+            .or(ne!!.nw!!.population.shiftLeft(13))
+            .or(ne.ne!!.population.shiftLeft(12))
+            .or(nw.sw!!.population.shiftLeft(11))
+            .or(nw.se!!.population.shiftLeft(10))
             .or(ne.sw!!.population.shiftLeft(9))
             .or(ne.se!!.population.shiftLeft(8))
-            .or(sw!!.nw!!.population.shiftLeft(7)).or(sw.ne!!.population.shiftLeft(6))
+            .or(sw!!.nw!!.population.shiftLeft(7))
+            .or(sw.ne!!.population.shiftLeft(6))
             .or(se!!.nw!!.population.shiftLeft(5))
             .or(se.ne!!.population.shiftLeft(4))
-            .or(sw.sw!!.population.shiftLeft(3)).or(sw.se!!.population.shiftLeft(2)).or(se.sw!!.population.shiftLeft(1))
-            .or(se.se!!.population)
-        val result = evalMask(bitmask.shiftRight(5).toInt()) or (
-                evalMask(bitmask.shiftRight(4).toInt()) shl 1) or (
-                evalMask(bitmask.shiftRight(1).toInt()) shl 2) or (
-                evalMask(bitmask.toInt()) shl 3)
+            .or(sw.sw!!.population.shiftLeft(3))
+            .or(sw.se!!.population.shiftLeft(2))
+            .or(se.sw!!.population.shiftLeft(1))
+            .or(se.se!!.population.toInt())
+        val result = evalMask(bitmask shr 5) or (
+                evalMask(bitmask shr 4) shl 1) or (
+                evalMask(bitmask shr 1) shl 2) or (
+                evalMask(bitmask) shl 3)
         return level1Create(result)
     }
 
     // create or search for a tree node given its children
     private fun createTree(nw: Node?, ne: Node?, sw: Node?, se: Node?): Node {
-        val hash = calcHash(nw!!.id, ne!!.id, sw!!.id, se!!.id) and hashmapSize
+        val hash = calcHash(nw!!.id, ne!!.id, sw!!.id, se!!.id) // and hashmapSize
         var node = hashmap[hash]
         var prev: Node? = null
         while (node != null) {
@@ -494,6 +513,7 @@ class LifeUniverse internal constructor() {
             prev = node
             node = node.hashmapNext
         }
+
         if (lastId > maxLoad) {
             garbageCollect()
             // garbageCollect new maxLoad:{String.format("%,d", maxLoad)} - next thing up is
@@ -502,7 +522,9 @@ class LifeUniverse internal constructor() {
             // returning it
             return createTree(nw, ne, sw, se)
         }
-        val newNode = Node(nw, ne, sw, se, lastId++, step)
+
+        val newNode = Node(nw, ne, sw, se, lastId++)
+
         if (prev != null) {
             prev.hashmapNext = newNode
         } else {
@@ -580,12 +602,12 @@ class LifeUniverse internal constructor() {
         patternInfo.addOrUpdate("level", root!!.level)
         patternInfo.addOrUpdate("step", pow2(step)!!)
         patternInfo.addOrUpdate("generation", generation)
-        patternInfo.addOrUpdate("population", root!!.population)
+        patternInfo.addOrUpdate("population", root!!.population.get())
         patternInfo.addOrUpdate("maxLoad", maxLoad)
         patternInfo.addOrUpdate("lastId", lastId)
         val bounds = rootBounds
-        patternInfo.addOrUpdate("width", bounds.right.subtract(bounds.left).add(BigInteger.ONE))
-        patternInfo.addOrUpdate("height", bounds.bottom.subtract(bounds.top).add(BigInteger.ONE))
+        patternInfo.addOrUpdate("width", (bounds.right - bounds.left).addOne().get())
+        patternInfo.addOrUpdate("height", (bounds.bottom - bounds.top).addOne().get())
 
     }
 
@@ -615,14 +637,14 @@ class LifeUniverse internal constructor() {
         val sw = node.sw
         val se = node.se
         val n00 = createTree(nw!!.nw!!.se, nw.ne!!.sw, nw.sw!!.ne, nw.se!!.nw)
-        val n01 = createTree(nw.ne!!.se, ne!!.nw!!.sw, nw.se!!.ne, ne.sw!!.nw)
-        val n02 = createTree(ne.nw!!.se, ne.ne!!.sw, ne.sw!!.ne, ne.se!!.nw)
-        val n10 = createTree(nw.sw!!.se, nw.se!!.sw, sw!!.nw!!.ne, sw.ne!!.nw)
-        val n11 = createTree(nw.se!!.se, ne.sw!!.sw, sw.ne!!.ne, se!!.nw!!.nw)
-        val n12 = createTree(ne.sw!!.se, ne.se!!.sw, se.nw!!.ne, se.ne!!.nw)
-        val n20 = createTree(sw.nw!!.se, sw.ne!!.sw, sw.sw!!.ne, sw.se!!.nw)
-        val n21 = createTree(sw.ne!!.se, se.nw!!.sw, sw.se!!.ne, se.sw!!.nw)
-        val n22 = createTree(se.nw!!.se, se.ne!!.sw, se.sw!!.ne, se.se!!.nw)
+        val n01 = createTree(nw.ne.se, ne!!.nw!!.sw, nw.se.ne, ne.sw!!.nw)
+        val n02 = createTree(ne.nw!!.se, ne.ne!!.sw, ne.sw.ne, ne.se!!.nw)
+        val n10 = createTree(nw.sw.se, nw.se.sw, sw!!.nw!!.ne, sw.ne!!.nw)
+        val n11 = createTree(nw.se.se, ne.sw.sw, sw.ne.ne, se!!.nw!!.nw)
+        val n12 = createTree(ne.sw.se, ne.se.sw, se.nw!!.ne, se.ne!!.nw)
+        val n20 = createTree(sw.nw!!.se, sw.ne.sw, sw.sw!!.ne, sw.se!!.nw)
+        val n21 = createTree(sw.ne.se, se.nw.sw, sw.se.ne, se.sw!!.nw)
+        val n22 = createTree(se.nw.se, se.ne.sw, se.sw.ne, se.se!!.nw)
         val newNW = nodeNextGeneration(createTree(n00, n01, n10, n11))
         val newNE = nodeNextGeneration(createTree(n01, n02, n11, n12))
         val newSW = nodeNextGeneration(createTree(n10, n11, n20, n21))
@@ -657,8 +679,10 @@ class LifeUniverse internal constructor() {
         _bitcounts[14] = 3
         _bitcounts[15] = 4
         for (i in 0x10..0x757) {
-            _bitcounts[i] = (_bitcounts[i and 0xF] + _bitcounts[i shr 4 and 0xF]
-                    + _bitcounts[i shr 8]).toByte()
+            _bitcounts[i] = (
+                    _bitcounts[i and 0xF] +
+                            _bitcounts[i shr 4 and 0xF] +
+                            _bitcounts[i shr 8]).toByte()
         }
 
         // current rule setting
@@ -671,8 +695,8 @@ class LifeUniverse internal constructor() {
 
         // in which generation are we
         generation = BigInteger.ZERO
-        falseLeaf = Node(3, BigInteger.ZERO, 0)
-        trueLeaf = Node(2, BigInteger.ONE, 0)
+        falseLeaf = Node(3, FlexibleInteger.ZERO, 0)
+        trueLeaf = Node(2, FlexibleInteger.ONE, 0)
 
         // the final necessary setup bits
 
@@ -741,22 +765,36 @@ class LifeUniverse internal constructor() {
 
     val rootBounds: Bounds
         get() {
-            if (root!!.population == BigInteger.ZERO) {
-                return Bounds(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
+            if (root!!.population.isZero()) {
+                return Bounds(
+                    FlexibleInteger.ZERO,
+                    FlexibleInteger.ZERO,
+                    FlexibleInteger.ZERO,
+                    FlexibleInteger.ZERO
+                )
             }
 
             // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
-            val offset = pow2(root!!.level - 1)
-            val bounds = Bounds(offset!!, offset, offset.negate(), offset.negate())
+            val offset = FlexibleInteger(pow2(root!!.level - 1)!!)
+            val bounds = Bounds(offset, offset, offset.negate(), offset.negate())
             nodeGetBoundary(
-                root, offset.negate(), offset.negate(),
-                MASK_TOP or MASK_LEFT or MASK_BOTTOM or MASK_RIGHT, bounds
+                root!!,
+                offset.negate(),
+                offset.negate(),
+                MASK_TOP or MASK_LEFT or MASK_BOTTOM or MASK_RIGHT,
+                bounds
             )
             return bounds
         }
 
-    private fun nodeGetBoundary(node: Node?, left: BigInteger, top: BigInteger, findMask: Int, boundary: Bounds) {
-        if (node!!.population == BigInteger.ZERO || findMask == 0) {
+    private fun nodeGetBoundary(
+        node: Node,
+        left: FlexibleInteger,
+        top: FlexibleInteger,
+        findMask: Int,
+        boundary: Bounds
+    ) {
+        if (node.population.isZero() || findMask == 0) {
             return
         }
         if (node.level == 0) {
@@ -765,12 +803,12 @@ class LifeUniverse internal constructor() {
             boundary.top = boundary.top.min(top)
             boundary.bottom = boundary.bottom.max(top)
         } else {
-            val offset = pow2(node.level - 1)
-            val doubledOffset = pow2(node.level)
+            val offset = FlexibleInteger(pow2(node.level - 1)!!)
+            val doubledOffset = FlexibleInteger(pow2(node.level)!!)
             if (left >= boundary.left &&
-                left.add(doubledOffset) <= boundary.right &&
+                left + doubledOffset <= boundary.right &&
                 top >= boundary.top &&
-                top.add(doubledOffset) <= boundary.bottom
+                top + doubledOffset <= boundary.bottom
             ) {
                 // This square is already inside the found boundary
                 return
@@ -779,30 +817,30 @@ class LifeUniverse internal constructor() {
             var findSW = findMask
             var findNE = findMask
             var findSE = findMask
-            if (node.nw!!.population != BigInteger.ZERO) {
+            if (node.nw!!.population.isNotZero()) {
                 findSW = findSW and MASK_TOP.inv()
                 findNE = findNE and MASK_LEFT.inv()
                 findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
             }
-            if (node.sw!!.population != BigInteger.ZERO) {
+            if (node.sw!!.population.isNotZero()) {
                 findSE = findSE and MASK_LEFT.inv()
                 findNW = findNW and MASK_BOTTOM.inv()
                 findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
             }
-            if (node.ne!!.population != BigInteger.ZERO) {
+            if (node.ne!!.population.isNotZero()) {
                 findNW = findNW and MASK_RIGHT.inv()
                 findSE = findSE and MASK_TOP.inv()
                 findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
             }
-            if (node.se!!.population != BigInteger.ZERO) {
+            if (node.se!!.population.isNotZero()) {
                 findSW = findSW and MASK_RIGHT.inv()
                 findNE = findNE and MASK_BOTTOM.inv()
                 findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
             }
             nodeGetBoundary(node.nw, left, top, findNW, boundary)
-            nodeGetBoundary(node.sw, left, top.add(offset), findSW, boundary)
-            nodeGetBoundary(node.ne, left.add(offset), top, findNE, boundary)
-            nodeGetBoundary(node.se, left.add(offset), top.add(offset), findSE, boundary)
+            nodeGetBoundary(node.sw, left, top + offset, findSW, boundary)
+            nodeGetBoundary(node.ne, left + offset, top, findNE, boundary)
+            nodeGetBoundary(node.se, left + offset, top + offset, findSE, boundary)
         }
     }
 

@@ -18,8 +18,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     private val alignAble: Boolean
     private val radius: OptionalInt
 
-
-
     var parentPanel: Panel? = null
     var drawingInformer: DrawingInfoSupplier
 

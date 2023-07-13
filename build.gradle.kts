@@ -1,21 +1,15 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val patterningMain: String = "patterning.Patterning"
-
-group = "com.example"
-version = "1.0-SNAPSHOT"
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_20
-    targetCompatibility = JavaVersion.VERSION_20
-}
-
-
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         jvmTarget = "20"
     }
 }
+
+val patterningMain: String = "patterning.Patterning"
+
+group = "com.example"
+version = "1.0-SNAPSHOT"
 
 plugins {
     application
@@ -33,18 +27,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
 application {
     mainClass.set(patterningMain)
-    applicationDefaultJvmArgs = listOf("-XX:+UseZGC")
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.isDeprecation = true
-    options.compilerArgs = listOf("-Xlint:unchecked")
+    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx128G")
 }
 
 tasks.register<JavaExec>("profile") {

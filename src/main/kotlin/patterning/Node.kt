@@ -1,41 +1,40 @@
 package patterning
 
-import java.math.BigInteger
-
 class Node {
-    private val step: Int
 
-    var nw: Node? = null
-    var ne: Node? = null
-    var sw: Node? = null
-    var se: Node? = null
-    var id: Int
+    val nw: Node?
+    val ne: Node?
+    val sw: Node?
+    val se: Node?
+    var id: Int = 0
     val level: Int
-    val population: BigInteger
+    val population: FlexibleInteger
     var cache: Node? = null
     var quickCache: Node? = null
     var hashmapNext: Node? = null
 
     // falseLeaf, trueLeaf constructors
-    constructor(id: Int, population: BigInteger, level: Int) {
+    constructor(id: Int, population: FlexibleInteger, level: Int) {
         this.id = id
         this.population = population
         this.level = level
-        step = 0
+        this.nw = null
+        this.ne = null
+        this.sw = null
+        this.se = null
     }
 
-    constructor(nw: Node, ne: Node, sw: Node, se: Node, id: Int, step: Int) {
+    constructor(nw: Node, ne: Node, sw: Node, se: Node, id: Int) {
         this.nw = nw
         this.ne = ne
         this.sw = sw
         this.se = se
         this.id = id
-        this.step = step
         level = nw.level + 1
-        population = nw.population.add(ne.population).add(sw.population).add(se.population)
+        population = nw.population + ne.population + sw.population + se.population
     }
 
-   /* private fun hasChanged(): Boolean {
+    /* private fun hasChanged(): Boolean {
         return hasChanged(this)
     }
 
@@ -71,7 +70,7 @@ class Node {
             changedNodes.clear()
         }
 
-/*        private fun hasChanged(node: Node): Boolean {
+        /*        private fun hasChanged(node: Node): Boolean {
             return changedNodes.contains(node)
         }*/
     }

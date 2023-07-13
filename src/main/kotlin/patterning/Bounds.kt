@@ -1,12 +1,10 @@
 package patterning
 
-import java.math.BigInteger
-
 data class Bounds(
-    var top: BigInteger,
-    var left: BigInteger,
-    var bottom: BigInteger,
-    var right: BigInteger
+    var top: FlexibleInteger,
+    var left: FlexibleInteger,
+    var bottom: FlexibleInteger,
+    var right: FlexibleInteger
 ) {
-    constructor(top: BigInteger, left: BigInteger) : this(top, left, top, left)
+    constructor(top: FlexibleInteger, left: FlexibleInteger) : this(top, left, top, left)
 }

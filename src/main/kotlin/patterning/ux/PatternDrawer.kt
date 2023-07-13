@@ -14,7 +14,6 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
 import java.math.BigDecimal
-import java.math.BigInteger
 import java.math.MathContext
 import java.math.RoundingMode
 import java.util.*
@@ -203,8 +202,8 @@ class PatternDrawer(
         if (saveState) saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = BigDecimal(bounds.right - bounds.left + BigInteger.ONE)
-        val patternHeight = BigDecimal(bounds.bottom - bounds.top + BigInteger.ONE)
+        val patternWidth = (bounds.right - bounds.left).addOne().toBigDecimal()
+        val patternHeight = (bounds.bottom - bounds.top).addOne().toBigDecimal()
 
         val maxDimension = maxOf(patternWidth, patternHeight)
         val scale = maxDimension.toString().length + 3
@@ -301,7 +300,7 @@ class PatternDrawer(
     }
 
     private fun drawNode(node: Node?, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
-        node!!.population.takeIf { it > BigInteger.ZERO } ?: return
+        node!!.population.takeIf { it.isNotZero() } ?: return
 
         val leftWithOffset = left + canvasOffsetX
         val topWithOffset = top + canvasOffsetY
@@ -316,9 +315,9 @@ class PatternDrawer(
         }
         // if we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
-        if (size <= BigDecimal.ONE && node.population > BigInteger.ZERO) {
+        if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
-        } else if (node.level == 0 && node.population == BigInteger.ONE) {
+        } else if (node.level == 0 && node.population.isOne()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size.toFloat())
         } else {
             val halfSize = getHalfSize(size)

@@ -1,8 +1,8 @@
 package patterning.ux
 
 open class UXConstants internal constructor() {
+    // sizes
     val controlSize: Int
-        // sizes
         get() = 35
     val controlHighlightCornerRadius: Int
         get() = 10
@@ -20,25 +20,28 @@ open class UXConstants internal constructor() {
         get() = 5
     val startupTextSize: Int
         get() = 50
-    open val backgroundColor: Int
-        // colors
-        get() = 255
-    open val cellColor: Int
-        get() = -0x1000000
-    val controlColor: Int
-        get() = -0x37afafb0 // partially transparent 40
-    val controlHighlightColor: Int
-        get() = -0x376f6f70 // partially transparent 60
-    val controlMousePressedColor: Int
-        get() = -0x371e1e1f // partially transparent 225
-    val defaultPanelColor: Int
-        get() = 0x00FFFFFF
-    open val textColorStart: Int
-        get() = -0x1
-    open val textColor: Int
-        get() = -0x1000000
+
+    // colors
+    open val backgroundColor: UInt
+        get() = 0xFFu
+    open val cellColor: UInt
+        get() = 0xFF000000u
+    open val textColorStart: UInt
+        get() = 0xFFFFFFFFu
+    open val textColor: UInt
+        get() = 0xFF000000u
+
+    val controlColor: UInt
+        get() = 0xC8404040u // partially transparent 40
+    val controlHighlightColor: UInt
+        get() = 0xC8909090u // partially transparent 60
+    val controlMousePressedColor: UInt
+        get() = 0xC8E1E1E1u // partially transparent 225
+    val defaultPanelColor: UInt
+        get() = 0x00FFFFFFu
+
+    // durations
     val controlHighlightDuration: Int
-        // durations
         get() = 1000
     val controlPanelTransitionDuration: Int
         get() = 1500
