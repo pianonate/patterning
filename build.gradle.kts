@@ -29,7 +29,7 @@ dependencies {
 
 application {
     mainClass.set(patterningMain)
-    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx128G")
+    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G")
 }
 
 tasks.register<JavaExec>("profile") {

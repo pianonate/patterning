@@ -33,45 +33,4 @@ class Node {
         level = nw.level + 1
         population = nw.population + ne.population + sw.population + se.population
     }
-
-    /* private fun hasChanged(): Boolean {
-        return hasChanged(this)
-    }
-
-    fun countNodes(): Int {
-        var count = 1
-        if (nw != null) {
-            count += nw!!.countNodes()
-            count += ne!!.countNodes()
-            count += sw!!.countNodes()
-            count += se!!.countNodes()
-        }
-        return count
-    }
-
-    fun countChangedNodes(): Int {
-        var count = if (hasChanged()) 1 else 0
-        if (nw != null) {
-            count += nw!!.countChangedNodes()
-            count += ne!!.countChangedNodes()
-            count += sw!!.countChangedNodes()
-            count += se!!.countChangedNodes()
-        }
-        return count
-    }*/
-
-    companion object {
-        private val changedNodes = HashSet<Node>()
-        fun addChanged(node: Node) {
-            changedNodes.add(node)
-        }
-
-        fun clearChanged() {
-            changedNodes.clear()
-        }
-
-        /*        private fun hasChanged(node: Node): Boolean {
-            return changedNodes.contains(node)
-        }*/
-    }
 }

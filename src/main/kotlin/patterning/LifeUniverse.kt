@@ -1,7 +1,5 @@
 package patterning
 
-import patterning.Node.Companion.addChanged
-import patterning.Node.Companion.clearChanged
 import java.math.BigInteger
 import java.nio.IntBuffer
 import kotlin.math.ceil
@@ -37,7 +35,6 @@ class LifeUniverse internal constructor() {
     val patternInfo = PatternInfo(this::updatePatternInfo)
     var step: Int = 0
         set(value) {
-            println("step: $step")
             if (value != field) {
                 field = value
                 uncache(/*false*/)
@@ -46,7 +43,6 @@ class LifeUniverse internal constructor() {
                 emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
                 // level2Cache = new HashMap<>(0x10000); // it seems level2cache is only used on setting up the life form so maybe they were just taking the opportunity to clear it here?
             }
-            println("finished step: $step")
         }
 
     /*
@@ -592,11 +588,7 @@ class LifeUniverse internal constructor() {
         ) {
             root = expandUniverse(root)
         }
-        // patterning.Node maintains a per generation set of nodes that were newly created
-        // clear them so the drawing routine can use unchanged nodes as a key to a cache
-        // associated with their
-        // drawing
-        clearChanged()
+
         this.root = nodeNextGeneration(root)
         val generationIncrease = pow2(step) // BigInteger.valueOf(2).pow(this.step);
         generation = generation.add(generationIncrease)
@@ -615,14 +607,11 @@ class LifeUniverse internal constructor() {
     }
 
     private fun nodeNextGeneration(node: Node?): Node? {
-        println("nodeNextGeneration: ${node?.id}")
         if (node!!.cache != null) {
             return node.cache
         }
         if (step == node.level - 2) {
             quickgen = 0
-            // System.out.println("root.level: " + root.level + " step: " + this.step + "
-            // node.level: " + node.level);
             return nodeQuickNextGeneration(node, 0)
         }
 
@@ -655,10 +644,6 @@ class LifeUniverse internal constructor() {
         val newSE = nodeNextGeneration(createTree(n11, n12, n21, n22))
         val result = createTree(newNW, newNE, newSW, newSE)
 
-        // cascade it up the tree
-        addChanged(node)
-        // mark the new one changed
-        addChanged(result)
         node.cache = result
         return result
     }

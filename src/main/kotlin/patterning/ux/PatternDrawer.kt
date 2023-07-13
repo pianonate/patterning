@@ -552,7 +552,7 @@ class PatternDrawer(
         // without this precision on the MathContext, small imprecision propagates at
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
-        val mc = MathContext(200)
+        val mc = MathContext(300)
         private val BigTWO = BigDecimal(2)
         private val undoDeque = ArrayDeque<CanvasState>()
         private const val DEFAULT_CELL_WIDTH = 4.0
