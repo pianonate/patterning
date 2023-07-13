@@ -5,13 +5,6 @@ import java.math.BigInteger
 
 
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
-// class FlexibleInteger(private val value: Number) : Comparable<FlexibleInteger> {
-
-    /* private var value: Number = when (initialValue) {
-        in Int.MIN_VALUE.toBigInteger()..Int.MAX_VALUE.toBigInteger() -> initialValue.toInt()
-        in Long.MIN_VALUE.toBigInteger()..Long.MAX_VALUE.toBigInteger() -> initialValue.toLong()
-        else -> initialValue
-    }*/
 
     private val value: Number = when (initialValue) {
         is BigInteger -> {
@@ -84,7 +77,6 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         return FlexibleInteger(a + b)
     }
 
-
     fun get(): Number = value
 
     fun isOne(): Boolean = when (value) {
@@ -148,7 +140,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     operator fun minus(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> FlexibleInteger(value - other.value)
+            value is Int && other.value is Long -> FlexibleInteger(value.toLong() - other.value)
             value is Long && other.value is Long -> FlexibleInteger(value - other.value)
+            value is Long && other.value is Int -> FlexibleInteger(value - other.value.toLong())
             value is BigInteger && other.value is BigInteger -> FlexibleInteger(value - other.value)
             else -> FlexibleInteger(value.toBigIntegerSafe() - other.value.toBigIntegerSafe())
         }
@@ -157,7 +151,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     fun min(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> if (value <= other.value) this else other
+            value is Int && other.value is Long -> if (value.toLong() <= other.value) this else other
             value is Long && other.value is Long -> if (value <= other.value) this else other
+            value is Long && other.value is Int -> if (value <= other.value.toLong()) this else other
             value is BigInteger && other.value is BigInteger -> if (value <= other.value) this else other
             else -> if (value.toBigIntegerSafe() <= other.value.toBigIntegerSafe()) this else other
         }
@@ -166,7 +162,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     fun max(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> if (value >= other.value) this else other
+            value is Int && other.value is Long -> if (value.toLong() >= other.value) this else other
             value is Long && other.value is Long -> if (value >= other.value) this else other
+            value is Long && other.value is Int -> if (value >= other.value.toLong()) this else other
             value is BigInteger && other.value is BigInteger -> if (value >= other.value) this else other
             else -> if (value.toBigIntegerSafe() >= other.value.toBigIntegerSafe()) this else other
         }
@@ -175,7 +173,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     override fun compareTo(other: FlexibleInteger): Int {
         return when {
             value is Int && other.value is Int -> value.compareTo(other.value)
+            value is Int && other.value is Long -> (value.toLong()).compareTo(other.value)
             value is Long && other.value is Long -> value.compareTo(other.value)
+            value is Long && other.value is Int -> value.compareTo(other.value.toLong())
             value is BigInteger && other.value is BigInteger -> (value).compareTo(other.value)
             else -> value.toBigIntegerSafe().compareTo(other.value.toBigIntegerSafe())
         }

@@ -1,36 +1,37 @@
 package patterning
 
-class Node {
-
-    val nw: Node?
-    val ne: Node?
-    val sw: Node?
-    val se: Node?
-    var id: Int = 0
-    val level: Int
+interface Node {
+    var id: Int
     val population: FlexibleInteger
-    var cache: Node? = null
-    var quickCache: Node? = null
-    var hashmapNext: Node? = null
+    val level: Int
 
-    // falseLeaf, trueLeaf constructors
-    constructor(id: Int, population: FlexibleInteger, level: Int) {
-        this.id = id
-        this.population = population
-        this.level = level
-        this.nw = null
-        this.ne = null
-        this.sw = null
-        this.se = null
+    companion object {
+        val unbornNode = LeafNode(3, FlexibleInteger.ZERO)
+        val aliveNode = LeafNode(2, FlexibleInteger.ONE)
+        val startId = unbornNode.id + 1
     }
+}
 
-    constructor(nw: Node, ne: Node, sw: Node, se: Node, id: Int) {
-        this.nw = nw
-        this.ne = ne
-        this.sw = sw
-        this.se = se
-        this.id = id
-        level = nw.level + 1
-        population = nw.population + ne.population + sw.population + se.population
-    }
+class LeafNode(
+    override var id: Int,
+    override val population: FlexibleInteger,
+) : Node {
+    override val level: Int = 0
+}
+
+class InternalNode(
+    val nw: Node,
+    val ne: Node,
+    val sw: Node,
+    val se: Node,
+    override var id: Int
+) : Node {
+
+    override val level: Int = nw.level + 1
+    override val population: FlexibleInteger = nw.population + ne.population + sw.population + se.population
+
+    var cache: InternalNode? = null
+    var quickCache: InternalNode? = null
+    var hashmapNext: InternalNode? = null
+
 }

@@ -1,9 +1,6 @@
 package patterning.ux
 
-import patterning.Bounds
-import patterning.LifeUniverse
-import patterning.Node
-import patterning.Processing
+import patterning.*
 import patterning.actions.KeyFactory
 import patterning.actions.MouseEventManager.Companion.instance
 import patterning.actions.MovementHandler
@@ -312,7 +309,7 @@ class PatternDrawer(
 
     }
 
-    private fun drawNode(node: Node?, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
+    private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
         node!!.population.takeIf { it.isNotZero() } ?: return
 
         val leftWithOffset = left + canvasOffsetX
@@ -330,9 +327,9 @@ class PatternDrawer(
         // draw a unit square and be done
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
-        } else if (node.level == 0 && node.population.isOne()) {
+        } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size.toFloat())
-        } else {
+        } else if (node is InternalNode) {
             val halfSize = getHalfSize(size)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize

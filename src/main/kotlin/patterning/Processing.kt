@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
 
 class Processing : PApplet() {
     var draggingDrawing = false
-    private var life: LifeUniverse? = null
+    private var life: LifeUniverse = LifeUniverse()
     private var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>? = null
     private var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>? = null
     private val mouseEventManager = MouseEventManager.instance
@@ -119,7 +119,7 @@ class Processing : PApplet() {
         // and we tell the drawer whether it is still updating life since the last frame
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
-        drawer!!.draw(life!!, shouldDraw && isThreadSafe)
+        drawer!!.draw(life, shouldDraw && isThreadSafe)
 
 
         // as mentioned above - this runs on a separate thread
@@ -139,7 +139,7 @@ class Processing : PApplet() {
 
     private fun goForwardInTime() {
         if (shouldStartComplexCalculationSetStep()) {
-            var step = life!!.step
+            var step = life.step
             step += if (step < targetStep) 1 else -1
             complexCalculationHandlerSetStep!!.startCalculation(step)
             return
@@ -157,7 +157,7 @@ class Processing : PApplet() {
     private fun shouldStartComplexCalculationSetStep(): Boolean {
 
         // if we're not running a complex task, and we're expecting to change the step
-        return lifeIsThreadSafe() && life!!.step != targetStep
+        return lifeIsThreadSafe() && life.step != targetStep
     }
 
     // only start these if you're not running either one
@@ -240,13 +240,13 @@ class Processing : PApplet() {
     }
 
     private fun performComplexCalculationSetStep(step: Int) {
-        life!!.step = step
+        life.step = step
         // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
         drawer!!.clearUndoDeque()
     }
 
     private fun performComplexCalculationNextGeneration() {
-        life!!.nextGeneration()
+        life.nextGeneration()
     }
 
     private fun loadSavedWindowPositions() {
@@ -293,18 +293,21 @@ class Processing : PApplet() {
         try {
             // static on patterning.Patterning
             isRunning = false
-            life = LifeUniverse()
+
+            // only instantiate if it already has something in it
+            if (life.isAlive)
+                life = LifeUniverse()
 
             // instance variables - do they need to be?
             val parser = LifeFormats()
             val newLife = parser.parseRLE(storedLife!!)
             targetStep = 0
-            life!!.step = 0
-            life!!.setupField(newLife.fieldX!!, newLife.fieldY!!)
+            life.step = 0
+            life.setupField(newLife.fieldX!!, newLife.fieldY!!)
 
             // new instances only created in instantiateLife to keep things simple
             // lifeForm not made local as it is intended to be used with display functions in the future
-            drawer!!.setupNewLife(life!!)
+            drawer!!.setupNewLife(life)
         } catch (e: NotLifeException) {
             // todo: on failure you need to
             println(
@@ -365,7 +368,7 @@ class Processing : PApplet() {
     }
 
     fun fitUniverseOnScreen() {
-        drawer!!.center(life!!.rootBounds, fitBounds = true, saveState = true)
+        drawer!!.center(life.rootBounds, fitBounds = true, saveState = true)
     }
 
     val numberedLifeForm: Unit
@@ -386,7 +389,7 @@ class Processing : PApplet() {
         }
 
     fun centerView() {
-        drawer!!.center(life!!.rootBounds, fitBounds = false, saveState = true)
+        drawer!!.center(life.rootBounds, fitBounds = false, saveState = true)
     }
 
     fun toggleSingleStep() {
