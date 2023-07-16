@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
 
 class Processing : PApplet() {
     var draggingDrawing = false
-    private var life: LifeUniverse = LifeUniverse()
+    private lateinit var life: LifeUniverse
     private var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>? = null
     private var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>? = null
     private val mouseEventManager = MouseEventManager.instance
@@ -121,6 +121,12 @@ class Processing : PApplet() {
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
         drawer!!.draw(life, shouldDraw && isThreadSafe)
 
+        // there is a bug that every once in a while the text will just not draw
+        // stepping through it in the debugger will magically make it draw - which
+        // is potentially an indicator that something is wrong with the animation thread
+        // and just sleeping a bit seems to fix it
+        // let's see if it's really true
+        delay(3)
 
         // as mentioned above - this runs on a separate thread
         // and we don't want it to go any faster than the draw rate throttling mechanism
@@ -247,6 +253,7 @@ class Processing : PApplet() {
 
     private fun performComplexCalculationNextGeneration() {
         life.nextGeneration()
+        targetStep += 1
     }
 
     private fun loadSavedWindowPositions() {
@@ -295,8 +302,7 @@ class Processing : PApplet() {
             isRunning = false
 
             // only instantiate if it already has something in it
-            if (life.isAlive)
-                life = LifeUniverse()
+            life = LifeUniverse()
 
             // instance variables - do they need to be?
             val parser = LifeFormats()

@@ -2,6 +2,13 @@ package patterning
 
 import java.math.BigDecimal
 import java.math.BigInteger
+import kotlin.math.ceil
+import kotlin.math.ln
+
+// Top-level extension function
+fun Int.toFlexibleInteger(): FlexibleInteger {
+    return FlexibleInteger(this)
+}
 
 
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
@@ -33,12 +40,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
             value is Int && other.value is Int -> handleIntAddition(value, other.value)
             value is Int && other.value is Long -> handleLongAddition(value.toLong(), other.value)
             value is Int && other.value is BigInteger -> handleBigIntegerAddition(value.toBigIntegerSafe(), other.value)
+
             value is Long && other.value is Int -> handleLongAddition(value, other.value.toLong())
             value is Long && other.value is Long -> handleLongAddition(value, other.value)
-            value is Long && other.value is BigInteger -> handleBigIntegerAddition(
-                value.toBigIntegerSafe(),
-                other.value
-            )
+            value is Long && other.value is BigInteger -> handleBigIntegerAddition(value.toBigIntegerSafe(), other.value)
 
             value is BigInteger && other.value is BigInteger -> handleBigIntegerAddition(value, other.value)
 
@@ -48,34 +53,25 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     }
 
     private fun handleIntAddition(a: Int, b: Int): FlexibleInteger {
-        val result = a + b
-        return if (isOverflowInt(a, b, result)) {
+        return try {
+            FlexibleInteger(Math.addExact(a, b))
+        } catch (ex: ArithmeticException) {
             FlexibleInteger(a.toLong() + b.toLong())
-        } else {
-            FlexibleInteger(result)
         }
-    }
-
-    private fun isOverflowInt(a: Int, b: Int, result: Int): Boolean {
-        return (a > 0 && b > 0 && result < 0) || (a < 0 && b < 0 && result > 0)
     }
 
     private fun handleLongAddition(a: Long, b: Long): FlexibleInteger {
-        val result = a + b
-        return if (isOverflowLong(a, b, result)) {
+        return try {
+            FlexibleInteger(Math.addExact(a, b))
+        } catch (ex: ArithmeticException) {
             FlexibleInteger(BigInteger.valueOf(a) + BigInteger.valueOf(b))
-        } else {
-            FlexibleInteger(result)
         }
-    }
-
-    private fun isOverflowLong(a: Long, b: Long, result: Long): Boolean {
-        return (a > 0 && b > 0 && result < 0) || (a < 0 && b < 0 && result > 0)
     }
 
     private fun handleBigIntegerAddition(a: BigInteger, b: BigInteger): FlexibleInteger {
         return FlexibleInteger(a + b)
     }
+
 
     fun get(): Number = value
 
@@ -199,6 +195,33 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         }
     }
 
+    fun minPrecisionForDrawing(): Int {
+        return when (value) {
+            is Int, is Long -> calculateMinPrecision()
+            is BigInteger -> calculateMinPrecisionBigInteger()
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
+    }
+
+    private fun calculateMinPrecision(): Int {
+        if (value == 0) return 0
+        // We take log to base 10 of the number. We add 1 to round up to the nearest greater integer.
+        return ceil(ln(value.toDouble()) / ln(10.0)).toInt()
+    }
+
+    private fun calculateMinPrecisionBigInteger(): Int {
+        // We take log to base 10 of the BigInteger. BigInteger does not have log, so we convert it to BigDecimal
+        if (value is BigInteger) {
+            val logValue = BigDecimal(value).precision() - 1
+            // Adding 1 to round up to the nearest greater integer.
+            return logValue + 1
+        } else {
+            throw IllegalArgumentException("Unsupported number type")
+        }
+
+    }
+
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is FlexibleInteger) return false
@@ -209,7 +232,12 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         return value.hashCode()
     }
 
+    override fun toString(): String {
+        return value.toString()
+    }
+
     companion object {
+        val NEGATIVE_ONE = FlexibleInteger(-1)
         val ONE = FlexibleInteger(1)
         val ZERO = FlexibleInteger(0)
         private const val INT_MIN = Int.MIN_VALUE
@@ -218,6 +246,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         private val INT_MAX_BIG_INTEGER = Int.MAX_VALUE.toBigInteger()
         private val LONG_MIN_BIG_INTEGER = Long.MIN_VALUE.toBigInteger()
         private val LONG_MAX_BIG_INTEGER = Long.MAX_VALUE.toBigInteger()
+
+        val MAX_VALUE = FlexibleInteger(LifeUniverse.pow2(LifeUniverse.UNIVERSE_LEVEL_LIMIT))
+        val MIN_VALUE = MAX_VALUE.negate()
 
     }
 

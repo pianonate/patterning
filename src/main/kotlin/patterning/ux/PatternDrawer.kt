@@ -11,8 +11,6 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
 import java.math.BigDecimal
-import java.math.MathContext
-import java.math.RoundingMode
 import java.util.*
 import java.util.function.IntSupplier
 import kotlin.collections.ArrayDeque
@@ -199,11 +197,8 @@ class PatternDrawer(
         if (saveState) saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = (bounds.right - bounds.left).addOne().toBigDecimal()
-        val patternHeight = (bounds.bottom - bounds.top).addOne().toBigDecimal()
-
-        val maxDimension = maxOf(patternWidth, patternHeight)
-        val scale = maxDimension.toString().length + 3
+        val patternWidth = bounds.width.toBigDecimal()
+        val patternHeight = bounds.height.toBigDecimal()
 
         if (fitBounds) {
             val widthRatio =
@@ -211,14 +206,12 @@ class PatternDrawer(
             val heightRatio =
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
 
-
-
-            cell.size = (widthRatio.coerceAtMost(heightRatio).toDouble() * .9)
-            //cell.size = (widthRatio.coerceAtMost(heightRatio) * .9.toBigDecimal())
+            cell.size = (widthRatio.coerceAtMost(heightRatio).toFloat() * .9f)
 
         }
 
         val bigCell = cell.size.toBigDecimal()
+
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
         val halfCanvasWidth = canvasWidth.divide(BigTWO, mc)
@@ -230,8 +223,8 @@ class PatternDrawer(
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toBigDecimal() * bigCell.negate())
         val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toBigDecimal() * bigCell.negate())
 
-        canvasOffsetX = offsetX.setScale(scale, RoundingMode.HALF_UP)
-        canvasOffsetY = offsetY.setScale(scale, RoundingMode.HALF_UP)
+        canvasOffsetX = offsetX
+        canvasOffsetY = offsetY
     }
 
     fun clearUndoDeque() {
@@ -239,18 +232,7 @@ class PatternDrawer(
     }
 
     private fun getHUDMessage(life: LifeUniverse): String {
-        /*val patternInfo = life.patternInfo.getData()  // Use the new getData() method
 
-        return hudInfo.apply {
-            addOrUpdate("fps", processing.frameRate.roundToInt())
-            addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
-            addOrUpdate("cell", cell.size)
-            addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
-
-            patternInfo.forEach { (key, value) ->
-                addOrUpdate(key, value)
-            }
-        }.getFormattedString(processing.frameCount, 12)*/
         return hudInfo.getFormattedString(
             processing.frameCount,
             24
@@ -259,7 +241,7 @@ class PatternDrawer(
             hudInfo.addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
-            val patternInfo = life.patternInfo.getData()  // Use the new getData() method
+            val patternInfo = life.patternInfo.getData()
             patternInfo.forEach { (key, value) ->
                 hudInfo.addOrUpdate(key, value)
             }
@@ -298,19 +280,24 @@ class PatternDrawer(
         updateCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
-    private fun fillSquare(x: Float, y: Float, size: Float) {
-        val width = size - cellBorderWidth
+    private fun fillSquare(
+        x: Float,
+        y: Float,
+        size: Float,
+        color: Int = Theme.cellColor,
+        border: Float = cellBorderWidth
+    ) {
+        val width = size - border
 
         lifeFormBuffer.apply {
-            fill(Theme.cellColor)
+            fill(color)
             noStroke()
             rect(x, y, width, width)
         }
-
     }
 
     private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
-        node!!.population.takeIf { it.isNotZero() } ?: return
+        node.population.takeIf { it.isNotZero() } ?: return
 
         val leftWithOffset = left + canvasOffsetX
         val topWithOffset = top + canvasOffsetY
@@ -323,12 +310,13 @@ class PatternDrawer(
                 ) return
             }
         }
+
         // if we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size.toFloat())
+            fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size)
         } else if (node is InternalNode) {
             val halfSize = getHalfSize(size)
             val leftHalfSize = left + halfSize
@@ -467,7 +455,7 @@ class PatternDrawer(
         }
 
         movementHandler.handleRequestedMovement()
-        cellBorderWidth = cellBorderWidthRatio * cell.size.toFloat()
+        cellBorderWidth = cellBorderWidthRatio * cell.size
 
         // make this threadsafe
         val hudMessage = getHUDMessage(life)
@@ -483,7 +471,7 @@ class PatternDrawer(
                 clear()
             }
 
-            val size = BigDecimal(LifeUniverse.pow2(node!!.level - 1), mc).multiply(cell.size.toBigDecimal(), mc)
+            val size = BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cell.size.toBigDecimal(), mc)
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
             drawBounds(life)
 
@@ -502,13 +490,13 @@ class PatternDrawer(
 
     // the cell width times 2 ^ level will give you the size of the whole universe
     // you'll need it it to draw the viewport on screen
-    private class Cell(initialSize: Double) {
+    private class Cell(initialSize: Float) {
 
-        var size: Double = initialSize
+        var size: Float = initialSize
             set(value) {
                 field = when {
-                    value > CELL_WIDTH_ROUNDING_THRESHOLD && !zoomingIn -> value.toInt().toDouble()
-                    value > CELL_WIDTH_ROUNDING_THRESHOLD -> value.toInt().plus(1).toDouble()
+                    value > CELL_WIDTH_ROUNDING_THRESHOLD && !zoomingIn -> value.toInt().toFloat()
+                    value > CELL_WIDTH_ROUNDING_THRESHOLD -> value.toInt().plus(1).toFloat()
                     else -> value
                 }
             }
@@ -517,14 +505,14 @@ class PatternDrawer(
 
         fun zoom(zoomIn: Boolean) {
             zoomingIn = zoomIn
-            val factor = if (zoomIn) 1.25 else 0.8
+            val factor = if (zoomIn) 1.25f else 0.8f
             size *= factor
         }
 
         override fun toString() = "Cell{size=$size}"
 
         companion object {
-            private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6
+            private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f
         }
     }
 
@@ -549,9 +537,10 @@ class PatternDrawer(
         // without this precision on the MathContext, small imprecision propagates at
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
-        val mc = MathContext(300)
+        val mc // = MathContext(400)
+            get() = Bounds.mathContext
         private val BigTWO = BigDecimal(2)
         private val undoDeque = ArrayDeque<CanvasState>()
-        private const val DEFAULT_CELL_WIDTH = 4.0
+        private const val DEFAULT_CELL_WIDTH = 4.0f
     }
 }

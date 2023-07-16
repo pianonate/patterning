@@ -2,6 +2,8 @@ bug: DPS should show you actual draws per second - also see if you can troublesh
 
 bug: Text disappears at bottom of screen - redo TextPanel thinking...
 
+todo: lightspeed - speed up 1 step every frame - as you did in texting... but allow for starting and stopping lightspeed
+
 todo: right now Theme has a chicken/egg situation with initializing ColorConstant objects before Theme.themeTransitionDuration is set
       so i have to call it every time when it's executing. this seems wrong.  possibly ColorConstants should be handled differently than everything else as they are the only ones that actually change each go around.  the rest are constant throughout the application execution
 

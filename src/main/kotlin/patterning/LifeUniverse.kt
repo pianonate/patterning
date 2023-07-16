@@ -8,7 +8,7 @@ import kotlin.math.ln
 /*
  great article:  https://www.dev-mind.blog/hashlife/ and code: https://github.com/ngmsoftware/hashlife
 
-* this wikipedia article talks about hash caching, superspeed memoization and representation of the tree as well as manual garbage collection
+* this wikipedia article talks about hash caching, superspeed memoization and representation of the tree ads well as manual garbage collection
 - better than chatgpt - refer to it when you get stuck: https://en.wikipedia.org/wiki/Hashlife
 - also: https://web.archive.org/web/20220131050938/https://jennyhasahat.github.io/hashlife.html
  */
@@ -19,8 +19,8 @@ class LifeUniverse internal constructor() {
     private var maxLoad: Int
 
     // private var hashmap: HashMap<Int, Node>
-    private var hashmap: MutableMap<Int, InternalNode> = mutableMapOf()
-    private var emptyTreeCache: Array<InternalNode?>
+    private var hashmap: MutableMap<Int, InternalNode>
+    private var emptyTreeCache: MutableMap<Int, InternalNode>
 
     // private val level2Cache: HashMap<Int, Node>
     private val level2Cache: MutableMap<Int, InternalNode>
@@ -30,7 +30,6 @@ class LifeUniverse internal constructor() {
     private var generation: FlexibleInteger
 
     var root: InternalNode
-    var isAlive = false
 
     val patternInfo = PatternInfo(this::updatePatternInfo)
     var step: Int = 0
@@ -48,10 +47,10 @@ class LifeUniverse internal constructor() {
 
     private fun level1Create(bitmask: Int): InternalNode {
         return createTree(
-            if (bitmask and 1 != 0) Node.aliveNode else Node.unbornNode,
-            if (bitmask and 2 != 0) Node.aliveNode else Node.unbornNode,
-            if (bitmask and 4 != 0) Node.aliveNode else Node.unbornNode,
-            if (bitmask and 8 != 0) Node.aliveNode else Node.unbornNode
+            if (bitmask and 1 != 0) Node.livingNode else Node.deadNode,
+            if (bitmask and 2 != 0) Node.livingNode else Node.deadNode,
+            if (bitmask and 4 != 0) Node.livingNode else Node.deadNode,
+            if (bitmask and 8 != 0) Node.livingNode else Node.deadNode
         )
     }
 
@@ -64,17 +63,18 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    private fun emptyTree(level: Int): InternalNode? {
-        if (emptyTreeCache[level] != null) {
-            return emptyTreeCache[level]
-        }
-        val t: Node? = if (level == 1) {
-            Node.unbornNode
+    private fun emptyTree(level: Int): InternalNode {
+
+        emptyTreeCache[level]?.let { return it }
+
+        val t: Node = if (level == 1) {
+            Node.deadNode
         } else {
             emptyTree(level - 1)
         }
-        emptyTreeCache[level] = createTree(t, t, t, t)
-        return emptyTreeCache[level]
+        return createTree(t, t, t, t).also { node ->
+            emptyTreeCache[level] = node
+        }
     }
 
     /*
@@ -103,9 +103,8 @@ class LifeUniverse internal constructor() {
      * So, the new root node will have a level one greater than the original root node,
      * as it combines the new trees created with an extra level of hierarchy.
      */
-    private fun expandUniverse(node: InternalNode?): InternalNode {
-        // System.out.println("expanding universe");
-        val t = emptyTree(node!!.level - 1)
+    private fun expandUniverse(node: InternalNode): InternalNode {
+        val t = emptyTree(node.level - 1)
         return createTree(
             createTree(t, t, t, node.nw),
             createTree(t, t, node.ne, t),
@@ -136,8 +135,8 @@ class LifeUniverse internal constructor() {
 
     // return false if not in the hash map
     // which means it could be in the linked list associated with the hashmap
-    private fun inHashmap(n: InternalNode?): Boolean {
-        val hash = calcHash(n!!.nw.id, n.ne.id, n.sw.id, n.se.id) // and hashmapSize
+    private fun inHashmap(n: InternalNode): Boolean {
+        val hash = n.hashCode() // calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id)
         var node = hashmap[hash]
         while (node != null) {
             if (node == n) {
@@ -171,13 +170,13 @@ class LifeUniverse internal constructor() {
      */
 
     // called only on garbageCollect
-    private fun nodeHash(node: Node?) {
+    private fun nodeHash(node: Node) {
         if (node is InternalNode && !inHashmap(node)) {
             // Update the id. We have looked for an old id, as
             // the hashmap has been cleared and ids have been
             // reset, but this cannot be avoided without iterating
             // the tree twice.
-            node.id = lastId++
+            //node.id = lastId++
             node.hashmapNext = null
             if (node.level > 1) {
                 nodeHash(node.nw)
@@ -185,10 +184,10 @@ class LifeUniverse internal constructor() {
                 nodeHash(node.sw)
                 nodeHash(node.se)
                 if (node.cache != null) {
-                    nodeHash(node.cache)
+                    nodeHash(node.cache!!)
                 }
                 if (node.quickCache != null) {
-                    nodeHash(node.quickCache)
+                    nodeHash(node.quickCache!!)
                 }
             }
             hashmapInsert(node)
@@ -197,7 +196,7 @@ class LifeUniverse internal constructor() {
 
     // insert a node into the hashmap
     private fun hashmapInsert(n: InternalNode) {
-        val hash = calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id) // and hashmapSize
+        val hash = n.hashCode() // calcHash(n.nw.id, n.ne.id, n.sw.id, n.se.id)
         var node = hashmap[hash]
         var prev: InternalNode? = null
         while (node != null) {
@@ -219,7 +218,8 @@ class LifeUniverse internal constructor() {
         }
         maxLoad = (hashmapSize * LOAD_FACTOR).toInt()
         hashmap.clear()
-        lastId = Node.startId
+        hashmapNextCount = 0
+        // lastId = Node.startId
         nodeHash(root)
     }
 
@@ -229,14 +229,14 @@ class LifeUniverse internal constructor() {
      * return ((nw_id * 23 ^ ne_id) * 23 ^ sw_id) * 23 ^ se_id;
      * }
      */
-    private fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {
+    /*    private fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {
         var result = 17
         result = 31 * result xor nwId
         result = 31 * result xor neId
         result = 31 * result xor swId
         result = 31 * result xor seId
-        return result and hashmapSize
-    }
+        return result // and hashmapSize
+    }*/
 
     // this is just used when setting up the field initially unless I'm missing
     // something
@@ -308,8 +308,7 @@ class LifeUniverse internal constructor() {
         val offset = pow2(level - 1).toInt()
         val count = fieldX.capacity()
         moveField(fieldX, fieldY, offset, offset)
-        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level)!!
-        isAlive = true
+        root = setupFieldRecurse(0, count - 1, fieldX, fieldY, level)
     }
 
     private fun partition(start: Int, end: Int, testField: IntBuffer, otherField: IntBuffer, offset: Int): Int {
@@ -344,13 +343,13 @@ class LifeUniverse internal constructor() {
         fieldX: IntBuffer,
         fieldY: IntBuffer,
         recurseLevel: Int
-    ): InternalNode? {
+    ): InternalNode {
         var level = recurseLevel
         if (start > end) {
             return emptyTree(level)
         }
         if (level == 2) {
-            return level2Setup(start, end, fieldX, fieldY)
+            return level2Setup(start, end, fieldX, fieldY)!!
         }
         level--
         val offset = 1 shl level
@@ -423,9 +422,11 @@ class LifeUniverse internal constructor() {
         }
     }
 
+    var hashmapNextCount = 0
+
     // create or search for a tree node given its children
-    private fun createTree(nw: Node?, ne: Node?, sw: Node?, se: Node?): InternalNode {
-        val hash = calcHash(nw!!.id, ne!!.id, sw!!.id, se!!.id) // and hashmapSize
+    private fun createTree(nw: Node, ne: Node, sw: Node, se: Node): InternalNode {
+        val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id) // and hashmapSize
         var node = hashmap[hash]
         var prev: InternalNode? = null
         while (node != null) {
@@ -448,6 +449,7 @@ class LifeUniverse internal constructor() {
         val newInternalNode = InternalNode(nw, ne, sw, se, lastId++)
 
         if (prev != null) {
+            hashmapNextCount++
             prev.hashmapNext = newInternalNode
         } else {
             hashmap[hash] = newInternalNode
@@ -480,8 +482,10 @@ class LifeUniverse internal constructor() {
         patternInfo.addOrUpdate("maxLoad", maxLoad)
         patternInfo.addOrUpdate("lastId", lastId)
         val bounds = rootBounds
-        patternInfo.addOrUpdate("width", (bounds.right - bounds.left).addOne().get())
-        patternInfo.addOrUpdate("height", (bounds.bottom - bounds.top).addOne().get())
+        patternInfo.addOrUpdate("width", bounds.width.get())
+        patternInfo.addOrUpdate("height", bounds.height.get())
+        patternInfo.addOrUpdate("mc", Bounds.mathContext.precision)
+
     }
 
     private fun nodeNextGeneration(node: InternalNode): InternalNode {
@@ -493,10 +497,6 @@ class LifeUniverse internal constructor() {
             return nodeQuickNextGeneration(node, 0)
         }
 
-        // right now i have seen a nodeNextGeneration where
-        // node.level == 2 so...
-        // maybe this doesn't need to exist?
-        // todo: see what happens when you have a blank canvas and use setbit...
         if (node.level == 2) {
             if (node.quickCache == null) {
                 node.quickCache = nodeLevel2Next(node)
@@ -570,9 +570,9 @@ class LifeUniverse internal constructor() {
         // Size when the next GC will happen
         maxLoad = (hashmapSize * LOAD_FACTOR).toInt()
         hashmap = HashMap()
-        emptyTreeCache = arrayOfNulls(UNIVERSE_LEVEL_LIMIT)
+        emptyTreeCache = HashMap()
         level2Cache = HashMap(0x10000)
-        this.root = emptyTree(3)!!
+        this.root = emptyTree(3)
         generation = FlexibleInteger.ZERO
 
         // number of generations to calculate at one time, written as 2^n
@@ -627,102 +627,28 @@ class LifeUniverse internal constructor() {
 
     val rootBounds: Bounds
         get() {
-            if (root.population.isZero()) {
-                return Bounds(
-                    FlexibleInteger.ZERO,
-                    FlexibleInteger.ZERO,
-                    FlexibleInteger.ZERO,
-                    FlexibleInteger.ZERO
+            if (root.bounds != root.nodeBounds()) {
+                println("""old: ${root.nodeBounds()}, h:${root.nodeBounds().height}, w:${root.nodeBounds().width}
+new: ${root.bounds}, h:${root.bounds.height}, w:${root.bounds.width}
+id:${root.id} level:${root.level} population:${root.population} nw:${root.nw.population},ne:${root.ne.population},sw:${root.sw.population},se:${root.se.population}"""
                 )
             }
-
-            // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
-            val offset = FlexibleInteger(pow2(root.level - 1))
-            val bounds = Bounds(offset, offset, offset.negate(), offset.negate())
-            nodeGetBoundary(
-                root,
-                offset.negate(),
-                offset.negate(),
-                MASK_TOP or MASK_LEFT or MASK_BOTTOM or MASK_RIGHT,
-                bounds
-            )
-            return bounds
+            return root.bounds // return root.nodeBounds() // root.bounds
         }
-
-    private fun nodeGetBoundary(
-        node: Node,
-        left: FlexibleInteger,
-        top: FlexibleInteger,
-        findMask: Int,
-        boundary: Bounds
-    ) {
-        if (node.population.isZero() || findMask == 0) {
-            return
-        }
-        if (node.level == 0) {
-            boundary.left = boundary.left.min(left)
-            boundary.right = boundary.right.max(left)
-            boundary.top = boundary.top.min(top)
-            boundary.bottom = boundary.bottom.max(top)
-        } else {
-            val offset = FlexibleInteger(pow2(node.level - 1))
-            val doubledOffset = FlexibleInteger(pow2(node.level))
-            if (left >= boundary.left &&
-                left + doubledOffset <= boundary.right &&
-                top >= boundary.top &&
-                top + doubledOffset <= boundary.bottom
-            ) {
-                // This square is already inside the found boundary
-                return
-            }
-            var findNW = findMask
-            var findSW = findMask
-            var findNE = findMask
-            var findSE = findMask
-            if ((node as InternalNode).nw.population.isNotZero()) {
-                findSW = findSW and MASK_TOP.inv()
-                findNE = findNE and MASK_LEFT.inv()
-                findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
-            }
-            if (node.sw.population.isNotZero()) {
-                findSE = findSE and MASK_LEFT.inv()
-                findNW = findNW and MASK_BOTTOM.inv()
-                findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
-            }
-            if (node.ne.population.isNotZero()) {
-                findNW = findNW and MASK_RIGHT.inv()
-                findSE = findSE and MASK_TOP.inv()
-                findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
-            }
-            if (node.se.population.isNotZero()) {
-                findSW = findSW and MASK_RIGHT.inv()
-                findNE = findNE and MASK_BOTTOM.inv()
-                findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
-            }
-            nodeGetBoundary(node.nw, left, top, findNW, boundary)
-            nodeGetBoundary(node.sw, left, top + offset, findSW, boundary)
-            nodeGetBoundary(node.ne, left + offset, top, findNE, boundary)
-            nodeGetBoundary(node.se, left + offset, top + offset, findSE, boundary)
-        }
-    }
 
     companion object {
         private const val LOAD_FACTOR = 0.95
 
         // todo: reset this to set to a different size for testing garbageCollect as long as you
         //       think you need garbage collection and maybe you can come up with a different mechanism
-        private const val INITIAL_SIZE = 26
+        private const val INITIAL_SIZE = 27 // 10
 
         // this is extremely large but can be maybe reached if you fix problems with nodeQuickNextGeneration
         // going to try a maximum universe size of 1024 with a new drawing scheme that relies
         // on calculating relating a viewport to the level being drawn and relies on the max double value
         // the largest level this can support would be  (from Wolfram)  "input": "Floor[Log2[1.8*10^308]]" "output": "1024"
-        private const val UNIVERSE_LEVEL_LIMIT = 2048
+        const val UNIVERSE_LEVEL_LIMIT = 2048
         private const val HASHMAP_LIMIT = 30
-        private const val MASK_LEFT = 1
-        private const val MASK_TOP = 2
-        private const val MASK_RIGHT = 4
-        private const val MASK_BOTTOM = 8
 
         private val _powers: Array<BigInteger> = generatePowers()
 
@@ -737,7 +663,8 @@ class LifeUniverse internal constructor() {
         fun pow2(x: Int): BigInteger {
             return if (x >= UNIVERSE_LEVEL_LIMIT) {
                 BigInteger.valueOf(2).pow(UNIVERSE_LEVEL_LIMIT)
-            } else _powers[x]
+            } else if (x < 0) BigInteger.ZERO
+            else _powers[x]
         }
     }
 }
