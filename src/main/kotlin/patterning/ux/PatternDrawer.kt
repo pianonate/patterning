@@ -206,8 +206,8 @@ class PatternDrawer(
             val heightRatio =
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
 
-            cell.size = (widthRatio.coerceAtMost(heightRatio).toFloat() * .9f)
-
+            // at level 160 or just above, the cell.size becomes zero in the following
+            cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
 
         val bigCell = cell.size.toBigDecimal()
@@ -424,7 +424,8 @@ class PatternDrawer(
         val calculatedBottom = (topDecimal + heightDecimal).toFloat()
 
         val drawingRight = if (leftDecimal + widthDecimal > canvasWidth) canvasWidth.toFloat() + 1 else calculatedRight
-        val drawingBottom = if (topDecimal + heightDecimal > canvasHeight) canvasHeight.toFloat() + 1 else calculatedBottom
+        val drawingBottom =
+            if (topDecimal + heightDecimal > canvasHeight) canvasHeight.toFloat() + 1 else calculatedBottom
 
         val drawingWidth = if (drawingLeft == -1.0f) (drawingRight + 1.0f) else (drawingRight - drawingLeft)
         val drawingHeight = if (drawingTop == -1.0f) (drawingBottom + 1.0f) else (drawingBottom - drawingTop)
@@ -499,6 +500,7 @@ class PatternDrawer(
                 field = when {
                     value > CELL_WIDTH_ROUNDING_THRESHOLD && !zoomingIn -> value.toInt().toFloat()
                     value > CELL_WIDTH_ROUNDING_THRESHOLD -> value.toInt().plus(1).toFloat()
+                    value == 0.0f -> Float.MIN_VALUE // at very large levels, fit to screen will calculate a cell size of 0 - we need it to have a minimum value in this case
                     else -> value
                 }
             }
