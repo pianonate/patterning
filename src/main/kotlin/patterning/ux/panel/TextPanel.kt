@@ -260,6 +260,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // better - possibly you won't have to do this anymore.
         if (lastMessage != message) {
             updatePanelBuffer(drawingInformer.supplyPGraphics(), true)
+            messageLines = wrapText(message, drawingInformer.supplyPGraphics())
         }
 
 

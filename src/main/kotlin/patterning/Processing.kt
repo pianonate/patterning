@@ -23,10 +23,11 @@ import kotlin.math.roundToInt
 class Processing : PApplet() {
     var draggingDrawing = false
     private lateinit var life: LifeUniverse
-    private var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>? = null
-    private var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>? = null
+
+    private lateinit var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>
+    private lateinit var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>
     private val mouseEventManager = MouseEventManager.instance
-    private var drawer: PatternDrawer? = null
+    private lateinit var drawer: PatternDrawer
 
     // used to control dragging the image around the screen with the mouse
     private var lastMouseX = 0f
@@ -34,7 +35,7 @@ class Processing : PApplet() {
 
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
-    private var storedLife: String? = null
+    private var storedLife: String = ""
     private var targetStep = 0
     var isRunning = false
         private set
@@ -93,8 +94,8 @@ class Processing : PApplet() {
 
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
-        if (null == storedLife || storedLife!!.isEmpty()) {
-            runBlocking {getRandomLifeform(false) }
+        if (storedLife.isEmpty()) {
+            runBlocking { getRandomLifeform(false) }
         }
 
         // life will have been loaded in prior - either from saved life
@@ -119,7 +120,7 @@ class Processing : PApplet() {
         // and we tell the drawer whether it is still updating life since the last frame
         // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
-        drawer!!.draw(life, shouldDraw && isThreadSafe)
+        drawer.draw(life, shouldDraw && isThreadSafe)
 
         // there is a bug that every once in a while the text will just not draw
         // stepping through it in the debugger will magically make it draw - which
@@ -138,8 +139,8 @@ class Processing : PApplet() {
     private fun lifeIsThreadSafe(): Boolean {
 
         // don't start if either of these calculations are currently running
-        val setStepRunning = complexCalculationHandlerSetStep?.isCalculationInProgress ?: false
-        val nextGenerationRunning = complexCalculationHandlerNextGeneration?.isCalculationInProgress ?: false
+        val setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress
+        val nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress
         return !nextGenerationRunning && !setStepRunning
     }
 
@@ -147,7 +148,7 @@ class Processing : PApplet() {
         if (shouldStartComplexCalculationSetStep()) {
             var step = life.step
             step += if (step < targetStep) 1 else -1
-            complexCalculationHandlerSetStep!!.startCalculation(step)
+            complexCalculationHandlerSetStep.startCalculation(step)
             return
         }
 
@@ -155,7 +156,7 @@ class Processing : PApplet() {
         if (!isRunning) return
         if (shouldStartComplexCalculationNextGeneration()) {
             val dummy = 0
-            complexCalculationHandlerNextGeneration!!.startCalculation(dummy)
+            complexCalculationHandlerNextGeneration.startCalculation(dummy)
         }
         if (isRunning && singleStepMode) toggleRun()
     }
@@ -174,7 +175,6 @@ class Processing : PApplet() {
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()
         lastMouseY += mouseY.toFloat()
-        assert(mouseEventManager != null)
         mouseEventManager!!.onMousePressed()
         mousePressedOverReceiver = mouseEventManager.isMousePressedOverAnyReceiver
 
@@ -193,7 +193,6 @@ class Processing : PApplet() {
             DrawRateManager.drawImmediately()
         } else {
             mousePressedOverReceiver = false
-            assert(mouseEventManager != null)
             mouseEventManager!!.onMouseReleased()
         }
         lastMouseX = 0f
@@ -204,7 +203,7 @@ class Processing : PApplet() {
         if (draggingDrawing) {
             val dx = (mouseX - lastMouseX).roundToInt().toFloat()
             val dy = (mouseY - lastMouseY).roundToInt().toFloat()
-            drawer!!.move(dx, dy)
+            drawer.move(dx, dy)
             lastMouseX += dx
             lastMouseY += dy
         }
@@ -247,13 +246,14 @@ class Processing : PApplet() {
 
     private fun performComplexCalculationSetStep(step: Int) {
         life.step = step
+
         // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
-        drawer!!.clearUndoDeque()
+        drawer.clearUndoDeque()
     }
 
     private fun performComplexCalculationNextGeneration() {
         life.nextGeneration()
-        targetStep += 1
+        // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
 
     private fun loadSavedWindowPositions() {
@@ -306,14 +306,15 @@ class Processing : PApplet() {
 
             // instance variables - do they need to be?
             val parser = LifeFormats()
-            val newLife = parser.parseRLE(storedLife!!)
+            val newLife = parser.parseRLE(storedLife)
+
             targetStep = 0
             life.step = 0
-            life.setupField(newLife.fieldX!!, newLife.fieldY!!)
+            life.setupLife(newLife.fieldX!!, newLife.fieldY!!)
 
             // new instances only created in instantiateLife to keep things simple
             // lifeForm not made local as it is intended to be used with display functions in the future
-            drawer!!.setupNewLife(life)
+            drawer.setupNewLife(life)
         } catch (e: NotLifeException) {
             // todo: on failure you need to
             println(
@@ -374,7 +375,7 @@ class Processing : PApplet() {
     }
 
     fun fitUniverseOnScreen() {
-        drawer!!.center(life.rootBounds, fitBounds = true, saveState = true)
+        drawer.center(life.rootBounds, fitBounds = true, saveState = true)
     }
 
     val numberedLifeForm: Unit
@@ -386,7 +387,7 @@ class Processing : PApplet() {
             try {
                 storedLife =
                     ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-               runBlocking{ destroyAndCreate() }
+                runBlocking { destroyAndCreate() }
             } catch (e: IOException) {
                 throw RuntimeException(e)
             } catch (e: URISyntaxException) {
@@ -395,7 +396,7 @@ class Processing : PApplet() {
         }
 
     fun centerView() {
-        drawer!!.center(life.rootBounds, fitBounds = false, saveState = true)
+        drawer.center(life.rootBounds, fitBounds = false, saveState = true)
     }
 
     fun toggleSingleStep() {

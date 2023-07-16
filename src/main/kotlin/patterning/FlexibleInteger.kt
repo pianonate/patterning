@@ -5,12 +5,6 @@ import java.math.BigInteger
 import kotlin.math.ceil
 import kotlin.math.ln
 
-// Top-level extension function
-fun Int.toFlexibleInteger(): FlexibleInteger {
-    return FlexibleInteger(this)
-}
-
-
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     private val value: Number = when (initialValue) {
@@ -43,7 +37,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
             value is Long && other.value is Int -> handleLongAddition(value, other.value.toLong())
             value is Long && other.value is Long -> handleLongAddition(value, other.value)
-            value is Long && other.value is BigInteger -> handleBigIntegerAddition(value.toBigIntegerSafe(), other.value)
+            value is Long && other.value is BigInteger -> handleBigIntegerAddition(
+                value.toBigIntegerSafe(),
+                other.value
+            )
 
             value is BigInteger && other.value is BigInteger -> handleBigIntegerAddition(value, other.value)
 
@@ -71,7 +68,6 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     private fun handleBigIntegerAddition(a: BigInteger, b: BigInteger): FlexibleInteger {
         return FlexibleInteger(a + b)
     }
-
 
     fun get(): Number = value
 
@@ -221,6 +217,31 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     }
 
+    fun getLevel(): Int {
+        return when (value) {
+            is Int, is Long -> calculateLevel()
+            is BigInteger -> calculateLevelBigInteger()
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
+    }
+
+    private fun calculateLevel(): Int {
+        if (value == 0) return 1 // if value is 0, log2(0) is undefined but for the purpose of this class return 1
+        return ceil(ln(value.toDouble()) / ln(2.0)).toInt() + 1
+    }
+
+    private fun calculateLevelBigInteger(): Int {
+        if (value is BigInteger) {
+            // bitLength() returns the number of bits in the minimal two's-complement
+            // representation of this BigInteger, excluding a sign bit, which is effectively floor(log2(number)).
+            // We check if the BigInteger is a power of 2, and if it is, we return the bit length directly.
+            // Otherwise, we return bitLength + 1 to effectively calculate the ceiling of log2(number).
+            val bitLength = value.bitLength()
+            return if (value.shiftRight(bitLength).bitCount() == 1) bitLength else bitLength + 1
+        } else {
+            throw IllegalArgumentException("Unsupported number type")
+        }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -247,7 +268,26 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         private val LONG_MIN_BIG_INTEGER = Long.MIN_VALUE.toBigInteger()
         private val LONG_MAX_BIG_INTEGER = Long.MAX_VALUE.toBigInteger()
 
-        val MAX_VALUE = FlexibleInteger(LifeUniverse.pow2(LifeUniverse.UNIVERSE_LEVEL_LIMIT))
+        private const val UNIVERSE_LEVEL_LIMIT = 2048
+
+        private val _powers: Array<FlexibleInteger> = generatePowers()
+
+        private fun generatePowers(): Array<FlexibleInteger> {
+            val powers = Array(UNIVERSE_LEVEL_LIMIT) { ONE }
+            for (i in 1 until UNIVERSE_LEVEL_LIMIT) {
+                powers[i] = FlexibleInteger(BigInteger.valueOf(2).pow(i))
+            }
+            return powers
+        }
+
+        fun pow2(x: Int): FlexibleInteger {
+            return if (x >= UNIVERSE_LEVEL_LIMIT) {
+                FlexibleInteger(BigInteger.valueOf(2).pow(x))
+            } else if (x < 0) ONE
+            else _powers[x]
+        }
+
+        val MAX_VALUE = pow2(UNIVERSE_LEVEL_LIMIT)
         val MIN_VALUE = MAX_VALUE.negate()
 
     }

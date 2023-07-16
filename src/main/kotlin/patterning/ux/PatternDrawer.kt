@@ -471,7 +471,9 @@ class PatternDrawer(
                 clear()
             }
 
-            val size = BigDecimal(LifeUniverse.pow2(node.level - 1), mc).multiply(cell.size.toBigDecimal(), mc)
+
+            //val size = BigDecimal(FlexibleInteger.pow2(node.level - 1).toBigDecimal(), mc).multiply(cell.size.toBigDecimal(), mc)
+            val size = FlexibleInteger.pow2(node.level - 1).toBigDecimal().multiply(cell.size.toBigDecimal(), mc)
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
             drawBounds(life)
 

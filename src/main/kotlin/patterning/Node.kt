@@ -64,7 +64,6 @@ class InternalNode(
 
     var cache: InternalNode? = null
     var quickCache: InternalNode? = null
-    var hashmapNext: InternalNode? = null
 
     override val bounds: Bounds = run {
         if (this.population.isZero()) {
@@ -76,8 +75,9 @@ class InternalNode(
             )
         } else {
             // Half the size of the current node.
-            val offset = FlexibleInteger(LifeUniverse.pow2(level - 1))
-            val smallOffset = FlexibleInteger(LifeUniverse.pow2(level - 2))
+            val offset = FlexibleInteger.pow2(level - 1)
+            val smallOffset = FlexibleInteger.pow2(level - 2)
+            val smallOffsetNegated = smallOffset.negate()
 
             // Initialize bounds to a small, out-of-bounds square.
             var bounds = Bounds(
@@ -95,9 +95,9 @@ class InternalNode(
                 bounds = calculateChildBounds(se, offset, offset, bounds)
             } else {
                 // Translate the bounds of each child node to the coordinate system of the parent node.
-                bounds = calculateChildBounds(nw, smallOffset.negate(), smallOffset.negate(), bounds)
-                bounds = calculateChildBounds(ne, smallOffset.negate(), smallOffset, bounds)
-                bounds = calculateChildBounds(sw, smallOffset, smallOffset.negate(), bounds)
+                bounds = calculateChildBounds(nw, smallOffsetNegated, smallOffsetNegated, bounds)
+                bounds = calculateChildBounds(ne, smallOffsetNegated, smallOffset, bounds)
+                bounds = calculateChildBounds(sw, smallOffset, smallOffsetNegated, bounds)
                 bounds = calculateChildBounds(se, smallOffset, smallOffset, bounds)
             }
             bounds.updateLargestDimension(bounds.width.max(bounds.height))
@@ -112,7 +112,7 @@ class InternalNode(
         leftRightOffset: FlexibleInteger,
         bounds: Bounds
     ): Bounds {
-        return if (child.population > FlexibleInteger.ZERO) {
+        return if (child.population.isNotZero()) {
             val childBounds = child.bounds
             val translatedBounds = Bounds(
                 childBounds.top + topBottomOffset,
@@ -120,7 +120,6 @@ class InternalNode(
                 childBounds.bottom + topBottomOffset,
                 childBounds.right + leftRightOffset
             )
-
             Bounds(
                 bounds.top.min(translatedBounds.top),
                 bounds.left.min(translatedBounds.left),
@@ -132,90 +131,10 @@ class InternalNode(
         }
     }
 
-    fun nodeBounds(): Bounds {
-        if (this.population.isZero()) {
-            return Bounds(
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO
-            )
-        }
-
-        // BigInteger offset = BigInteger.valueOf(2).pow(root.level - 1);
-        val offset = FlexibleInteger(LifeUniverse.pow2(this.level - 1))
-        val bounds = Bounds(offset, offset, offset.negate(), offset.negate())
-        nodeGetBoundary(
-            this,
-            offset.negate(),
-            offset.negate(),
-            MASK_TOP or MASK_LEFT or MASK_BOTTOM or MASK_RIGHT,
-            bounds
-        )
-        return bounds
-    }
-
-    private fun nodeGetBoundary(
-        node: Node,
-        left: FlexibleInteger,
-        top: FlexibleInteger,
-        findMask: Int,
-        boundary: Bounds
-    ) {
-        if (node.population.isZero() || findMask == 0) {
-            return
-        }
-        if (node.level == 0) {
-            boundary.left = boundary.left.min(left)
-            boundary.right = boundary.right.max(left)
-            boundary.top = boundary.top.min(top)
-            boundary.bottom = boundary.bottom.max(top)
-        } else {
-            val offset = FlexibleInteger(LifeUniverse.pow2(node.level - 1))
-            val doubledOffset = FlexibleInteger(LifeUniverse.pow2(node.level))
-            if (left >= boundary.left &&
-                left + doubledOffset <= boundary.right &&
-                top >= boundary.top &&
-                top + doubledOffset <= boundary.bottom
-            ) {
-                // This square is already inside the found boundary
-                return
-            }
-            var findNW = findMask
-            var findSW = findMask
-            var findNE = findMask
-            var findSE = findMask
-            if ((node as InternalNode).nw.population.isNotZero()) {
-                findSW = findSW and MASK_TOP.inv()
-                findNE = findNE and MASK_LEFT.inv()
-                findSE = findSE and (MASK_TOP or MASK_LEFT).inv()
-            }
-            if (node.sw.population.isNotZero()) {
-                findSE = findSE and MASK_LEFT.inv()
-                findNW = findNW and MASK_BOTTOM.inv()
-                findNE = findNE and (MASK_BOTTOM or MASK_LEFT).inv()
-            }
-            if (node.ne.population.isNotZero()) {
-                findNW = findNW and MASK_RIGHT.inv()
-                findSE = findSE and MASK_TOP.inv()
-                findSW = findSW and (MASK_TOP or MASK_RIGHT).inv()
-            }
-            if (node.se.population.isNotZero()) {
-                findSW = findSW and MASK_RIGHT.inv()
-                findNE = findNE and MASK_BOTTOM.inv()
-                findNW = findNW and (MASK_BOTTOM or MASK_RIGHT).inv()
-            }
-            nodeGetBoundary(node.nw, left, top, findNW, boundary)
-            nodeGetBoundary(node.sw, left, top + offset, findSW, boundary)
-            nodeGetBoundary(node.ne, left + offset, top, findNE, boundary)
-            nodeGetBoundary(node.se, left + offset, top + offset, findSE, boundary)
-        }
-    }
-
     override fun hashCode(): Int = hash
 
     override fun toString(): String {
-        return "id=$id, level=$level, population=$population" // , bounds=(${bounds.top},${bounds.left},${bounds.bottom},${bounds.right}), cache=$cache, quickCache=$quickCache, hashmapNext=$hashmapNext"
+        return "id=$id, level=$level, population=$population, bounds=$bounds"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -233,15 +152,6 @@ class InternalNode(
         if (population != other.population) return false
         if (hash != other.hash) return false
         if (cache != other.cache) return false
-        if (quickCache != other.quickCache) return false
-        return hashmapNext == other.hashmapNext
+        return (quickCache == other.quickCache)
     }
-
-    companion object {
-        private const val MASK_LEFT = 1
-        private const val MASK_TOP = 2
-        private const val MASK_RIGHT = 4
-        private const val MASK_BOTTOM = 8
-    }
-
 }
