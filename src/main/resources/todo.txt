@@ -1,6 +1,10 @@
-bug: DPS should show you actual draws per second - also see if you can troubleshoot the long running thread issues that are reported - maybe there's a better way to deal with this
-
 bug: Text disappears at bottom of screen - redo TextPanel thinking...
+
+bug: zoom in zoom out shows keyboard shortcut highlighting for shift-Z and Z but not for + and - which it should
+
+bug: DPS should show you actual draws per second
+
+todo: idiomaticize
 
 todo: lightspeed - speed up 1 step every frame - as you did in texting... but allow for starting and stopping lightspeed
 
