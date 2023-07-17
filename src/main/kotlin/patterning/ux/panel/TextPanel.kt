@@ -13,17 +13,16 @@ import java.util.function.IntSupplier
 import kotlin.math.ceil
 
 class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable {
-    private val outline: Boolean
 
     // sizes
     private val textMargin = Theme.defaultTextMargin
     private val doubleTextMargin = textMargin * 2
     private val textSize: Float
-
-    // optional capabilities
     private val textWidth: OptionalInt
     private val textWidthSupplier: Optional<IntSupplier>
     private val wrap: Boolean
+
+    // optional capabilities
     private val fadeInDuration: OptionalInt
     private val fadeOutDuration: OptionalInt
     private val displayDuration // long to compare to System.currentTimeMillis()
@@ -41,18 +40,19 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private var message: String
     private var lastMessage: String
     private var messageLines: List<String>? = null
+
+
+    // state management
     private var state: State? = null
 
     init {
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
-        // super(builder.alignHorizontal, builder.vAlign);
         message = builder.message
         lastMessage = builder.message
 
         // just for keyboard shortcuts for now
         keepShortCutTogether = builder.keepShortCutTogether
-        outline = builder.outline
         textSize = builder.textSize
         textWidth = builder.textWidth
         textWidthSupplier = builder.textWidthSupplier
@@ -67,9 +67,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         initialMessage = builder.message
 
         // create initial panelBuffer for the text
-        updatePanelBuffer(drawingInformer.supplyPGraphics(), true)
-
-        //this.setFill(0xFFFF0000);
+        panelBuffer = getTextPanelBuffer(drawingInformer.supplyPGraphics())
 
         // automatically start the display unless we're a countdown
         // which needs to be manually invoked by the caller...
@@ -77,12 +75,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             startCountdown()
         } else {
             startDisplay()
-        }
-    }
-
-    private fun updatePanelBuffer(parentBuffer: PGraphics, shouldUpdate: Boolean) {
-        if (shouldUpdate) {
-            panelBuffer = getTextPanelBuffer(parentBuffer)
         }
     }
 
@@ -98,6 +90,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     private fun getTextPanelBuffer(parentBuffer: PGraphics): PGraphics {
+
         val testMessage = if (countdownFrom.isPresent) getCountdownMessage(countdownFrom.asInt.toLong()) else message
         messageLines = wrapText(testMessage, parentBuffer)
 
@@ -115,8 +108,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             }
             totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent()
         }
-
-        // width = (int) Math.ceil(maxWidth + doubleTextMargin);
 
         // Adjust the width and height according to the size of the wrapped text
         height = ceil((totalHeight + textMargin).toDouble()).toInt()
@@ -234,67 +225,31 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
     }
 
+    /* called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on */
+    override fun updatePanelBuffer() {
+        if (
+            (lastMessage != message) ||
+            (drawingInformer.isResized())
+        ) {
+            panelBuffer = getTextPanelBuffer(drawingInformer.supplyPGraphics())
+            messageLines = wrapText(message, drawingInformer.supplyPGraphics())
+        }
+    }
+
     override fun panelSubclassDraw() {
 
         // used for fading in the text and the various states
         // a patterning.ux.panel.TextPanel can advance through
         state!!.update()
 
-        // we update the size of the buffer containing the text
-        // if we've resized && there is a supplier of an integer telling us the size of the text can change
-        // for example the countdown text is half the screen width so we want to give it a new buffer
-
-
-        //val shouldUpdate = drawingInformer.isResized() //&& textWidthSupplier.isPresent();
-        //updatePanelBuffer(drawingInformer.supplyPGraphics(), shouldUpdate);
-
-        // if i cache a panel and then just create a new one when the screen resizes
-        // the hud text jumps around too much.
-        //
-        // can't seem to make that work on a cached panel just by updating the text size
-        // spent too much time trying to figure it out - for now will leave it this way
-        //
-        // be warned that it can be a perf hit to create the panel and walk through all of the text sizes
-        // each time - but the performance is acceptable.
-        // when you create new text panels that organize the text
-        // better - possibly you won't have to do this anymore.
-        if (lastMessage != message) {
-            updatePanelBuffer(drawingInformer.supplyPGraphics(), true)
-            messageLines = wrapText(message, drawingInformer.supplyPGraphics())
-        }
-
-
-        // and if the test actually changed - or in the case of updating the buffer size on resize
-        // let's update the word wrapping and font size
-        /*  if (!Objects.equals(lastMessage, message) || shouldUpdate) {
-
-            // getAdjustedTextSize uses the parentBuffer to calculate the sizes for use on the panelBuffer
-            // uses the parent to calculate so I guess that's it
-            //setFont(drawingInformer.supplyPGraphics(), textSize);
-            setFont(panelBuffer, getAdjustedTextSize(drawingInformer.supplyPGraphics(), messageLines, textSize));
-            messageLines = wrapText(message, drawingInformer.supplyPGraphics());
-        }*/drawMultiLineText()
+        drawMultiLineText()
     }
 
     private fun drawMultiLineText() {
 
-
-        // Get the colors every time in case the UX theme changes
-        val outlineColor = Theme.textColorStart // black
-
-        // Interpolate between "black" 0xff000000 and "white" (0xffffffff)
-        // fade value goes from 0 to 255 to make this happen
-        val themeColor = Theme.textColor
-        val currentColor = panelBuffer.lerpColor(outlineColor, themeColor, fadeValue / 255.0f)
-
-        //    System.out.println(System.currentTimeMillis() + " current: " + currentColor + " theme: " + themeColor + " outline: " + outlineColor + " fade: " + fadeValue);
-
-        // Draw black text slightly offset in each direction to create an outline effect
-        val outlineOffset = 1.0f
         panelBuffer.beginDraw()
         panelBuffer.pushStyle()
-        assert(hAlign != null)
-        assert(vAlign != null)
+
         panelBuffer.textAlign(hAlign!!.toPApplet(), vAlign!!.toPApplet())
 
         // Determine where to start drawing the text based on the alignment
@@ -316,19 +271,22 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             AlignVertical.BOTTOM -> y = (panelBuffer.height - textMargin).toFloat()
             else -> {}
         }
+
+        // Interpolate between start and end colors
+        // fade value goes from 0 to 255 to make this happen
+        val startColor = Theme.textColorStart
+        val endColor = Theme.textColor
+        val currentColor = panelBuffer.lerpColor(startColor, endColor, fadeValue / 255.0f)
+
         for (i in messageLines!!.indices) {
             val line = messageLines!![i]
             val lineY = y + lineHeight * i
-            if (outline) {
-                panelBuffer.fill(outlineColor)
-                panelBuffer.text(line, x - outlineOffset, lineY - outlineOffset)
-                panelBuffer.text(line, x + outlineOffset, lineY - outlineOffset)
-            }
 
             // Draw the actual text in the calculated color
             panelBuffer.fill(currentColor)
-            //panelBuffer.fill(0xFFFF00FF);
+            //println(currentColor)
             panelBuffer.text(line, x, lineY)
+
         }
         panelBuffer.popStyle()
         panelBuffer.endDraw()
@@ -350,7 +308,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
     class Builder : Panel.Builder<Builder> {
         internal val message: String
-        internal var outline = true
         internal var wrap = false
         internal var textSize = Theme.defaultTextSize
         internal var fadeInDuration = OptionalInt.empty()
@@ -367,10 +324,10 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         constructor(
             informer: DrawingInfoSupplier?,
             message: String,
-            alignHorizontal: AlignHorizontal?,
+            hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
         ) : super(
-            informer!!, alignHorizontal!!, vAlign!!
+            informer!!, hAlign!!, vAlign!!
         ) {
             this.message = message
         }
@@ -439,10 +396,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             return this
         }
 
-        fun outline(outline: Boolean): Builder {
-            this.outline = outline
-            return this
-        }
 
         override fun self(): Builder {
             return this

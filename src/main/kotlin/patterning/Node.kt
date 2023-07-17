@@ -85,16 +85,16 @@ class InternalNode(
 
             // level 1 requires special handling - the coordinate system doesn't need translation
             // so we just use zero for the offset
-            val quarterSize = if (level == 1)
+            val quarterSizeOffset = if (level == 1)
                 FlexibleInteger.ZERO
             else
                 FlexibleInteger.pow2(level - 2)
 
-            val quarterSizeNegated = quarterSize.negate()
+            val quarterSizeNegated = quarterSizeOffset.negate()
             bounds = calculateChildBounds(nw, quarterSizeNegated, quarterSizeNegated, bounds)
-            bounds = calculateChildBounds(ne, quarterSizeNegated, quarterSize, bounds)
-            bounds = calculateChildBounds(sw, quarterSize, quarterSizeNegated, bounds)
-            bounds = calculateChildBounds(se, quarterSize, quarterSize, bounds)
+            bounds = calculateChildBounds(ne, quarterSizeNegated, quarterSizeOffset, bounds)
+            bounds = calculateChildBounds(sw, quarterSizeOffset, quarterSizeNegated, bounds)
+            bounds = calculateChildBounds(se, quarterSizeOffset, quarterSizeOffset, bounds)
             bounds.updateLargestDimension(bounds.width.max(bounds.height))
 
             bounds

@@ -6,7 +6,6 @@ import processing.core.PGraphics
 
 abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel(builder) {
     private val childPanels: List<Panel>
-    @JvmField
     val orientation: Orientation
 
     init {
@@ -31,7 +30,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
         // given we've already called super(builder), set
         // as the one created in Panel won't work
         // there's probably a better way but i think it can wait
-        panelBuffer = getPanelBuffer(drawingInformer.supplyPGraphics())
+        panelBuffer = initPanelBuffer(drawingInformer.supplyPGraphics())
     }
 
     private val containerPanelBuffer: PGraphics
@@ -67,9 +66,9 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
     // public abstract static class Builder extends Panel.Builder<Builder> {
     abstract class Builder<P : Builder<P>>  // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
-        (drawingInformer: DrawingInfoSupplier?, alignHorizontal: AlignHorizontal?, vAlign: AlignVertical?) :
+        (drawingInformer: DrawingInfoSupplier?, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
         Panel.Builder<P>(
-            drawingInformer!!, alignHorizontal!!, vAlign!!
+            drawingInformer!!, hAlign!!, vAlign!!
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
         @JvmField

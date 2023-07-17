@@ -29,15 +29,17 @@ open class UXConstants internal constructor() {
     open val textColorStart: UInt
         get() = 0xFFFFFFFFu
     open val textColor: UInt
-        get() = 0xFF000000u
+        get() = 0xFF888888u
 
-    val controlColor: UInt
-        get() = 0xC8404040u // partially transparent 40
-    val controlHighlightColor: UInt
-        get() = 0xC8909090u // partially transparent 60
-    val controlMousePressedColor: UInt
-        get() = 0xC8E1E1E1u // partially transparent 225
-    val defaultPanelColor: UInt
+    open val controlColor: UInt
+        get() = 0xDD404040u // partially transparent 40
+    open val controlHighlightColor: UInt
+        get() = 0xDD909090u // partially transparent 60
+    open val controlMousePressedColor: UInt
+        get() = 0xDDE1E1E1u // partially transparent 225
+
+    /* currently not open */
+    val defaultPanelColor
         get() = 0x00FFFFFFu
 
     // durations

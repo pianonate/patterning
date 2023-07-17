@@ -47,20 +47,20 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     // callbacks all constructed with factory methods to make them easy to read and write
     val callbackPause: KeyCallback = KeyCallback.createKeyCallback(
         key = SHORTCUT_PAUSE,
-        invokeFeatureLambda = {drawer.handlePause()},
-        getUsageTextLambda = {"pause and play"}
+        invokeFeatureLambda = { drawer.handlePause() },
+        getUsageTextLambda = { "pause and play" }
     )
     private val callbackLoadLifeForm: KeyCallback = KeyCallback.createKeyCallback(
         keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
-        invokeFeatureLambda = {patterning.numberedLifeForm},
-        getUsageTextLambda = {"press a # key to load one of the first 9 embedded RLE resource files"}
+        invokeFeatureLambda = { patterning.numberedLifeForm },
+        getUsageTextLambda = { "press a # key to load one of the first 9 embedded RLE resource files" }
     )
 
-   val callbackDrawSlower = KeyCallback.createKeyCallback(
-       keyCombos = setOf(KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)),
-       invokeFeatureLambda = { DrawRateManager.goSlower() },
-       getUsageTextLambda = { "slow the animation down" }
-   )
+    val callbackDrawSlower = KeyCallback.createKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)),
+        invokeFeatureLambda = { DrawRateManager.goSlower() },
+        getUsageTextLambda = { "slow the animation down" }
+    )
 
     val callbackDrawFaster = KeyCallback.createKeyCallback(
         key = SHORTCUT_DRAW_SPEED,
@@ -93,6 +93,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     )
 
     private val callbackZoomIn = KeyCallback.createKeyCallback(
+        // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
         invokeFeatureLambda = { drawer.zoomXY(true, patterning.mouseX.toFloat(), patterning.mouseY.toFloat()) },
         getUsageTextLambda = { "zoom in centered on the mouse" }
@@ -107,7 +108,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     val callbackZoomOutCenter = KeyCallback.createKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
         invokeFeatureLambda = { drawer.zoomXY(false, patterning.width.toFloat() / 2, patterning.height.toFloat() / 2) },
-        getUsageTextLambda =  { "zoom out centered on the middle of the screen" }
+        getUsageTextLambda = { "zoom out centered on the middle of the screen" }
     )
 
     private val callbackZoomOut = KeyCallback.createKeyCallback(
@@ -119,7 +120,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     val callbackDrawBounds = KeyCallback.createKeyCallback(
         key = SHORTCUT_DISPLAY_BOUNDS,
         invokeFeatureLambda = { drawer.toggleDrawBounds() },
-        getUsageTextLambda =  { "draw a border around the part of the universe containing living cells" }
+        getUsageTextLambda = { "draw a border around the part of the universe containing living cells" }
     )
 
     val callbackCenterView = KeyCallback.createKeyCallback(
@@ -129,7 +130,10 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     )
 
     val callbackUndoMovement = KeyCallback.createKeyCallback(
-        keyCombos = setOf(KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC), KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)),
+        keyCombos = setOf(
+            KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
+            KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+        ),
         invokeFeatureLambda = { drawer.undoMovement() },
         getUsageTextLambda = { "undo various movement patterning.actions such as centering or fitting to screen" }
     )
@@ -150,15 +154,30 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     )
 
     private val callbackPaste = KeyCallback.createKeyCallback(
-        keyCombos = setOf(KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC), KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)),
+        keyCombos = setOf(
+            KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
+            KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+        ),
         invokeFeatureLambda = { patterning.pasteLifeForm() },
         getUsageTextLambda = { "paste a new lifeform into the app - currently only supports RLE encoded lifeforms" }
     )
 
     private val callbackMovement = KeyCallback.createKeyCallback(
-        keyCombos = setOf(MovementHandler.WEST, MovementHandler.EAST, MovementHandler.NORTH, MovementHandler.SOUTH).map { KeyCombo(it) }.toSet(),
+        keyCombos = setOf(
+            MovementHandler.WEST,
+            MovementHandler.EAST,
+            MovementHandler.NORTH,
+            MovementHandler.SOUTH
+        ).map { KeyCombo(it) }.toSet(),
         invokeFeatureLambda = {
-            if (!KeyHandler.pressedKeys.any { it in listOf(MovementHandler.WEST, MovementHandler.EAST, MovementHandler.NORTH, MovementHandler.SOUTH) }) {
+            if (!KeyHandler.pressedKeys.any {
+                    it in listOf(
+                        MovementHandler.WEST,
+                        MovementHandler.EAST,
+                        MovementHandler.NORTH,
+                        MovementHandler.SOUTH
+                    )
+                }) {
                 drawer.saveUndoState()
             }
         },
@@ -172,7 +191,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
     val callbackSingleStep = KeyCallback.createKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
-        invokeFeatureLambda = {  patterning.toggleSingleStep() },
+        invokeFeatureLambda = { patterning.toggleSingleStep() },
         getUsageTextLambda = { "in single step mode, advanced one frame at a time" },
         invokeModeChangeLambda = { true }
     )

@@ -1,7 +1,3 @@
-bug: Text disappears at bottom of screen - redo TextPanel thinking...
-
-bug: zoom in zoom out shows keyboard shortcut highlighting for shift-Z and Z but not for + and - which it should
-
 bug: DPS should show you actual draws per second
 
 todo: idiomaticize

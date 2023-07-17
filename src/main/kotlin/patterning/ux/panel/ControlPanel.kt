@@ -5,8 +5,8 @@ import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
-    class Builder(drawingInformer: DrawingInfoSupplier?, alignHorizontal: AlignHorizontal?, vAlign: AlignVertical?) :
-        ContainerPanel.Builder<Builder>(drawingInformer, alignHorizontal, vAlign) {
+    class Builder(drawingInformer: DrawingInfoSupplier?, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
+        ContainerPanel.Builder<Builder>(drawingInformer, hAlign, vAlign) {
         public override fun setOrientation(orientation: Orientation): Builder {
             this.orientation = orientation
             return this

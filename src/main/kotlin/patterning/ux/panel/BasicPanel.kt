@@ -8,12 +8,12 @@ class BasicPanel private constructor(builder: Builder?) : Panel(builder!!) {
 
     class Builder(
         drawingInfoSupplier: DrawingInfoSupplier?,
-        alignHorizontal: AlignHorizontal?,
+        hAlign: AlignHorizontal?,
         vAlign: AlignVertical?,
         width: Int,
         height: Int
     ) : Panel.Builder<Builder?>(
-        drawingInfoSupplier!!, alignHorizontal!!, vAlign!!, width, height
+        drawingInfoSupplier!!, hAlign!!, vAlign!!, width, height
     ) {
         override fun build(): BasicPanel {
             return BasicPanel(this)

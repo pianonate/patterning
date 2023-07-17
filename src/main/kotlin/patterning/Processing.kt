@@ -122,13 +122,6 @@ class Processing : PApplet() {
         // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
         drawer.draw(life, shouldDraw && isThreadSafe)
 
-        // there is a bug that every once in a while the text will just not draw
-        // stepping through it in the debugger will magically make it draw - which
-        // is potentially an indicator that something is wrong with the animation thread
-        // and just sleeping a bit seems to fix it
-        // let's see if it's really true
-        delay(3)
-
         // as mentioned above - this runs on a separate thread
         // and we don't want it to go any faster than the draw rate throttling mechanism
         if (shouldDraw) {

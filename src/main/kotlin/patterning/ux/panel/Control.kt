@@ -135,7 +135,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             .wrap()
             .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
             .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
-            .outline(false)
             .build()
 
         // hover text is word wrapped and sized to fit

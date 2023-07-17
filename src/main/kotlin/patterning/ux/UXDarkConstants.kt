@@ -9,5 +9,13 @@ class UXDarkConstants internal constructor() : UXConstants() {
     override val textColorStart: UInt
         get() = 0xFF000000u
     override val textColor: UInt
-        get() = 0xFFFF0000u // 0xFFFFFFFFu
+        get() = 0xCCCCCCCCu
+
+    override val controlColor: UInt
+        get() = 0xDD303030u
+    override val controlHighlightColor: UInt
+        get() = 0xDD606060u
+    override val controlMousePressedColor: UInt
+        get() = 0xDDCCCCCCu
+
 }

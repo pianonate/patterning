@@ -43,6 +43,7 @@ class PatternDrawer(
     private var cell: Cell
     private var countdownText: TextPanel? = null
     private var hudText: TextPanel? = null
+
     private var lifeFormBuffer: PGraphics
     private var uXBuffer: PGraphics
     private var drawBounds: Boolean
@@ -181,7 +182,7 @@ class PatternDrawer(
                 .runMethod { patterning.run() }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() / 2 }))
+                .textWidth(Optional.of(IntSupplier { processing.width / 2 }))
                 .wrap()
                 .textSize(24)
         }
@@ -190,6 +191,7 @@ class PatternDrawer(
                 .textSize(24)
                 .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
         }
+
     }
 
 

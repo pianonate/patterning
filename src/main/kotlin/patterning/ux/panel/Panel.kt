@@ -7,6 +7,7 @@ import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 import patterning.ux.panel.Transition.TransitionDirection
 import patterning.ux.panel.Transition.TransitionType
+import processing.core.PConstants
 import processing.core.PGraphics
 import processing.core.PVector
 import java.awt.Component
@@ -50,8 +51,8 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         width = builder.width
         height = builder.height
         radius = builder.radius
-        hAlign = builder.alignHorizontal
-        vAlign = builder.alignVertical
+        hAlign = builder.hAlign
+        vAlign = builder.vAlign
         alignAble = builder.alignable
         fill = builder.fill
         transitionDirection = builder.transitionDirection
@@ -59,7 +60,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
         val parentBuffer = drawingInformer.supplyPGraphics()
-        panelBuffer = getPanelBuffer(parentBuffer)
+        panelBuffer = initPanelBuffer(parentBuffer)
         if (transitionAble) {
             transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
         }
@@ -73,7 +74,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         position!!.y = y.toFloat()
     }
 
-    protected fun getPanelBuffer(parentBuffer: PGraphics): PGraphics {
+    fun initPanelBuffer(parentBuffer: PGraphics): PGraphics {
         return parentBuffer.parent.createGraphics(width, height)
     }
 
@@ -95,10 +96,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         return isMouseOverMe
     }
 
-/*    fun setFill(fill: Int) {
-        this.fill = fill
-    }*/
-
     fun setTransition(direction: TransitionDirection?, type: TransitionType?, duration: Int) {
         transitionDirection = direction
         transitionType = type
@@ -106,14 +103,20 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         transitionAble = true
     }
 
+    open fun updatePanelBuffer() {}
+
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
+
         val parentBuffer = drawingInformer.supplyPGraphics()
         parentBuffer.pushStyle()
+
+        /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
+        updatePanelBuffer()
+
         panelBuffer.beginDraw()
         panelBuffer.pushStyle()
         panelBuffer.fill(fill)
-        //panelBuffer.fill(0xFFFF0000); // debugging ghost panel
         panelBuffer.noStroke()
         panelBuffer.clear()
 
@@ -133,11 +136,22 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         panelSubclassDraw()
         panelBuffer.endDraw()
         parentBuffer.popStyle()
+
+        // it appears to draw the text over the cells more clearly
+        // with the blendMode of DIFFERENCE
+        // additionally there seems to be a bug that when drawing text with an outline
+        // sometimes it can't draw the text over the other text correctly
+        // the bug is strange because if you step through code in the debugger, it doesn't happen
+        // almost as if it's some kind of weird threading issue or side effect
+        // for now, I've eliminated outlines as a means to highlight the text against the background
+        if (this is TextPanel) parentBuffer.blendMode(PConstants.DIFFERENCE)
         if (transitionAble && transition!!.isTransitioning) {
             transition!!.image(panelBuffer, position!!.x, position!!.y)
         } else {
             parentBuffer.image(panelBuffer, position!!.x, position!!.y)
         }
+        if (this is TextPanel) parentBuffer.blendMode(PConstants.BLEND)
+
     }
 
     private fun updateAlignment(buffer: PGraphics) {
@@ -169,54 +183,33 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             } else {
                 position
             }
-/*    protected val isMouseOverMe: Boolean
-        protected get() = try {
-            // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
-            val processing = parentPanel!!.panelBuffer.parent
 
-            // our Patterning class extends Processing so we can use it here also
-            val patterning = processing as Patterning
-            if (patterning.draggingDrawing) {
-                return false
-            }
-            val mousePosition = MouseInfo.getPointerInfo().location
-            val windowPosition = (processing.getSurface().native as Component).locationOnScreen
-            val mouseX = mousePosition.x - windowPosition.x
-            val mouseY = mousePosition.y - windowPosition.y
-            if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
-                return false
-            }
-            val effectivePosition = effectivePosition
-            mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
-        } catch (e: Exception) {
-            false
-        }*/
-protected val isMouseOverMe: Boolean
-    get() {
-        return try {
-            // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
-            val processing = parentPanel!!.panelBuffer.parent
+    protected val isMouseOverMe: Boolean
+        get() {
+            return try {
+                // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
+                val processing = parentPanel!!.panelBuffer.parent
 
-            // our Patterning class extends Processing so we can use it here also
-            val patterning = processing as Processing
-            if (patterning.draggingDrawing) {
-                false
-            } else {
-                val mousePosition = MouseInfo.getPointerInfo().location
-                val windowPosition = (processing.getSurface().native as Component).locationOnScreen
-                val mouseX = mousePosition.x - windowPosition.x
-                val mouseY = mousePosition.y - windowPosition.y
-                if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
+                // our Patterning class extends Processing so we can use it here also
+                val patterning = processing as Processing
+                if (patterning.draggingDrawing) {
                     false
                 } else {
-                    val effectivePosition = effectivePosition
-                    mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                    val mousePosition = MouseInfo.getPointerInfo().location
+                    val windowPosition = (processing.getSurface().native as Component).locationOnScreen
+                    val mouseX = mousePosition.x - windowPosition.x
+                    val mouseY = mousePosition.y - windowPosition.y
+                    if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
+                        false
+                    } else {
+                        val effectivePosition = effectivePosition
+                        mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                    }
                 }
+            } catch (e: Exception) {
+                false
             }
-        } catch (e: Exception) {
-            false
         }
-    }
 
     abstract class Builder<T : Builder<T>?> {
         @JvmField
@@ -226,8 +219,8 @@ protected val isMouseOverMe: Boolean
         var width = 0
         var height = 0
         var alignable = false
-        var alignHorizontal: AlignHorizontal? = null
-        var alignVertical: AlignVertical? = null
+        var hAlign: AlignHorizontal? = null
+        var vAlign: AlignVertical? = null
         var fill = Theme.defaultPanelColor
         var transitionDirection: TransitionDirection? = null
         var transitionType: TransitionType? = null
@@ -259,33 +252,33 @@ protected val isMouseOverMe: Boolean
             this.drawingInformer = drawingInformer
         }
 
-        private fun setAlignment(alignHorizontal: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
+        private fun setAlignment(hAlign: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
             alignable = alignAble
-            this.alignHorizontal = alignHorizontal
-            alignVertical = vAlign
+            this.hAlign = hAlign
+            this.vAlign = vAlign
         }
 
         // used by BasicPanel for demonstration purposes
         constructor(
             drawingInformer: DrawingInfoSupplier,
-            alignHorizontal: AlignHorizontal,
-            alignVertical: AlignVertical,
+            hAlign: AlignHorizontal,
+            vAlign: AlignVertical,
             width: Int,
             height: Int
         ) {
             setRect(0, 0, width, height) // we're only using BasicPanel to show that panels are useful...
-            setAlignment(alignHorizontal, alignVertical, true)
+            setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
         }
 
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
         constructor(
             drawingInformer: DrawingInfoSupplier,
-            alignHorizontal: AlignHorizontal,
-            alignVertical: AlignVertical
+            hAlign: AlignHorizontal,
+            vAlign: AlignVertical
         ) {
             setRect(0, 0, 0, 0) // Containers and text, so far, only need to be aligned around the screen
-            setAlignment(alignHorizontal, alignVertical, true)
+            setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
         }
 

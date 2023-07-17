@@ -12,13 +12,8 @@ import java.nio.IntBuffer
 
 class LifeUniverse internal constructor() {
     private var lastId: Int
-
-    // private var hashmap: HashMap<Int, Node>
-    //private var hashmap: MutableMap<Int, InternalNode>
     private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
     private var emptyTreeCache: MutableMap<Int, InternalNode>
-
-    // private val level2Cache: HashMap<Int, Node>
     private val level2Cache: MutableMap<Int, InternalNode>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
@@ -71,7 +66,6 @@ class LifeUniverse internal constructor() {
         // last id for nodes
         lastId = Node.startId
 
-        //hashmap = HashMap()
         emptyTreeCache = HashMap()
         level2Cache = HashMap(0x10000)
         this.root = emptyTree(3)
@@ -351,13 +345,10 @@ class LifeUniverse internal constructor() {
         patternInfo.addOrUpdate("step", FlexibleInteger.pow2(step).get())
         patternInfo.addOrUpdate("generation", generation.get())
         patternInfo.addOrUpdate("population", root.population.get())
-        patternInfo.addOrUpdate("hashmap", hashmap.size)
         patternInfo.addOrUpdate("lastId", lastId)
         val bounds = rootBounds
         patternInfo.addOrUpdate("width", bounds.width.get())
         patternInfo.addOrUpdate("height", bounds.height.get())
-        patternInfo.addOrUpdate("mc", Bounds.mathContext.precision)
-
     }
 
     fun nextGeneration() {
