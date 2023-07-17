@@ -270,25 +270,15 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
         private const val UNIVERSE_LEVEL_LIMIT = 2048
 
-        private val _powers: Array<FlexibleInteger> = generatePowers()
-
-        private fun generatePowers(): Array<FlexibleInteger> {
-            val powers = Array(UNIVERSE_LEVEL_LIMIT) { ONE }
-            for (i in 1 until UNIVERSE_LEVEL_LIMIT) {
-                powers[i] = FlexibleInteger(BigInteger.valueOf(2).pow(i))
-            }
-            return powers
-        }
+        private val _powers: HashMap<Int, FlexibleInteger> = hashMapOf(0 to FlexibleInteger(BigInteger.ONE))
 
         fun pow2(x: Int): FlexibleInteger {
-            return if (x >= UNIVERSE_LEVEL_LIMIT) {
-                FlexibleInteger(BigInteger.valueOf(2).pow(x))
-            } else if (x < 0) ONE
-            else _powers[x]
+            return _powers.getOrPut(x) { FlexibleInteger(BigInteger.valueOf(2).pow(x)) }
         }
 
-        val MAX_VALUE = pow2(UNIVERSE_LEVEL_LIMIT)
-        val MIN_VALUE = MAX_VALUE.negate()
+        val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
+        val MIN_VALUE by lazy { MAX_VALUE.negate() }
+
 
     }
 

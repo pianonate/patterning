@@ -74,12 +74,8 @@ class InternalNode(
                 FlexibleInteger.ZERO
             )
         } else {
-            // Half the size of the current node.
-            val offset = FlexibleInteger.pow2(level - 1)
-            val smallOffset = FlexibleInteger.pow2(level - 2)
-            val smallOffsetNegated = smallOffset.negate()
 
-            // Initialize bounds to a small, out-of-bounds square.
+            // Initialize bounds to crazy size - currently set to the universe limit
             var bounds = Bounds(
                 FlexibleInteger.MAX_VALUE,
                 FlexibleInteger.MAX_VALUE,
@@ -87,19 +83,18 @@ class InternalNode(
                 FlexibleInteger.MIN_VALUE,
             )
 
-            if (level < 2) {
-                // Translate the bounds of each child node to the coordinate system of the parent node.
-                bounds = calculateChildBounds(nw, FlexibleInteger.ZERO, FlexibleInteger.ZERO, bounds)
-                bounds = calculateChildBounds(ne, FlexibleInteger.ZERO, offset, bounds)
-                bounds = calculateChildBounds(sw, offset, FlexibleInteger.ZERO, bounds)
-                bounds = calculateChildBounds(se, offset, offset, bounds)
-            } else {
-                // Translate the bounds of each child node to the coordinate system of the parent node.
-                bounds = calculateChildBounds(nw, smallOffsetNegated, smallOffsetNegated, bounds)
-                bounds = calculateChildBounds(ne, smallOffsetNegated, smallOffset, bounds)
-                bounds = calculateChildBounds(sw, smallOffset, smallOffsetNegated, bounds)
-                bounds = calculateChildBounds(se, smallOffset, smallOffset, bounds)
-            }
+            // level 1 requires special handling - the coordinate system doesn't need translation
+            // so we just use zero for the offset
+            val quarterSize = if (level == 1)
+                FlexibleInteger.ZERO
+            else
+                FlexibleInteger.pow2(level - 2)
+
+            val quarterSizeNegated = quarterSize.negate()
+            bounds = calculateChildBounds(nw, quarterSizeNegated, quarterSizeNegated, bounds)
+            bounds = calculateChildBounds(ne, quarterSizeNegated, quarterSize, bounds)
+            bounds = calculateChildBounds(sw, quarterSize, quarterSizeNegated, bounds)
+            bounds = calculateChildBounds(se, quarterSize, quarterSize, bounds)
             bounds.updateLargestDimension(bounds.width.max(bounds.height))
 
             bounds
