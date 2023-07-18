@@ -1,4 +1,4 @@
-bug: DPS should show you actual draws per second
+todo: show actual DPS
 
 todo: idiomaticize
 

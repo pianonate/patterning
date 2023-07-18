@@ -240,6 +240,7 @@ class PatternDrawer(
             24
         ) {
             hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
+            hudInfo.addOrUpdate("frames", processing.frameCount)
             hudInfo.addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
@@ -469,13 +470,13 @@ class PatternDrawer(
 
         if (shouldDraw) {
             val node = life.root
+
+            /*  val node = life.root*/
             lifeFormBuffer.apply {
                 beginDraw()
                 clear()
             }
 
-
-            //val size = BigDecimal(FlexibleInteger.pow2(node.level - 1).toBigDecimal(), mc).multiply(cell.size.toBigDecimal(), mc)
             val size = FlexibleInteger.pow2(node.level - 1).toBigDecimal().multiply(cell.size.toBigDecimal(), mc)
             drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
             drawBounds(life)

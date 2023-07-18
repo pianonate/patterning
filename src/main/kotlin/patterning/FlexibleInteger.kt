@@ -2,8 +2,14 @@ package patterning
 
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.math.RoundingMode
+import java.text.NumberFormat
 import kotlin.math.ceil
 import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.roundToInt
+
+fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
 
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
@@ -131,14 +137,41 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     operator fun minus(other: FlexibleInteger): FlexibleInteger {
         return when {
-            value is Int && other.value is Int -> FlexibleInteger(value - other.value)
-            value is Int && other.value is Long -> FlexibleInteger(value.toLong() - other.value)
-            value is Long && other.value is Long -> FlexibleInteger(value - other.value)
-            value is Long && other.value is Int -> FlexibleInteger(value - other.value.toLong())
-            value is BigInteger && other.value is BigInteger -> FlexibleInteger(value - other.value)
-            else -> FlexibleInteger(value.toBigIntegerSafe() - other.value.toBigIntegerSafe())
+            value is Int && other.value is Int -> handleIntSubtraction(value, other.value)
+            value is Int && other.value is Long -> handleLongSubtraction(value.toLong(), other.value)
+            value is Int && other.value is BigInteger -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value)
+
+            value is Long && other.value is Int -> handleLongSubtraction(value, other.value.toLong())
+            value is Long && other.value is Long -> handleLongSubtraction(value, other.value)
+            value is Long && other.value is BigInteger -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value)
+
+            value is BigInteger && other.value is BigInteger -> handleBigIntegerSubtraction(value, other.value)
+
+            // the possible choice for else is going to be either an int or a long
+            else -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value.toBigIntegerSafe())
         }
     }
+
+    private fun handleIntSubtraction(a: Int, b: Int): FlexibleInteger {
+        return try {
+            FlexibleInteger(Math.subtractExact(a, b))
+        } catch (ex: ArithmeticException) {
+            FlexibleInteger(a.toLong() - b.toLong())
+        }
+    }
+
+    private fun handleLongSubtraction(a: Long, b: Long): FlexibleInteger {
+        return try {
+            FlexibleInteger(Math.subtractExact(a, b))
+        } catch (ex: ArithmeticException) {
+            FlexibleInteger(BigInteger.valueOf(a) - BigInteger.valueOf(b))
+        }
+    }
+
+    private fun handleBigIntegerSubtraction(a: BigInteger, b: BigInteger): FlexibleInteger {
+        return FlexibleInteger(a - b)
+    }
+
 
     fun min(other: FlexibleInteger): FlexibleInteger {
         return when {
@@ -243,6 +276,37 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         }
     }
 
+
+
+
+    fun hudFormatted(): String {
+        if (value == 0) return "0"
+        return if (value is Int) {
+            if (value < 1_000_000_000)
+                value.formatWithCommas()
+            else formatLargeNumber()
+        } else {
+            formatLargeNumber()
+        }
+    }
+
+    private fun formatLargeNumber(): String {
+
+        val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
+        val exponent = bigIntegerValue.toString().length - 1
+        val index = (exponent - 3) / 3
+        return when {
+            index < largeNumberNames.size -> {
+                val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
+                val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
+                "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
+            }
+
+            else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
+        }
+    }
+
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is FlexibleInteger) return false
@@ -279,7 +343,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
         val MIN_VALUE by lazy { MAX_VALUE.negate() }
 
-
+        private val largeNumberNames = arrayOf(
+            "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
+            "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
+            "tredecillion", "quattuordecillion"
+        )
     }
-
 }

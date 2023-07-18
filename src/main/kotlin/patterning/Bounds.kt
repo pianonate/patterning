@@ -57,6 +57,14 @@ data class Bounds(
         }
     }
 
+    override fun hashCode(): Int {
+        var result = top.hashCode()
+        result = 31 * result + left.hashCode()
+        result = 31 * result + bottom.hashCode()
+        result = 31 * result + right.hashCode()
+        return result
+    }
+
     companion object {
 
         // empirically setting the mathContext to be exactly the minPrecisionForDrawing still results

@@ -112,15 +112,6 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    private fun expandUniverse(node: InternalNode): InternalNode {
-        val t = emptyTree(node.level - 1)
-        return createNode(
-            createNode(t, t, t, node.nw),
-            createNode(t, t, node.ne, t),
-            createNode(t, node.sw, t, t),
-            createNode(node.se, t, t, t)
-        )
-    }
 
     // Preserve the tree, but remove all cached
     // generations forward
@@ -341,14 +332,14 @@ class LifeUniverse internal constructor() {
     }
 
     private fun updatePatternInfo() {
-        patternInfo.addOrUpdate("level", root.level)
-        patternInfo.addOrUpdate("step", FlexibleInteger.pow2(step).get())
-        patternInfo.addOrUpdate("generation", generation.get())
-        patternInfo.addOrUpdate("population", root.population.get())
-        patternInfo.addOrUpdate("lastId", lastId)
+        patternInfo.addOrUpdate("level", FlexibleInteger(root.level))
+        patternInfo.addOrUpdate("step", FlexibleInteger.pow2(step))
+        patternInfo.addOrUpdate("generation", generation)
+        patternInfo.addOrUpdate("population", root.population)
+        patternInfo.addOrUpdate("lastId", FlexibleInteger(lastId))
         val bounds = rootBounds
-        patternInfo.addOrUpdate("width", bounds.width.get())
-        patternInfo.addOrUpdate("height", bounds.height.get())
+        patternInfo.addOrUpdate("width", bounds.width)
+        patternInfo.addOrUpdate("height", bounds.height)
     }
 
     fun nextGeneration() {
@@ -366,6 +357,16 @@ class LifeUniverse internal constructor() {
         this.root = nextGenerationRecurse(currentRoot)
 
         generation += FlexibleInteger.pow2(step)
+    }
+
+    private fun expandUniverse(node: InternalNode): InternalNode {
+        val t = emptyTree(node.level - 1)
+        return createNode(
+            createNode(t, t, t, node.nw),
+            createNode(t, t, node.ne, t),
+            createNode(t, node.sw, t, t),
+            createNode(node.se, t, t, t)
+        )
     }
 
     private fun nextGenerationRecurse(node: InternalNode): InternalNode {
