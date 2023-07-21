@@ -126,7 +126,7 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         }
     }
 
-    fun negate(): FlexibleInteger {
+    operator fun unaryMinus(): FlexibleInteger {
         return when (value) {
             is Int -> FlexibleInteger(-value)
             is Long -> FlexibleInteger(-value)
@@ -143,11 +143,17 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         return when {
             value is Int && other.value is Int -> handleIntSubtraction(value, other.value)
             value is Int && other.value is Long -> handleLongSubtraction(value.toLong(), other.value)
-            value is Int && other.value is BigInteger -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value)
+            value is Int && other.value is BigInteger -> handleBigIntegerSubtraction(
+                value.toBigIntegerSafe(),
+                other.value
+            )
 
             value is Long && other.value is Int -> handleLongSubtraction(value, other.value.toLong())
             value is Long && other.value is Long -> handleLongSubtraction(value, other.value)
-            value is Long && other.value is BigInteger -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value)
+            value is Long && other.value is BigInteger -> handleBigIntegerSubtraction(
+                value.toBigIntegerSafe(),
+                other.value
+            )
 
             value is BigInteger && other.value is BigInteger -> handleBigIntegerSubtraction(value, other.value)
 
@@ -281,8 +287,6 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     }
 
 
-
-
     fun hudFormatted(): String {
         if (value == 0) return "0"
         return if (value is Int) {
@@ -345,7 +349,7 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         }
 
         val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
-        val MIN_VALUE by lazy { MAX_VALUE.negate() }
+        val MIN_VALUE by lazy { -MAX_VALUE }
 
         private val largeNumberNames = arrayOf(
             "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",

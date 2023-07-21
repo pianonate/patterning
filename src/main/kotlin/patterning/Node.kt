@@ -84,7 +84,7 @@ class InternalNode(
             )
 
             val offset = if (level == 1) FlexibleInteger.ONE else FlexibleInteger.pow2(level - 2)
-            val negatedOffset = if (level == 1) FlexibleInteger.ZERO else offset.negate()
+            val negatedOffset = if (level == 1) FlexibleInteger.ZERO else -offset
 
             bounds = calculateChildBounds(nw, negatedOffset, negatedOffset, bounds)
             bounds = calculateChildBounds(ne, negatedOffset, offset, bounds)

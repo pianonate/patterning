@@ -291,8 +291,8 @@ class PatternDrawer(
         val halfDrawingHeight = drawingHeight.divide(BigTWO, mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toBigDecimal() * bigCell.negate())
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toBigDecimal() * bigCell.negate())
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toBigDecimal() * -bigCell)
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toBigDecimal() * -bigCell)
 
         updateCanvasOffsets(offsetX, offsetY)
 
@@ -447,7 +447,7 @@ class PatternDrawer(
         }
 
         // keep this around - it works - so if your startingNode code has issues, you can resuscitate
-        //drawNodeRecurse(life.root, size, halfSize.negate(), halfSize.negate())
+        //drawNodeRecurse(life.root, size, -halfSize, -halfSize)
 
         drawBounds(life)
 
@@ -464,8 +464,8 @@ class PatternDrawer(
             DrawNodePathEntry(
                 life.root,
                 universeSize,
-                halfSize.negate(),
-                halfSize.negate(),
+                -halfSize,
+                -halfSize,
                 Direction.ROOT
             )
         )
@@ -478,7 +478,7 @@ class PatternDrawer(
         // take a look at refactoring this for clarity - at least extract a function here.
         if (nodePath.shouldUpdate || nodePath.level != life.root.level) {
             nodePath.clear()
-            updateNodePath(life.root, universeSize, halfSize.negate(), halfSize.negate())
+            updateNodePath(life.root, universeSize, -halfSize, -halfSize)
             nodePath.shouldUpdate = false
             nodePath.level = life.root.level
         }
@@ -616,7 +616,7 @@ class PatternDrawer(
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = calculateBoundingBox(bounds)
         val halfSize = FlexibleInteger.pow2(life.root.level - 1)
-        val universeBox = calculateBoundingBox(Bounds(halfSize.negate(), halfSize.negate(), halfSize, halfSize))
+        val universeBox = calculateBoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize))
 
 
         lifeFormBuffer.apply {

@@ -22,7 +22,7 @@ data class Bounds(
         val coordinates = listOf(top, left, bottom, right)
 
         var max = coordinates.maxOf { coordinate ->
-            maxOf(coordinate.addOne(), coordinate.negate())
+            maxOf(coordinate.addOne(), -coordinate)
         }
 
         max = maxOf(max, FlexibleInteger(4)) // Ensure the minimum max value is 4
