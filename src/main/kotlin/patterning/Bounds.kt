@@ -69,6 +69,12 @@ data class Bounds(
 
         // empirically setting the mathContext to be exactly the minPrecisionForDrawing still results
         // in some rounding errors - we we make it a bit bigger
+        //
+        // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
+        // now that i'm thinking about it, this is probably the required precision for a float
+        // which is what the cell.cellSize is - especially for really small numbers
+        //  without it we'd be off by only looking at the integer part of the largest dimension
+        // given all of the BigDecimal arithmetic
         private const val PRECISION_BUFFER = 10
         private var largestDimension: FlexibleInteger = FlexibleInteger(0)
         private var previousPrecision: Int = 0

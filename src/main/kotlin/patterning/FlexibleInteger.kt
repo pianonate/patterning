@@ -10,6 +10,10 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 
 fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
+fun Int.powerSquared(): Int {
+    val powerOfTwo = 2.0.pow(this.toDouble())
+    return powerOfTwo.pow(2.0).toInt()
+}
 
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 

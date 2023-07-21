@@ -19,6 +19,70 @@ import kotlin.math.roundToInt
 class PatternDrawer(
     private val processing: PApplet
 ) {
+
+    private data class CanvasState(
+        val cell: Cell,
+        val canvasOffsetX: BigDecimal,
+        val canvasOffsetY: BigDecimal
+    )
+
+    private data class DrawNodePathEntry(
+        val node: Node,
+        val size: BigDecimal,
+        val left: BigDecimal,
+        val top: BigDecimal,
+        val direction: Direction
+    )
+
+    private data class DrawNodePath(
+        var shouldUpdate: Boolean,
+        val path: MutableList<DrawNodePathEntry> = mutableListOf(),
+        var level: Int
+    ) {
+        fun updateRoot(root: DrawNodePathEntry) {
+            path[0] = root
+        }
+
+        fun clear() {
+            if (path.size > 1) {
+                path.subList(1, path.size).clear()
+            }
+        }
+
+        fun lowestEntry(root: InternalNode): DrawNodePathEntry {
+            var currentNode: Node = root
+            var lastEntry = path[0]
+
+            if (path.size == 1) {
+                return lastEntry
+            }
+
+            for (entry in path) {
+                lastEntry = entry
+                currentNode = when (entry.direction) {
+                    Direction.ROOT -> currentNode
+                    Direction.NW -> (currentNode as InternalNode).nw
+                    Direction.NE -> (currentNode as InternalNode).ne
+                    Direction.SW -> (currentNode as InternalNode).sw
+                    Direction.SE -> (currentNode as InternalNode).se
+                }
+            }
+
+            return DrawNodePathEntry(
+                node = currentNode,
+                size = lastEntry.size,
+                left = lastEntry.left,
+                top = lastEntry.top,
+                direction = lastEntry.direction
+            )
+        }
+
+    }
+
+    private enum class Direction {
+        NW, NE, SW, SE, ROOT
+    }
+
     private val cellBorderWidthRatio = .05f
     private val drawingInformer: DrawingInfoSupplier
     private val patterning: Processing = processing as Processing
@@ -41,6 +105,11 @@ class PatternDrawer(
     private var lifeFormPosition = PVector(0f, 0f)
     private var isDrawing = false
     private var cell: Cell
+
+    private val nodePath = DrawNodePath(shouldUpdate = true, level = 0).apply {
+        path.add(DrawNodePathEntry(Node.deadNode, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, Direction.NW))
+    }
+
     private var countdownText: TextPanel? = null
     private var hudText: TextPanel? = null
 
@@ -212,7 +281,7 @@ class PatternDrawer(
             cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
 
-        val bigCell = cell.size.toBigDecimal()
+        val bigCell = cell.bigSize
 
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
@@ -225,8 +294,8 @@ class PatternDrawer(
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toBigDecimal() * bigCell.negate())
         val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toBigDecimal() * bigCell.negate())
 
-        canvasOffsetX = offsetX
-        canvasOffsetY = offsetY
+        updateCanvasOffsets(offsetX, offsetY)
+
     }
 
     fun clearUndoDeque() {
@@ -244,6 +313,8 @@ class PatternDrawer(
             hudInfo.addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
+            hudInfo.addOrUpdate("actuals", actualRecursions)
+            hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.patternInfo.getData()
             patternInfo.forEach { (key, value) ->
                 hudInfo.addOrUpdate(key, value)
@@ -252,7 +323,7 @@ class PatternDrawer(
     }
 
     fun saveUndoState() {
-        undoDeque.add(CanvasState(cell, canvasOffsetX, canvasOffsetY))
+        undoDeque.add(CanvasState(Cell(cell.size), canvasOffsetX, canvasOffsetY))
     }
 
     fun handlePause() {
@@ -280,7 +351,7 @@ class PatternDrawer(
         val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
         val centerYAfter = calcCenterOnResize(canvasHeight, canvasOffsetY)
 
-        updateCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
+        adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
     private fun fillSquare(
@@ -299,47 +370,211 @@ class PatternDrawer(
         }
     }
 
-    private fun drawNode(node: Node, size: BigDecimal, left: BigDecimal, top: BigDecimal) {
-        node.population.takeIf { it.isNotZero() } ?: return
+    private fun updateNodePath(
+        node: Node,
+        size: BigDecimal,
+        left: BigDecimal,
+        top: BigDecimal
+    ) {
+        if (node.population.isZero()) {
+            return
+        }
+
+        if (node is InternalNode) {
+            val halfSize = getHalfSize(size)
+            val leftHalfSize = left + halfSize
+            val topHalfSize = top + halfSize
+
+            // Check all children at each level, and their relative position adjustments
+            val childrenAndOffsets = listOf(
+                DrawNodePathEntry(node.nw, halfSize, left, top, Direction.NW),
+                DrawNodePathEntry(node.ne, halfSize, leftHalfSize, top, Direction.NE),
+                DrawNodePathEntry(node.sw, halfSize, left, topHalfSize, Direction.SW),
+                DrawNodePathEntry(node.se, halfSize, leftHalfSize, topHalfSize, Direction.SE)
+            )
+
+            val intersectingChildrenAndOffsets = childrenAndOffsets.filter { child ->
+                shouldContinue(
+                    child.node,
+                    child.size,
+                    child.left,
+                    child.top
+                )
+            }
+
+            if (intersectingChildrenAndOffsets.size == 1) {
+
+                val intersectingChild = intersectingChildrenAndOffsets.first()
+                nodePath.path.add(intersectingChild)
+                updateNodePath(
+                    intersectingChild.node,
+                    intersectingChild.size,
+                    intersectingChild.left,
+                    intersectingChild.top
+                )
+            }
+        }
+    }
+
+    // Initialize viewPath, also at class level
+    private var actualRecursions = FlexibleInteger.ZERO
+    private var startDelta = 0
+
+
+    private fun drawNode(life: LifeUniverse) {
+        lifeFormBuffer.beginDraw()
+        lifeFormBuffer.clear()
+
+        // getStartingEntry returns a DrawNodePathEntry - which is precalculated
+        // to traverse to the first node that has children visible on screen
+        // for very large drawing this can save hundreds of stack calls
+        // making debugging (at least) easier
+        //
+        // there may be some performance gain to this although i doubt it's a lot
+        // this is more for the thrill of solving a complicated problem and it's
+        // no small thing that stack traces become much smaller
+        with(getStartingEntry(life)) {
+            actualRecursions = FlexibleInteger.ZERO
+
+            val startingNode = node
+            val size = size
+            val offsetX = left
+            val offsetY = top
+
+            startDelta = life.root.level - startingNode.level
+
+            drawNodeRecurse(startingNode, size, offsetX, offsetY)
+        }
+
+        // keep this around - it works - so if your startingNode code has issues, you can resuscitate
+        //drawNodeRecurse(life.root, size, halfSize.negate(), halfSize.negate())
+
+        drawBounds(life)
+
+        lifeFormBuffer.endDraw()
+        // reset the position in case you've had mouse moves
+        lifeFormPosition[0f] = 0f
+    }
+
+    private fun getStartingEntry(life: LifeUniverse): DrawNodePathEntry {
+        val halfSize = cell.halfUniverseSize(life.root.level)
+        val universeSize = cell.universeSize(life.root.level)
+
+        nodePath.updateRoot(
+            DrawNodePathEntry(
+                life.root,
+                universeSize,
+                halfSize.negate(),
+                halfSize.negate(),
+                Direction.ROOT
+            )
+        )
+
+        // i don't like that this object relies on two properties to determine
+        // moving forward - and having to reset the starting root is necessary but also seems to lack
+        // encapsulation - it's necessary because the life.root is likely to change each generation
+        // and we always have to start traversing the nodePath to get to the lowestNode from the
+        // root - it also makes path management a little easier in the nodePath
+        // take a look at refactoring this for clarity - at least extract a function here.
+        if (nodePath.shouldUpdate || nodePath.level != life.root.level) {
+            nodePath.clear()
+            updateNodePath(life.root, universeSize, halfSize.negate(), halfSize.negate())
+            nodePath.shouldUpdate = false
+            nodePath.level = life.root.level
+        }
+
+        return nodePath.lowestEntry(life.root)
+    }
+
+    private fun shouldContinue(
+        node: Node,
+        size: BigDecimal,
+        nodeLeft: BigDecimal,
+        nodeTop: BigDecimal
+    ): Boolean {
+        if (node.population.isZero()) {
+            return false
+        }
+
+        val left = nodeLeft + canvasOffsetX
+        val top = nodeTop + canvasOffsetY
+
+        // No need to draw anything not visible on screen
+        val right = left + size
+        val bottom = top + size
+
+        /*val shouldContinue = DebugLowest(node.id, top, left, bottom, right)
+        println("recurse: $shouldContinue")*/
+
+        // left and top are defined by the zoom level (cell size) multiplied
+        // by half the universe size which we start out with at the nw corner which is half the size negated
+        // each level in we add half of the size at that to the  create the new size for left and top
+        // to that, we add the canvasOffsetX to left and canvasOffsetY to top - and these
+        // are what is passed in to this function
+        //
+        // the size at this level is then added to the left to get the right side of the universe
+        // and the size is added to the top to get the bottom of the universe
+        // then we see if this universe is inside the canvas by looking to see if
+        // in any direction it is outside.
+        //
+        // if the right side is less than zero it's to the left of the canvas
+        // if the bottom is less than zero it's above the canvas
+        // if the left is larger than the width then we're to the right of the canvas
+        // if the top is larger than the height we're below the canvas
+        return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
+                left >= canvasWidth || top >= canvasHeight)
+    }
+
+
+    private fun drawNodeRecurse(
+        node: Node,
+        size: BigDecimal,
+        left: BigDecimal,
+        top: BigDecimal
+    ) {
+        actualRecursions = actualRecursions.addOne()
+
+        // Check if we should continue
+        if (!shouldContinue(node, size, left, top)) {
+            return
+        }
 
         val leftWithOffset = left + canvasOffsetX
         val topWithOffset = top + canvasOffsetY
 
-        // no need to draw anything not visible on screen
-        (leftWithOffset + size).let { leftWithOffsetAndSize ->
-            (topWithOffset + size).let { topWithOffsetAndSize ->
-                if (leftWithOffsetAndSize < BigDecimal.ZERO || topWithOffsetAndSize < BigDecimal.ZERO ||
-                    leftWithOffset >= canvasWidth || topWithOffset >= canvasHeight
-                ) return
-            }
-        }
-
-        // if we have done a recursion down to a very small size and the population exists,
+        // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size)
         } else if (node is InternalNode) {
+
             val halfSize = getHalfSize(size)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
-            drawNode(node.nw, halfSize, left, top)
-            drawNode(node.ne, halfSize, leftHalfSize, top)
-            drawNode(node.sw, halfSize, left, topHalfSize)
-            drawNode(node.se, halfSize, leftHalfSize, topHalfSize)
+
+            drawNodeRecurse(node.nw, halfSize, left, top)
+            drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
+            drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
+            drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
         }
     }
 
     fun move(dx: Float, dy: Float) {
         saveUndoState()
-        updateCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
+        adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
         lifeFormPosition.add(dx, dy)
     }
 
+    private fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
+        updateCanvasOffsets(canvasOffsetX + dx, canvasOffsetY + dy)
+    }
+
     private fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
-        canvasOffsetX += offsetX
-        canvasOffsetY += offsetY
+        canvasOffsetX = offsetX
+        canvasOffsetY = offsetY
+        nodePath.shouldUpdate = true
     }
 
     fun zoomXY(`in`: Boolean, x: Float, y: Float) {
@@ -361,15 +596,14 @@ class PatternDrawer(
         val offsetY = (1 - zoomFactor) * (y - canvasOffsetY.toFloat())
 
         // Update canvas offsets
-        updateCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
+        adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
     }
 
     fun undoMovement() {
         if (undoDeque.isNotEmpty()) {
             val previous = undoDeque.removeLast()
             cell = previous.cell
-            canvasOffsetX = previous.canvasOffsetX
-            canvasOffsetY = previous.canvasOffsetY
+            updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
         }
     }
 
@@ -381,6 +615,9 @@ class PatternDrawer(
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = calculateBoundingBox(bounds)
+        val halfSize = FlexibleInteger.pow2(life.root.level - 1)
+        val universeBox = calculateBoundingBox(Bounds(halfSize.negate(), halfSize.negate(), halfSize, halfSize))
+
 
         lifeFormBuffer.apply {
             pushStyle()
@@ -393,6 +630,13 @@ class PatternDrawer(
                 boundingBox.top,
                 boundingBox.width,
                 boundingBox.height
+            )
+            rect(
+
+                universeBox.left,
+                universeBox.top,
+                universeBox.width,
+                universeBox.height
             )
             popStyle()
         }
@@ -409,17 +653,17 @@ class PatternDrawer(
     // that don't always match up with the drawing - and only when the universe gets really large
     // really tough bug to figure out! consequence of using BigDecimal and converting via toFloat()
     private fun calculateBoundingBox(bounds: Bounds): BoundingBox {
-        val cellSize = cell.size.toBigDecimal()
+        val cellSize = cell.bigSize
         val leftBD = bounds.left.toBigDecimal()
-        val rightBD = bounds.right.toBigDecimal()
         val topBD = bounds.top.toBigDecimal()
-        val bottomBD = bounds.bottom.toBigDecimal()
 
         val leftDecimal = leftBD.multiply(cellSize, mc).add(canvasOffsetX)
         val topDecimal = topBD.multiply(cellSize, mc).add(canvasOffsetY)
-        val widthDecimal = rightBD.subtract(leftBD).multiply(cellSize, mc).add(cellSize)
-        val heightDecimal = bottomBD.subtract(topBD).multiply(cellSize, mc).add(cellSize)
 
+        val widthDecimal = bounds.width.toBigDecimal().multiply(cellSize, mc)
+        val heightDecimal = bounds.height.toBigDecimal().multiply(cellSize, mc)
+
+        // doesn't matter if it's arbitrarily (huge universe) far away from the canvas, we just need to push it off screen
         val drawingLeft = if (leftDecimal < BigDecimal.ZERO) -1.0f else leftDecimal.toFloat()
         val drawingTop = if (topDecimal < BigDecimal.ZERO) -1.0f else topDecimal.toFloat()
 
@@ -469,21 +713,8 @@ class PatternDrawer(
         uXBuffer.endDraw()
 
         if (shouldDraw) {
-            val node = life.root
 
-            /*  val node = life.root*/
-            lifeFormBuffer.apply {
-                beginDraw()
-                clear()
-            }
-
-            val size = FlexibleInteger.pow2(node.level - 1).toBigDecimal().multiply(cell.size.toBigDecimal(), mc)
-            drawNode(node, size.multiply(BigTWO, mc), size.negate(), size.negate())
-            drawBounds(life)
-
-            lifeFormBuffer.endDraw()
-            // reset the position in case you've had mouse moves
-            lifeFormPosition[0f] = 0f
+            drawNode(life)
         }
 
         processing.apply {
@@ -497,6 +728,7 @@ class PatternDrawer(
     // the cell width times 2 ^ level will give you the size of the whole universe
     // you'll need it it to draw the viewport on screen
     private class Cell(initialSize: Float) {
+        private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
 
         var size: Float = initialSize
             set(value) {
@@ -506,7 +738,30 @@ class PatternDrawer(
                     value == 0.0f -> Float.MIN_VALUE // at very large levels, fit to screen will calculate a cell size of 0 - we need it to have a minimum value in this case
                     else -> value
                 }
+                bigSizeCached = size.toBigDecimal() // Update the cached value
             }
+
+        init {
+            size = initialSize
+        }
+
+        var bigSize: BigDecimal = BigDecimal.ZERO
+            get() = bigSizeCached
+            private set // Make the setter private to disallow external modification
+
+        fun universeSize(level: Int): BigDecimal {
+            return universeSizeImpl(level)
+        }
+
+        fun halfUniverseSize(level: Int): BigDecimal {
+            return universeSizeImpl(level - 1)
+        }
+
+        // todo also cache this value the way you cache getHalfSize()
+        private fun universeSizeImpl(level: Int): BigDecimal {
+            if (level < 0) return BigDecimal.ZERO
+            return bigSizeCached.multiply(FlexibleInteger.pow2(level).toBigDecimal(), mc)
+        }
 
         private var zoomingIn: Boolean = false
 
@@ -523,17 +778,6 @@ class PatternDrawer(
         }
     }
 
-    private class CanvasState(
-        cell: Cell,
-        val canvasOffsetX: BigDecimal,
-        val canvasOffsetY: BigDecimal
-    ) {
-        val cell: Cell
-
-        init {
-            this.cell = Cell(cell.size)
-        }
-    }
 
     // re-using these really seems to make a difference
     private fun getHalfSize(size: BigDecimal): BigDecimal {
@@ -544,7 +788,8 @@ class PatternDrawer(
         // without this precision on the MathContext, small imprecision propagates at
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
-        val mc // = MathContext(400)
+        // Bounds.mathContext is kept up to date with the largest dimension of the universe
+        val mc
             get() = Bounds.mathContext
         private val BigTWO = BigDecimal(2)
         private val undoDeque = ArrayDeque<CanvasState>()

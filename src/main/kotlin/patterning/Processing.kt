@@ -239,9 +239,6 @@ class Processing : PApplet() {
 
     private fun performComplexCalculationSetStep(step: Int) {
         life.step = step
-
-        // todo for some reason this needs to exist or maximum volatility gun goes nuts if you step too quickly
-        drawer.clearUndoDeque()
     }
 
     private fun performComplexCalculationNextGeneration() {

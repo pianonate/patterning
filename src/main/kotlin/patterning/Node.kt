@@ -31,17 +31,17 @@ class LeafNode(
     override val level: Int = 0
     override val bounds: Bounds = if (population == FlexibleInteger.ONE)
         Bounds(
-            FlexibleInteger.NEGATIVE_ONE,
-            FlexibleInteger.NEGATIVE_ONE,
-            FlexibleInteger.NEGATIVE_ONE,
-            FlexibleInteger.NEGATIVE_ONE
+            top = FlexibleInteger.NEGATIVE_ONE,
+            left = FlexibleInteger.NEGATIVE_ONE,
+            bottom = FlexibleInteger.NEGATIVE_ONE,
+            right = FlexibleInteger.NEGATIVE_ONE
         )
     else
         Bounds(
-            FlexibleInteger.ONE,
-            FlexibleInteger.ONE,
-            FlexibleInteger.ZERO,
-            FlexibleInteger.ZERO
+            top = FlexibleInteger.ZERO,
+            left = FlexibleInteger.ZERO,
+            bottom = FlexibleInteger.ZERO,
+            right = FlexibleInteger.ZERO
         )
 
     override fun toString(): String {
@@ -83,23 +83,58 @@ class InternalNode(
                 FlexibleInteger.MIN_VALUE,
             )
 
-            // level 1 requires special handling - the coordinate system doesn't need translation
-            // so we just use zero for the offset
-            val quarterSizeOffset = if (level == 1)
-                FlexibleInteger.ZERO
-            else
-                FlexibleInteger.pow2(level - 2)
+            val offset = if (level == 1) FlexibleInteger.ONE else FlexibleInteger.pow2(level - 2)
+            val negatedOffset = if (level == 1) FlexibleInteger.ZERO else offset.negate()
 
-            val quarterSizeNegated = quarterSizeOffset.negate()
-            bounds = calculateChildBounds(nw, quarterSizeNegated, quarterSizeNegated, bounds)
-            bounds = calculateChildBounds(ne, quarterSizeNegated, quarterSizeOffset, bounds)
-            bounds = calculateChildBounds(sw, quarterSizeOffset, quarterSizeNegated, bounds)
-            bounds = calculateChildBounds(se, quarterSizeOffset, quarterSizeOffset, bounds)
+            bounds = calculateChildBounds(nw, negatedOffset, negatedOffset, bounds)
+            bounds = calculateChildBounds(ne, negatedOffset, offset, bounds)
+            bounds = calculateChildBounds(sw, offset, negatedOffset, bounds)
+            bounds = calculateChildBounds(se, offset, offset, bounds)
             bounds.updateLargestDimension(bounds.width.max(bounds.height))
-
             bounds
         }
     }
+
+    private fun level1Bounds(): Bounds {
+
+        var left = 1
+        var right = -1
+        var top = 1
+        var bottom = -1
+
+        // Check each child node
+        if (nw.population == FlexibleInteger.ONE) {
+            left = -1
+            top = -1
+        }
+        if (ne.population == FlexibleInteger.ONE) {
+            right = 0
+            top = -1
+        }
+        if (sw.population == FlexibleInteger.ONE) {
+            left = -1
+            bottom = 0
+        }
+        if (se.population == FlexibleInteger.ONE) {
+            right = 0
+            bottom = 0
+        }
+
+        return Bounds(FlexibleInteger(top), FlexibleInteger(left), FlexibleInteger(bottom), FlexibleInteger(right))
+    }
+
+    val top: FlexibleInteger
+        get() = bounds.top
+    val left: FlexibleInteger
+        get() = bounds.left
+    val bottom: FlexibleInteger
+        get() = bounds.bottom
+    val right: FlexibleInteger
+        get() = bounds.right
+    val width: FlexibleInteger
+        get() = bounds.width
+    val height: FlexibleInteger
+        get() = bounds.height
 
     private fun calculateChildBounds(
         child: Node,
@@ -109,6 +144,7 @@ class InternalNode(
     ): Bounds {
         return if (child.population.isNotZero()) {
             val childBounds = child.bounds
+
             val translatedBounds = Bounds(
                 childBounds.top + topBottomOffset,
                 childBounds.left + leftRightOffset,
@@ -149,4 +185,5 @@ class InternalNode(
         if (cache != other.cache) return false
         return (quickCache == other.quickCache)
     }
+
 }
