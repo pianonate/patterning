@@ -1,10 +1,8 @@
 package patterning
 
 import kotlinx.coroutines.runBlocking
-import patterning.ComplexCalculationHandler.Companion.lock
-import patterning.ComplexCalculationHandler.Companion.unlock
 import patterning.actions.MouseEventManager
-import patterning.ux.DrawRateManager
+import patterning.ux.Governor
 import patterning.ux.PatternDrawer
 import patterning.ux.Theme
 import processing.core.PApplet
@@ -24,8 +22,8 @@ class Processing : PApplet() {
     var draggingDrawing = false
     private lateinit var life: LifeUniverse
 
-    private lateinit var complexCalculationHandlerSetStep: ComplexCalculationHandler<Int>
-    private lateinit var complexCalculationHandlerNextGeneration: ComplexCalculationHandler<Int>
+    private lateinit var asyncSetStep: AsyncCalculationRunner<Int>
+    private lateinit var asyncNextGeneration: AsyncCalculationRunner<Int>
     private val mouseEventManager = MouseEventManager.instance
     private lateinit var drawer: PatternDrawer
 
@@ -41,6 +39,10 @@ class Processing : PApplet() {
         private set
     private var mousePressedOverReceiver = false
     private var singleStepMode = false
+
+    val gps
+        get() = asyncNextGeneration.getRate()
+
     fun toggleRun() {
         isRunning = !isRunning
     }
@@ -79,15 +81,10 @@ class Processing : PApplet() {
         }
 
         surface.setResizable(true)
-        frameRate(DrawRateManager.MAX_FRAME_RATE)
+        frameRate(Governor.MAX_FRAME_RATE)
         targetStep = 0
-        complexCalculationHandlerSetStep = ComplexCalculationHandler { p: Int ->
-            performComplexCalculationSetStep(p)
-        }
-
-        complexCalculationHandlerNextGeneration = ComplexCalculationHandler { _ ->
-            performComplexCalculationNextGeneration()
-        }
+        asyncSetStep = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { p: Int -> asyncNextStep(p) }
+        asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { _: Int -> asyncNextGeneration() }
 
         loadSavedWindowPositions()
         drawer = PatternDrawer(this)
@@ -110,7 +107,7 @@ class Processing : PApplet() {
         // we want independent control over how often we update and display
         // the next generation of drawing
         // the frameRate can and should run faster so the user experience is responsive
-        val shouldDraw = DrawRateManager.shouldDraw(frameRate)
+        val shouldDraw = Governor.shouldDraw(frameRate)
 
         // goForwardInTime (below) requests a nextGeneration and or a step change
         // both of which can take a while
@@ -132,8 +129,8 @@ class Processing : PApplet() {
     private fun lifeIsThreadSafe(): Boolean {
 
         // don't start if either of these calculations are currently running
-        val setStepRunning = complexCalculationHandlerSetStep.isCalculationInProgress
-        val nextGenerationRunning = complexCalculationHandlerNextGeneration.isCalculationInProgress
+        val setStepRunning = asyncSetStep.isRunning
+        val nextGenerationRunning = asyncNextGeneration.isRunning
         return !nextGenerationRunning && !setStepRunning
     }
 
@@ -141,7 +138,7 @@ class Processing : PApplet() {
         if (shouldStartComplexCalculationSetStep()) {
             var step = life.step
             step += if (step < targetStep) 1 else -1
-            complexCalculationHandlerSetStep.startCalculation(step)
+            asyncSetStep.startCalculation(step)
             return
         }
 
@@ -149,7 +146,7 @@ class Processing : PApplet() {
         if (!isRunning) return
         if (shouldStartComplexCalculationNextGeneration()) {
             val dummy = 0
-            complexCalculationHandlerNextGeneration.startCalculation(dummy)
+            asyncNextGeneration.startCalculation(dummy)
         }
         if (isRunning && singleStepMode) toggleRun()
     }
@@ -183,7 +180,7 @@ class Processing : PApplet() {
             // we used to have drawImmediately() called in move
             // but it had a negative effect of freezing the screen while drawing
             // this is a good enough compromise as most of the time DPS is not really low
-            DrawRateManager.drawImmediately()
+            Governor.drawImmediately()
         } else {
             mousePressedOverReceiver = false
             mouseEventManager!!.onMouseReleased()
@@ -237,11 +234,11 @@ class Processing : PApplet() {
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME))
     }
 
-    private fun performComplexCalculationSetStep(step: Int) {
+    private fun asyncNextStep(step: Int) {
         life.step = step
     }
 
-    private fun performComplexCalculationNextGeneration() {
+    private fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
@@ -283,15 +280,16 @@ class Processing : PApplet() {
         } catch (e: URISyntaxException) {
             throw RuntimeException(e)
         }
-        if (reset) destroyAndCreate()
+        if (reset) instantiateLifeform()
     }
 
-    private fun instantiateLifeform() {
+    fun instantiateLifeform() {
         try {
             // static on patterning.Patterning
             isRunning = false
+            asyncSetStep.cancelAndWait()
+            asyncNextGeneration.cancelAndWait()
 
-            // only instantiate if it already has something in it
             life = LifeUniverse()
 
             // instance variables - do they need to be?
@@ -330,17 +328,6 @@ class Processing : PApplet() {
             return comp
         }
 
-    // either bring us back to the start on the current life form
-    // or get a random one from the well...
-    suspend fun destroyAndCreate() {
-        lock()
-        try {
-            instantiateLifeform()
-        } finally {
-            unlock()
-        }
-    }
-
     fun pasteLifeForm() {
         try {
             // Get the system clipboard
@@ -377,7 +364,7 @@ class Processing : PApplet() {
             try {
                 storedLife =
                     ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-                runBlocking { destroyAndCreate() }
+                instantiateLifeform()
             } catch (e: IOException) {
                 throw RuntimeException(e)
             } catch (e: URISyntaxException) {
@@ -396,6 +383,7 @@ class Processing : PApplet() {
 
     companion object {
         private const val PROPERTY_FILE_NAME = "patterning_autosave.json"
+        private const val RATE_PER_SECOND_WINDOW = 1 // how big is your window to calculate the rate?
 
     }
 }

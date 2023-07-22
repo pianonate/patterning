@@ -95,47 +95,6 @@ class InternalNode(
         }
     }
 
-    private fun level1Bounds(): Bounds {
-
-        var left = 1
-        var right = -1
-        var top = 1
-        var bottom = -1
-
-        // Check each child node
-        if (nw.population == FlexibleInteger.ONE) {
-            left = -1
-            top = -1
-        }
-        if (ne.population == FlexibleInteger.ONE) {
-            right = 0
-            top = -1
-        }
-        if (sw.population == FlexibleInteger.ONE) {
-            left = -1
-            bottom = 0
-        }
-        if (se.population == FlexibleInteger.ONE) {
-            right = 0
-            bottom = 0
-        }
-
-        return Bounds(FlexibleInteger(top), FlexibleInteger(left), FlexibleInteger(bottom), FlexibleInteger(right))
-    }
-
-    val top: FlexibleInteger
-        get() = bounds.top
-    val left: FlexibleInteger
-        get() = bounds.left
-    val bottom: FlexibleInteger
-        get() = bounds.bottom
-    val right: FlexibleInteger
-        get() = bounds.right
-    val width: FlexibleInteger
-        get() = bounds.width
-    val height: FlexibleInteger
-        get() = bounds.height
-
     private fun calculateChildBounds(
         child: Node,
         topBottomOffset: FlexibleInteger,
@@ -185,5 +144,4 @@ class InternalNode(
         if (cache != other.cache) return false
         return (quickCache == other.quickCache)
     }
-
 }

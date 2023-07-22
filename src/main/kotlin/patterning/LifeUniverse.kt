@@ -345,6 +345,7 @@ class LifeUniverse internal constructor() {
     fun nextGeneration() {
         var currentRoot = this.root
 
+        // when you're super stepping you need the first argument re:step to grow it immediately large enough!
         while (currentRoot.level <= step + 2 ||
             currentRoot.nw.population != ((currentRoot.nw as InternalNode).se as InternalNode).se.population ||
             currentRoot.ne.population != ((currentRoot.ne as InternalNode).sw as InternalNode).sw.population ||

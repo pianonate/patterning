@@ -90,7 +90,7 @@ class PatternDrawer(
     private val movementHandler: MovementHandler
 
     // ain't no way to do drawing without a singleton drawables manager
-    private val drawables = DrawableManager.instance
+    private val drawables = Drawer.instance
     private val keyFactory: KeyFactory
     private var cellBorderWidth = 0.0f
 
@@ -310,7 +310,8 @@ class PatternDrawer(
         ) {
             hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
             hudInfo.addOrUpdate("frames", processing.frameCount)
-            hudInfo.addOrUpdate("dps", DrawRateManager.currentDrawRate.roundToInt())
+            hudInfo.addOrUpdate("dps", Governor.currentDrawRate.roundToInt())
+            hudInfo.addOrUpdate("gps", patterning.gps)
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
             hudInfo.addOrUpdate("actuals", actualRecursions)
@@ -532,7 +533,7 @@ class PatternDrawer(
         left: BigDecimal,
         top: BigDecimal
     ) {
-        actualRecursions = actualRecursions.addOne()
+        ++actualRecursions
 
         // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
