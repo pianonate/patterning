@@ -1,7 +1,7 @@
 package patterning.ux
 
-import patterning.FlexibleInteger
-import patterning.formatWithCommas
+import patterning.util.FlexibleInteger
+import patterning.util.formatWithCommas
 
 class HUDStringBuilder {
     private val data // Changed from Number to Object
@@ -14,19 +14,12 @@ class HUDStringBuilder {
     }
 
     fun addOrUpdate(key: String, value: Any?) {
-        if (value is Number) {
-            data[key] = value
-        } else {
-            throw IllegalArgumentException("Value must be a Number or BigInteger.")
+        when (value) {
+            is Number -> data[key] = value
+            is FlexibleInteger -> data[key] = value
+            is String -> data[key] = value
+            else -> throw IllegalArgumentException("Value must be a Number, FlexibleInteger, or String.")
         }
-    }
-
-    fun addOrUpdate(key: String, value: FlexibleInteger) {
-        data[key] = value
-    }
-
-    fun addOrUpdate(key: String, value: String) {
-        data[key] = value
     }
 
     fun getFormattedString(

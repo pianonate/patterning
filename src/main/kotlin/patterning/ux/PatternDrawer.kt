@@ -4,6 +4,8 @@ import patterning.*
 import patterning.actions.KeyFactory
 import patterning.actions.MouseEventManager.Companion.instance
 import patterning.actions.MovementHandler
+import patterning.util.FlexibleInteger
+import patterning.util.StatMap
 import patterning.ux.informer.DrawingInfoSupplier
 import patterning.ux.informer.DrawingInformer
 import patterning.ux.panel.*
@@ -123,10 +125,6 @@ class PatternDrawer(
     // that calculations can be done without conversions until necessary
     private var canvasWidth: BigDecimal
     private var canvasHeight: BigDecimal
-
-    // surprisingly caching the result of the half size calculation provides
-    // a remarkable speed boost
-    private val halfSizeMap: MutableMap<BigDecimal, BigDecimal> = HashMap()
 
     // used for resize detection
     private var prevWidth: Int
@@ -382,7 +380,7 @@ class PatternDrawer(
         }
 
         if (node is InternalNode) {
-            val halfSize = getHalfSize(size)
+            val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
@@ -551,7 +549,7 @@ class PatternDrawer(
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size)
         } else if (node is InternalNode) {
 
-            val halfSize = getHalfSize(size)
+            val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
@@ -618,7 +616,6 @@ class PatternDrawer(
         val boundingBox = calculateBoundingBox(bounds)
         val halfSize = FlexibleInteger.pow2(life.root.level - 1)
         val universeBox = calculateBoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize))
-
 
         lifeFormBuffer.apply {
             pushStyle()
@@ -731,6 +728,13 @@ class PatternDrawer(
     private class Cell(initialSize: Float) {
         private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
 
+        // surprisingly caching the result of the half size calculation provides
+        // a remarkable speed boost - added CachedMap to track the results of getOrPut()
+        // it's pretty profound how many calls to BigDecimal.multiply we can avoid in
+        // universeSizeImpl - the cache hit rate gets to 99.99999% pretty quickly
+        // private val sizeMap: MutableMap<Int, BigDecimal> = HashMap()
+        private val sizeMap = StatMap(mutableMapOf<Int, BigDecimal>())
+
         var size: Float = initialSize
             set(value) {
                 field = when {
@@ -740,6 +744,7 @@ class PatternDrawer(
                     else -> value
                 }
                 bigSizeCached = size.toBigDecimal() // Update the cached value
+                sizeMap.clear()
             }
 
         init {
@@ -761,7 +766,12 @@ class PatternDrawer(
         // todo also cache this value the way you cache getHalfSize()
         private fun universeSizeImpl(level: Int): BigDecimal {
             if (level < 0) return BigDecimal.ZERO
-            return bigSizeCached.multiply(FlexibleInteger.pow2(level).toBigDecimal(), mc)
+
+            // these values are calculated so often that caching really seems to help
+            // cell size as a big decimal times the requested size of universe at a given level
+            // using MathContext to make sure we don't lose precision
+            return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).toBigDecimal(), mc) }
+
         }
 
         private var zoomingIn: Boolean = false
@@ -777,12 +787,6 @@ class PatternDrawer(
         companion object {
             private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f
         }
-    }
-
-
-    // re-using these really seems to make a difference
-    private fun getHalfSize(size: BigDecimal): BigDecimal {
-        return halfSizeMap.getOrPut(size) { size.divide(BigTWO, mc) }
     }
 
     companion object {

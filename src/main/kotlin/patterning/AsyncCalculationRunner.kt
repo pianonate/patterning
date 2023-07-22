@@ -46,23 +46,12 @@ class AsyncCalculationRunner<P>(
     }
 
     fun cancelAndWait() {
-        println("initializing")
-
         if (isRunning) {
-            runBlocking {
-                try {
-                    calculationJob?.cancelAndJoin()
-                } catch (e: Exception) {
-                    println("cancel failed")
-                    e.printStackTrace()
-                }
-                atomicIsRunning.set(false)
-            }
+            runBlocking { calculationJob?.cancelAndJoin() }
         }
-
+        atomicIsRunning.set(false)
         timestamps.clear()
         timestampsSnapshot.clear()
-
     }
 
     fun getRate(): Float {
@@ -74,7 +63,6 @@ class AsyncCalculationRunner<P>(
         while (timestampsSnapshot.isNotEmpty() && timestampsSnapshot.peek() < cutoffTime) {
             timestampsSnapshot.poll()
         }
-        println("size: ${timestampsSnapshot.size} ${timestampsSnapshot.peek()}")
         return timestampsSnapshot.size.toFloat() / rateSeconds
     }
 }

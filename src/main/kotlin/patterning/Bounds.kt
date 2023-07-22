@@ -1,5 +1,6 @@
 package patterning
 
+import patterning.util.FlexibleInteger
 import java.math.MathContext
 
 data class Bounds(

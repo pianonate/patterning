@@ -1,5 +1,7 @@
 package patterning
 
+import patterning.util.FlexibleInteger
+
 interface Node {
     val id: Int
     val population: FlexibleInteger
@@ -62,7 +64,15 @@ class InternalNode(
 
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
 
+    var validCache: Boolean = false // Added validity property
+
     var cache: InternalNode? = null
+        get() = if (validCache) field else null
+        set(value) = run {
+            field = value
+            validCache = true
+        }
+
     var quickCache: InternalNode? = null
 
     override val bounds: Bounds = run {

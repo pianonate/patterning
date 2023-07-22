@@ -1,4 +1,4 @@
-package patterning
+package patterning.util
 
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -141,6 +141,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     operator fun inc(): FlexibleInteger {
         return addOne()
+    }
+
+    operator fun dec(): FlexibleInteger {
+        return this - ONE
     }
 
     operator fun minus(other: FlexibleInteger): FlexibleInteger {

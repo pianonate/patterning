@@ -1,5 +1,7 @@
 package patterning
 
+import patterning.util.FlexibleInteger
+import patterning.util.StatMap
 import java.nio.IntBuffer
 
 /*
@@ -12,13 +14,18 @@ import java.nio.IntBuffer
 
 class LifeUniverse internal constructor() {
     private var lastId: Int
-    private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
+
+    // private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
+    private var hashmap = StatMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
+
     private var emptyTreeCache: MutableMap<Int, InternalNode>
     private val level2Cache: MutableMap<Int, InternalNode>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
     private val rulesS: Int
     private var generation: FlexibleInteger
+    private val cacheRate
+        get() = hashmap.hitRate
 
     var root: InternalNode
     val rootBounds: Bounds
@@ -121,11 +128,14 @@ class LifeUniverse internal constructor() {
     // right now i don't know why it's otherwise okay to preserve
     // need to think more about this
     private fun uncache() {
+        val start = System.currentTimeMillis()
         hashmap.values.forEach { nodeList ->
             nodeList.forEach {
-                it.cache = null
+                it.validCache = false
             }
         }
+        val end = System.currentTimeMillis()
+        println("Time taken: ${end - start} ms for hashmap size ${hashmap.map.size}")
     }
 
     // this is just used when setting up the field initially unless I'm missing
@@ -324,6 +334,13 @@ class LifeUniverse internal constructor() {
             }
         }
 
+        // if hashmap[hash] is 'null', nodeList will be empty which means it
+        // really really didn't find anything
+        // however if nodeList is notEmpty, it did find something, just not
+        // something useful - so let's reverse that cache hit
+        if (nodeList.isNotEmpty())
+            hashmap.decrementHit()
+
         val newInternalNode = InternalNode(nw, ne, sw, se, lastId++)
         nodeList.add(newInternalNode)
 
@@ -332,11 +349,13 @@ class LifeUniverse internal constructor() {
     }
 
     private fun updatePatternInfo() {
+
         patternInfo.addOrUpdate("level", FlexibleInteger(root.level))
         patternInfo.addOrUpdate("step", FlexibleInteger.pow2(step))
         patternInfo.addOrUpdate("generation", generation)
         patternInfo.addOrUpdate("population", root.population)
         patternInfo.addOrUpdate("lastId", FlexibleInteger(lastId))
+        patternInfo.addOrUpdate("cacheRate", cacheRate)
         val bounds = rootBounds
         patternInfo.addOrUpdate("width", bounds.width)
         patternInfo.addOrUpdate("height", bounds.height)
