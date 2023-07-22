@@ -1,6 +1,6 @@
 package patterning.ux
 
-object DrawRateManager {
+object Governor {
     const val MAX_FRAME_RATE = 128.0f
     private const val SINGLE_STEP_SPEED_CHANGE_THRESHOLD = 4
     private const val DRAW_RATE_STARTING = 32f
@@ -27,7 +27,7 @@ object DrawRateManager {
     private var speedChangeActive = false
     private var currentFrameRate = 0f
 
-    var actualDrawRate = 0
+    private var actualDrawRate = 0
     private var lastUpdateTime = System.currentTimeMillis()
 
 

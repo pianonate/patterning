@@ -21,6 +21,8 @@ todo: create a new kind of ContainerPanel called an InformationRadiator that con
 todo: text box - only uses the list of lines and don't use message - too messy
 todo: capture events with javafx (or something else) to allow for trackpad manipulation of the app
 
+todo: if the pattern is just another Drawable then we should allow a Drawable to be optionally managed by a Governor that allows it to draw or not so we don't have to pass shouldDraw around. possibly we just set that up in the Drawer class to check whether a Drawable has a governor
+
 todo: should we use futures instead of ComplexCalculationHandler?  it's a little more complicated but it's more standard and it's more flexible - you can cancel a future and you can get a result from it - and you can get a result from it with a timeout - which is what you want for the ComplexCalculationHandler
 
 todo: put a colored basic panel on a colored basic panel and slide the second one over the first - this will show the right transition behavior - take countdown andTHen run and put it into Panel - is there a futures type thing here?

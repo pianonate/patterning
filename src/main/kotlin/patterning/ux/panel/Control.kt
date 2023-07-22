@@ -1,7 +1,7 @@
 package patterning.ux.panel
 
 import patterning.actions.*
-import patterning.ux.DrawableManager
+import patterning.ux.Drawer
 import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 import patterning.ux.panel.Transition.TransitionDirection
@@ -52,11 +52,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             drawControlHighlight(Theme.controlHighlightColor)
             if (null == hoverTextPanel) {
                 hoverTextPanel = getHoverTextPanel()
-                DrawableManager.instance!!.add(hoverTextPanel!!)
+                Drawer.instance!!.add(hoverTextPanel!!)
             }
         } else {
             if (null != hoverTextPanel) {
-                DrawableManager.instance!!.remove(hoverTextPanel!!)
+                Drawer.instance!!.remove(hoverTextPanel!!)
                 hoverTextPanel = null
             }
         }

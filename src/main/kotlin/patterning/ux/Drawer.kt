@@ -1,6 +1,6 @@
 package patterning.ux
 
-class DrawableManager private constructor() {
+class Drawer private constructor() {
     private val drawables: MutableList<Drawable>
     private val toBeAdded: MutableList<Drawable>
     private val toBeRemoved: MutableList<Drawable>
@@ -41,10 +41,10 @@ class DrawableManager private constructor() {
 
     companion object {
         @JvmStatic
-        var instance: DrawableManager? = null
+        var instance: Drawer? = null
             get() {
                 if (field == null) {
-                    field = DrawableManager()
+                    field = Drawer()
                 }
                 return field
             }

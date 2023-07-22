@@ -139,6 +139,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         return this + ONE
     }
 
+    operator fun inc(): FlexibleInteger {
+        return addOne()
+    }
+
     operator fun minus(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> handleIntSubtraction(value, other.value)

@@ -1,7 +1,7 @@
 package patterning.ux.panel
 
 import patterning.ux.Drawable
-import patterning.ux.DrawableManager
+import patterning.ux.Drawer
 import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 import patterning.ux.informer.DrawingInformer
@@ -298,7 +298,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     private fun removeFromDrawableList() {
-        drawableManager!!.remove(this)
+        drawer!!.remove(this)
     }
 
     private interface State {
@@ -505,6 +505,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     companion object {
-        private val drawableManager = DrawableManager.instance
+        private val drawer = Drawer.instance
     }
 }
