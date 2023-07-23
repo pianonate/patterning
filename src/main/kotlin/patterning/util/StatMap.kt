@@ -4,8 +4,8 @@ import java.math.BigDecimal
 import java.math.MathContext
 
 /* used to find out how useful the MutableMap is  at saving you lookups for particular use cases */
-class StatMap<K, V> {
-    val map: MutableMap<K, V>
+class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
+    private val map: MutableMap<K, V>
     private val stats = CacheStats()
 
     constructor(initialCapacity: Int) {
@@ -16,10 +16,20 @@ class StatMap<K, V> {
         this.map = map
     }
 
+    override fun iterator(): Iterator<Map.Entry<K, V>> {
+        return map.iterator()
+    }
+
     data class CacheStats(
         var hits: FlexibleInteger = FlexibleInteger.ZERO,
         var misses: FlexibleInteger = FlexibleInteger.ZERO
     )
+
+    val size: Int
+        get() = map.size
+
+    val entries: Set<Map.Entry<K, V>>
+        get() = map.entries
 
     val hits: FlexibleInteger
         get() = stats.hits

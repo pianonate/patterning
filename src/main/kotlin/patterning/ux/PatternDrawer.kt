@@ -51,7 +51,7 @@ class PatternDrawer(
             }
         }
 
-        fun lowestEntry(root: InternalNode): DrawNodePathEntry {
+        fun lowestEntry(root: TreeNode): DrawNodePathEntry {
             var currentNode: Node = root
             var lastEntry = path[0]
 
@@ -63,10 +63,10 @@ class PatternDrawer(
                 lastEntry = entry
                 currentNode = when (entry.direction) {
                     Direction.ROOT -> currentNode
-                    Direction.NW -> (currentNode as InternalNode).nw
-                    Direction.NE -> (currentNode as InternalNode).ne
-                    Direction.SW -> (currentNode as InternalNode).sw
-                    Direction.SE -> (currentNode as InternalNode).se
+                    Direction.NW -> (currentNode as TreeNode).nw
+                    Direction.NE -> (currentNode as TreeNode).ne
+                    Direction.SW -> (currentNode as TreeNode).sw
+                    Direction.SE -> (currentNode as TreeNode).se
                 }
             }
 
@@ -379,7 +379,7 @@ class PatternDrawer(
             return
         }
 
-        if (node is InternalNode) {
+        if (node is TreeNode) {
             val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
@@ -547,7 +547,7 @@ class PatternDrawer(
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size)
-        } else if (node is InternalNode) {
+        } else if (node is TreeNode) {
 
             val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
@@ -703,7 +703,6 @@ class PatternDrawer(
         movementHandler.handleRequestedMovement()
         cellBorderWidth = cellBorderWidthRatio * cell.size
 
-        // make this threadsafe
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
         drawables!!.drawAll()

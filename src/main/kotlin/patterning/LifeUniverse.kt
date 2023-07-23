@@ -16,10 +16,10 @@ class LifeUniverse internal constructor() {
     private var lastId: Int
 
     // private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
-    private var hashmap = StatMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
+    private var hashmap = StatMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
 
-    private var emptyTreeCache: MutableMap<Int, InternalNode>
-    private val level2Cache: MutableMap<Int, InternalNode>
+    private var emptyTreeCache: MutableMap<Int, TreeNode>
+    private val level2Cache: MutableMap<Int, TreeNode>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
     private val rulesS: Int
@@ -27,16 +27,28 @@ class LifeUniverse internal constructor() {
     private val cacheRate
         get() = hashmap.hitRate
 
-    var root: InternalNode
+    var root: TreeNode
     val rootBounds: Bounds
         get() = root.bounds
 
     val patternInfo = PatternInfo(this::updatePatternInfo)
+
+    /*  Node.globalVersion controls cache management as setting a higher step
+        invalidates the entire cache - i.e.:
+        preserve the tree, but remove all cached generations forward
+
+        alsoQuick (currently removed but it cleared out the quickCache also)
+        came from the original algorithm and was used when
+        (I believe) that the rule set was changed to allow for different birth/survival rules
+        so you may need to bring back invalidating the quickCache the same way if you ever
+        allow for changing birth/survival rules
+
+        */
     var step: Int = 0
         set(value) {
             if (value != field) {
                 field = value
-                uncache()
+                Node.globalVersion = step
             }
         }
 
@@ -87,7 +99,7 @@ class LifeUniverse internal constructor() {
         return rule shr _bitcounts[bitmask and 0x757].toInt() and 1
     }
 
-    private fun level1Create(bitmask: Int): InternalNode {
+    private fun level1Create(bitmask: Int): TreeNode {
         return createNode(
             if (bitmask and 1 != 0) Node.livingNode else Node.deadNode,
             if (bitmask and 2 != 0) Node.livingNode else Node.deadNode,
@@ -105,7 +117,7 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    private fun emptyTree(level: Int): InternalNode {
+    private fun emptyTree(level: Int): TreeNode {
 
         emptyTreeCache[level]?.let { return it }
 
@@ -117,25 +129,6 @@ class LifeUniverse internal constructor() {
         return createNode(t, t, t, t).also { node ->
             emptyTreeCache[level] = node
         }
-    }
-
-
-    // Preserve the tree, but remove all cached
-    // generations forward
-    // alsoQuick (currently removed but it cleared out the quickCache also)
-    // came from the original algorithm and was used when
-    // (I believe) that the rule set was changed to allow for different birth/survival rules
-    // right now i don't know why it's otherwise okay to preserve
-    // need to think more about this
-    private fun uncache() {
-        val start = System.currentTimeMillis()
-        hashmap.values.forEach { nodeList ->
-            nodeList.forEach {
-                it.validCache = false
-            }
-        }
-        val end = System.currentTimeMillis()
-        println("Time taken: ${end - start} ms for hashmap size ${hashmap.map.size}")
     }
 
     // this is just used when setting up the field initially unless I'm missing
@@ -199,7 +192,7 @@ class LifeUniverse internal constructor() {
         fieldX: IntBuffer,
         fieldY: IntBuffer,
         recurseLevel: Int
-    ): InternalNode {
+    ): TreeNode {
         if (start > end) {
             return emptyTree(recurseLevel)
         }
@@ -264,7 +257,7 @@ class LifeUniverse internal constructor() {
         return leftIndex
     }
 
-    private fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): InternalNode? {
+    private fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): TreeNode? {
         var set = 0
         var x: Int
         var y: Int
@@ -288,14 +281,14 @@ class LifeUniverse internal constructor() {
         return tree
     }
 
-    private fun nodeLevel2Next(node: InternalNode): InternalNode {
+    private fun nodeLevel2Next(node: TreeNode): TreeNode {
 
         val nw = node.nw
         val ne = node.ne
         val sw = node.sw
         val se = node.se
 
-        if (nw is InternalNode && ne is InternalNode && sw is InternalNode && se is InternalNode) {
+        if (nw is TreeNode && ne is TreeNode && sw is TreeNode && se is TreeNode) {
             val bitmask = nw.nw.population.shiftLeft(15)
                 .or(nw.ne.population.shiftLeft(14))
                 .or(ne.nw.population.shiftLeft(13))
@@ -324,7 +317,7 @@ class LifeUniverse internal constructor() {
 
 
     // create or search for a node given its children
-    private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): InternalNode {
+    private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
         val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
         val nodeList = hashmap[hash] ?: mutableListOf()
 
@@ -341,11 +334,11 @@ class LifeUniverse internal constructor() {
         if (nodeList.isNotEmpty())
             hashmap.decrementHit()
 
-        val newInternalNode = InternalNode(nw, ne, sw, se, lastId++)
-        nodeList.add(newInternalNode)
+        val newTreeNode = TreeNode(nw, ne, sw, se, lastId++)
+        nodeList.add(newTreeNode)
 
         hashmap[hash] = nodeList
-        return newInternalNode
+        return newTreeNode
     }
 
     private fun updatePatternInfo() {
@@ -366,10 +359,10 @@ class LifeUniverse internal constructor() {
 
         // when you're super stepping you need the first argument re:step to grow it immediately large enough!
         while (currentRoot.level <= step + 2 ||
-            currentRoot.nw.population != ((currentRoot.nw as InternalNode).se as InternalNode).se.population ||
-            currentRoot.ne.population != ((currentRoot.ne as InternalNode).sw as InternalNode).sw.population ||
-            currentRoot.sw.population != ((currentRoot.sw as InternalNode).ne as InternalNode).ne.population ||
-            currentRoot.se.population != ((currentRoot.se as InternalNode).nw as InternalNode).nw.population
+            currentRoot.nw.population != ((currentRoot.nw as TreeNode).se as TreeNode).se.population ||
+            currentRoot.ne.population != ((currentRoot.ne as TreeNode).sw as TreeNode).sw.population ||
+            currentRoot.sw.population != ((currentRoot.sw as TreeNode).ne as TreeNode).ne.population ||
+            currentRoot.se.population != ((currentRoot.se as TreeNode).nw as TreeNode).nw.population
         ) {
             currentRoot = expandUniverse(currentRoot)
         }
@@ -379,7 +372,7 @@ class LifeUniverse internal constructor() {
         generation += FlexibleInteger.pow2(step)
     }
 
-    private fun expandUniverse(node: InternalNode): InternalNode {
+    private fun expandUniverse(node: TreeNode): TreeNode {
         val t = emptyTree(node.level - 1)
         return createNode(
             createNode(t, t, t, node.nw),
@@ -389,8 +382,9 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    private fun nextGenerationRecurse(node: InternalNode): InternalNode {
+    private fun nextGenerationRecurse(node: TreeNode): TreeNode {
         node.cache?.let { return it }
+
 
         if (step == node.level - 2) {
             return nodeQuickNextGeneration(node, 0)
@@ -398,29 +392,29 @@ class LifeUniverse internal constructor() {
 
         if (node.level == 2) {
             node.quickCache = node.quickCache ?: nodeLevel2Next(node)
-            return node.quickCache as InternalNode
+            return node.quickCache as TreeNode
         }
 
-        val nw = node.nw as InternalNode
-        val ne = node.ne as InternalNode
-        val sw = node.sw as InternalNode
-        val se = node.se as InternalNode
+        val nw = node.nw as TreeNode
+        val ne = node.ne as TreeNode
+        val sw = node.sw as TreeNode
+        val se = node.se as TreeNode
 
         @Suppress("IncorrectFormatting")
         val n00 = createNode(
-            (nw.nw as InternalNode).se,
-            (nw.ne as InternalNode).sw,
-            (nw.sw as InternalNode).ne,
-            (nw.se as InternalNode).nw
+            (nw.nw as TreeNode).se,
+            (nw.ne as TreeNode).sw,
+            (nw.sw as TreeNode).ne,
+            (nw.se as TreeNode).nw
         )
-        val n01 = createNode(nw.ne.se, (ne.nw as InternalNode).sw, nw.se.ne, (ne.sw as InternalNode).nw)
-        val n02 = createNode(ne.nw.se, (ne.ne as InternalNode).sw, ne.sw.ne, (ne.se as InternalNode).nw)
-        val n10 = createNode(nw.sw.se, nw.se.sw, (sw.nw as InternalNode).ne, (sw.ne as InternalNode).nw)
-        val n11 = createNode(nw.se.se, ne.sw.sw, sw.ne.ne, (se.nw as InternalNode).nw)
-        val n12 = createNode(ne.sw.se, ne.se.sw, se.nw.ne, (se.ne as InternalNode).nw)
-        val n20 = createNode(sw.nw.se, sw.ne.sw, (sw.sw as InternalNode).ne, (sw.se as InternalNode).nw)
-        val n21 = createNode(sw.ne.se, se.nw.sw, sw.se.ne, (se.sw as InternalNode).nw)
-        val n22 = createNode(se.nw.se, se.ne.sw, se.sw.ne, (se.se as InternalNode).nw)
+        val n01 = createNode(nw.ne.se, (ne.nw as TreeNode).sw, nw.se.ne, (ne.sw as TreeNode).nw)
+        val n02 = createNode(ne.nw.se, (ne.ne as TreeNode).sw, ne.sw.ne, (ne.se as TreeNode).nw)
+        val n10 = createNode(nw.sw.se, nw.se.sw, (sw.nw as TreeNode).ne, (sw.ne as TreeNode).nw)
+        val n11 = createNode(nw.se.se, ne.sw.sw, sw.ne.ne, (se.nw as TreeNode).nw)
+        val n12 = createNode(ne.sw.se, ne.se.sw, se.nw.ne, (se.ne as TreeNode).nw)
+        val n20 = createNode(sw.nw.se, sw.ne.sw, (sw.sw as TreeNode).ne, (sw.se as TreeNode).nw)
+        val n21 = createNode(sw.ne.se, se.nw.sw, sw.se.ne, (se.sw as TreeNode).nw)
+        val n22 = createNode(se.nw.se, se.ne.sw, se.sw.ne, (se.se as TreeNode).nw)
 
         val newNW = nextGenerationRecurse(createNode(n00, n01, n10, n11))
         val newNE = nextGenerationRecurse(createNode(n01, n02, n11, n12))
@@ -431,11 +425,11 @@ class LifeUniverse internal constructor() {
 
     }
 
-    private fun nodeQuickNextGeneration(node: InternalNode, recurseDepth: Int): InternalNode {
+    private fun nodeQuickNextGeneration(node: TreeNode, recurseDepth: Int): TreeNode {
         var depth = recurseDepth
 
         if (node.quickCache != null) {
-            return node.quickCache as InternalNode
+            return node.quickCache as TreeNode
         }
         if (node.level == 2) {
             return nodeLevel2Next(node).also { node.quickCache = it }
@@ -445,18 +439,18 @@ class LifeUniverse internal constructor() {
         val sw = node.sw
         val se = node.se
         depth += 1
-        val n00 = nodeQuickNextGeneration(nw as InternalNode, depth)
+        val n00 = nodeQuickNextGeneration(nw as TreeNode, depth)
         val n01 = nodeQuickNextGeneration(
-            createNode(nw.ne, (ne as InternalNode).nw, nw.se, ne.sw),
+            createNode(nw.ne, (ne as TreeNode).nw, nw.se, ne.sw),
             depth
         )
         val n02 = nodeQuickNextGeneration(ne, depth)
         val n10 = nodeQuickNextGeneration(
-            createNode(nw.sw, nw.se, (sw as InternalNode).nw, sw.ne),
+            createNode(nw.sw, nw.se, (sw as TreeNode).nw, sw.ne),
             depth
         )
         val n11 = nodeQuickNextGeneration(
-            createNode(nw.se, ne.sw, sw.ne, (se as InternalNode).nw),
+            createNode(nw.se, ne.sw, sw.ne, (se as TreeNode).nw),
             depth
         )
         val n12 = nodeQuickNextGeneration(

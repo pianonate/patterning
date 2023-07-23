@@ -8,12 +8,20 @@ interface Node {
     val level: Int
     val bounds: Bounds
 
+
+    // added globalVersion to avoid having to clear the cache whenever we increase the
+    // step size on the universe - prior to this we iterated over the entire hashmap
+    // and invalidated each cache entry - but when the hashmap was very large this took a long time
+    // so now instead we increment the cache version number and only return a cache
+    // entry if the cache was set under the current version number
+
     companion object {
         private const val DEAD_ID = 3
-        const val LIVING_ID = 2
+        private const val LIVING_ID = 2
         val deadNode = LeafNode(DEAD_ID, FlexibleInteger.ZERO)
         val livingNode = LeafNode(LIVING_ID, FlexibleInteger.ONE)
-        val startId = deadNode.id + 1
+        val startId = deadNode.id
+        var globalVersion = 0
 
         fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {
             var result = 17
@@ -47,11 +55,11 @@ class LeafNode(
         )
 
     override fun toString(): String {
-        return if (id == Node.LIVING_ID) "Living Leaf" else "Dead Leaf"
+        return if (population == FlexibleInteger.ONE) "Living Leaf" else "Dead Leaf"
     }
 }
 
-class InternalNode(
+class TreeNode(
     val nw: Node,
     val ne: Node,
     val sw: Node,
@@ -64,16 +72,19 @@ class InternalNode(
 
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
 
-    var validCache: Boolean = false // Added validity property
+    var cacheVersion: Int = -1 // Version when cache was last set to valid
 
-    var cache: InternalNode? = null
-        get() = if (validCache) field else null
+    var cache: TreeNode? = null
+        get() = if (isValidCache()) field else null
         set(value) = run {
             field = value
-            validCache = true
+            cacheVersion = Node.globalVersion
         }
 
-    var quickCache: InternalNode? = null
+    var quickCache: TreeNode? = null
+
+    private fun isValidCache(): Boolean = cacheVersion == Node.globalVersion
+
 
     override val bounds: Bounds = run {
         if (this.population.isZero()) {
@@ -141,7 +152,7 @@ class InternalNode(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as InternalNode
+        other as TreeNode
 
         if (id != other.id) return false
         if (nw != other.nw) return false

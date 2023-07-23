@@ -1,6 +1,9 @@
 package patterning
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -8,13 +11,14 @@ class AsyncCalculationRunner<P>(
     val rateWindowSeconds: Int,
     val method: suspend (P) -> Unit
 ) {
+    private val mutex = Mutex()
+
     private var atomicIsRunning = AtomicBoolean(false)
     private var parameter: P? = null
     private val handlerScope = CoroutineScope(Dispatchers.Default)
     private var calculationJob: Job? = null
     private var timestamps = LinkedList<Long>()
     private var timestampsSnapshot = LinkedList<Long>()
-    private var resetting: Boolean = false
     private val rateSeconds = rateWindowSeconds
     private val rateWindow = rateWindowSeconds * 1000 // milliseconds
 
@@ -46,12 +50,14 @@ class AsyncCalculationRunner<P>(
     }
 
     fun cancelAndWait() {
-        if (isRunning) {
-            runBlocking { calculationJob?.cancelAndJoin() }
+        runBlocking {
+            mutex.withLock {
+                calculationJob?.cancelAndJoin()
+                calculationJob = null
+                timestamps.clear()
+                timestampsSnapshot.clear()
+            }
         }
-        atomicIsRunning.set(false)
-        timestamps.clear()
-        timestampsSnapshot.clear()
     }
 
     fun getRate(): Float {
