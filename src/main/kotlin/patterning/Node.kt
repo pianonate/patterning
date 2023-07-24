@@ -85,6 +85,7 @@ class TreeNode(
 
     private fun isValidCache(): Boolean = cacheVersion == Node.globalVersion
 
+    val populatedChildrenCount: Int = listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }
 
     override val bounds: Bounds = run {
         if (this.population.isZero()) {
