@@ -2,7 +2,6 @@ package patterning.actions
 
 import kotlinx.coroutines.runBlocking
 import patterning.Processing
-import patterning.ux.Governor
 import patterning.ux.PatternDrawer
 import patterning.ux.Theme
 import patterning.ux.ThemeType
@@ -27,8 +26,8 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
             .addKeyCallback(callbackZoomOutCenter)
             .addKeyCallback(callbackStepFaster)
             .addKeyCallback(callbackStepSlower)
-            .addKeyCallback(callbackDrawFaster)
-            .addKeyCallback(callbackDrawSlower)
+            /*            .addKeyCallback(callbackDrawFaster)
+                        .addKeyCallback(callbackDrawSlower)*/
             .addKeyCallback(callbackDrawBounds)
             .addKeyCallback(callbackCenterView)
             .addKeyCallback(callbackFitUniverseOnScreen)
@@ -56,18 +55,6 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
         getUsageTextLambda = { "press a # key to load one of the first 9 embedded RLE resource files" }
     )
 
-    val callbackDrawSlower = KeyCallback.createKeyCallback(
-        keyCombos = setOf(KeyCombo(SHORTCUT_DRAW_SPEED, KeyEvent.SHIFT)),
-        invokeFeatureLambda = { Governor.goSlower() },
-        getUsageTextLambda = { "slow the animation down" }
-    )
-
-    val callbackDrawFaster = KeyCallback.createKeyCallback(
-        key = SHORTCUT_DRAW_SPEED,
-        invokeFeatureLambda = { Governor.goFaster() },
-        getUsageTextLambda = { "speed the animation up" }
-    )
-
     val callbackStepFaster = KeyCallback.createKeyCallback(
         key = SHORTCUT_STEP_FASTER,
         invokeFeatureLambda = { patterning.handleStep(true) },
@@ -82,7 +69,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
     val callbackRewind = KeyCallback.createKeyCallback(
         key = SHORTCUT_REWIND,
-        invokeFeatureLambda = { patterning.instantiateLifeform()},
+        invokeFeatureLambda = { patterning.instantiateLifeform() },
         getUsageTextLambda = { "rewind the current life form back to generation 0" }
     )
 
@@ -182,11 +169,6 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
             }
         },
         getUsageTextLambda = { "use arrow keys to move the image around. hold down two keys to move diagonally" },
-        cleanupFeatureLambda = {
-            if (KeyHandler.pressedKeys.isEmpty()) {
-                Governor.drawImmediately()
-            }
-        }
     )
 
     val callbackSingleStep = KeyCallback.createKeyCallback(
@@ -210,7 +192,8 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
         private const val SHORTCUT_ZOOM_OUT = '-'
         private const val SHORTCUT_UNDO = 'z'
         private const val SHORTCUT_ZOOM_CENTERED = 'z'
-        private const val SHORTCUT_DRAW_SPEED = 's'
+
+        // private const val SHORTCUT_DRAW_SPEED = 's'
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
     }

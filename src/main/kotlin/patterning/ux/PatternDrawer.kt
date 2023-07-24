@@ -85,7 +85,6 @@ class PatternDrawer(
         NW, NE, SW, SE, ROOT
     }
 
-    private val cellBorderWidthRatio = .05f
     private val drawingInformer: DrawingInfoSupplier
     private val patterning: Processing = processing as Processing
     private val hudInfo: HUDStringBuilder
@@ -189,9 +188,9 @@ class PatternDrawer(
             .setOrientation(Orientation.HORIZONTAL)
             .addControl("random.png", keyFactory.callbackRandomLife)
             .addControl("stepSlower.png", keyFactory.callbackStepSlower)
-            .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+            // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
             .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause, keyFactory.callbackSingleStep)
-            .addControl("drawFaster.png", keyFactory.callbackDrawFaster)
+            //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
             .addControl("stepFaster.png", keyFactory.callbackStepFaster)
             .addControl("rewind.png", keyFactory.callbackRewind)
             .build()
@@ -234,7 +233,7 @@ class PatternDrawer(
 
     fun setupNewLife(life: LifeUniverse) {
 
-        clearUndoDeque()
+        undoDeque.clear()
 
         val bounds = life.rootBounds
         center(bounds, fitBounds = true, saveState = false)
@@ -296,10 +295,6 @@ class PatternDrawer(
 
     }
 
-    fun clearUndoDeque() {
-        undoDeque.clear()
-    }
-
     private fun getHUDMessage(life: LifeUniverse): String {
 
         return hudInfo.getFormattedString(
@@ -308,15 +303,16 @@ class PatternDrawer(
         ) {
             hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
             hudInfo.addOrUpdate("frames", processing.frameCount)
-            hudInfo.addOrUpdate("dps", Governor.currentDrawRate.roundToInt())
             hudInfo.addOrUpdate("gps", patterning.gps)
             hudInfo.addOrUpdate("cell", cell.size)
-            hudInfo.addOrUpdate("running", "running".takeIf { patterning.isRunning } ?: "stopped")
+            hudInfo.addOrUpdate("running", patterning.runMessage())
             hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.patternInfo.getData()
-            patternInfo.forEach { (key, value) ->
-                hudInfo.addOrUpdate(key, value)
+            synchronized(life) {
+                patternInfo.forEach { (key, value) ->
+                    hudInfo.addOrUpdate(key, value)
+                }
             }
         }
     }
@@ -357,10 +353,9 @@ class PatternDrawer(
         x: Float,
         y: Float,
         size: Float,
-        color: Int = Theme.cellColor,
-        border: Float = cellBorderWidth
+        color: Int = Theme.cellColor
     ) {
-        val width = size - border
+        val width = size - cellBorderWidth
 
         lifeFormBuffer.apply {
             fill(color)
@@ -420,7 +415,7 @@ class PatternDrawer(
     private var startDelta = 0
 
 
-    private fun drawNode(life: LifeUniverse) {
+    private fun drawPattern(life: LifeUniverse) {
         lifeFormBuffer.beginDraw()
         lifeFormBuffer.clear()
 
@@ -678,12 +673,7 @@ class PatternDrawer(
         return BoundingBox(drawingLeft, drawingTop, drawingWidth, drawingHeight)
     }
 
-
-    fun draw(life: LifeUniverse, shouldDraw: Boolean) {
-
-        // lambdas are interested in this fact
-        isDrawing = true
-
+    private fun drawBackground() {
         if (isWindowResized) {
             updateWindowResized()
         }
@@ -695,24 +685,33 @@ class PatternDrawer(
             background(Theme.backGroundColor)
         }
 
+    }
+
+    private fun drawUX(life: LifeUniverse) {
         uXBuffer.apply {
             beginDraw()
             clear()
         }
 
         movementHandler.handleRequestedMovement()
-        cellBorderWidth = cellBorderWidthRatio * cell.size
+        cellBorderWidth = cell.size * Cell.WIDTH_RATIO
 
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
         drawables!!.drawAll()
 
         uXBuffer.endDraw()
+    }
 
-        if (shouldDraw) {
 
-            drawNode(life)
-        }
+    fun draw(life: LifeUniverse) {
+
+        // lambdas are interested in this fact
+        isDrawing = true
+
+        drawBackground()
+        drawUX(life)
+        drawPattern(life)
 
         processing.apply {
             image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
@@ -785,6 +784,7 @@ class PatternDrawer(
 
         companion object {
             private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f
+            const val WIDTH_RATIO = .05f
         }
     }
 

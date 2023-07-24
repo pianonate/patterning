@@ -1,6 +1,5 @@
 package patterning.actions
 
-import patterning.ux.Governor
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -25,11 +24,9 @@ class KeyHandler private constructor(builder: Builder) {
             _pressedKeys.add(keyCode)
             matchingCallback.invokeFeature()
             matchingCallback.notifyKeyObservers()
-            Governor.drawImmediately()
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)
-            matchingCallback.cleanupFeature()
         }
     }
 

@@ -1,6 +1,4 @@
-todo: find out why uncache takes so long on pattern 1 when it gets to 5 or 6 million cache nodes. seemingly nodeNextGeneration can't be running at the same time - which i imagine could conflict
- but now we're just simply setting a boolean to false and that should be super quick
- is there some thread race condition going on when you're running a step calculation - debug the complex calculations and make a simpler to read and safer implementation that can guarantee only one thing can be running at a time - more like a state machine that says when step is running continue and don't do anything else, when nextGeneration is running continue and don't do anything else, otherwise allow for either one to be run if their run conditions are met (step needs a target step, nextGeneration needs an okay from the governor) but this would in theory ensure that only one of these things can happen at a time
+todo: find out why the universe can't redraw itself when nextGeneration is running long...maybe a version scheme could help here as well
 
 todo: idiomaticize
 

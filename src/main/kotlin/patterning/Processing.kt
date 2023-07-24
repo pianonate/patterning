@@ -2,7 +2,6 @@ package patterning
 
 import kotlinx.coroutines.runBlocking
 import patterning.actions.MouseEventManager
-import patterning.ux.Governor
 import patterning.ux.PatternDrawer
 import patterning.ux.Theme
 import processing.core.PApplet
@@ -22,7 +21,6 @@ class Processing : PApplet() {
     var draggingDrawing = false
     private lateinit var life: LifeUniverse
 
-    private lateinit var asyncSetStep: AsyncCalculationRunner<Int>
     private lateinit var asyncNextGeneration: AsyncCalculationRunner<Int>
     private val mouseEventManager = MouseEventManager.instance
     private lateinit var drawer: PatternDrawer
@@ -35,8 +33,7 @@ class Processing : PApplet() {
     // when a mouse has been pressed over a mouse event receiver
     private var storedLife: String = ""
     private var targetStep = 0
-    var isRunning = false
-        private set
+    private var isRunning = false
     private var mousePressedOverReceiver = false
     private var singleStepMode = false
 
@@ -49,6 +46,14 @@ class Processing : PApplet() {
 
     fun run() {
         isRunning = true
+    }
+
+    fun runMessage(): String {
+        return when {
+            asyncNextGeneration.isRunning -> "nextgen"
+            isRunning -> "running"
+            else -> "stopped"
+        }
     }
 
     override fun settings() {
@@ -81,9 +86,7 @@ class Processing : PApplet() {
         }
 
         surface.setResizable(true)
-        frameRate(Governor.MAX_FRAME_RATE)
         targetStep = 0
-        asyncSetStep = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { p: Int -> asyncNextStep(p) }
         asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { _: Int -> asyncNextGeneration() }
 
         loadSavedWindowPositions()
@@ -102,64 +105,38 @@ class Processing : PApplet() {
 
     override fun draw() {
 
-
-        val isThreadSafe = lifeIsThreadSafe()
-        // we want independent control over how often we update and display
-        // the next generation of drawing
-        // the frameRate can and should run faster so the user experience is responsive
-        val shouldDraw = Governor.shouldDraw(frameRate)
-
         // goForwardInTime (below) requests a nextGeneration and or a step change
         // both of which can take a while
         // given they operate on a separate thread for performance reasons
         // we don't want to put them before the draw - it will almost always be showing
         // that it is updatingLife().  so we need to put goForwardInTime _after_ the request to draw
-        // and we tell the drawer whether it is still updating life since the last frame
-        // we also tell the drawer whether the drawRateController thinks that it's time to draw the life form
-        // in case the user has slowed it down a lot to see what's going on, it's okay for it to be going slow
-        drawer.draw(life, shouldDraw && isThreadSafe)
+        drawer.draw(life)
 
-        // as mentioned above - this runs on a separate thread
-        // and we don't want it to go any faster than the draw rate throttling mechanism
-        if (shouldDraw) {
-            goForwardInTime()
-        }
+        goForwardInTime()
     }
 
-    private fun lifeIsThreadSafe(): Boolean {
-
-        // don't start if either of these calculations are currently running
-        val setStepRunning = asyncSetStep.isRunning
-        val nextGenerationRunning = asyncNextGeneration.isRunning
-        return !nextGenerationRunning && !setStepRunning
+    private fun asyncNextGeneration() {
+        life.nextGeneration()
+        // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
 
     private fun goForwardInTime() {
-        if (shouldStartComplexCalculationSetStep()) {
-            var step = life.step
-            step += if (step < targetStep) 1 else -1
-            asyncSetStep.startCalculation(step)
-            return
+        if (!asyncNextGeneration.isRunning) {
+            life.step = when {
+                life.step < targetStep -> life.step + 1
+                life.step > targetStep -> life.step - 1
+                else -> life.step
+            }
         }
 
         // don't run generations if we're not running
         if (!isRunning) return
-        if (shouldStartComplexCalculationNextGeneration()) {
-            val dummy = 0
-            asyncNextGeneration.startCalculation(dummy)
-        }
+
+        // if (shouldStartComplexCalculationNextGeneration()) {
+        val dummy = 0
+        asyncNextGeneration.startCalculation(dummy)
+        //}
         if (isRunning && singleStepMode) toggleRun()
-    }
-
-    private fun shouldStartComplexCalculationSetStep(): Boolean {
-
-        // if we're not running a complex task, and we're expecting to change the step
-        return lifeIsThreadSafe() && life.step != targetStep
-    }
-
-    // only start these if you're not running either one
-    private fun shouldStartComplexCalculationNextGeneration(): Boolean {
-        return lifeIsThreadSafe()
     }
 
     override fun mousePressed() {
@@ -175,12 +152,6 @@ class Processing : PApplet() {
     override fun mouseReleased() {
         if (draggingDrawing) {
             draggingDrawing = false
-            // if the DPS is slow then the screen won't update correctly
-            // so tell the system to draw immediately
-            // we used to have drawImmediately() called in move
-            // but it had a negative effect of freezing the screen while drawing
-            // this is a good enough compromise as most of the time DPS is not really low
-            Governor.drawImmediately()
         } else {
             mousePressedOverReceiver = false
             mouseEventManager!!.onMouseReleased()
@@ -234,15 +205,6 @@ class Processing : PApplet() {
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME))
     }
 
-    private fun asyncNextStep(step: Int) {
-        life.step = step
-    }
-
-    private fun asyncNextGeneration() {
-        life.nextGeneration()
-        // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
-    }
-
     private fun loadSavedWindowPositions() {
         val properties: JSONObject
         val propertiesFileName = PROPERTY_FILE_NAME
@@ -287,7 +249,6 @@ class Processing : PApplet() {
         try {
             // static on patterning.Patterning
             isRunning = false
-            asyncSetStep.cancelAndWait()
             asyncNextGeneration.cancelAndWait()
 
             life = LifeUniverse()

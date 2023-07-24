@@ -7,7 +7,6 @@ abstract class KeyCallback(
     private val invokeFeatureLambda: (() -> Unit)? = null,
     private val getUsageTextLambda: (() -> String)? = null,
     private val invokeModeChangeLambda: (() -> Boolean)? = null,
-    private val cleanupFeatureLambda: (() -> Unit)? = null
 ) : KeyObservable {
 
     private val keyObservers: MutableSet<KeyObserver> = HashSet()
@@ -24,7 +23,6 @@ abstract class KeyCallback(
 
     // the interface of KeyCallback
     fun invokeFeature() = invokeFeatureLambda?.invoke() ?: Unit
-    open fun cleanupFeature() = cleanupFeatureLambda?.invoke() ?: Unit
     fun getUsageText(): String = getUsageTextLambda?.invoke() ?: ""
 
 
@@ -45,14 +43,12 @@ abstract class KeyCallback(
             invokeFeatureLambda: () -> Unit,
             getUsageTextLambda: () -> String,
             invokeModeChangeLambda: (() -> Boolean)? = null,
-            cleanupFeatureLambda: (() -> Unit)? = null
         ): KeyCallback {
             return object : KeyCallback(
                 linkedSetOf(KeyCombo(key.code)),
                 invokeFeatureLambda,
                 getUsageTextLambda,
                 invokeModeChangeLambda,
-                cleanupFeatureLambda
             ) {}
         }
 
@@ -61,7 +57,6 @@ abstract class KeyCallback(
             invokeFeatureLambda: () -> Unit,
             getUsageTextLambda: () -> String,
             invokeModeChangeLambda: (() -> Boolean)? = null,
-            cleanupFeatureLambda: (() -> Unit)? = null
         ): KeyCallback {
             val keyCombos = keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) }
             return object : KeyCallback(
@@ -69,7 +64,6 @@ abstract class KeyCallback(
                 invokeFeatureLambda,
                 getUsageTextLambda,
                 invokeModeChangeLambda,
-                cleanupFeatureLambda
             ) {}
         }
 
@@ -78,14 +72,12 @@ abstract class KeyCallback(
             invokeFeatureLambda: () -> Unit,
             getUsageTextLambda: () -> String,
             invokeModeChangeLambda: (() -> Boolean)? = null,
-            cleanupFeatureLambda: (() -> Unit)? = null
         ): KeyCallback {
             return object : KeyCallback(
                 LinkedHashSet(keyCombos),
                 invokeFeatureLambda,
                 getUsageTextLambda,
                 invokeModeChangeLambda,
-                cleanupFeatureLambda
             ) {}
         }
     }

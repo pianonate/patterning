@@ -1,7 +1,5 @@
 package patterning.actions
 
-import patterning.ux.Governor
-
 class MouseEventManager private constructor() {
     private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
     fun addReceiver(receiver: MouseEventReceiver) {
@@ -32,7 +30,6 @@ class MouseEventManager private constructor() {
     fun onMouseReleased() {
         if (pressedReceiver != null) {
             pressedReceiver!!.onMouseReleased()
-            Governor.drawImmediately()
             pressedReceiver = null
         }
     }
