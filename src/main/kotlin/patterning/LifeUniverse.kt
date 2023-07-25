@@ -2,8 +2,11 @@ package patterning
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import patterning.util.FlexibleInteger
 import patterning.util.StatMap
+import patterning.ux.PatternDrawer
 import java.nio.IntBuffer
 import java.util.concurrent.atomic.AtomicReference
 
@@ -18,18 +21,18 @@ import java.util.concurrent.atomic.AtomicReference
 class LifeUniverse internal constructor() {
     private var lastId: Int
 
-    // private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
+   // private var hashmap = ConcurrentHashMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
     private var hashmap = StatMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
 
     private var emptyTreeCache: MutableMap<Int, TreeNode> = HashMap()
+    private val createNodeMutex = Mutex()
     private val level2Cache: MutableMap<Int, TreeNode>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
     private val rulesS: Int
     private var generation: FlexibleInteger
 
-
-    private val rootReference = AtomicReference<TreeNode>(emptyTree(3))
+    private val rootReference = runBlocking { AtomicReference(emptyTree(3)) }
 
     var root: TreeNode
         get() = rootReference.get()
@@ -106,7 +109,7 @@ class LifeUniverse internal constructor() {
         return rule shr _bitcounts[bitmask and 0x757].toInt() and 1
     }
 
-    private fun level1Create(bitmask: Int): TreeNode {
+    private suspend fun level1Create(bitmask: Int): TreeNode {
         return createNode(
             if (bitmask and 1 != 0) Node.livingNode else Node.deadNode,
             if (bitmask and 2 != 0) Node.livingNode else Node.deadNode,
@@ -124,7 +127,7 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    private fun emptyTree(level: Int): TreeNode {
+    private suspend fun emptyTree(level: Int): TreeNode {
 
         emptyTreeCache[level]?.let { return it }
 
@@ -133,6 +136,7 @@ class LifeUniverse internal constructor() {
         } else {
             emptyTree(level - 1)
         }
+
         return createNode(t, t, t, t).also { node ->
             emptyTreeCache[level] = node
         }
@@ -182,7 +186,7 @@ class LifeUniverse internal constructor() {
     }
 
     fun setupLife(fieldX: IntBuffer, fieldY: IntBuffer) {
-        Bounds.resetMathContext()
+        PatternDrawer.resetMathContext()
         val bounds = getBounds(fieldX, fieldY)
         val level = bounds.getLevelFromBounds()
 
@@ -190,10 +194,10 @@ class LifeUniverse internal constructor() {
         val offset = FlexibleInteger.pow2(level - 1).toInt()
         val count = fieldX.capacity()
         moveField(fieldX, fieldY, offset, offset)
-        root = setupLifeRecurse(0, count - 1, fieldX, fieldY, level)
+        runBlocking { root = setupLifeRecurse(0, count - 1, fieldX, fieldY, level) }
     }
 
-    private fun setupLifeRecurse(
+    private suspend fun setupLifeRecurse(
         start: Int,
         end: Int,
         fieldX: IntBuffer,
@@ -264,7 +268,7 @@ class LifeUniverse internal constructor() {
         return leftIndex
     }
 
-    private fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): TreeNode? {
+    private suspend fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): TreeNode? {
         var set = 0
         var x: Int
         var y: Int
@@ -288,7 +292,7 @@ class LifeUniverse internal constructor() {
         return tree
     }
 
-    private fun nodeLevel2Next(node: TreeNode): TreeNode {
+    private suspend fun nodeLevel2Next(node: TreeNode): TreeNode {
 
         val nw = node.nw
         val ne = node.ne
@@ -347,6 +351,26 @@ class LifeUniverse internal constructor() {
         return newTreeNode
     }
 
+/*    private suspend fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
+        val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
+        val nodeList = hashmap.computeIfAbsent(hash) { mutableListOf() }
+
+        // Use Mutex instead of `synchronized`
+        return createNodeMutex.withLock {
+            for (node in nodeList) {
+                if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
+                    return@withLock node
+                }
+            }
+
+            val newTreeNode = TreeNode(nw, ne, sw, se, lastId++)
+            nodeList.add(newTreeNode)
+
+            return@withLock newTreeNode
+        }
+    }*/
+
+
     private fun updatePatternInfo() {
 
         patternInfo.addOrUpdate("level", FlexibleInteger(root.level))
@@ -394,7 +418,7 @@ class LifeUniverse internal constructor() {
         generation += FlexibleInteger.pow2(step)
     }
 
-    private fun expandUniverse(node: TreeNode): TreeNode {
+    private suspend fun expandUniverse(node: TreeNode): TreeNode {
         val t = emptyTree(node.level - 1)
         return createNode(
             createNode(t, t, t, node.nw),
@@ -409,7 +433,7 @@ class LifeUniverse internal constructor() {
         recurse++
 
         if (step == node.level - 2) {
-            return@coroutineScope nodeQuickNextGeneration(node, 0)
+            return@coroutineScope nodeQuickNextGeneration(node/*, node.level -1*/)
         }
 
         if (node.level == 2) {
@@ -426,7 +450,6 @@ class LifeUniverse internal constructor() {
         val sw = node.sw as TreeNode
         val se = node.se as TreeNode
 
-        @Suppress("IncorrectFormatting")
         val n00 = createNode(
             (nw.nw as TreeNode).se,
             (nw.ne as TreeNode).sw,
@@ -451,8 +474,7 @@ class LifeUniverse internal constructor() {
 
     }
 
-    private suspend fun nodeQuickNextGeneration(node: TreeNode, recurseDepth: Int): TreeNode = coroutineScope {
-        var depth = recurseDepth
+    private suspend fun nodeQuickNextGeneration(node: TreeNode): TreeNode = coroutineScope {
 
         if (node.level2NextCache != null) {
             return@coroutineScope node.level2NextCache as TreeNode
@@ -471,38 +493,125 @@ class LifeUniverse internal constructor() {
         val ne = node.ne
         val sw = node.sw
         val se = node.se
-        depth += 1
-        val n00 = nodeQuickNextGeneration(nw as TreeNode, depth)
+        val n00 = nodeQuickNextGeneration(nw as TreeNode)
         val n01 = nodeQuickNextGeneration(
-            createNode(nw.ne, (ne as TreeNode).nw, nw.se, ne.sw),
-            depth
+            createNode(nw.ne, (ne as TreeNode).nw, nw.se, ne.sw)
         )
-        val n02 = nodeQuickNextGeneration(ne, depth)
+        val n02 = nodeQuickNextGeneration(ne)
         val n10 = nodeQuickNextGeneration(
             createNode(nw.sw, nw.se, (sw as TreeNode).nw, sw.ne),
-            depth
         )
         val n11 = nodeQuickNextGeneration(
             createNode(nw.se, ne.sw, sw.ne, (se as TreeNode).nw),
-            depth
         )
         val n12 = nodeQuickNextGeneration(
             createNode(ne.sw, ne.se, se.nw, se.ne),
-            depth
         )
-        val n20 = nodeQuickNextGeneration(sw, depth)
+        val n20 = nodeQuickNextGeneration(sw)
         val n21 = nodeQuickNextGeneration(
             createNode(sw.ne, se.nw, sw.se, se.sw),
-            depth
         )
-        val n22 = nodeQuickNextGeneration(se, depth)
+        val n22 = nodeQuickNextGeneration(se)
         return@coroutineScope createNode(
-            nodeQuickNextGeneration(createNode(n00, n01, n10, n11), depth),
-            nodeQuickNextGeneration(createNode(n01, n02, n11, n12), depth),
-            nodeQuickNextGeneration(createNode(n10, n11, n20, n21), depth),
-            nodeQuickNextGeneration(createNode(n11, n12, n21, n22), depth)
+            nodeQuickNextGeneration(createNode(n00, n01, n10, n11)),
+            nodeQuickNextGeneration(createNode(n01, n02, n11, n12)),
+            nodeQuickNextGeneration(createNode(n10, n11, n20, n21)),
+            nodeQuickNextGeneration(createNode(n11, n12, n21, n22))
         ).also { node.level2NextCache = it }
     }
+
+   /* private suspend fun nodeQuickNextGeneration(node: TreeNode, parallelLevel: Int = 5): TreeNode =
+        coroutineScope {
+
+            if (node.level2NextCache != null) {
+                return@coroutineScope node.level2NextCache as TreeNode
+            }
+            quick++
+
+            if (node.level == 2) {
+                return@coroutineScope nodeLevel2Next(node).also { node.level2NextCache = it }
+            }
+
+            if (!isActive) {
+                return@coroutineScope node
+            }
+
+            val nw = node.nw
+            val ne = node.ne
+            val sw = node.sw
+            val se = node.se
+
+            suspend fun recurse(n: TreeNode): Any = if (node.level >= parallelLevel) async {
+                nodeQuickNextGeneration(n, parallelLevel)
+            } else nodeQuickNextGeneration(n, parallelLevel)
+
+            val n00 = recurse(nw as TreeNode)
+            val n01 = recurse(
+                createNode(nw.ne, (ne as TreeNode).nw, nw.se, ne.sw)
+            )
+            val n02 = recurse(ne)
+            val n10 = recurse(
+                createNode(nw.sw, nw.se, (sw as TreeNode).nw, sw.ne)
+            )
+            val n11 = recurse(
+                createNode(nw.se, ne.sw, sw.ne, (se as TreeNode).nw)
+            )
+            val n12 = recurse(
+                createNode(ne.sw, ne.se, se.nw, se.ne)
+            )
+            val n20 = recurse(sw)
+            val n21 = recurse(
+                createNode(sw.ne, se.nw, sw.se, se.sw)
+            )
+            val n22 = recurse(se)
+
+            suspend fun awaitIfNeeded(value: Any): Node =
+                if (value is Deferred<*>) (value.await() as Node) else (value as Node)
+
+            return@coroutineScope createNode(
+                awaitIfNeeded(
+                    recurse(
+                        createNode(
+                            awaitIfNeeded(n00),
+                            awaitIfNeeded(n01),
+                            awaitIfNeeded(n10),
+                            awaitIfNeeded(n11)
+                        )
+                    )
+                ),
+                awaitIfNeeded(
+                    recurse(
+                        createNode(
+                            awaitIfNeeded(n01),
+                            awaitIfNeeded(n02),
+                            awaitIfNeeded(n11),
+                            awaitIfNeeded(n12)
+                        )
+                    )
+                ),
+                awaitIfNeeded(
+                    recurse(
+                        createNode(
+                            awaitIfNeeded(n10),
+                            awaitIfNeeded(n11),
+                            awaitIfNeeded(n20),
+                            awaitIfNeeded(n21)
+                        )
+                    )
+                ),
+                awaitIfNeeded(
+                    recurse(
+                        createNode(
+                            awaitIfNeeded(n11),
+                            awaitIfNeeded(n12),
+                            awaitIfNeeded(n21),
+                            awaitIfNeeded(n22)
+                        )
+                    )
+                )
+            ).also { node.level2NextCache = it }
+        }*/
+
 
     companion object {
         private val HASHMAP_INITIAL_CAPACITY = FlexibleInteger.pow2(24).toInt()

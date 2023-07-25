@@ -112,7 +112,6 @@ class TreeNode(
             bounds = calculateChildBounds(ne, negatedOffset, offset, bounds)
             bounds = calculateChildBounds(sw, offset, negatedOffset, bounds)
             bounds = calculateChildBounds(se, offset, offset, bounds)
-            bounds.updateLargestDimension(bounds.width.max(bounds.height))
             bounds
         }
     }

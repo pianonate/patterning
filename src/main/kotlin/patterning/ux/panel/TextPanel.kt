@@ -298,7 +298,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     private fun removeFromDrawableList() {
-        drawer!!.remove(this)
+        Drawer.remove(this)
     }
 
     private interface State {
@@ -502,9 +502,5 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         override fun transition() {
             removeFromDrawableList()
         }
-    }
-
-    companion object {
-        private val drawer = Drawer.instance
     }
 }

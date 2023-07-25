@@ -52,11 +52,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             drawControlHighlight(Theme.controlHighlightColor)
             if (null == hoverTextPanel) {
                 hoverTextPanel = getHoverTextPanel()
-                Drawer.instance!!.add(hoverTextPanel!!)
+                Drawer.add(hoverTextPanel!!)
             }
         } else {
             if (null != hoverTextPanel) {
-                Drawer.instance!!.remove(hoverTextPanel!!)
+                Drawer.remove(hoverTextPanel!!)
                 hoverTextPanel = null
             }
         }

@@ -30,7 +30,8 @@ dependencies {
 
 application {
     mainClass.set(patterningMain)
-    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G", "-XX:SoftMaxHeapSize=1G")
+    // applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G")
+    applicationDefaultJvmArgs = listOf("-XX:+UseParallelGC", "-Xmx16G")
 }
 
 tasks.register<JavaExec>("profile") {

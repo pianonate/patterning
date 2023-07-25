@@ -1,4 +1,4 @@
-todo: find out why the universe can't redraw itself when nextGeneration is running long...maybe a version scheme could help here as well
+todo: you're working on parallelizing nodeQuickNextGeneration as it is the one that takes the heat on pattern 5.  you're going to have to make access to hashmap threadsafe and chatgpt is telling you that you'll also need to make decrementHit threadsafe and also the mutableList that's the return value threadsafe - so there's a lot of threadsafe going on...
 
 todo: idiomaticize
 

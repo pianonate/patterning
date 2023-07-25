@@ -1,7 +1,5 @@
 package patterning.util
 
-import java.math.BigDecimal
-import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
 
 /* used to find out how useful the MutableMap is  at saving you lookups for particular use cases */
@@ -38,11 +36,11 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
 
     val hitRate: Double
         get() {
-            val total = (stats.hits + stats.misses).toBigDecimal()
-            return if (total == BigDecimal.ZERO) {
+            val total = (stats.hits + stats.misses).toDouble()
+            return if (total == 0.0) {
                 0.0
             } else {
-                stats.hits.toBigDecimal().divide(total, MathContext.DECIMAL128).toDouble()
+                stats.hits.toDouble() / total
             }
         }
 
@@ -64,6 +62,10 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
     operator fun set(key: K, value: V) {
         map[key] = value
         stats.puts++
+    }
+
+    fun computeIfAbsent(key: K, mappingFunction: (K) -> V): V {
+        return map.computeIfAbsent(key, mappingFunction)
     }
 
     fun getOrPut(key: K, defaultValue: () -> V): V {

@@ -1,15 +1,9 @@
 package patterning.ux
 
-class Drawer private constructor() {
-    private val drawables: MutableList<Drawable>
-    private val toBeAdded: MutableList<Drawable>
-    private val toBeRemoved: MutableList<Drawable>
-
-    init {
-        drawables = ArrayList()
-        toBeAdded = ArrayList()
-        toBeRemoved = ArrayList()
-    }
+object Drawer {
+    private val drawables: MutableList<Drawable> = ArrayList()
+    private val toBeAdded: MutableList<Drawable> = ArrayList()
+    private val toBeRemoved: MutableList<Drawable> = ArrayList()
 
     fun add(drawable: Drawable) {
         toBeAdded.add(drawable)
@@ -37,17 +31,5 @@ class Drawer private constructor() {
 
     fun remove(drawable: Drawable) {
         toBeRemoved.add(drawable)
-    }
-
-    companion object {
-        @JvmStatic
-        var instance: Drawer? = null
-            get() {
-                if (field == null) {
-                    field = Drawer()
-                }
-                return field
-            }
-            private set
     }
 }

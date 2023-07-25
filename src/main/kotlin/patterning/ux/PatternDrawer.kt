@@ -1,5 +1,10 @@
 package patterning.ux
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.withLock
 import patterning.*
 import patterning.actions.KeyFactory
 import patterning.actions.MouseEventManager.Companion.instance
@@ -13,10 +18,12 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
 import java.math.BigDecimal
+import java.math.MathContext
 import java.util.*
 import java.util.function.IntSupplier
 import kotlin.collections.ArrayDeque
 import kotlin.math.roundToInt
+
 
 class PatternDrawer(
     private val processing: PApplet
@@ -36,9 +43,7 @@ class PatternDrawer(
         val direction: Direction
     )
 
-    private class DrawNodePath(
-
-    ) {
+    private class DrawNodePath {
         var offsetsMoved: Boolean = true
         private var level: Int = 0
         private val path: MutableList<DrawNodePathEntry> = mutableListOf()
@@ -50,20 +55,23 @@ class PatternDrawer(
         fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
             val newLevel = root.level
+            updateLargestDimension(root.bounds.width.max(root.bounds.height))
+
             val halfSizeOffset = -cell.halfUniverseSize(newLevel)
             val universeSize = cell.universeSize(newLevel)
 
+            // every generation the root changes so we have to use the latest root
+            // to walk through the nodePath to find the lowest node that has children visible on screen
             if (root.level != path[0].node.level
                 || offsetsMoved
                 || childrenSizesChanged(root)
             ) {
 
-
                 // if the offsets moved, or the root.level doesn't match
                 // or the sizes of the children in the path don't match the sizes of the children
-                // in the new root, then we need to udpate the path
+                // in the new root, then we need to update the path
                 clear()
-                updateNodePath(root, universeSize, halfSizeOffset, halfSizeOffset)
+                updateNodePath(root, halfSizeOffset, halfSizeOffset)
                 offsetsMoved = false
                 level = newLevel
             }
@@ -142,7 +150,6 @@ class PatternDrawer(
 
         private fun updateNodePath(
             node: Node,
-            size: BigDecimal,
             left: BigDecimal,
             top: BigDecimal
         ) {
@@ -178,7 +185,7 @@ class PatternDrawer(
                     path.add(intersectingChild)
                     updateNodePath(
                         intersectingChild.node,
-                        intersectingChild.size,
+                        /* intersectingChild.size,*/
                         intersectingChild.left,
                         intersectingChild.top
                     )
@@ -198,7 +205,6 @@ class PatternDrawer(
     private val movementHandler: MovementHandler
 
     // ain't no way to do drawing without a singleton drawables manager
-    private val drawables = Drawer.instance
     private val keyFactory: KeyFactory
     private var cellBorderWidth = 0.0f
 
@@ -303,7 +309,7 @@ class PatternDrawer(
             .build()
         val panels = listOf(panelLeft, panelTop, panelRight)
         Objects.requireNonNull(instance)?.addAll(panels)
-        drawables!!.addAll(panels)
+        Drawer.addAll(panels)
     }
 
     fun toggleDrawBounds() {
@@ -319,15 +325,15 @@ class PatternDrawer(
         builderFunction: () -> TextPanel.Builder
     ): TextPanel {
         existingTextPanel?.let {
-            if (drawables!!.isManaging(it)) {
-                drawables.remove(it)
+            if (Drawer.isManaging(it)) {
+                Drawer.remove(it)
             }
         }
 
         return builderFunction()
             .build()
             .also { newTextPanel ->
-                drawables!!.add(newTextPanel)
+                Drawer.add(newTextPanel)
             }
     }
 
@@ -336,6 +342,7 @@ class PatternDrawer(
         undoDeque.clear()
 
         val bounds = life.rootBounds
+        updateLargestDimension(bounds.width.max(bounds.height))
         center(bounds, fitBounds = true, saveState = false)
 
         countdownText = createTextPanel(countdownText) {
@@ -419,7 +426,7 @@ class PatternDrawer(
     }
 
     fun handlePause() {
-        drawables.takeIf { it!!.isManaging(countdownText!!) }?.let {
+        Drawer.takeIf { it.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
             keyFactory.callbackPause.notifyKeyObservers()
         } ?: patterning.toggleRun()
@@ -446,18 +453,22 @@ class PatternDrawer(
         adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
-    private fun fillSquare(
+    private val fillSquareMutex = kotlinx.coroutines.sync.Mutex()
+
+    private suspend fun fillSquare(
         x: Float,
         y: Float,
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size - cellBorderWidth
+        fillSquareMutex.withLock {
+            val width = size - cellBorderWidth
 
-        lifeFormBuffer.apply {
-            fill(color)
-            noStroke()
-            rect(x, y, width, width)
+            lifeFormBuffer.apply {
+                fill(color)
+                noStroke()
+                rect(x, y, width, width)
+            }
         }
     }
 
@@ -465,6 +476,7 @@ class PatternDrawer(
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
 
+    private val actualRecursionsMutex = kotlinx.coroutines.sync.Mutex()
 
     private fun drawPattern(life: LifeUniverse) {
         lifeFormBuffer.beginDraw()
@@ -482,6 +494,7 @@ class PatternDrawer(
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = FlexibleInteger.ZERO
 
+
             val startingNode = node
             val size = size
             val offsetX = left
@@ -489,7 +502,13 @@ class PatternDrawer(
 
             startDelta = life.root.level - startingNode.level
 
-            drawNodeRecurse(startingNode, size, offsetX, offsetY)
+            runBlocking {
+                val divisor = 4.toBigDecimal()
+                largePopulationThreshold =
+                    FlexibleInteger(startingNode.population.toBigDecimal().divide(divisor, mc).toBigInteger())
+                // largePopulationThreshold = FlexibleInteger.MAX_VALUE
+                drawNodeRecurse(startingNode, size, offsetX, offsetY)
+            }
         }
 
         // keep this around - it works - so if your startingNode code has issues, you can resuscitate
@@ -502,13 +521,17 @@ class PatternDrawer(
         lifeFormPosition[0f] = 0f
     }
 
-    private fun drawNodeRecurse(
+    private var largePopulationThreshold = FlexibleInteger.ZERO
+
+    private suspend fun drawNodeRecurse(
         node: Node,
         size: BigDecimal,
         left: BigDecimal,
         top: BigDecimal
     ) {
-        ++actualRecursions
+        actualRecursionsMutex.withLock {
+            ++actualRecursions
+        }
 
         // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
@@ -521,19 +544,30 @@ class PatternDrawer(
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
-            fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), 1f)
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toInt().toFloat(), topWithOffset.toInt().toFloat(), cell.size)
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), cell.size)
         } else if (node is TreeNode) {
 
             val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
-            drawNodeRecurse(node.nw, halfSize, left, top)
-            drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
-            drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
-            drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
+            if (node.population > largePopulationThreshold) {
+                coroutineScope {
+                    listOf(
+                        async { drawNodeRecurse(node.nw, halfSize, left, top) },
+                        async { drawNodeRecurse(node.ne, halfSize, leftHalfSize, top) },
+                        async { drawNodeRecurse(node.sw, halfSize, left, topHalfSize) },
+                        async { drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize) }
+                    ).awaitAll()
+                }
+            } else { // If the node population is small, continue on the same coroutine
+                drawNodeRecurse(node.nw, halfSize, left, top)
+                drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
+                drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
+                drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
+            }
         }
     }
 
@@ -741,7 +775,7 @@ class PatternDrawer(
 
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
-        drawables!!.drawAll()
+        Drawer.drawAll()
 
         uXBuffer.endDraw()
     }
@@ -837,8 +871,36 @@ class PatternDrawer(
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
         // Bounds.mathContext is kept up to date with the largest dimension of the universe
-        val mc
-            get() = Bounds.mathContext
+        private var mc = MathContext(0)
+
+        // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
+        // now that i'm thinking about it, this is probably the required precision for a float
+        // which is what the cell.cellSize is - especially for really small numbers
+        // without it we'd be off by only looking at the integer part of the largest dimension
+        private const val PRECISION_BUFFER = 10
+        private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
+        private var previousPrecision: Int = 0
+
+        fun resetMathContext() {
+            largestDimension = FlexibleInteger.ZERO
+            previousPrecision = 0
+        }
+
+        // as nodes are created their bounds are calculated
+        // when the bounds get larger, we need a math context to draw with that
+        // allows the pattern to be drawn with the necessary precision
+        private fun updateLargestDimension(dimension: FlexibleInteger) {
+            if (dimension > largestDimension) {
+                largestDimension = dimension
+                // Assuming minBaseToExceed is a function on FlexibleInteger
+                val precision = largestDimension.minPrecisionForDrawing()
+                if (precision != previousPrecision) {
+                    mc = MathContext(precision + PRECISION_BUFFER)
+                    previousPrecision = precision
+                }
+            }
+        }
+
         private val BigTWO = BigDecimal(2)
         private val undoDeque = ArrayDeque<CanvasState>()
         private var canvasOffsetX = BigDecimal.ZERO
@@ -852,7 +914,7 @@ class PatternDrawer(
 
         // used by PatternDrawer a well as DrawNodePath
         // maintains no state so it can live here as a utility function
-        fun shouldContinue(
+        private fun shouldContinue(
             node: Node,
             size: BigDecimal,
             nodeLeft: BigDecimal,
@@ -872,8 +934,7 @@ class PatternDrawer(
             // left and top are defined by the zoom level (cell size) multiplied
             // by half the universe size which we start out with at the nw corner which is half the size negated
             // each level in we add half of the size at that to the  create the new size for left and top
-            // to that, we add the canvasOffsetX to left and canvasOffsetY to top - and these
-            // are what is passed in to this function
+            // to that, we add the canvasOffsetX to left and canvasOffsetY to top
             //
             // the size at this level is then added to the left to get the right side of the universe
             // and the size is added to the top to get the bottom of the universe
@@ -887,6 +948,5 @@ class PatternDrawer(
             return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
                     left >= canvasWidth || top >= canvasHeight)
         }
-
     }
 }
