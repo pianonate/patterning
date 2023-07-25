@@ -74,14 +74,14 @@ class TreeNode(
 
     var cacheVersion: Int = -1 // Version when cache was last set to valid
 
-    var cache: TreeNode? = null
+    var nextGenerationCache: TreeNode? = null
         get() = if (isValidCache()) field else null
         set(value) = run {
             field = value
             cacheVersion = Node.globalVersion
         }
 
-    var quickCache: TreeNode? = null
+    var level2NextCache: TreeNode? = null
 
     private fun isValidCache(): Boolean = cacheVersion == Node.globalVersion
 
@@ -163,7 +163,7 @@ class TreeNode(
         if (level != other.level) return false
         if (population != other.population) return false
         if (hash != other.hash) return false
-        if (cache != other.cache) return false
-        return (quickCache == other.quickCache)
+        if (nextGenerationCache != other.nextGenerationCache) return false
+        return (level2NextCache == other.level2NextCache)
     }
 }

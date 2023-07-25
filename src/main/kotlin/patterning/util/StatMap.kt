@@ -2,19 +2,20 @@ package patterning.util
 
 import java.math.BigDecimal
 import java.math.MathContext
+import java.util.concurrent.ConcurrentHashMap
 
 /* used to find out how useful the MutableMap is  at saving you lookups for particular use cases */
 class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
-    private val map: MutableMap<K, V>
-    private val stats = CacheStats()
-
     constructor(initialCapacity: Int) {
-        this.map = HashMap(initialCapacity)
+        this.map = ConcurrentHashMap(initialCapacity)
     }
 
     constructor(map: MutableMap<K, V>) {
         this.map = map
     }
+
+    private val map: MutableMap<K, V>
+    private val stats = CacheStats()
 
     override fun iterator(): Iterator<Map.Entry<K, V>> {
         return map.iterator()
@@ -22,14 +23,12 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
 
     data class CacheStats(
         var hits: FlexibleInteger = FlexibleInteger.ZERO,
-        var misses: FlexibleInteger = FlexibleInteger.ZERO
+        var misses: FlexibleInteger = FlexibleInteger.ZERO,
+        var puts: FlexibleInteger = FlexibleInteger.ZERO,
     )
 
-    val size: Int
-        get() = map.size
-
-    val entries: Set<Map.Entry<K, V>>
-        get() = map.entries
+    val puts: FlexibleInteger
+        get() = stats.puts
 
     val hits: FlexibleInteger
         get() = stats.hits
@@ -47,18 +46,11 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
             }
         }
 
-    fun incrementMisses() {
-        stats.misses++
-    }
-
     fun decrementHit() {
         if (stats.hits > FlexibleInteger.ZERO) {
             stats.hits--
         }
     }
-
-    val values: Collection<V>
-        get() = map.values
 
     operator fun get(key: K): V? {
         return map[key]?.also {
@@ -71,6 +63,7 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
 
     operator fun set(key: K, value: V) {
         map[key] = value
+        stats.puts++
     }
 
     fun getOrPut(key: K, defaultValue: () -> V): V {
@@ -87,8 +80,13 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
 
     fun clear() {
         map.clear()
+        clearStats()
+    }
+
+    fun clearStats() {
         stats.hits = FlexibleInteger.ZERO
         stats.misses = FlexibleInteger.ZERO
+        stats.puts = FlexibleInteger.ZERO
     }
 
     override fun toString(): String {

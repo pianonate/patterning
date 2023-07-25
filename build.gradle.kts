@@ -25,11 +25,12 @@ repositories {
 dependencies {
     implementation("com.processing:processing:4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 application {
     mainClass.set(patterningMain)
-    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G")
+    applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G", "-XX:SoftMaxHeapSize=1G")
 }
 
 tasks.register<JavaExec>("profile") {

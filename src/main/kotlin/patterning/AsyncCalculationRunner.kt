@@ -53,6 +53,7 @@ class AsyncCalculationRunner<P>(
         runBlocking {
             mutex.withLock {
                 calculationJob?.cancelAndJoin()
+                atomicIsRunning.set(false)
                 calculationJob = null
                 timestamps.clear()
                 timestampsSnapshot.clear()

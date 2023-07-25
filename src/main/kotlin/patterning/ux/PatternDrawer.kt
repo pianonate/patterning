@@ -408,10 +408,8 @@ class PatternDrawer(
             hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.patternInfo.getData()
-            synchronized(life) {
-                patternInfo.forEach { (key, value) ->
-                    hudInfo.addOrUpdate(key, value)
-                }
+            patternInfo.forEach { (key, value) ->
+                hudInfo.addOrUpdate(key, value)
             }
         }
     }
@@ -592,70 +590,131 @@ class PatternDrawer(
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = calculateBoundingBox(bounds)
-        val halfSize = FlexibleInteger.pow2(life.root.level - 1)
-        val universeBox = calculateBoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize))
+        val boundingBox = BoundingBox(bounds, cell.bigSize)
+        boundingBox.draw(lifeFormBuffer)
 
-        lifeFormBuffer.apply {
-            pushStyle()
-            noFill()
-            stroke(200)
-            strokeWeight(1f)
-            rect(
+        var currentLevel = life.root.level - 2
 
-                boundingBox.left,
-                boundingBox.top,
-                boundingBox.width,
-                boundingBox.height
-            )
-            rect(
+        while (currentLevel < life.root.level) {
+            val halfSize = FlexibleInteger.pow2(currentLevel)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize)
+            universeBox.draw(lifeFormBuffer, drawCrosshair = true)
+            currentLevel++
+        }
+    }
 
-                universeBox.left,
-                universeBox.top,
-                universeBox.width,
-                universeBox.height
-            )
-            popStyle()
+    private data class Point(val x: Float, val y: Float)
+
+    private data class Line(val start: Point, val end: Point) {
+        fun drawDashedLine(buffer: PGraphics, dashLength: Float, spaceLength: Float) {
+            val x1 = start.x
+            val y1 = start.y
+            val x2 = end.x
+            val y2 = end.y
+
+            val distance = PApplet.dist(x1, y1, x2, y2)
+            val numDashes = distance / (dashLength + spaceLength)
+
+            var draw = true
+            var x = x1
+            var y = y1
+            buffer.pushStyle()
+            buffer.strokeWeight(Theme.strokeWeightDashedLine)
+            for (i in 0 until (numDashes * 2).toInt()) {
+                if (draw) {
+                    // We limit the end of the dash to be at maximum the final point
+                    val dxDash = (x2 - x1) / numDashes / 2
+                    val dyDash = (y2 - y1) / numDashes / 2
+                    val endX = (x + dxDash).coerceAtMost(x2)
+                    val endY = (y + dyDash).coerceAtMost(y2)
+                    buffer.line(x, y, endX, endY)
+                    x = endX
+                    y = endY
+                } else {
+                    val dxSpace = (x2 - x1) / numDashes / 2
+                    val dySpace = (y2 - y1) / numDashes / 2
+                    x += dxSpace
+                    y += dySpace
+                }
+                draw = !draw
+            }
+            buffer.popStyle()
+        }
+    }
+
+    private class BoundingBox(bounds: Bounds, cellSize: BigDecimal) {
+        private val leftBD = bounds.left.toBigDecimal()
+        private val topBD = bounds.top.toBigDecimal()
+
+        private val leftWithOffset = leftBD.multiply(cellSize, mc).add(canvasOffsetX)
+        private val topWithOffset = topBD.multiply(cellSize, mc).add(canvasOffsetY)
+
+        private val widthDecimal = bounds.width.toBigDecimal().multiply(cellSize, mc)
+        private val heightDecimal = bounds.height.toBigDecimal().multiply(cellSize, mc)
+
+        private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
+        private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
+
+        // coerce boundaries to be drawable with floats
+        val left = if (leftWithOffset < BigDecimal.ZERO) -1.0f else leftWithOffset.toFloat()
+        val top = if (topWithOffset < BigDecimal.ZERO) -1.0f else topWithOffset.toFloat()
+
+        val right = if (leftWithOffset + widthDecimal > canvasWidth) canvasWidth.toFloat() + 1 else rightFloat
+        val bottom = if (topWithOffset + heightDecimal > canvasHeight) canvasHeight.toFloat() + 1 else bottomFloat
+
+        val width = if (left == -1.0f) (right + 1.0f) else (right - left)
+        val height = if (top == -1.0f) (bottom + 1.0f) else (bottom - top)
+
+        // Calculate Lines
+        private val horizontalLine: Line
+            get() {
+                val startX = left
+                val startYDecimal = topWithOffset + heightDecimal.divide(BigTWO, mc)
+                val startY = when {
+                    startYDecimal < BigDecimal.ZERO -> -1f
+                    startYDecimal > canvasHeight -> canvasHeight.toFloat() + 1
+                    else -> startYDecimal.toFloat()
+                }
+                val endXDecimal = leftWithOffset + widthDecimal
+                val endX = if (endXDecimal > canvasWidth) canvasWidth.toFloat() + 1 else endXDecimal.toFloat()
+                return Line(Point(startX, startY), Point(endX, startY))
+            }
+
+
+        private val verticalLine: Line
+            get() {
+                val startXDecimal = leftWithOffset + widthDecimal.divide(BigTWO, mc)
+                val startX = when {
+                    startXDecimal < BigDecimal.ZERO -> -1f
+                    startXDecimal > canvasWidth -> canvasWidth.toFloat() + 1
+                    else -> startXDecimal.toFloat()
+                }
+                val endYDecimal = topWithOffset + heightDecimal
+                val endY = if (endYDecimal > canvasHeight) canvasHeight.toFloat() + 1 else endYDecimal.toFloat()
+                return Line(Point(startX, top), Point(startX, endY))
+            }
+
+
+        private fun drawCrossHair(buffer: PGraphics, dashLength: Float, spaceLength: Float) {
+            horizontalLine.drawDashedLine(buffer, dashLength, spaceLength)
+            verticalLine.drawDashedLine(buffer, dashLength, spaceLength)
         }
 
+        fun draw(buffer: PGraphics, drawCrosshair: Boolean = false) {
+
+            buffer.pushStyle()
+            buffer.noFill()
+            buffer.stroke(Theme.textColor)
+            buffer.strokeWeight(Theme.strokeWeightBounds)
+            buffer.rect(left, top, width, height)
+            if (drawCrosshair) {
+                drawCrossHair(buffer, Theme.dashedLineDashLength, Theme.dashedLineSpaceLength)
+            }
+
+            buffer.popStyle()
+        }
     }
 
-    private data class BoundingBox(val left: Float, val top: Float, val width: Float, val height: Float)
-
-    // all this nonsense with -1 for left and top is necessary to deal with large
-    // floating point numbers when the universe gets big
-    // we calculate the left, top, width and height and then
-    // we figure out if any of it is visible on screen and then make a bounding box that will actually
-    // work no matter how big the universe  - without this code, we would end up with boundaries
-    // that don't always match up with the drawing - and only when the universe gets really large
-    // really tough bug to figure out! consequence of using BigDecimal and converting via toFloat()
-    private fun calculateBoundingBox(bounds: Bounds): BoundingBox {
-        val cellSize = cell.bigSize
-        val leftBD = bounds.left.toBigDecimal()
-        val topBD = bounds.top.toBigDecimal()
-
-        val leftDecimal = leftBD.multiply(cellSize, mc).add(canvasOffsetX)
-        val topDecimal = topBD.multiply(cellSize, mc).add(canvasOffsetY)
-
-        val widthDecimal = bounds.width.toBigDecimal().multiply(cellSize, mc)
-        val heightDecimal = bounds.height.toBigDecimal().multiply(cellSize, mc)
-
-        // doesn't matter if it's arbitrarily (huge universe) far away from the canvas, we just need to push it off screen
-        val drawingLeft = if (leftDecimal < BigDecimal.ZERO) -1.0f else leftDecimal.toFloat()
-        val drawingTop = if (topDecimal < BigDecimal.ZERO) -1.0f else topDecimal.toFloat()
-
-        val calculatedRight = (leftDecimal + widthDecimal).toFloat()
-        val calculatedBottom = (topDecimal + heightDecimal).toFloat()
-
-        val drawingRight = if (leftDecimal + widthDecimal > canvasWidth) canvasWidth.toFloat() + 1 else calculatedRight
-        val drawingBottom =
-            if (topDecimal + heightDecimal > canvasHeight) canvasHeight.toFloat() + 1 else calculatedBottom
-
-        val drawingWidth = if (drawingLeft == -1.0f) (drawingRight + 1.0f) else (drawingRight - drawingLeft)
-        val drawingHeight = if (drawingTop == -1.0f) (drawingBottom + 1.0f) else (drawingBottom - drawingTop)
-
-        return BoundingBox(drawingLeft, drawingTop, drawingWidth, drawingHeight)
-    }
 
     private fun drawBackground() {
         if (isWindowResized) {
@@ -706,7 +765,7 @@ class PatternDrawer(
     }
 
     // the cell width times 2 ^ level will give you the size of the whole universe
-    // you'll need it it to draw the viewport on screen
+// you'll need it it to draw the viewport on screen
     private class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
         private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
 

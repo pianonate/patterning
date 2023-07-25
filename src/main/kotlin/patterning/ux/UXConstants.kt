@@ -6,6 +6,10 @@ open class UXConstants internal constructor() {
         get() = 35
     val controlHighlightCornerRadius: Int
         get() = 10
+    val dashedLineDashLength: Float
+        get() = 6f
+    val dashedLineSpaceLength: Float
+        get() = 2f
     val defaultTextMargin: Int
         get() = 5
     val defaultTextSize: Float
@@ -20,6 +24,10 @@ open class UXConstants internal constructor() {
         get() = 5
     val startupTextSize: Int
         get() = 50
+    val strokeWeightBounds: Float
+        get() = 3f
+    val strokeWeightDashedLine: Float
+        get() = 1f
 
     // colors
     open val backgroundColor: UInt

@@ -76,6 +76,10 @@ object Theme {
         private set
     var controlHighlightCornerRadius = 0
         private set
+    var dashedLineDashLength = 0f
+        private set
+    var dashedLineSpaceLength = 0f
+        private set
     var defaultTextMargin = 0
         private set
     var defaultTextSize = 0f
@@ -90,7 +94,10 @@ object Theme {
         private set
     var startupTextSize = 0
         private set
-
+    var strokeWeightBounds = 0f
+        private set
+    var strokeWeightDashedLine = 0f
+        private set
     var currentThemeType: ThemeType = ThemeType.DARK
         private set
 
@@ -121,6 +128,8 @@ object Theme {
         // sizes and radii
         controlSize = themeConstants.controlSize
         controlHighlightCornerRadius = themeConstants.controlHighlightCornerRadius
+        dashedLineDashLength = themeConstants.dashedLineDashLength
+        dashedLineSpaceLength = themeConstants.dashedLineSpaceLength
         defaultTextMargin = themeConstants.defaultTextMargin
         defaultTextSize = themeConstants.defaultTextSize
         hoverTextSize = themeConstants.hoverTextSize
@@ -128,6 +137,8 @@ object Theme {
         hoverTextMargin = themeConstants.hoverTextMargin
         iconMargin = themeConstants.iconMargin
         startupTextSize = themeConstants.startupTextSize
+        strokeWeightBounds = themeConstants.strokeWeightBounds
+        strokeWeightDashedLine = themeConstants.strokeWeightDashedLine
 
         // strings
         countdownText = themeConstants.countdownText

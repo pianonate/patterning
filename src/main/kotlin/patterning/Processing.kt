@@ -1,5 +1,6 @@
 package patterning
 
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import patterning.actions.MouseEventManager
 import patterning.ux.PatternDrawer
@@ -115,8 +116,8 @@ class Processing : PApplet() {
         goForwardInTime()
     }
 
-    private fun asyncNextGeneration() {
-        life.nextGeneration()
+    private suspend fun asyncNextGeneration() {
+        coroutineScope { life.nextGeneration() }
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
 

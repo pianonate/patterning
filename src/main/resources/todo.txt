@@ -107,4 +107,12 @@ todo: file manager of RLEs
 todo: undo mouse moves? would it make sense to people
 todo: paste logic - move to separate class to handle - just for the sake of keeping patterning.Patterning clean
 todo: at the end of PatternDrawer.undoMovement maybe you show something fun to indicate you've reached the end of the stack. pulse the screen or something
+
+todo: find a threadsafe way to add a sliding window cache hit rate to StatMap - it's hard because you'll need something that is
+      threadsafe because hashmap is changed substantially during nextGeneration calls and the cacheRate needs to interoperate with that
+      if you're using some kind of Deque to keep a list of cache events populated on getOrPut - and without proper synchronization
+      you can slow down the nextGeneration code substantially just to get at the cacheRate data
+
+todo: fit bounds keyboard shortcuts to do F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 which will zoom wo universe -1, universe -2, universe -3, etc.f
+todo: picture in picture of a zoomed in thumbnail of the whole universe - within a panel with a resizable border!
 OCTREE: https://github.com/thwegene/OCT/tree/master

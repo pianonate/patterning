@@ -1,8 +1,11 @@
 package patterning
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import patterning.util.FlexibleInteger
 import patterning.util.StatMap
 import java.nio.IntBuffer
+import java.util.concurrent.atomic.AtomicReference
 
 /*
  great article:  https://www.dev-mind.blog/hashlife/ and code: https://github.com/ngmsoftware/hashlife
@@ -18,16 +21,20 @@ class LifeUniverse internal constructor() {
     // private var hashmap = HashMap<Int, MutableList<InternalNode>>(HASHMAP_INITIAL_CAPACITY)
     private var hashmap = StatMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
 
-    private var emptyTreeCache: MutableMap<Int, TreeNode>
+    private var emptyTreeCache: MutableMap<Int, TreeNode> = HashMap()
     private val level2Cache: MutableMap<Int, TreeNode>
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val ruleB: Int
     private val rulesS: Int
     private var generation: FlexibleInteger
-    private val cacheRate
-        get() = hashmap.hitRate
+
+
+    private val rootReference = AtomicReference<TreeNode>(emptyTree(3))
 
     var root: TreeNode
+        get() = rootReference.get()
+        private set(value) = rootReference.set(value)
+
     val rootBounds: Bounds
         get() = root.bounds
 
@@ -85,9 +92,9 @@ class LifeUniverse internal constructor() {
         // last id for nodes
         lastId = Node.startId
 
-        emptyTreeCache = HashMap()
+        // emptyTreeCache = HashMap()
         level2Cache = HashMap(0x10000)
-        this.root = emptyTree(3)
+        //this.root = emptyTree(3)
         generation = FlexibleInteger.ZERO
 
         // number of generations to calculate at one time, written as 2^n
@@ -315,7 +322,6 @@ class LifeUniverse internal constructor() {
         }
     }
 
-
     // create or search for a node given its children
     private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
         val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
@@ -336,8 +342,8 @@ class LifeUniverse internal constructor() {
 
         val newTreeNode = TreeNode(nw, ne, sw, se, lastId++)
         nodeList.add(newTreeNode)
-
         hashmap[hash] = nodeList
+
         return newTreeNode
     }
 
@@ -348,14 +354,27 @@ class LifeUniverse internal constructor() {
         patternInfo.addOrUpdate("generation", generation)
         patternInfo.addOrUpdate("population", root.population)
         patternInfo.addOrUpdate("lastId", FlexibleInteger(lastId))
-        patternInfo.addOrUpdate("cacheRate", cacheRate)
+        patternInfo.addOrUpdate("hits", hashmap.hits)
+        patternInfo.addOrUpdate("misses", hashmap.misses)
+        patternInfo.addOrUpdate("%", hashmap.hitRate * 100)
+        patternInfo.addOrUpdate("puts", hashmap.puts)
+        patternInfo.addOrUpdate("recurse", recurse)
+        patternInfo.addOrUpdate("quick", quick)
         val bounds = rootBounds
         patternInfo.addOrUpdate("width", bounds.width)
         patternInfo.addOrUpdate("height", bounds.height)
     }
 
-    fun nextGeneration() {
+    private var recurse = 0
+    private var quick = 0
+
+    suspend fun nextGeneration() {
         var currentRoot = this.root
+
+        // each run you can clear the stats so you can see how the cache improves over time
+        hashmap.clearStats()
+        recurse = 0
+        quick = 0
 
         // when you're super stepping you need the first argument re:step to grow it immediately large enough!
         while (currentRoot.level <= step + 2 ||
@@ -367,7 +386,10 @@ class LifeUniverse internal constructor() {
             currentRoot = expandUniverse(currentRoot)
         }
 
-        this.root = nextGenerationRecurse(currentRoot)
+        val nextRoot = nextGenerationRecurse(currentRoot)
+
+        // using the intermediate variable to allow AtomicReference to be used
+        this.root = nextRoot
 
         generation += FlexibleInteger.pow2(step)
     }
@@ -382,17 +404,21 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    private fun nextGenerationRecurse(node: TreeNode): TreeNode {
-        node.cache?.let { return it }
-
+    private suspend fun nextGenerationRecurse(node: TreeNode): TreeNode = coroutineScope {
+        node.nextGenerationCache?.let { return@coroutineScope it }
+        recurse++
 
         if (step == node.level - 2) {
-            return nodeQuickNextGeneration(node, 0)
+            return@coroutineScope nodeQuickNextGeneration(node, 0)
         }
 
         if (node.level == 2) {
-            node.quickCache = node.quickCache ?: nodeLevel2Next(node)
-            return node.quickCache as TreeNode
+            node.level2NextCache = node.level2NextCache ?: nodeLevel2Next(node)
+            return@coroutineScope node.level2NextCache as TreeNode
+        }
+
+        if (!isActive) {
+            return@coroutineScope node
         }
 
         val nw = node.nw as TreeNode
@@ -421,19 +447,26 @@ class LifeUniverse internal constructor() {
         val newSW = nextGenerationRecurse(createNode(n10, n11, n20, n21))
         val newSE = nextGenerationRecurse(createNode(n11, n12, n21, n22))
 
-        return createNode(newNW, newNE, newSW, newSE).also { node.cache = it }
+        return@coroutineScope createNode(newNW, newNE, newSW, newSE).also { node.nextGenerationCache = it }
 
     }
 
-    private fun nodeQuickNextGeneration(node: TreeNode, recurseDepth: Int): TreeNode {
+    private suspend fun nodeQuickNextGeneration(node: TreeNode, recurseDepth: Int): TreeNode = coroutineScope {
         var depth = recurseDepth
 
-        if (node.quickCache != null) {
-            return node.quickCache as TreeNode
+        if (node.level2NextCache != null) {
+            return@coroutineScope node.level2NextCache as TreeNode
         }
+        quick++
+
         if (node.level == 2) {
-            return nodeLevel2Next(node).also { node.quickCache = it }
+            return@coroutineScope nodeLevel2Next(node).also { node.level2NextCache = it }
         }
+
+        if (!isActive) {
+            return@coroutineScope node
+        }
+
         val nw = node.nw
         val ne = node.ne
         val sw = node.sw
@@ -463,12 +496,12 @@ class LifeUniverse internal constructor() {
             depth
         )
         val n22 = nodeQuickNextGeneration(se, depth)
-        return createNode(
+        return@coroutineScope createNode(
             nodeQuickNextGeneration(createNode(n00, n01, n10, n11), depth),
             nodeQuickNextGeneration(createNode(n01, n02, n11, n12), depth),
             nodeQuickNextGeneration(createNode(n10, n11, n20, n21), depth),
             nodeQuickNextGeneration(createNode(n11, n12, n21, n22), depth)
-        ).also { node.quickCache = it }
+        ).also { node.level2NextCache = it }
     }
 
     companion object {
