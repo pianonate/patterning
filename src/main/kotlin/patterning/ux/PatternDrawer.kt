@@ -692,6 +692,12 @@ class PatternDrawer(
     }
 
     private class BoundingBox(bounds: Bounds, cellSize: BigDecimal) {
+        // we draw the box just a bit off screen so it won't be visible
+        // but if the box is more than a pixel, we need to push it further offscreen
+        // since we're using a Theme constant we can change we have to account for it
+        private val positiveOffScreen = Theme.strokeWeightBounds
+        private val negativeOffScreen = -positiveOffScreen
+
         private val leftBD = bounds.left.bigDecimal
         private val topBD = bounds.top.bigDecimal
 
@@ -705,14 +711,16 @@ class PatternDrawer(
         private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
 
         // coerce boundaries to be drawable with floats
-        val left = if (leftWithOffset < BigDecimal.ZERO) -1.0f else leftWithOffset.toFloat()
-        val top = if (topWithOffset < BigDecimal.ZERO) -1.0f else topWithOffset.toFloat()
+        val left = if (leftWithOffset < BigDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
+        val top = if (topWithOffset < BigDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
 
-        val right = if (leftWithOffset + widthDecimal > canvasWidth) canvasWidth.toFloat() + 1 else rightFloat
-        val bottom = if (topWithOffset + heightDecimal > canvasHeight) canvasHeight.toFloat() + 1 else bottomFloat
+        val right =
+            if (leftWithOffset + widthDecimal > canvasWidth) canvasWidth.toFloat() + positiveOffScreen else rightFloat
+        val bottom =
+            if (topWithOffset + heightDecimal > canvasHeight) canvasHeight.toFloat() + positiveOffScreen else bottomFloat
 
-        val width = if (left == -1.0f) (right + 1.0f) else (right - left)
-        val height = if (top == -1.0f) (bottom + 1.0f) else (bottom - top)
+        val width = if (left == negativeOffScreen) (right + positiveOffScreen) else (right - left)
+        val height = if (top == negativeOffScreen) (bottom + positiveOffScreen) else (bottom - top)
 
         // Calculate Lines
         private val horizontalLine: Line
