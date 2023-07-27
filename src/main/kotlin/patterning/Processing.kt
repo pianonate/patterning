@@ -18,12 +18,17 @@ import java.io.IOException
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 
+enum class RunningState {
+    PLAYING,
+    PAUSED,
+    SINGLE_STEP
+}
+
 class Processing : PApplet() {
     var draggingDrawing = false
     private lateinit var life: LifeUniverse
 
     private lateinit var asyncNextGeneration: AsyncCalculationRunner<Int>
-    private val mouseEventManager = MouseEventManager.instance
     private lateinit var drawer: PatternDrawer
 
     // used to control dragging the image around the screen with the mouse
@@ -34,26 +39,40 @@ class Processing : PApplet() {
     // when a mouse has been pressed over a mouse event receiver
     private var storedLife: String = ""
     private var targetStep = 0
-    private var isRunning = false
+    private var currentRunningState = RunningState.PAUSED
+    val getRunningState: RunningState
+        get() = currentRunningState
+
+    var wasSingleStepActivated = false
+
     private var mousePressedOverReceiver = false
-    private var singleStepMode = false
 
     val gps
         get() = asyncNextGeneration.getRate()
 
+
     fun toggleRun() {
-        isRunning = !isRunning
+        when (currentRunningState) {
+            RunningState.PAUSED -> currentRunningState = RunningState.PLAYING
+            RunningState.PLAYING -> currentRunningState = RunningState.PAUSED
+            RunningState.SINGLE_STEP -> {
+                wasSingleStepActivated = true
+            }
+        }
     }
 
     fun run() {
-        isRunning = true
+        if (currentRunningState == RunningState.SINGLE_STEP) return
+        currentRunningState = RunningState.PLAYING
     }
 
     fun runMessage(): String {
         return when {
             asyncNextGeneration.isRunning -> "nextgen"
-            isRunning -> "running"
-            else -> "stopped"
+            currentRunningState == RunningState.PLAYING -> "running"
+            currentRunningState == RunningState.SINGLE_STEP -> "stepmode"
+            currentRunningState == RunningState.PAUSED -> "paused"
+            else -> "unknown"
         }
     }
 
@@ -106,13 +125,7 @@ class Processing : PApplet() {
 
     override fun draw() {
 
-        // goForwardInTime (below) requests a nextGeneration and or a step change
-        // both of which can take a while
-        // given they operate on a separate thread for performance reasons
-        // we don't want to put them before the draw - it will almost always be showing
-        // that it is updatingLife().  so we need to put goForwardInTime _after_ the request to draw
-        drawer.draw(life)
-
+        /**/  drawer.draw(life)
         goForwardInTime()
     }
 
@@ -121,7 +134,9 @@ class Processing : PApplet() {
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
 
+
     private fun goForwardInTime() {
+
         if (!asyncNextGeneration.isRunning) {
             life.step = when {
                 life.step < targetStep -> life.step + 1
@@ -130,21 +145,27 @@ class Processing : PApplet() {
             }
         }
 
-        // don't run generations if we're not running
-        if (!isRunning) return
+        // run generations based on the current state
+        when (currentRunningState) {
+            RunningState.PLAYING, RunningState.SINGLE_STEP -> {
+                if (currentRunningState == RunningState.PLAYING || wasSingleStepActivated) {
+                    val dummy = 0
+                    asyncNextGeneration.startCalculation(dummy)
+                    if (currentRunningState == RunningState.SINGLE_STEP) {
+                        wasSingleStepActivated = false
+                    }
+                }
+            }
 
-        // if (shouldStartComplexCalculationNextGeneration()) {
-        val dummy = 0
-        asyncNextGeneration.startCalculation(dummy)
-        //}
-        if (isRunning && singleStepMode) toggleRun()
+            else -> return
+        }
     }
 
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()
         lastMouseY += mouseY.toFloat()
-        mouseEventManager!!.onMousePressed()
-        mousePressedOverReceiver = mouseEventManager.isMousePressedOverAnyReceiver
+        MouseEventManager.onMousePressed()
+        mousePressedOverReceiver = MouseEventManager.isMousePressedOverAnyReceiver
 
         // If the mouse press is not over any MouseEventReceiver, we consider it as over the drawing.
         draggingDrawing = !mousePressedOverReceiver
@@ -155,7 +176,7 @@ class Processing : PApplet() {
             draggingDrawing = false
         } else {
             mousePressedOverReceiver = false
-            mouseEventManager!!.onMouseReleased()
+            MouseEventManager.onMouseReleased()
         }
         lastMouseX = 0f
         lastMouseY = 0f
@@ -235,7 +256,7 @@ class Processing : PApplet() {
         frame.setLocation(x, y)
     }
 
-    suspend fun getRandomLifeform(reset: Boolean) {
+    fun getRandomLifeform(reset: Boolean) {
         try {
             storedLife = ResourceManager.instance!!.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
         } catch (e: IOException) {
@@ -249,7 +270,9 @@ class Processing : PApplet() {
     fun instantiateLifeform() {
         try {
             // static on patterning.Patterning
-            isRunning = false
+            //isRunning = false
+            currentRunningState =
+                if (currentRunningState == RunningState.SINGLE_STEP) RunningState.SINGLE_STEP else RunningState.PAUSED
             asyncNextGeneration.cancelAndWait()
 
             life = LifeUniverse()
@@ -339,8 +362,12 @@ class Processing : PApplet() {
     }
 
     fun toggleSingleStep() {
-        if (isRunning && !singleStepMode) isRunning = false
-        singleStepMode = !singleStepMode
+        currentRunningState = if (currentRunningState == RunningState.SINGLE_STEP) {
+            RunningState.PAUSED
+        } else {
+            RunningState.SINGLE_STEP
+        }
+        wasSingleStepActivated = false
     }
 
     companion object {

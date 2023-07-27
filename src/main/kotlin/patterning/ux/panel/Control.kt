@@ -17,20 +17,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
 
-    open fun afterInit() {
-        // todo: hack for ToggleIconControl which eventually we'll fix
-    }
-
     init {
         callback = builder.callback
         size = builder.size
         fill = Theme.controlColor
         callback.addObserver(this)
-        MouseEventManager.instance!!.addReceiver(this)
+        MouseEventManager.addReceiver(this)
         icon = loadIcon(builder.iconName)
         val keyCombos = callback.toString()
         hoverMessage = callback.getUsageText() + Theme.shortcutParenStart + keyCombos + Theme.shortcutParenEnd
-        this.afterInit()
     }
 
 

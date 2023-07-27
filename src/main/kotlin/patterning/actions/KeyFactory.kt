@@ -9,6 +9,7 @@ import processing.core.PApplet
 import processing.event.KeyEvent
 
 class KeyFactory(private val patterning: Processing, private val drawer: PatternDrawer) {
+
     private val processing: PApplet = patterning
 
     // todo: turn this into a get() for PatternDrawer
@@ -16,9 +17,8 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     //       then you can move MovementHandler into KeyHandler
     //       and call handleMovementKeys on KeyHandler and pass it a lambda
     //       to call back on to do movement when there are movement keys in the mix
-    //       first get PatternDrawer converted to Kotlin
     fun setupKeyHandler() {
-        val keyHandler = KeyHandler.Builder(processing)
+        KeyHandler.Builder(processing)
             .addKeyCallback(callbackPause)
             .addKeyCallback(callbackZoomIn)
             .addKeyCallback(callbackZoomInCenter)
@@ -32,6 +32,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
             .addKeyCallback(callbackCenterView)
             .addKeyCallback(callbackFitUniverseOnScreen)
             .addKeyCallback(callbackThemeToggle)
+            .addKeyCallback(callbackPerfTest)
             .addKeyCallback(callbackRandomLife)
             .addKeyCallback(callbackSingleStep)
             .addKeyCallback(callbackRewind)
@@ -39,8 +40,9 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
             .addKeyCallback(callbackUndoMovement)
             .addKeyCallback(callbackMovement)
             .addKeyCallback(callbackLoadLifeForm)
-            .build()
-        println(keyHandler.usageText)
+            .build().also {
+                println(it.usageText)
+            }
     }
 
     // callbacks all constructed with factory methods to make them easy to read and write
@@ -134,10 +136,21 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
     val callbackThemeToggle = KeyCallback.createKeyCallback(
         key = SHORTCUT_THEME_TOGGLE,
         invokeFeatureLambda = {
-            if (Theme.currentThemeType == ThemeType.DEFAULT) Theme.setTheme(ThemeType.DARK)
-            else Theme.setTheme(ThemeType.DEFAULT)
+            Theme.setTheme(
+                when (Theme.currentThemeType) {
+                    ThemeType.DEFAULT -> ThemeType.DARK
+                    else -> ThemeType.DEFAULT
+                }
+            )
         },
         getUsageTextLambda = { "toggle between dark and light themes" }
+    )
+    val callbackPerfTest = KeyCallback.createKeyCallback(
+        key = SHORtCUT_PERFTEST,
+        invokeFeatureLambda = {
+
+        },
+        getUsageTextLambda = { "run the performance test" }
     )
 
     private val callbackPaste = KeyCallback.createKeyCallback(
@@ -184,6 +197,7 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PAUSE = ' '
+        private const val SHORtCUT_PERFTEST = 'p'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'
         private const val SHORTCUT_STEP_FASTER = ']'

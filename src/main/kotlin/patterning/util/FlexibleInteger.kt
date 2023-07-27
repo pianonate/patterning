@@ -220,8 +220,17 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
         }
     }
 
-    fun toBigDecimal(): BigDecimal {
+/*    fun toBigDecimal(): BigDecimal {
         return when (value) {
+            is Int -> BigDecimal(value)
+            is Long -> BigDecimal(value)
+            is BigInteger -> BigDecimal(value)
+            else -> BigDecimal(value.toBigIntegerSafe())
+        }
+    }*/
+
+    val bigDecimal: BigDecimal by lazy {
+        when (value) {
             is Int -> BigDecimal(value)
             is Long -> BigDecimal(value)
             is BigInteger -> BigDecimal(value)

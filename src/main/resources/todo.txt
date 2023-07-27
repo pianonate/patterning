@@ -1,4 +1,6 @@
-todo: you're working on parallelizing nodeQuickNextGeneration as it is the one that takes the heat on pattern 5.  you're going to have to make access to hashmap threadsafe and chatgpt is telling you that you'll also need to make decrementHit threadsafe and also the mutableList that's the return value threadsafe - so there's a lot of threadsafe going on...
+bug - draw bounds needs a bigger offscreen offset
+
+todo: perf test that automates invoking each of the 9 loadable files - running them a hundred frames and collecting the memory and duration of each and the total duration at the end of the run
 
 todo: idiomaticize
 
@@ -115,4 +117,10 @@ todo: find a threadsafe way to add a sliding window cache hit rate to StatMap - 
 
 todo: fit bounds keyboard shortcuts to do F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 which will zoom wo universe -1, universe -2, universe -3, etc.f
 todo: picture in picture of a zoomed in thumbnail of the whole universe - within a panel with a resizable border!
-OCTREE: https://github.com/thwegene/OCT/tree/master
+todo: mc format reader
+todo: suck in all known patterns into a repository - make it cloud based? - search it with an llm enabled vector assisted search?
+todo: speed up nodeQuickNextGeneration - you'll need to parallelize at the right place and, especially createNode...
+todo: draw universe one cell at a time into the next generation so you can see how it's changing
+todo: show how it's calculating future generations in nextGeneraiton - i.e. draw the algorithm
+todo: draw the universe in 3D
+todo: OCTREE: https://github.com/thwegene/OCT/tree/master

@@ -212,7 +212,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         }
 
     abstract class Builder<T : Builder<T>?> {
-        @JvmField
         val drawingInformer: DrawingInfoSupplier
         var x = 0
         var y = 0

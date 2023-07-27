@@ -1,6 +1,6 @@
 package patterning.actions
 
-class MouseEventManager private constructor() {
+object MouseEventManager {
     private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
     fun addReceiver(receiver: MouseEventReceiver) {
         mouseEventReceivers.add(receiver)
@@ -32,17 +32,5 @@ class MouseEventManager private constructor() {
             pressedReceiver!!.onMouseReleased()
             pressedReceiver = null
         }
-    }
-
-    companion object {
-        @JvmStatic
-        var instance: MouseEventManager? = null
-            get() {
-                if (field == null) {
-                    field = MouseEventManager()
-                }
-                return field
-            }
-            private set
     }
 }

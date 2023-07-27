@@ -58,7 +58,7 @@ open class UXConstants internal constructor() {
     val shortTransitionDuration: Int
         get() = 300
     val singleModeToggleDuration: Int
-        get() = 200
+        get() = 500
     val startupTextDisplayDuration: Int
         get() = 5000
     val startupTextFadeInDuration: Int

@@ -7,7 +7,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
 import patterning.*
 import patterning.actions.KeyFactory
-import patterning.actions.MouseEventManager.Companion.instance
+import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
 import patterning.util.FlexibleInteger
 import patterning.util.StatMap
@@ -55,7 +55,7 @@ class PatternDrawer(
         fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
             val newLevel = root.level
-            updateLargestDimension(root.bounds.width.max(root.bounds.height))
+            updateLargestDimension(root.bounds)
 
             val halfSizeOffset = -cell.halfUniverseSize(newLevel)
             val universeSize = cell.universeSize(newLevel)
@@ -204,8 +204,6 @@ class PatternDrawer(
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
 
-    // ain't no way to do drawing without a singleton drawables manager
-    private val keyFactory: KeyFactory
     private var cellBorderWidth = 0.0f
 
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
@@ -257,8 +255,7 @@ class PatternDrawer(
                 .displayDuration(Theme.startupTextDisplayDuration.toLong())
         }
 
-        keyFactory = KeyFactory(patterning, this)
-        setupControls()
+        setupControls(KeyFactory(patterning, this))
     }
 
     private val buffer: PGraphics
@@ -271,11 +268,12 @@ class PatternDrawer(
             return widthChanged || heightChanged
         }
 
-    private fun setupControls() {
+    private fun setupControls(keyFactory: KeyFactory) {
 
         // all callbacks have to invoke work - either on the Patterning or PatternDrawer
         // so give'em what they need
         keyFactory.setupKeyHandler()
+
         val panelLeft: ControlPanel
         val panelTop: ControlPanel
         val panelRight: ControlPanel
@@ -295,7 +293,13 @@ class PatternDrawer(
             .addControl("random.png", keyFactory.callbackRandomLife)
             .addControl("stepSlower.png", keyFactory.callbackStepSlower)
             // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-            .addToggleIconControl("pause.png", "play.png", keyFactory.callbackPause, keyFactory.callbackSingleStep)
+            .addPlayPauseControl(
+                "play.png",
+                "pause.png",
+                keyFactory.callbackPause,
+                keyFactory.callbackSingleStep,
+                { patterning.getRunningState }
+            )
             //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
             .addControl("stepFaster.png", keyFactory.callbackStepFaster)
             .addControl("rewind.png", keyFactory.callbackRewind)
@@ -308,7 +312,7 @@ class PatternDrawer(
             .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
             .build()
         val panels = listOf(panelLeft, panelTop, panelRight)
-        Objects.requireNonNull(instance)?.addAll(panels)
+        MouseEventManager.addAll(panels)
         Drawer.addAll(panels)
     }
 
@@ -342,7 +346,7 @@ class PatternDrawer(
         undoDeque.clear()
 
         val bounds = life.rootBounds
-        updateLargestDimension(bounds.width.max(bounds.height))
+        updateLargestDimension(bounds)
         center(bounds, fitBounds = true, saveState = false)
 
         countdownText = createTextPanel(countdownText) {
@@ -352,7 +356,9 @@ class PatternDrawer(
                 AlignHorizontal.CENTER,
                 AlignVertical.CENTER
             )
-                .runMethod { patterning.run() }
+                .runMethod {
+                    patterning.run()
+                }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
                 .textWidth(Optional.of(IntSupplier { processing.width / 2 }))
@@ -365,6 +371,8 @@ class PatternDrawer(
                 .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
         }
 
+        positionMap.clear()
+
     }
 
 
@@ -372,8 +380,8 @@ class PatternDrawer(
         if (saveState) saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = bounds.width.toBigDecimal()
-        val patternHeight = bounds.height.toBigDecimal()
+        val patternWidth = bounds.width.bigDecimal
+        val patternHeight = bounds.height.bigDecimal
 
         if (fitBounds) {
             val widthRatio =
@@ -381,7 +389,6 @@ class PatternDrawer(
             val heightRatio =
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
 
-            // at level 160 or just above, the cell.size becomes zero in the following
             cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
 
@@ -395,8 +402,8 @@ class PatternDrawer(
         val halfDrawingHeight = drawingHeight.divide(BigTWO, mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toBigDecimal() * -bigCell)
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toBigDecimal() * -bigCell)
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal * -bigCell)
 
         updateCanvasOffsets(offsetX, offsetY)
 
@@ -418,6 +425,7 @@ class PatternDrawer(
             patternInfo.forEach { (key, value) ->
                 hudInfo.addOrUpdate(key, value)
             }
+            hudInfo.addOrUpdate("posHits", positionMap.hitRate)
         }
     }
 
@@ -428,7 +436,6 @@ class PatternDrawer(
     fun handlePause() {
         Drawer.takeIf { it.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
-            keyFactory.callbackPause.notifyKeyObservers()
         } ?: patterning.toggleRun()
     }
 
@@ -505,7 +512,7 @@ class PatternDrawer(
             runBlocking {
                 val divisor = 4.toBigDecimal()
                 largePopulationThreshold =
-                    FlexibleInteger(startingNode.population.toBigDecimal().divide(divisor, mc).toBigInteger())
+                    FlexibleInteger(startingNode.population.bigDecimal.divide(divisor, mc).toBigInteger())
                 // largePopulationThreshold = FlexibleInteger.MAX_VALUE
                 drawNodeRecurse(startingNode, size, offsetX, offsetY)
             }
@@ -523,6 +530,8 @@ class PatternDrawer(
 
     private var largePopulationThreshold = FlexibleInteger.ZERO
 
+    private data class PositionKey(val pos: BigDecimal, val offset: BigDecimal)
+
     private suspend fun drawNodeRecurse(
         node: Node,
         size: BigDecimal,
@@ -538,8 +547,11 @@ class PatternDrawer(
             return
         }
 
-        val leftWithOffset = left + canvasOffsetX
-        val topWithOffset = top + canvasOffsetY
+        //val leftWithOffset = left + canvasOffsetX
+        // val topWithOffset = top + canvasOffsetY
+
+        val leftWithOffset = getMappedPosition(left, canvasOffsetX)
+        val topWithOffset = getMappedPosition(top, canvasOffsetY)
 
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
@@ -550,8 +562,10 @@ class PatternDrawer(
         } else if (node is TreeNode) {
 
             val halfSize = cell.halfUniverseSize(node.level)
-            val leftHalfSize = left + halfSize
-            val topHalfSize = top + halfSize
+            /*            val leftHalfSize = left + halfSize
+                        val topHalfSize = top + halfSize*/
+            val leftHalfSize = getMappedPosition(left, halfSize)
+            val topHalfSize = getMappedPosition(top, halfSize)
 
             if (node.population > largePopulationThreshold) {
                 coroutineScope {
@@ -585,6 +599,7 @@ class PatternDrawer(
         canvasOffsetX = offsetX
         canvasOffsetY = offsetY
         nodePath.offsetsMoved = true
+        // positionMap.clear()
     }
 
     fun zoomXY(`in`: Boolean, x: Float, y: Float) {
@@ -677,14 +692,14 @@ class PatternDrawer(
     }
 
     private class BoundingBox(bounds: Bounds, cellSize: BigDecimal) {
-        private val leftBD = bounds.left.toBigDecimal()
-        private val topBD = bounds.top.toBigDecimal()
+        private val leftBD = bounds.left.bigDecimal
+        private val topBD = bounds.top.bigDecimal
 
         private val leftWithOffset = leftBD.multiply(cellSize, mc).add(canvasOffsetX)
         private val topWithOffset = topBD.multiply(cellSize, mc).add(canvasOffsetY)
 
-        private val widthDecimal = bounds.width.toBigDecimal().multiply(cellSize, mc)
-        private val heightDecimal = bounds.height.toBigDecimal().multiply(cellSize, mc)
+        private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, mc)
+        private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, mc)
 
         private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
         private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
@@ -845,7 +860,7 @@ class PatternDrawer(
             // these values are calculated so often that caching really seems to help
             // cell size as a big decimal times the requested size of universe at a given level
             // using MathContext to make sure we don't lose precision
-            return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).toBigDecimal(), mc) }
+            return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).bigDecimal, mc) }
 
         }
 
@@ -889,7 +904,8 @@ class PatternDrawer(
         // as nodes are created their bounds are calculated
         // when the bounds get larger, we need a math context to draw with that
         // allows the pattern to be drawn with the necessary precision
-        private fun updateLargestDimension(dimension: FlexibleInteger) {
+        private fun updateLargestDimension(bounds: Bounds) {
+            val dimension = bounds.width.max(bounds.height)
             if (dimension > largestDimension) {
                 largestDimension = dimension
                 // Assuming minBaseToExceed is a function on FlexibleInteger
@@ -911,6 +927,11 @@ class PatternDrawer(
         private var canvasWidth: BigDecimal = BigDecimal.ZERO
         private var canvasHeight: BigDecimal = BigDecimal.ZERO
         private lateinit var cell: Cell
+        private val positionMap = StatMap(mutableMapOf<PositionKey, BigDecimal>())
+
+        private fun getMappedPosition(pos: BigDecimal, offset: BigDecimal): BigDecimal =
+            positionMap.getOrPut(PositionKey(pos, offset)) { pos + offset }
+
 
         // used by PatternDrawer a well as DrawNodePath
         // maintains no state so it can live here as a utility function
@@ -924,12 +945,20 @@ class PatternDrawer(
                 return false
             }
 
-            val left = nodeLeft + canvasOffsetX
-            val top = nodeTop + canvasOffsetY
+            /*            val left = nodeLeft + canvasOffsetX
+                        val top = nodeTop + canvasOffsetY*/
+            // positionMap.getOrPut(PositionKey(nodeLeft, canvasOffsetX)) { nodeLeft + canvasOffsetX }
+            // positionMap.getOrPut(PositionKey(nodeTop, canvasOffsetY)) { nodeTop + canvasOffsetY }
+            val left = getMappedPosition(nodeLeft, canvasOffsetX)
+            val top = getMappedPosition(nodeTop, canvasOffsetY)
+
 
             // No need to draw anything not visible on screen
-            val right = left + size
-            val bottom = top + size
+            /*      val right = left + size
+                  val bottom = top + size*/
+            val right = getMappedPosition(left, size)
+            val bottom = getMappedPosition(top, size)
+
 
             // left and top are defined by the zoom level (cell size) multiplied
             // by half the universe size which we start out with at the nw corner which is half the size negated
