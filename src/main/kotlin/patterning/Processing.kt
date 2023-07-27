@@ -18,17 +18,11 @@ import java.io.IOException
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 
-enum class RunningState {
-    PLAYING,
-    PAUSED,
-    SINGLE_STEP
-}
-
 class Processing : PApplet() {
     var draggingDrawing = false
     private lateinit var life: LifeUniverse
 
-    private lateinit var asyncNextGeneration: AsyncCalculationRunner<Int>
+    private lateinit var asyncNextGeneration: AsyncCalculationRunner
     private lateinit var drawer: PatternDrawer
 
     // used to control dragging the image around the screen with the mouse
@@ -39,42 +33,11 @@ class Processing : PApplet() {
     // when a mouse has been pressed over a mouse event receiver
     private var storedLife: String = ""
     private var targetStep = 0
-    private var currentRunningState = RunningState.PAUSED
-    val getRunningState: RunningState
-        get() = currentRunningState
-
-    var wasSingleStepActivated = false
 
     private var mousePressedOverReceiver = false
 
     val gps
         get() = asyncNextGeneration.getRate()
-
-
-    fun toggleRun() {
-        when (currentRunningState) {
-            RunningState.PAUSED -> currentRunningState = RunningState.PLAYING
-            RunningState.PLAYING -> currentRunningState = RunningState.PAUSED
-            RunningState.SINGLE_STEP -> {
-                wasSingleStepActivated = true
-            }
-        }
-    }
-
-    fun run() {
-        if (currentRunningState == RunningState.SINGLE_STEP) return
-        currentRunningState = RunningState.PLAYING
-    }
-
-    fun runMessage(): String {
-        return when {
-            asyncNextGeneration.isRunning -> "nextgen"
-            currentRunningState == RunningState.PLAYING -> "running"
-            currentRunningState == RunningState.SINGLE_STEP -> "stepmode"
-            currentRunningState == RunningState.PAUSED -> "paused"
-            else -> "unknown"
-        }
-    }
 
     override fun settings() {
         // on startup read the size from the json file
@@ -107,7 +70,7 @@ class Processing : PApplet() {
 
         surface.setResizable(true)
         targetStep = 0
-        asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { _: Int -> asyncNextGeneration() }
+        asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { asyncNextGeneration() }
 
         loadSavedWindowPositions()
         drawer = PatternDrawer(this)
@@ -125,7 +88,7 @@ class Processing : PApplet() {
 
     override fun draw() {
 
-        /**/  drawer.draw(life)
+        drawer.draw(life)
         goForwardInTime()
     }
 
@@ -145,20 +108,8 @@ class Processing : PApplet() {
             }
         }
 
-        // run generations based on the current state
-        when (currentRunningState) {
-            RunningState.PLAYING, RunningState.SINGLE_STEP -> {
-                if (currentRunningState == RunningState.PLAYING || wasSingleStepActivated) {
-                    val dummy = 0
-                    asyncNextGeneration.startCalculation(dummy)
-                    if (currentRunningState == RunningState.SINGLE_STEP) {
-                        wasSingleStepActivated = false
-                    }
-                }
-            }
-
-            else -> return
-        }
+        if (RunningState.shouldAdvance())
+            asyncNextGeneration.startCalculation()
     }
 
     override fun mousePressed() {
@@ -269,10 +220,8 @@ class Processing : PApplet() {
 
     fun instantiateLifeform() {
         try {
-            // static on patterning.Patterning
-            //isRunning = false
-            currentRunningState =
-                if (currentRunningState == RunningState.SINGLE_STEP) RunningState.SINGLE_STEP else RunningState.PAUSED
+
+            RunningState.pause()
             asyncNextGeneration.cancelAndWait()
 
             life = LifeUniverse()
@@ -359,15 +308,6 @@ class Processing : PApplet() {
 
     fun centerView() {
         drawer.center(life.rootBounds, fitBounds = false, saveState = true)
-    }
-
-    fun toggleSingleStep() {
-        currentRunningState = if (currentRunningState == RunningState.SINGLE_STEP) {
-            RunningState.PAUSED
-        } else {
-            RunningState.SINGLE_STEP
-        }
-        wasSingleStepActivated = false
     }
 
     companion object {

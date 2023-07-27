@@ -2,6 +2,8 @@ todo: perf test that automates invoking each of the 9 loadable files - running t
 
 todo: idiomaticize
 
+todo: super bounds fit at universe sizes up - maybe with a B1 B2, etc. key combination
+
 todo: lightspeed - speed up 1 step every frame - as you did in texting... but allow for starting and stopping lightspeed
 
 todo: right now Theme has a chicken/egg situation with initializing ColorConstant objects before Theme.themeTransitionDuration is set

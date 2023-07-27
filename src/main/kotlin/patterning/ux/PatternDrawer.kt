@@ -298,7 +298,6 @@ class PatternDrawer(
                 "pause.png",
                 keyFactory.callbackPause,
                 keyFactory.callbackSingleStep,
-                { patterning.getRunningState }
             )
             //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
             .addControl("stepFaster.png", keyFactory.callbackStepFaster)
@@ -357,7 +356,7 @@ class PatternDrawer(
                 AlignVertical.CENTER
             )
                 .runMethod {
-                    patterning.run()
+                    RunningState.run()
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
@@ -418,7 +417,7 @@ class PatternDrawer(
             hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", patterning.gps)
             hudInfo.addOrUpdate("cell", cell.size)
-            hudInfo.addOrUpdate("running", patterning.runMessage())
+            hudInfo.addOrUpdate("running", RunningState.runMessage())
             hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.patternInfo.getData()
@@ -436,7 +435,7 @@ class PatternDrawer(
     fun handlePause() {
         Drawer.takeIf { it.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
-        } ?: patterning.toggleRun()
+        } ?: RunningState.toggleRunning()
     }
 
     private fun updateWindowResized() {

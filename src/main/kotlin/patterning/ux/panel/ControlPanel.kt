@@ -1,6 +1,5 @@
 package patterning.ux.panel
 
-import patterning.RunningState
 import patterning.actions.KeyCallback
 import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
@@ -40,7 +39,6 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             pauseIconName: String,
             callback: KeyCallback,
             modeChangeCallback: KeyCallback,
-            getRunningState: () -> RunningState
         ): Builder {
             val c: Control = PlayPauseControl.Builder(
                 drawingInformer,
@@ -49,7 +47,6 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 playIconName,
                 pauseIconName,
                 Theme.controlSize,
-                getRunningState
             ).build()
             addPanel(c)
             return this

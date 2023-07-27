@@ -2,6 +2,7 @@ package patterning.actions
 
 import kotlinx.coroutines.runBlocking
 import patterning.Processing
+import patterning.RunningState
 import patterning.ux.PatternDrawer
 import patterning.ux.Theme
 import patterning.ux.ThemeType
@@ -186,7 +187,8 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
     val callbackSingleStep = KeyCallback.createKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
-        invokeFeatureLambda = { patterning.toggleSingleStep() },
+        // invokeFeatureLambda = { patterning.toggleSingleStep() },
+        invokeFeatureLambda = { RunningState.toggleSingleStep() },
         getUsageTextLambda = { "in single step mode, advanced one frame at a time" },
         invokeModeChangeLambda = { true }
     )

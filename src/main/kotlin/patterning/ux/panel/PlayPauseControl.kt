@@ -1,6 +1,7 @@
 package patterning.ux.panel
 
 import kotlinx.coroutines.*
+import patterning.RunningMode
 import patterning.RunningState
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
@@ -14,7 +15,6 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
     private val playIcon: PImage
     private var currentIcon: PImage
     private val modeChangeCallback: KeyCallback
-    private val getRunningState: () -> RunningState
 
     init {
         pauseIcon = loadIcon(builder.pausedIconName)
@@ -22,7 +22,6 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
         modeChangeCallback = builder.modeChangeCallback
         modeChangeCallback.addObserver(this)
         currentIcon = playIcon
-        getRunningState = builder.getRunningState
     }
 
     override fun getCurrentIcon(): PImage {
@@ -33,8 +32,8 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
         highlightFromKeyPress()
 
         if (observer.invokeModeChange()) {
-            when (getRunningState()) {
-                RunningState.SINGLE_STEP -> {
+            when (RunningState.runningMode) {
+                RunningMode.SINGLE_STEP -> {
                     currentIcon = playIcon
                 }
                 else -> toggleIcon()
@@ -54,12 +53,12 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
     private var timerJob: Job? = null
 
     private fun toggleIcon() {
-        when (getRunningState()) {
-            RunningState.PLAYING -> {
+        when (RunningState.runningMode) {
+            RunningMode.PLAYING -> {
                 currentIcon = pauseIcon
             }
 
-            RunningState.PAUSED, RunningState.SINGLE_STEP -> {
+            RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
                 currentIcon = pauseIcon
                 timerJob?.cancel()
                 timerJob = launch {
@@ -81,7 +80,6 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
         iconName: String?,
         val pausedIconName: String,
         size: Int,
-        val getRunningState: () -> RunningState
 
     ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
         override fun self(): Builder {
