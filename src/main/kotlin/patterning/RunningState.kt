@@ -6,11 +6,16 @@ enum class RunningMode {
     SINGLE_STEP
 }
 
+interface RunningModeObserver {
+    fun onRunningModeChange()
+}
+
 object RunningState {
 
     val runningMode: RunningMode
         get() = currentRunningMode
 
+    private val observers = mutableListOf<RunningModeObserver>()
     private var currentRunningMode = RunningMode.PAUSED
     private var wasSingleStepActivated = false
 
@@ -24,13 +29,25 @@ object RunningState {
         }
     }
 
-    fun toggleSingleStep() {
+    fun toggleRunnningMode() {
         currentRunningMode = if (currentRunningMode == RunningMode.SINGLE_STEP) {
             RunningMode.PAUSED
         } else {
             RunningMode.SINGLE_STEP
         }
         wasSingleStepActivated = false
+        notifyObservers()  // Add this line to notify PlayPauseControl when toggleSingleStep() is called.
+    }
+
+    fun addObserver(observer: RunningModeObserver) {
+        observers.add(observer)
+    }
+
+
+    private fun notifyObservers() {
+        for (observer in observers) {
+            observer.onRunningModeChange()
+        }
     }
 
     fun run() {

@@ -2,6 +2,7 @@ package patterning.ux.panel
 
 import kotlinx.coroutines.*
 import patterning.RunningMode
+import patterning.RunningModeObserver
 import patterning.RunningState
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
@@ -9,19 +10,25 @@ import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 import processing.core.PImage
 
-class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by CoroutineScope(Dispatchers.Default) {
+class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver,
+    CoroutineScope by CoroutineScope(Dispatchers.Default) {
 
     private val pauseIcon: PImage
     private val playIcon: PImage
     private var currentIcon: PImage
-    private val modeChangeCallback: KeyCallback
+    private var runningModeChanged = false
 
     init {
         pauseIcon = loadIcon(builder.pausedIconName)
         playIcon = super.icon
-        modeChangeCallback = builder.modeChangeCallback
-        modeChangeCallback.addObserver(this)
         currentIcon = playIcon
+        // allows for highlighting playpause whenever the single step mode is changed
+        RunningState.addObserver(this)
+    }
+
+    override fun onRunningModeChange() {
+        runningModeChanged = true
+        highlightFromKeyPress()
     }
 
     override fun getCurrentIcon(): PImage {
@@ -31,22 +38,20 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
     override fun notifyKeyPress(observer: KeyObservable) {
         highlightFromKeyPress()
 
-        if (observer.invokeModeChange()) {
+        if (runningModeChanged) {
             when (RunningState.runningMode) {
                 RunningMode.SINGLE_STEP -> {
                     currentIcon = playIcon
                 }
+
                 else -> toggleIcon()
             }
+            runningModeChanged = false
         } else toggleIcon()
     }
 
     override fun onMouseReleased() {
         super.onMouseReleased() // this will change the play pause state
-/*        if (patterning.ux.PatternDrawer.countdownInterrupted) {
-            patterning.ux.PatternDrawer.countdownInterrupted = false
-            return
-        }*/
         toggleIcon()
     }
 
@@ -76,12 +81,11 @@ class PlayPauseControl(builder: Builder) : Control(builder), CoroutineScope by C
     class Builder(
         drawingInformer: DrawingInfoSupplier?,
         callback: KeyCallback?,
-        val modeChangeCallback: KeyCallback,
         iconName: String?,
         val pausedIconName: String,
         size: Int,
 
-    ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
+        ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
         override fun self(): Builder {
             return this
         }

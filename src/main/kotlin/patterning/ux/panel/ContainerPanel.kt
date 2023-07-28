@@ -5,7 +5,7 @@ import patterning.ux.informer.DrawingInformer
 import processing.core.PGraphics
 
 abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel(builder) {
-    private val childPanels: List<Panel>
+    protected val childPanels: List<Panel>
     val orientation: Orientation
 
     init {
@@ -18,7 +18,9 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             // rather than the UXBuffer, which is the more common case...
             child.parentPanel = this
             child.drawingInformer =
-                DrawingInformer({ containerPanelBuffer }, { drawingInformer.isResized() }) { drawingInformer.isDrawing() }
+                DrawingInformer(
+                    { containerPanelBuffer },
+                    { drawingInformer.isResized() }) { drawingInformer.isDrawing() }
         }
         orientation = builder.orientation
         updatePanelSize()
@@ -63,7 +65,6 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
         }
     }
 
-    // public abstract static class Builder extends Panel.Builder<Builder> {
     abstract class Builder<P : Builder<P>>  // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
         (drawingInformer: DrawingInfoSupplier?, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
@@ -71,7 +72,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             drawingInformer!!, hAlign!!, vAlign!!
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
-        @JvmField
+
         var orientation = Orientation.HORIZONTAL
         protected open fun setOrientation(orientation: Orientation): P {
             this.orientation = orientation

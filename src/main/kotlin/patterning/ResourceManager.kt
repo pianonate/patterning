@@ -98,9 +98,7 @@ class ResourceManager private constructor() {
     }
 
     companion object {
-        @JvmField
-        var RLE_DIRECTORY = "rle"
-        @JvmStatic
+        val RLE_DIRECTORY = "rle"
         var instance: ResourceManager? = null
             get() {
                 if (field == null) {

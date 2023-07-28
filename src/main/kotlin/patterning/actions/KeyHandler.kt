@@ -3,16 +3,30 @@ package patterning.actions
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyHandler private constructor(builder: Builder) {
-    private val keyCallbacks: Map<Set<KeyCombo>, KeyCallback>
+object KeyHandler {
 
-    init {
-        keyCallbacks = builder.keyCallbacks
-        // this registration is what keeps a reference of KeyHandler around
-        // for the duration of the program even though you don't explicitly
-        // store it anywhere else...
-        builder.processing.registerMethod("keyEvent", this)
+    private val _pressedKeys: MutableSet<Int> = mutableSetOf()
+    val pressedKeys: Set<Int> get() = _pressedKeys
+
+    private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
+
+    fun registerKeyHandler(processing: PApplet) {
+        processing.registerMethod("keyEvent", this)
     }
+
+    fun addKeyCallback(callback: KeyCallback) {
+        val keyCombos = callback.keyCombos
+        val duplicateKeyCombos = keyCallbacks.keys.flatten().intersect(keyCombos)
+        require(duplicateKeyCombos.isEmpty()) {
+            "The following key combos are already associated with another callback: ${
+                duplicateKeyCombos.joinToString(
+                    ", "
+                )
+            }"
+        }
+        keyCallbacks[keyCombos] = callback
+    }
+
 
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
@@ -23,7 +37,10 @@ class KeyHandler private constructor(builder: Builder) {
         if (event.action == KeyEvent.PRESS) {
             _pressedKeys.add(keyCode)
             matchingCallback.invokeFeature()
-            matchingCallback.notifyKeyObservers()
+            // Check if matchingCallback is KeyObservable
+            if (matchingCallback is KeyObservable) {
+                matchingCallback.notifyKeyObservers()
+            }
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)
@@ -50,29 +67,4 @@ class KeyHandler private constructor(builder: Builder) {
 
             return usageText.toString()
         }
-
-    class Builder(val processing: PApplet) {
-        val keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
-
-        fun addKeyCallback(callback: KeyCallback): Builder {
-            val keyCombos = callback.keyCombos
-            val duplicateKeyCombos = findDuplicateKeyCombos(keyCombos)
-            require(duplicateKeyCombos.isEmpty()) {
-                "The following key combos are already associated with another callback: ${duplicateKeyCombos.joinToString(", ")}"
-            }
-            keyCallbacks[keyCombos] = callback
-            return this
-        }
-
-        private fun findDuplicateKeyCombos(keyCombos: Set<KeyCombo>): Set<KeyCombo> {
-            return keyCallbacks.keys.flatten().intersect(keyCombos)
-        }
-
-        fun build(): KeyHandler = KeyHandler(this)
-    }
-
-    companion object {
-        private val _pressedKeys: MutableSet<Int> = mutableSetOf()
-        val pressedKeys: Set<Int> get() = _pressedKeys
-    }
 }

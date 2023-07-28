@@ -10,7 +10,7 @@ import processing.core.PVector
 import java.util.*
 
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
-    private val callback: KeyCallback
+    internal val keyCallback: ControlKeyCallback
     private val size: Int
     var isHighlightFromKeypress = false
     protected var icon: PImage
@@ -18,14 +18,20 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private val hoverMessage: String
 
     init {
-        callback = builder.callback
+        //callback = builder.callback
         size = builder.size
         fill = Theme.controlColor
-        callback.addObserver(this)
+        keyCallback = registerCallback(builder.callback)
         MouseEventManager.addReceiver(this)
         icon = loadIcon(builder.iconName)
-        val keyCombos = callback.toString()
-        hoverMessage = callback.getUsageText() + Theme.shortcutParenStart + keyCombos + Theme.shortcutParenEnd
+        val keyCombos = keyCallback.toString()
+        hoverMessage = keyCallback.getUsageText() + Theme.shortcutParenStart + keyCombos + Theme.shortcutParenEnd
+    }
+
+    protected fun registerCallback(callback: KeyCallback): ControlKeyCallback {
+        val keyCallback = ControlKeyCallback(callback, this)
+        KeyHandler.addKeyCallback(keyCallback)
+        return keyCallback
     }
 
 
@@ -214,7 +220,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
         if (isMouseOverMe) {
-            callback.invokeFeature() // Specific to Control
+            keyCallback.invokeFeature() // Specific to Control
         }
     }
 

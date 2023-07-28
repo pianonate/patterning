@@ -5,6 +5,7 @@ import patterning.ux.Theme
 import patterning.ux.informer.DrawingInfoSupplier
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
+
     class Builder(drawingInformer: DrawingInfoSupplier?, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
         ContainerPanel.Builder<Builder>(drawingInformer, hAlign, vAlign) {
         public override fun setOrientation(orientation: Orientation): Builder {
@@ -38,12 +39,10 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             playIconName: String,
             pauseIconName: String,
             callback: KeyCallback,
-            modeChangeCallback: KeyCallback,
         ): Builder {
             val c: Control = PlayPauseControl.Builder(
                 drawingInformer,
                 callback,
-                modeChangeCallback,
                 playIconName,
                 pauseIconName,
                 Theme.controlSize,

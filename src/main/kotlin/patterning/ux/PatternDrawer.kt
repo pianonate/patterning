@@ -255,7 +255,9 @@ class PatternDrawer(
                 .displayDuration(Theme.startupTextDisplayDuration.toLong())
         }
 
-        setupControls(KeyFactory(patterning, this))
+        val keyFactory = KeyFactory(patterning, this)
+        keyFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
+        setupControls(keyFactory)
     }
 
     private val buffer: PGraphics
@@ -269,10 +271,6 @@ class PatternDrawer(
         }
 
     private fun setupControls(keyFactory: KeyFactory) {
-
-        // all callbacks have to invoke work - either on the Patterning or PatternDrawer
-        // so give'em what they need
-        keyFactory.setupKeyHandler()
 
         val panelLeft: ControlPanel
         val panelTop: ControlPanel
@@ -297,7 +295,6 @@ class PatternDrawer(
                 "play.png",
                 "pause.png",
                 keyFactory.callbackPause,
-                keyFactory.callbackSingleStep,
             )
             //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
             .addControl("stepFaster.png", keyFactory.callbackStepFaster)
@@ -311,6 +308,7 @@ class PatternDrawer(
             .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
             .build()
         val panels = listOf(panelLeft, panelTop, panelRight)
+
         MouseEventManager.addAll(panels)
         Drawer.addAll(panels)
     }

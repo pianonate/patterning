@@ -2,6 +2,7 @@ package patterning
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.ux.PatternDrawer
 import patterning.ux.Theme
@@ -62,18 +63,19 @@ class Processing : PApplet() {
     }
 
     override fun setup() {
-        try {
-            Theme.initialize(this)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        Theme.initialize(this)
+        KeyHandler.registerKeyHandler(this)
 
         surface.setResizable(true)
         targetStep = 0
         asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { asyncNextGeneration() }
 
         loadSavedWindowPositions()
+
         drawer = PatternDrawer(this)
+            .also {
+                println(KeyHandler.usageText)
+            }
 
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
