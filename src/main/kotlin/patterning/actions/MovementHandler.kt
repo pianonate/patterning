@@ -56,14 +56,14 @@ class MovementHandler(private val drawer: PatternDrawer) {
 
         private val pressedKeys = KeyHandler.pressedKeys
         private val directions = arrayOf(
-                intArrayOf(WEST, 0, -1),
-                intArrayOf(NORTH, -1, 0),
-                intArrayOf(EAST, 0, 1),
-                intArrayOf(SOUTH, 1, 0),
-                intArrayOf(NORTHWEST, -1, -1),
-                intArrayOf(NORTHEAST, -1, 1),
-                intArrayOf(SOUTHWEST, 1, -1),
-                intArrayOf(SOUTHEAST, 1, 1)
+            intArrayOf(WEST, 0, -1),
+            intArrayOf(NORTH, -1, 0),
+            intArrayOf(EAST, 0, 1),
+            intArrayOf(SOUTH, 1, 0),
+            intArrayOf(NORTHWEST, -1, -1),
+            intArrayOf(NORTHEAST, -1, 1),
+            intArrayOf(SOUTHWEST, 1, -1),
+            intArrayOf(SOUTHEAST, 1, 1)
         )
     }
 }

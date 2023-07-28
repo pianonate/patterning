@@ -1,3 +1,4 @@
 patterning.actions
 - KeyCallback
 - KeyCombo
+- KeyFactory - not completely happy yet...

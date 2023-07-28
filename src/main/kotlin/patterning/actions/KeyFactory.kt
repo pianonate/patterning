@@ -13,11 +13,6 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
     private val processing: PApplet = patterning
 
-    // todo: turn this into a get() for PatternDrawer
-    //       it can be constructed in the init and returned as a val
-    //       then you can move MovementHandler into KeyHandler
-    //       and call handleMovementKeys on KeyHandler and pass it a lambda
-    //       to call back on to do movement when there are movement keys in the mix
     fun setupKeyHandler() {
         KeyHandler.Builder(processing)
             .addKeyCallback(callbackPause)
@@ -187,7 +182,6 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
 
     val callbackSingleStep = KeyCallback.createKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
-        // invokeFeatureLambda = { patterning.toggleSingleStep() },
         invokeFeatureLambda = { RunningState.toggleSingleStep() },
         getUsageTextLambda = { "in single step mode, advanced one frame at a time" },
         invokeModeChangeLambda = { true }
@@ -208,7 +202,6 @@ class KeyFactory(private val patterning: Processing, private val drawer: Pattern
         private const val SHORTCUT_ZOOM_OUT = '-'
         private const val SHORTCUT_UNDO = 'z'
         private const val SHORTCUT_ZOOM_CENTERED = 'z'
-
         // private const val SHORTCUT_DRAW_SPEED = 's'
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
