@@ -1,14 +1,14 @@
 package patterning.actions
 
 import kotlinx.coroutines.runBlocking
-import patterning.Processing
+import patterning.PatterningPApplet
 import patterning.RunningState
 import patterning.Theme
 import patterning.ThemeType
 import patterning.life.LifeDrawer
 import processing.event.KeyEvent
 
-class KeyFactory(private val processing: Processing, private val drawer: LifeDrawer) {
+class KeyFactory(private val patterningPApplet: PatterningPApplet, private val drawer: LifeDrawer) {
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -60,25 +60,25 @@ class KeyFactory(private val processing: Processing, private val drawer: LifeDra
     private val callbackZoomIn = SimpleKeyCallback(
         // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
-        invokeFeatureLambda = { drawer.zoomXY(true, processing.mouseX.toFloat(), processing.mouseY.toFloat()) },
+        invokeFeatureLambda = { drawer.zoomXY(true, patterningPApplet.mouseX.toFloat(), patterningPApplet.mouseY.toFloat()) },
         usage = "zoom in centered on the mouse"
     )
 
     val callbackZoomInCenter = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_CENTERED,
-        invokeFeatureLambda = { drawer.zoomXY(true, processing.width.toFloat() / 2, processing.height.toFloat() / 2) },
+        invokeFeatureLambda = { drawer.zoomXY(true, patterningPApplet.width.toFloat() / 2, patterningPApplet.height.toFloat() / 2) },
         usage = "zoom in centered on the middle of the screen"
     )
 
     val callbackZoomOutCenter = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
-        invokeFeatureLambda = { drawer.zoomXY(false, processing.width.toFloat() / 2, processing.height.toFloat() / 2) },
+        invokeFeatureLambda = { drawer.zoomXY(false, patterningPApplet.width.toFloat() / 2, patterningPApplet.height.toFloat() / 2) },
         usage = "zoom out centered on the middle of the screen"
     )
 
     private val callbackZoomOut = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_OUT,
-        invokeFeatureLambda = { drawer.zoomXY(false, processing.mouseX.toFloat(), processing.mouseY.toFloat()) },
+        invokeFeatureLambda = { drawer.zoomXY(false, patterningPApplet.mouseX.toFloat(), patterningPApplet.mouseY.toFloat()) },
         usage = "zoom out centered on the mouse"
     )
 

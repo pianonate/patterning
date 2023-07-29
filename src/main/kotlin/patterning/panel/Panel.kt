@@ -4,7 +4,7 @@ import java.awt.Component
 import java.awt.MouseInfo
 import java.util.OptionalInt
 import patterning.Drawable
-import patterning.Processing
+import patterning.PatterningPApplet
 import patterning.Theme
 import patterning.actions.MouseEventReceiver
 import patterning.informer.DrawingInfoSupplier
@@ -191,7 +191,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
                 val processing = parentPanel!!.panelBuffer.parent
 
                 // our Patterning class extends Processing so we can use it here also
-                val patterning = processing as Processing
+                val patterning = processing as PatterningPApplet
                 if (patterning.draggingDrawing) {
                     false
                 } else {

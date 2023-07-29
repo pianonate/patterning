@@ -3,7 +3,6 @@ package patterning
 import processing.core.PApplet
 
 object Theme {
-    private lateinit var p: PApplet
 
     // colors
     private lateinit var _backgroundColor: ColorConstant
@@ -150,7 +149,6 @@ object Theme {
     }
 
     fun initialize(p: PApplet) {
-        Theme.p = p
         _backgroundColor = ColorConstant(p)
         _cellColor = ColorConstant(p)
         _controlColor = ColorConstant(p)

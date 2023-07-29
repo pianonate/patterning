@@ -16,7 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
 import patterning.Drawer
-import patterning.Processing
+import patterning.PatterningPApplet
 import patterning.RunningState
 import patterning.Theme
 import patterning.actions.KeyFactory
@@ -49,7 +49,7 @@ class LifeDrawer(
     private val asyncNextGeneration: AsyncCalculationRunner
     private var targetStep = 0
     private val drawingInformer: DrawingInfoSupplier
-    private val patterning: Processing = processing as Processing
+    private val patterning: PatterningPApplet = processing as PatterningPApplet
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
 
