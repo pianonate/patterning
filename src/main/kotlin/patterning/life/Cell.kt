@@ -51,7 +51,7 @@ import patterning.util.StatMap
         // these values are calculated so often that caching really seems to help
         // cell size as a big decimal times the requested size of universe at a given level
         // using MathContext to make sure we don't lose precision
-        return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).bigDecimal, LifeDrawer.mc) }
+        return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).bigDecimal, LifePattern.mc) }
 
     }
 

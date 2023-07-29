@@ -185,7 +185,7 @@ class LifeUniverse internal constructor() {
     }
 
     fun setupLife(fieldX: IntBuffer, fieldY: IntBuffer) {
-        LifeDrawer.resetMathContext()
+        LifePattern.resetMathContext()
         val bounds = getBounds(fieldX, fieldY)
         val level = bounds.getLevelFromBounds()
 

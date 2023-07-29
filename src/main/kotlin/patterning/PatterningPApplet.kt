@@ -3,13 +3,13 @@ package patterning
 import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
-import patterning.life.LifeDrawer
+import patterning.life.LifePattern
 import processing.core.PApplet
 
 class PatterningPApplet : PApplet() {
     var draggingDrawing = false
 
-    private lateinit var drawer: LifeDrawer
+    private lateinit var drawer: LifePattern
     private lateinit var properties: Properties
 
     // used to control dragging the image around the screen with the mouse
@@ -33,9 +33,9 @@ class PatterningPApplet : PApplet() {
 
         properties.setWindowPosition()
 
-        drawer = LifeDrawer(
-            processing = this,
-            properties.storedLife
+        drawer = LifePattern(
+            pApplet = this,
+            properties
         ).also {
             println(KeyHandler.usageText)
         }
@@ -78,7 +78,7 @@ class PatterningPApplet : PApplet() {
 
     // Override the exit() method to save window properties before closing
     override fun exit() {
-        properties.storedLife = drawer.storedLife
+        drawer.updateProperties()
         properties.saveProperties()
         super.exit()
     }

@@ -14,10 +14,10 @@ class DrawNodePath() {
     fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
         val newLevel = root.level
-        LifeDrawer.updateLargestDimension(root.bounds)
+        LifePattern.updateLargestDimension(root.bounds)
 
-        val halfSizeOffset = -LifeDrawer.cell.halfUniverseSize(newLevel)
-        val universeSize = LifeDrawer.cell.universeSize(newLevel)
+        val halfSizeOffset = -LifePattern.cell.halfUniverseSize(newLevel)
+        val universeSize = LifePattern.cell.universeSize(newLevel)
 
         // every generation the root changes so we have to use the latest root
         // to walk through the nodePath to find the lowest node that has children visible on screen
@@ -117,7 +117,7 @@ class DrawNodePath() {
         }
 
         if (node is TreeNode) {
-            val halfSize = LifeDrawer.cell.halfUniverseSize(node.level)
+            val halfSize = LifePattern.cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
@@ -130,7 +130,7 @@ class DrawNodePath() {
             )
 
             val intersectingChildrenAndOffsets = childrenAndOffsets.filter { child ->
-                LifeDrawer.shouldContinue(
+                LifePattern.shouldContinue(
                     child.node,
                     child.size,
                     child.left,

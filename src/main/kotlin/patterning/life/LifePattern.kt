@@ -16,7 +16,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
 import patterning.Drawer
-import patterning.PatterningPApplet
+import patterning.Pattern
+import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
 import patterning.actions.KeyFactory
@@ -39,17 +40,17 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
 
-class LifeDrawer(
-    private val processing: PApplet,
-    var storedLife: String,
-
-    ) {
+class LifePattern(
+    pApplet: PApplet,
+    properties: Properties
+) : Pattern(pApplet, properties) {
 
     private var life: LifeUniverse
+    private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
+
     private val asyncNextGeneration: AsyncCalculationRunner
     private var targetStep = 0
     private val drawingInformer: DrawingInfoSupplier
-    private val patterning: PatterningPApplet = processing as PatterningPApplet
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
 
@@ -75,7 +76,6 @@ class LifeDrawer(
     private var uXBuffer: PGraphics
     private var drawBounds: Boolean
 
-
     // used for resize detection
     private var prevWidth: Int
     private var prevHeight: Int
@@ -85,11 +85,11 @@ class LifeDrawer(
         lifeFormBuffer = buffer
         drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized }) { isDrawing }
         // resize trackers
-        prevWidth = processing.width
-        prevHeight = processing.height
+        prevWidth = pApplet.width
+        prevHeight = pApplet.height
 
-        canvasWidth = processing.width.toBigDecimal()
-        canvasHeight = processing.height.toBigDecimal()
+        canvasWidth = pApplet.width.toBigDecimal()
+        canvasHeight = pApplet.height.toBigDecimal()
         cell = Cell()
 
         movementHandler = MovementHandler(this)
@@ -104,11 +104,11 @@ class LifeDrawer(
                 .displayDuration(Theme.startupTextDisplayDuration.toLong())
         }
 
-        val keyFactory = KeyFactory(patterning, this)
+        val keyFactory = KeyFactory(pApplet, this)
         keyFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
         setupControls(keyFactory)
 
-        asyncNextGeneration = AsyncCalculationRunner() { asyncNextGeneration() }
+        asyncNextGeneration = AsyncCalculationRunner { asyncNextGeneration() }
 
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
@@ -121,12 +121,12 @@ class LifeDrawer(
     }
 
     private val buffer: PGraphics
-        get() = processing.createGraphics(processing.width, processing.height)
+        get() = pApplet.createGraphics(pApplet.width, pApplet.height)
 
     private val isWindowResized: Boolean
         get() {
-            val widthChanged = prevWidth != processing.width
-            val heightChanged = prevHeight != processing.height
+            val widthChanged = prevWidth != pApplet.width
+            val heightChanged = prevHeight != pApplet.height
             return widthChanged || heightChanged
         }
 
@@ -173,6 +173,51 @@ class LifeDrawer(
         Drawer.addAll(panels)
     }
 
+    override fun draw() {
+
+        // lambdas are interested in this fact
+        isDrawing = true
+
+        drawBackground()
+        drawUX(life)
+        drawPattern(life)
+
+        pApplet.apply {
+            image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
+            image(uXBuffer, 0f, 0f)
+        }
+
+        isDrawing = false
+
+        goForwardInTime()
+    }
+
+    override fun move(dx: Float, dy: Float) {
+        saveUndoState()
+        adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
+        lifeFormPosition.add(dx, dy)
+    }
+
+    override fun updateProperties() {
+        properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
+    }
+
+    private fun goForwardInTime() {
+
+        if (!asyncNextGeneration.isRunning) {
+            with(life) {
+                step = when {
+                    step < targetStep -> step + 1
+                    step > targetStep -> step - 1
+                    else -> step
+                }
+            }
+        }
+
+        if (RunningState.shouldAdvance())
+            asyncNextGeneration.startCalculation()
+    }
+
     fun pasteLifeForm() {
         try {
             // Get the system clipboard
@@ -181,7 +226,7 @@ class LifeDrawer(
             // Check if the clipboard contains text data and then get it
             if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                 storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
-                instantiateLifeform()
+                life = instantiateLifeform()
             }
         } catch (e: UnsupportedFlavorException) {
             e.printStackTrace()
@@ -213,13 +258,11 @@ class LifeDrawer(
     val numberedLifeForm: Unit
         get() {
 
-            // subclasses of PApplet will have a keyCode
-            // so this isn't magical
             val number = KeyHandler.latestKeyCode - '0'.code
             try {
                 storedLife =
                     ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-                setNumberedLifeForm(storedLife)
+                life = instantiateLifeform()
             } catch (e: IOException) {
                 throw RuntimeException(e)
             } catch (e: URISyntaxException) {
@@ -243,7 +286,7 @@ class LifeDrawer(
             universe.setupLife(newLife.fieldX!!, newLife.fieldY!!)
         } catch (e: NotLifeException) {
             // todo: on failure you need to
-            PApplet.println(
+            println(
                 """
     get a life - here's what failed:
     
@@ -270,7 +313,7 @@ class LifeDrawer(
     }
 
     private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
-        return dimension.divide(BigTWO, mc) - offset
+        return dimension.divide(BigDecimal.TWO, mc) - offset
     }
 
     private fun createTextPanel(
@@ -310,7 +353,7 @@ class LifeDrawer(
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .textWidth(Optional.of(IntSupplier { processing.width / 2 }))
+                .textWidth(Optional.of(IntSupplier { pApplet.width / 2 }))
                 .wrap()
                 .textSize(24)
         }
@@ -345,10 +388,10 @@ class LifeDrawer(
 
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
-        val halfCanvasWidth = canvasWidth.divide(BigTWO, mc)
-        val halfCanvasHeight = canvasHeight.divide(BigTWO, mc)
-        val halfDrawingWidth = drawingWidth.divide(BigTWO, mc)
-        val halfDrawingHeight = drawingHeight.divide(BigTWO, mc)
+        val halfCanvasWidth = canvasWidth.divide(BigDecimal.TWO, mc)
+        val halfCanvasHeight = canvasHeight.divide(BigDecimal.TWO, mc)
+        val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, mc)
+        val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
@@ -362,10 +405,10 @@ class LifeDrawer(
     private fun getHUDMessage(life: LifeUniverse): String {
 
         return hudInfo.getFormattedString(
-            processing.frameCount,
+            pApplet.frameCount,
             12
         ) {
-            hudInfo.addOrUpdate("fps", processing.frameRate.roundToInt())
+            hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", RunningState.runMessage())
@@ -406,8 +449,8 @@ class LifeDrawer(
         val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
 
         // Update the canvas size
-        canvasWidth = processing.width.toBigDecimal()
-        canvasHeight = processing.height.toBigDecimal()
+        canvasWidth = pApplet.width.toBigDecimal()
+        canvasHeight = pApplet.height.toBigDecimal()
 
         // Calculate the center of the visible portion after resizing
         val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
@@ -541,12 +584,6 @@ class LifeDrawer(
         }
     }
 
-    fun move(dx: Float, dy: Float) {
-        saveUndoState()
-        adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
-        lifeFormPosition.add(dx, dy)
-    }
-
     private fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
         updateCanvasOffsets(canvasOffsetX + dx, canvasOffsetY + dy)
     }
@@ -608,136 +645,15 @@ class LifeDrawer(
         }
     }
 
-    private data class Point(val x: Float, val y: Float)
-
-    private data class Line(val start: Point, val end: Point) {
-        fun drawDashedLine(buffer: PGraphics, dashLength: Float, spaceLength: Float) {
-            val x1 = start.x
-            val y1 = start.y
-            val x2 = end.x
-            val y2 = end.y
-
-            val distance = PApplet.dist(x1, y1, x2, y2)
-            val numDashes = distance / (dashLength + spaceLength)
-
-            var draw = true
-            var x = x1
-            var y = y1
-            buffer.pushStyle()
-            buffer.strokeWeight(Theme.strokeWeightDashedLine)
-            for (i in 0 until (numDashes * 2).toInt()) {
-                if (draw) {
-                    // We limit the end of the dash to be at maximum the final point
-                    val dxDash = (x2 - x1) / numDashes / 2
-                    val dyDash = (y2 - y1) / numDashes / 2
-                    val endX = (x + dxDash).coerceAtMost(x2)
-                    val endY = (y + dyDash).coerceAtMost(y2)
-                    buffer.line(x, y, endX, endY)
-                    x = endX
-                    y = endY
-                } else {
-                    val dxSpace = (x2 - x1) / numDashes / 2
-                    val dySpace = (y2 - y1) / numDashes / 2
-                    x += dxSpace
-                    y += dySpace
-                }
-                draw = !draw
-            }
-            buffer.popStyle()
-        }
-    }
-
-    private class BoundingBox(bounds: Bounds, cellSize: BigDecimal) {
-        // we draw the box just a bit off screen so it won't be visible
-        // but if the box is more than a pixel, we need to push it further offscreen
-        // since we're using a Theme constant we can change we have to account for it
-        private val positiveOffScreen = Theme.strokeWeightBounds
-        private val negativeOffScreen = -positiveOffScreen
-
-        private val leftBD = bounds.left.bigDecimal
-        private val topBD = bounds.top.bigDecimal
-
-        private val leftWithOffset = leftBD.multiply(cellSize, mc).add(canvasOffsetX)
-        private val topWithOffset = topBD.multiply(cellSize, mc).add(canvasOffsetY)
-
-        private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, mc)
-        private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, mc)
-
-        private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
-        private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
-
-        // coerce boundaries to be drawable with floats
-        val left = if (leftWithOffset < BigDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
-        val top = if (topWithOffset < BigDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
-
-        val right =
-            if (leftWithOffset + widthDecimal > canvasWidth) canvasWidth.toFloat() + positiveOffScreen else rightFloat
-        val bottom =
-            if (topWithOffset + heightDecimal > canvasHeight) canvasHeight.toFloat() + positiveOffScreen else bottomFloat
-
-        val width = if (left == negativeOffScreen) (right + positiveOffScreen) else (right - left)
-        val height = if (top == negativeOffScreen) (bottom + positiveOffScreen) else (bottom - top)
-
-        // Calculate Lines
-        private val horizontalLine: Line
-            get() {
-                val startX = left
-                val startYDecimal = topWithOffset + heightDecimal.divide(BigTWO, mc)
-                val startY = when {
-                    startYDecimal < BigDecimal.ZERO -> -1f
-                    startYDecimal > canvasHeight -> canvasHeight.toFloat() + 1
-                    else -> startYDecimal.toFloat()
-                }
-                val endXDecimal = leftWithOffset + widthDecimal
-                val endX = if (endXDecimal > canvasWidth) canvasWidth.toFloat() + 1 else endXDecimal.toFloat()
-                return Line(Point(startX, startY), Point(endX, startY))
-            }
-
-
-        private val verticalLine: Line
-            get() {
-                val startXDecimal = leftWithOffset + widthDecimal.divide(BigTWO, mc)
-                val startX = when {
-                    startXDecimal < BigDecimal.ZERO -> -1f
-                    startXDecimal > canvasWidth -> canvasWidth.toFloat() + 1
-                    else -> startXDecimal.toFloat()
-                }
-                val endYDecimal = topWithOffset + heightDecimal
-                val endY = if (endYDecimal > canvasHeight) canvasHeight.toFloat() + 1 else endYDecimal.toFloat()
-                return Line(Point(startX, top), Point(startX, endY))
-            }
-
-
-        private fun drawCrossHair(buffer: PGraphics, dashLength: Float, spaceLength: Float) {
-            horizontalLine.drawDashedLine(buffer, dashLength, spaceLength)
-            verticalLine.drawDashedLine(buffer, dashLength, spaceLength)
-        }
-
-        fun draw(buffer: PGraphics, drawCrosshair: Boolean = false) {
-
-            buffer.pushStyle()
-            buffer.noFill()
-            buffer.stroke(Theme.textColor)
-            buffer.strokeWeight(Theme.strokeWeightBounds)
-            buffer.rect(left, top, width, height)
-            if (drawCrosshair) {
-                drawCrossHair(buffer, Theme.dashedLineDashLength, Theme.dashedLineSpaceLength)
-            }
-
-            buffer.popStyle()
-        }
-    }
-
-
     private fun drawBackground() {
         if (isWindowResized) {
             updateWindowResized()
         }
 
-        prevWidth = processing.width
-        prevHeight = processing.height
+        prevWidth = pApplet.width
+        prevHeight = pApplet.height
 
-        processing.apply {
+        pApplet.apply {
             background(Theme.backGroundColor)
         }
 
@@ -760,49 +676,9 @@ class LifeDrawer(
     }
 
 
-    fun draw(/*life: LifeUniverse*/) {
-
-        // lambdas are interested in this fact
-        isDrawing = true
-
-        drawBackground()
-        drawUX(life)
-        drawPattern(life)
-
-        processing.apply {
-            image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
-            image(uXBuffer, 0f, 0f)
-        }
-
-        isDrawing = false
-
-        goForwardInTime()
-    }
-
-    private fun goForwardInTime() {
-
-        if (!asyncNextGeneration.isRunning) {
-            with(life) {
-                step = when {
-                    step < targetStep -> step + 1
-                    step > targetStep -> step - 1
-                    else -> step
-                }
-            }
-        }
-
-        if (RunningState.shouldAdvance())
-            asyncNextGeneration.startCalculation()
-    }
-
     private suspend fun asyncNextGeneration() {
         coroutineScope { life.nextGeneration() }
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
-    }
-
-    fun setNumberedLifeForm(storedLife: String) {
-        this.storedLife = storedLife
-        life = instantiateLifeform()
     }
 
     fun rewind() {
@@ -823,6 +699,18 @@ class LifeDrawer(
         private const val PRECISION_BUFFER = 10
         private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
         private var previousPrecision: Int = 0
+
+        internal var canvasOffsetX = BigDecimal.ZERO
+        internal var canvasOffsetY = BigDecimal.ZERO
+        internal var canvasWidth: BigDecimal = BigDecimal.ZERO
+        internal var canvasHeight: BigDecimal = BigDecimal.ZERO
+
+        lateinit var cell: Cell
+
+        private val undoDeque = ArrayDeque<CanvasState>()
+        private val positionMap = StatMap(mutableMapOf<PositionKey, BigDecimal>())
+
+        private const val LIFE_FORM_PROPERTY = "lifeForm"
 
         fun resetMathContext() {
             largestDimension = FlexibleInteger.ZERO
@@ -845,18 +733,6 @@ class LifeDrawer(
             }
         }
 
-        private val BigTWO = BigDecimal(2)
-        private val undoDeque = ArrayDeque<CanvasState>()
-        private var canvasOffsetX = BigDecimal.ZERO
-        private var canvasOffsetY = BigDecimal.ZERO
-
-        // if we're going to be operating in BigDecimal then we keep these that way so
-        // that calculations can be done without conversions until necessary
-        private var canvasWidth: BigDecimal = BigDecimal.ZERO
-        private var canvasHeight: BigDecimal = BigDecimal.ZERO
-        lateinit var cell: Cell
-        private val positionMap = StatMap(mutableMapOf<PositionKey, BigDecimal>())
-
         private fun getMappedPosition(pos: BigDecimal, offset: BigDecimal): BigDecimal =
             positionMap.getOrPut(PositionKey(pos, offset)) { pos + offset }
 
@@ -875,8 +751,6 @@ class LifeDrawer(
 
             /*            val left = nodeLeft + canvasOffsetX
                         val top = nodeTop + canvasOffsetY*/
-            // positionMap.getOrPut(PositionKey(nodeLeft, canvasOffsetX)) { nodeLeft + canvasOffsetX }
-            // positionMap.getOrPut(PositionKey(nodeTop, canvasOffsetY)) { nodeTop + canvasOffsetY }
             val left = getMappedPosition(nodeLeft, canvasOffsetX)
             val top = getMappedPosition(nodeTop, canvasOffsetY)
 

@@ -34,11 +34,13 @@ class Properties(private val parent: PApplet) {
     val height: Int
         get() = properties.getInt("height", 800)
 
-    var storedLife: String
-        get() = properties.getString("lifeForm", "")
-        set(value) {
-            properties.setString("lifeForm", value)
-        }
+    fun getProperty(propertyName: String, defaultValue: String = ""): String {
+        return properties.getString(propertyName, defaultValue)
+    }
+
+    fun setProperty(propertyName: String, value: String) {
+        properties.setString(propertyName, value)
+    }
 
     fun saveProperties() {
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
@@ -86,6 +88,6 @@ class Properties(private val parent: PApplet) {
     }
 
     companion object {
-        private const val FILE_NAME = "patterning_autosave.json"
+        private const val FILE_NAME = "patterning_properties.json"
     }
 }
