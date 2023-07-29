@@ -5,10 +5,13 @@ import java.awt.Component
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
 import java.io.File
+
 import kotlin.math.roundToInt
+
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.life.LifeDrawer
+
 import processing.core.PApplet
 import processing.data.JSONObject
 
