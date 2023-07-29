@@ -3,13 +3,10 @@ package patterning.util
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
-import java.text.NumberFormat
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
-
-fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
 
 class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 

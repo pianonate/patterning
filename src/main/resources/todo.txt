@@ -1,4 +1,3 @@
-todo: get the numbered pressed passed through keyEvent so we don't have to have the numbered life form handler stuck in Processing
 todo: verify DrawNodeUniverse has proper resources and encapsulation - check on LifeForm object references
 todo: instantiateLifeForm in init is convoluted with the flags on getRandomLifeForm
 todo: deal with stored life better as Processing should have no idea what stored life is - maybe invoke an exit interface that asks all Drawers for there saved pattern state (as a string) - and maybe any other properties to set

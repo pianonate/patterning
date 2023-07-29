@@ -100,14 +100,3 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
         }%)"
     }
 }
-
-// Extension function to count decimal places in a Double
-fun Double.countDecimalPlaces(): Int {
-    val str = this.toString()
-    val index = str.indexOf(".")
-    return if (index < 0) {
-        0
-    } else {
-        str.length - index - 1
-    }
-}

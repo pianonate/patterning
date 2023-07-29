@@ -1,15 +1,5 @@
 package patterning
 
-enum class RunningMode {
-    PLAYING,
-    PAUSED,
-    SINGLE_STEP
-}
-
-interface RunningModeObserver {
-    fun onRunningModeChange()
-}
-
 object RunningState {
 
     val runningMode: RunningMode
