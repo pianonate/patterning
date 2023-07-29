@@ -1,30 +1,21 @@
 package patterning
 
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
-import patterning.actions.KeyHandler
-import patterning.actions.MouseEventManager
-import patterning.ux.PatternDrawer
-import patterning.ux.Theme
-import processing.core.PApplet
-import processing.data.JSONObject
+// import patterning.util.AsyncCalculationRunner
 import java.awt.Component
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
-import java.awt.Toolkit
-import java.awt.datatransfer.DataFlavor
-import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.File
-import java.io.IOException
-import java.net.URISyntaxException
 import kotlin.math.roundToInt
+import patterning.actions.KeyHandler
+import patterning.actions.MouseEventManager
+import patterning.life.LifeDrawer
+import processing.core.PApplet
+import processing.data.JSONObject
 
 class Processing : PApplet() {
     var draggingDrawing = false
-    private lateinit var life: LifeUniverse
 
-    private lateinit var asyncNextGeneration: AsyncCalculationRunner
-    private lateinit var drawer: PatternDrawer
+    private lateinit var drawer: LifeDrawer
 
     // used to control dragging the image around the screen with the mouse
     private var lastMouseX = 0f
@@ -33,12 +24,8 @@ class Processing : PApplet() {
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
     private var storedLife: String = ""
-    private var targetStep = 0
 
     private var mousePressedOverReceiver = false
-
-    val gps
-        get() = asyncNextGeneration.getRate()
 
     override fun settings() {
         // on startup read the size from the json file
@@ -67,51 +54,20 @@ class Processing : PApplet() {
         KeyHandler.registerKeyHandler(this)
 
         surface.setResizable(true)
-        targetStep = 0
-        asyncNextGeneration = AsyncCalculationRunner(RATE_PER_SECOND_WINDOW) { asyncNextGeneration() }
 
         loadSavedWindowPositions()
 
-        drawer = PatternDrawer(this)
-            .also {
-                println(KeyHandler.usageText)
-            }
-
-        // on startup, storedLife may be loaded from the properties file but if it's not
-        // just get a random one
-        if (storedLife.isEmpty()) {
-            runBlocking { getRandomLifeform(false) }
+        drawer = LifeDrawer(
+            processing = this,
+            storedLife,
+        ).also {
+            println(KeyHandler.usageText)
         }
 
-        // life will have been loaded in prior - either from saved life
-        // or from the packaged resources so this doesn't need extra protection
-        instantiateLifeform()
     }
 
     override fun draw() {
-
-        drawer.draw(life)
-        goForwardInTime()
-    }
-
-    private suspend fun asyncNextGeneration() {
-        coroutineScope { life.nextGeneration() }
-        // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
-    }
-
-
-    private fun goForwardInTime() {
-
-        if (!asyncNextGeneration.isRunning) {
-            life.step = when {
-                life.step < targetStep -> life.step + 1
-                life.step > targetStep -> life.step - 1
-                else -> life.step
-            }
-        }
-
-        if (RunningState.shouldAdvance())
-            asyncNextGeneration.startCalculation()
+        drawer.draw()
     }
 
     override fun mousePressed() {
@@ -176,7 +132,7 @@ class Processing : PApplet() {
         properties.setInt("width", width)
         properties.setInt("height", height)
         properties.setInt("screen", screenIndex)
-        properties.setString("lifeForm", storedLife)
+        properties.setString("lifeForm", drawer.storedLife)
         saveJSONObject(properties, dataPath(PROPERTY_FILE_NAME))
     }
 
@@ -209,48 +165,6 @@ class Processing : PApplet() {
         frame.setLocation(x, y)
     }
 
-    fun getRandomLifeform(reset: Boolean) {
-        try {
-            storedLife = ResourceManager.instance!!.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        } catch (e: URISyntaxException) {
-            throw RuntimeException(e)
-        }
-        if (reset) instantiateLifeform()
-    }
-
-    fun instantiateLifeform() {
-        try {
-
-            RunningState.pause()
-            asyncNextGeneration.cancelAndWait()
-
-            life = LifeUniverse()
-
-            // instance variables - do they need to be?
-            val parser = LifeFormats()
-            val newLife = parser.parseRLE(storedLife)
-
-            targetStep = 0
-            life.step = 0
-            life.setupLife(newLife.fieldX!!, newLife.fieldY!!)
-
-            // new instances only created in instantiateLife to keep things simple
-            // lifeForm not made local as it is intended to be used with display functions in the future
-            drawer.setupNewLife(life)
-        } catch (e: NotLifeException) {
-            // todo: on failure you need to
-            println(
-                """
-    get a life - here's what failed:
-    
-    ${e.message}
-    """.trimIndent()
-            )
-        }
-    }
-
     private val frame: Frame
         get() {
 
@@ -264,57 +178,7 @@ class Processing : PApplet() {
             return comp
         }
 
-    fun pasteLifeForm() {
-        try {
-            // Get the system clipboard
-            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-
-            // Check if the clipboard contains text data and then get it
-            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
-                storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
-                instantiateLifeform()
-            }
-        } catch (e: UnsupportedFlavorException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun handleStep(faster: Boolean) {
-        var increment = if (faster) 1 else -1
-        if (targetStep + increment < 0) increment = 0
-        targetStep += increment
-    }
-
-    fun fitUniverseOnScreen() {
-        drawer.center(life.rootBounds, fitBounds = true, saveState = true)
-    }
-
-    val numberedLifeForm: Unit
-        get() {
-
-            // subclasses of PApplet will have a keyCode
-            // so this isn't magical
-            val number = keyCode - '0'.code
-            try {
-                storedLife =
-                    ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-                instantiateLifeform()
-            } catch (e: IOException) {
-                throw RuntimeException(e)
-            } catch (e: URISyntaxException) {
-                throw RuntimeException(e)
-            }
-        }
-
-    fun centerView() {
-        drawer.center(life.rootBounds, fitBounds = false, saveState = true)
-    }
-
     companion object {
         private const val PROPERTY_FILE_NAME = "patterning_autosave.json"
-        private const val RATE_PER_SECOND_WINDOW = 1 // how big is your window to calculate the rate?
-
     }
 }

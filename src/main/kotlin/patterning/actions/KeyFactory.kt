@@ -3,18 +3,18 @@ package patterning.actions
 import kotlinx.coroutines.runBlocking
 import patterning.Processing
 import patterning.RunningState
-import patterning.ux.PatternDrawer
-import patterning.ux.Theme
-import patterning.ux.ThemeType
+import patterning.Theme
+import patterning.ThemeType
+import patterning.life.LifeDrawer
 import processing.event.KeyEvent
 
-class KeyFactory(private val processing: Processing, private val drawer: PatternDrawer) {
+class KeyFactory(private val processing: Processing, private val drawer: LifeDrawer) {
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
             addKeyCallback(callbackPerfTest)
             addKeyCallback(callbackPaste)
-            addKeyCallback(callbackLoadLifeForm)
+            addKeyCallback(callbackNumberedPattern)
             addKeyCallback(callbackMovement)
             addKeyCallback(callbackZoomIn)
             addKeyCallback(callbackZoomOut)
@@ -27,33 +27,33 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
         invokeFeatureLambda = { drawer.handlePlay() },
         usage = "play and pause"
     )
-    private val callbackLoadLifeForm = SimpleKeyCallback(
+    private val callbackNumberedPattern = SimpleKeyCallback(
         keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
-        invokeFeatureLambda = { processing.numberedLifeForm },
+        invokeFeatureLambda = { drawer.numberedLifeForm },
         usage = "load one of the first 9 life forms by pressing one of the # keys"
     )
 
     val callbackStepFaster = SimpleKeyCallback(
         key = SHORTCUT_STEP_FASTER,
-        invokeFeatureLambda = { processing.handleStep(true) },
+        invokeFeatureLambda = { drawer.handleStep(true) },
         usage = "step faster - double the generations each step"
     )
 
     val callbackStepSlower = SimpleKeyCallback(
         key = SHORTCUT_STEP_SLOWER,
-        invokeFeatureLambda = { processing.handleStep(false) },
+        invokeFeatureLambda = { drawer.handleStep(false) },
         usage = "step slower - halve the generations per step"
     )
 
     val callbackRewind = SimpleKeyCallback(
         key = SHORTCUT_REWIND,
-        invokeFeatureLambda = { processing.instantiateLifeform() },
+        invokeFeatureLambda = { drawer.rewind() },
         usage = "rewind the current life form back to generation 0"
     )
 
-    val callbackRandomLife = SimpleKeyCallback(
+    val callbackRandomPattern = SimpleKeyCallback(
         key = SHORTCUT_RANDOM_FILE,
-        invokeFeatureLambda = { runBlocking { processing.getRandomLifeform(true) } },
+        invokeFeatureLambda = { runBlocking { drawer.getRandomLifeform(true) } },
         usage = "random life form from the built-in library"
     )
 
@@ -90,7 +90,7 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
 
     val callbackCenterView = SimpleKeyCallback(
         key = SHORTCUT_CENTER,
-        invokeFeatureLambda = { processing.centerView() },
+        invokeFeatureLambda = { drawer.centerView() },
         usage = "center the view on the universe - regardless of its size"
     )
 
@@ -105,7 +105,7 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
 
     val callbackFitUniverseOnScreen = SimpleKeyCallback(
         key = SHORTCUT_FIT_UNIVERSE,
-        invokeFeatureLambda = { processing.fitUniverseOnScreen() },
+        invokeFeatureLambda = { drawer.fitUniverseOnScreen() },
         usage = "fit the visible universe on screen"
     )
 
@@ -134,7 +134,7 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
             KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
             KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
-        invokeFeatureLambda = { processing.pasteLifeForm() },
+        invokeFeatureLambda = { drawer.pasteLifeForm() },
         usage = "paste a new lifeform into the app - currently only supports RLE encoded lifeforms"
     )
 

@@ -1,4 +1,0 @@
-package patterning
-
-class PerformanceTest {
-}

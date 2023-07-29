@@ -4,7 +4,7 @@ import processing.core.PApplet
 
 class Patterning {
     companion object {
-        @JvmStatic
+        @JvmStatic // do not remove - at this point, this is how gradle finds main
         fun main(args: Array<String>) {
             PApplet.main("patterning.Processing")
         }

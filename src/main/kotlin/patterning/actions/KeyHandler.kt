@@ -10,6 +10,10 @@ object KeyHandler {
 
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
 
+    var latestKeyCode: Int = 0
+        get() = pressedKeys.last()
+        private set
+
     fun registerKeyHandler(processing: PApplet) {
         processing.registerMethod("keyEvent", this)
     }
@@ -44,6 +48,7 @@ object KeyHandler {
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)
+            latestKeyCode = keyCode
         }
     }
 
