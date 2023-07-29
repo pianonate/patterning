@@ -2,11 +2,41 @@ package patterning.actions
 
 import processing.event.KeyEvent
 
-abstract class SimpleKeyCallback(
-    keyCombos: LinkedHashSet<KeyCombo> = LinkedHashSet(),
+class SimpleKeyCallback(
+    keyCombos: LinkedHashSet<KeyCombo>,
     private val invokeFeatureLambda: (() -> Unit),
     override val usage: String,
 ) : KeyCallback {
+
+    constructor(
+        key: Char,
+        invokeFeatureLambda: () -> Unit,
+        usage: String,
+    ) : this(
+        linkedSetOf(KeyCombo(key.code)),
+        invokeFeatureLambda,
+        usage
+    )
+
+    constructor(
+        keys: Set<Char>,
+        invokeFeatureLambda: () -> Unit,
+        usage: String,
+    ) : this(
+        keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) },
+        invokeFeatureLambda,
+        usage
+    )
+
+    constructor(
+        keyCombos: Collection<KeyCombo>,
+        invokeFeatureLambda: () -> Unit,
+        usage: String,
+    ) : this(
+        LinkedHashSet(keyCombos),
+        invokeFeatureLambda,
+        usage
+    )
 
     private val _keyCombos = keyCombos
 
@@ -28,47 +58,6 @@ abstract class SimpleKeyCallback(
             "1...9"
         } else {
             keysStrings.joinToString(", ")
-        }
-    }
-
-    companion object {
-
-        // a bunch of factory methods for ease of use
-        fun createKeyCallback(
-            key: Char,
-            invokeFeatureLambda: () -> Unit,
-            usage: String,
-        ): SimpleKeyCallback {
-            return object : SimpleKeyCallback(
-                linkedSetOf(KeyCombo(key.code)),
-                invokeFeatureLambda,
-                usage,
-            ) {}
-        }
-
-        fun createKeyCallback(
-            keys: Set<Char>,
-            invokeFeatureLambda: () -> Unit,
-            usage: String,
-        ): SimpleKeyCallback {
-            val keyCombos = keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) }
-            return object : SimpleKeyCallback(
-                keyCombos,
-                invokeFeatureLambda,
-                usage,
-            ) {}
-        }
-
-        fun createKeyCallback(
-            keyCombos: Collection<KeyCombo>,
-            invokeFeatureLambda: () -> Unit,
-            usage: String,
-        ): SimpleKeyCallback {
-            return object : SimpleKeyCallback(
-                LinkedHashSet(keyCombos),
-                invokeFeatureLambda,
-                usage,
-            ) {}
         }
     }
 }
