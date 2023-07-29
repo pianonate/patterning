@@ -416,9 +416,9 @@ class PatternDrawer(
             hudInfo.addOrUpdate("gps", patterning.gps)
             hudInfo.addOrUpdate("cell", cell.size)
             hudInfo.addOrUpdate("running", RunningState.runMessage())
-            hudInfo.addOrUpdate("actuals", actualRecursions)
-            hudInfo.addOrUpdate("stack saves", startDelta)
-            val patternInfo = life.patternInfo.getData()
+/*            hudInfo.addOrUpdate("actuals", actualRecursions)
+            hudInfo.addOrUpdate("stack saves", startDelta)*/
+            val patternInfo = life.patternInfo.info
             patternInfo.forEach { (key, value) ->
                 hudInfo.addOrUpdate(key, value)
             }
@@ -430,7 +430,7 @@ class PatternDrawer(
         undoDeque.add(CanvasState(Cell(cell.size), canvasOffsetX, canvasOffsetY))
     }
 
-    fun handlePause() {
+    fun handlePlay() {
         Drawer.takeIf { it.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
         } ?: RunningState.toggleRunning()

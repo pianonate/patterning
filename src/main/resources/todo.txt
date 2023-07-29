@@ -1,3 +1,4 @@
+todo: create a custom sort for usageText - put it in keyFactory - accept the passed in callback and return an integer based on the ordering you want
 todo: idiomaticize
 
 todo: perf test that automates invoking each of the 9 loadable files - running them a hundred frames and collecting the memory and duration of each and the total duration at the end of the run

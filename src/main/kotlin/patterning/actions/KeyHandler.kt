@@ -50,20 +50,21 @@ object KeyHandler {
     val usageText: String
         get() {
             val usageText = StringBuilder("\nKey Usage:\n")
-            val processedCallbacks: MutableSet<KeyCallback> = mutableSetOf()
 
-            val maxKeysWidth = keyCallbacks.values.filter { it.isValidForCurrentOS }.maxOfOrNull { callback ->
-                callback.validKeyCombosForCurrentOS.joinToString(", ").length
-            } ?: 0
+            val maxKeysWidth = keyCallbacks.values
+                .filter { it.isValidForCurrentOS }
+                .maxOf { callback -> callback.toString().length }
 
-            keyCallbacks.values.filter { callback ->
-                callback.isValidForCurrentOS && !processedCallbacks.contains(callback)
-            }.forEach { callback ->
-                val keysString = callback.validKeyCombosForCurrentOS.joinToString(", ")
-                val usageDescription = callback.getUsageText()
-                usageText.append("${keysString.padEnd(maxKeysWidth + 1)}: $usageDescription\n")
-                processedCallbacks.add(callback)
-            }
+            keyCallbacks.values
+                .filter { callback ->
+                    callback.isValidForCurrentOS
+                }.sortedBy { callback ->
+                    callback.usage
+                }.forEach { callback ->
+                    val keysString = callback.toString()
+                    val usageDescription = callback.usage
+                    usageText.append("${keysString.padEnd(maxKeysWidth + 1)}: $usageDescription\n")
+                }
 
             return usageText.toString()
         }

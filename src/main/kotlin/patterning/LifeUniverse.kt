@@ -378,12 +378,12 @@ class LifeUniverse internal constructor() {
         patternInfo.addOrUpdate("generation", generation)
         patternInfo.addOrUpdate("population", root.population)
         patternInfo.addOrUpdate("lastId", FlexibleInteger(lastId))
-        patternInfo.addOrUpdate("hits", hashmap.hits)
+/*        patternInfo.addOrUpdate("hits", hashmap.hits)
         patternInfo.addOrUpdate("misses", hashmap.misses)
         patternInfo.addOrUpdate("%", hashmap.hitRate * 100)
         patternInfo.addOrUpdate("puts", hashmap.puts)
         patternInfo.addOrUpdate("recurse", recurse)
-        patternInfo.addOrUpdate("quick", quick)
+        patternInfo.addOrUpdate("quick", quick)*/
         val bounds = rootBounds
         patternInfo.addOrUpdate("width", bounds.width)
         patternInfo.addOrUpdate("height", bounds.height)

@@ -4,9 +4,9 @@ import processing.event.KeyEvent
 
 interface KeyCallback {
     fun invokeFeature()
-    fun getUsageText(): String
     fun matches(event: KeyEvent): Boolean
-    val keyCombos: Set<KeyCombo>
-    val validKeyCombosForCurrentOS: Set<KeyCombo>
     val isValidForCurrentOS: Boolean
+    val keyCombos: Set<KeyCombo>
+    val usage: String
+    val validKeyCombosForCurrentOS: Set<KeyCombo>
 }

@@ -10,4 +10,8 @@ class ControlKeyCallback(
         primaryObserver.notifyKeyPress(this)
     }
 
+    override fun toString(): String {
+        return keyCallback.toString()
+    }
+
 }

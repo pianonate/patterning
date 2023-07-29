@@ -3,7 +3,7 @@ package patterning.actions
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-data class KeyCombo @JvmOverloads constructor(
+class KeyCombo(
     private val keyCode: Int,
     private val modifiers: Int = 0,
     private val validOS: ValidOS = ValidOS.ANY

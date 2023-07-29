@@ -5,15 +5,13 @@ import processing.event.KeyEvent
 abstract class SimpleKeyCallback(
     keyCombos: LinkedHashSet<KeyCombo> = LinkedHashSet(),
     private val invokeFeatureLambda: (() -> Unit),
-    private val getUsageTextLambda: (() -> String),
+    override val usage: String,
 ) : KeyCallback {
 
     private val _keyCombos = keyCombos
 
     // the interface of KeyCallback
     override fun invokeFeature() = invokeFeatureLambda.invoke()
-    override fun getUsageText(): String = getUsageTextLambda.invoke()
-
 
     // properties
     override val keyCombos: Set<KeyCombo> = _keyCombos.toSet()
@@ -23,44 +21,53 @@ abstract class SimpleKeyCallback(
     // methods
     override fun matches(event: KeyEvent): Boolean = _keyCombos.any { it.matches(event) }
 
-    override fun toString(): String = validKeyCombosForCurrentOS.joinToString(", ") { "$it" }
+    override fun toString(): String {
+        val keysStrings = validKeyCombosForCurrentOS.map { it.toString() }
+        // special case
+        return if (keysStrings.map { it.toIntOrNull() }.filterNotNull() == (1..9).toList()) {
+            "1...9"
+        } else {
+            keysStrings.joinToString(", ")
+        }
+    }
 
     companion object {
+
         // a bunch of factory methods for ease of use
         fun createKeyCallback(
             key: Char,
             invokeFeatureLambda: () -> Unit,
-            getUsageTextLambda: () -> String,
+            usage: String,
         ): SimpleKeyCallback {
             return object : SimpleKeyCallback(
                 linkedSetOf(KeyCombo(key.code)),
                 invokeFeatureLambda,
-                getUsageTextLambda,
+                usage,
             ) {}
         }
 
         fun createKeyCallback(
             keys: Set<Char>,
             invokeFeatureLambda: () -> Unit,
-            getUsageTextLambda: () -> String,
+            usage: String,
         ): SimpleKeyCallback {
             val keyCombos = keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) }
             return object : SimpleKeyCallback(
                 keyCombos,
                 invokeFeatureLambda,
-                getUsageTextLambda,
+                usage,
             ) {}
         }
 
         fun createKeyCallback(
             keyCombos: Collection<KeyCombo>,
             invokeFeatureLambda: () -> Unit,
-            getUsageTextLambda: () -> String,
+            usage: String,
         ): SimpleKeyCallback {
             return object : SimpleKeyCallback(
                 LinkedHashSet(keyCombos),
                 invokeFeatureLambda,
-                getUsageTextLambda,
+                usage,
             ) {}
         }
     }

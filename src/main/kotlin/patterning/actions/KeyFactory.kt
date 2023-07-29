@@ -15,80 +15,83 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
             addKeyCallback(callbackPerfTest)
             addKeyCallback(callbackPaste)
             addKeyCallback(callbackLoadLifeForm)
+            addKeyCallback(callbackMovement)
+            addKeyCallback(callbackZoomIn)
+            addKeyCallback(callbackZoomOut)
         }
     }
 
     // callbacks all constructed with factory methods to make them easy to read and write
     val callbackPause = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_PAUSE,
-        invokeFeatureLambda = { drawer.handlePause() },
-        getUsageTextLambda = { "pause and play" }
+        invokeFeatureLambda = { drawer.handlePlay() },
+        usage = "play and pause"
     )
     private val callbackLoadLifeForm = SimpleKeyCallback.createKeyCallback(
         keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
         invokeFeatureLambda = { processing.numberedLifeForm },
-        getUsageTextLambda = { "press a # key to load one of the first 9 embedded RLE resource files" }
+        usage = "load one of the first 9 life forms by pressing one of the # keys"
     )
 
     val callbackStepFaster = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_STEP_FASTER,
         invokeFeatureLambda = { processing.handleStep(true) },
-        getUsageTextLambda = { "double the generations per draw" }
+        usage = "step faster - double the generations each step"
     )
 
     val callbackStepSlower = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_STEP_SLOWER,
         invokeFeatureLambda = { processing.handleStep(false) },
-        getUsageTextLambda = { "cut in half the generations per draw" }
+        usage = "step slower - halve the generations per step"
     )
 
     val callbackRewind = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_REWIND,
         invokeFeatureLambda = { processing.instantiateLifeform() },
-        getUsageTextLambda = { "rewind the current life form back to generation 0" }
+        usage = "rewind the current life form back to generation 0"
     )
 
     val callbackRandomLife = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_RANDOM_FILE,
         invokeFeatureLambda = { runBlocking { processing.getRandomLifeform(true) } },
-        getUsageTextLambda = { "get a random life form from the built-in library" }
+        usage = "random life form from the built-in library"
     )
 
     private val callbackZoomIn = SimpleKeyCallback.createKeyCallback(
         // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
         invokeFeatureLambda = { drawer.zoomXY(true, processing.mouseX.toFloat(), processing.mouseY.toFloat()) },
-        getUsageTextLambda = { "zoom in centered on the mouse" }
+        usage = "zoom in centered on the mouse"
     )
 
     val callbackZoomInCenter = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_ZOOM_CENTERED,
         invokeFeatureLambda = { drawer.zoomXY(true, processing.width.toFloat() / 2, processing.height.toFloat() / 2) },
-        getUsageTextLambda = { "zoom in centered on the middle of the screen" }
+        usage = "zoom in centered on the middle of the screen"
     )
 
     val callbackZoomOutCenter = SimpleKeyCallback.createKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
         invokeFeatureLambda = { drawer.zoomXY(false, processing.width.toFloat() / 2, processing.height.toFloat() / 2) },
-        getUsageTextLambda = { "zoom out centered on the middle of the screen" }
+        usage = "zoom out centered on the middle of the screen"
     )
 
     private val callbackZoomOut = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_ZOOM_OUT,
         invokeFeatureLambda = { drawer.zoomXY(false, processing.mouseX.toFloat(), processing.mouseY.toFloat()) },
-        getUsageTextLambda = { "zoom out centered on the mouse" }
+        usage = "zoom out centered on the mouse"
     )
 
     val callbackDrawBounds = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_DISPLAY_BOUNDS,
         invokeFeatureLambda = { drawer.toggleDrawBounds() },
-        getUsageTextLambda = { "draw a border around the part of the universe containing living cells" }
+        usage = "border drawn around the part of the universe containing living cells"
     )
 
     val callbackCenterView = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_CENTER,
         invokeFeatureLambda = { processing.centerView() },
-        getUsageTextLambda = { "center the view on the universe - regardless of its size" }
+        usage = "center the view on the universe - regardless of its size"
     )
 
     val callbackUndoMovement = SimpleKeyCallback.createKeyCallback(
@@ -97,13 +100,13 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
             KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
         invokeFeatureLambda = { drawer.undoMovement() },
-        getUsageTextLambda = { "undo various movement patterning.actions such as centering or fitting to screen" }
+        usage = "undo  movements / actions such as centering or fitting to screen"
     )
 
     val callbackFitUniverseOnScreen = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_FIT_UNIVERSE,
         invokeFeatureLambda = { processing.fitUniverseOnScreen() },
-        getUsageTextLambda = { "fit the visible universe on screen" }
+        usage = "fit the visible universe on screen"
     )
 
     val callbackThemeToggle = SimpleKeyCallback.createKeyCallback(
@@ -116,14 +119,14 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
                 }
             )
         },
-        getUsageTextLambda = { "toggle between dark and light themes" }
+        usage = "toggle between dark and light themes"
     )
     val callbackPerfTest = SimpleKeyCallback.createKeyCallback(
         key = SHORtCUT_PERFTEST,
         invokeFeatureLambda = {
 
         },
-        getUsageTextLambda = { "run the performance test" }
+        usage = "performance test"
     )
 
     private val callbackPaste = SimpleKeyCallback.createKeyCallback(
@@ -132,7 +135,7 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
             KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
         invokeFeatureLambda = { processing.pasteLifeForm() },
-        getUsageTextLambda = { "paste a new lifeform into the app - currently only supports RLE encoded lifeforms" }
+        usage = "paste a new lifeform into the app - currently only supports RLE encoded lifeforms"
     )
 
     private val callbackMovement = SimpleKeyCallback.createKeyCallback(
@@ -154,13 +157,13 @@ class KeyFactory(private val processing: Processing, private val drawer: Pattern
                 drawer.saveUndoState()
             }
         },
-        getUsageTextLambda = { "use arrow keys to move the image around. hold down two keys to move diagonally" },
+        usage = "move pattern with arrow. hold down two keys to move diagonally"
     )
 
     val callbackSingleStep = SimpleKeyCallback.createKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
         invokeFeatureLambda = { RunningState.toggleRunnningMode() },
-        getUsageTextLambda = { "in single step mode, advanced one frame at a time" },
+        usage = "toggle single step mode where play advances one step at a time"
     )
 
     companion object {

@@ -7,8 +7,9 @@ class PatternInfo(private val updateFunction: () -> Unit) {
         data[key] = value
     }
 
-    fun getData(): Map<String, Any> {
-        updateFunction.invoke()  // Update the data before returning it
-        return data
-    }
+    val info: Map<String, Any>
+        get() {
+            updateFunction.invoke()  // Update the data before returning it
+            return data
+        }
 }

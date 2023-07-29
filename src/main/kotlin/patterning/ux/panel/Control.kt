@@ -18,14 +18,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private val hoverMessage: String
 
     init {
-        //callback = builder.callback
         size = builder.size
         fill = Theme.controlColor
         keyCallback = registerCallback(builder.callback)
         MouseEventManager.addReceiver(this)
         icon = loadIcon(builder.iconName)
-        val keyCombos = keyCallback.toString()
-        hoverMessage = keyCallback.getUsageText() + Theme.shortcutParenStart + keyCombos + Theme.shortcutParenEnd
+        hoverMessage = keyCallback.usage +
+                Theme.shortcutParenStart +
+                keyCallback.toString() +
+                Theme.shortcutParenEnd
     }
 
     protected fun registerCallback(callback: KeyCallback): ControlKeyCallback {
