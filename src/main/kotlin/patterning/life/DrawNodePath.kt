@@ -2,10 +2,17 @@ package patterning.life
 
 import java.math.BigDecimal
 
-class DrawNodePath() {
+class DrawNodePath(
+    private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
+    private val updateLargestDimension: (Bounds) -> Unit
+)
+{
+
     var offsetsMoved: Boolean = true
     private var level: Int = 0
     private val path: MutableList<DrawNodePathEntry> = mutableListOf()
+    private val cell: Cell
+        get() = LifePattern.cell
 
     init {
         path.add(DrawNodePathEntry(Node.deadNode, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, Direction.NW))
@@ -14,10 +21,10 @@ class DrawNodePath() {
     fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
         val newLevel = root.level
-        LifePattern.updateLargestDimension(root.bounds)
+        updateLargestDimension(root.bounds)
 
-        val halfSizeOffset = -LifePattern.cell.halfUniverseSize(newLevel)
-        val universeSize = LifePattern.cell.universeSize(newLevel)
+        val halfSizeOffset = -cell.halfUniverseSize(newLevel)
+        val universeSize = cell.universeSize(newLevel)
 
         // every generation the root changes so we have to use the latest root
         // to walk through the nodePath to find the lowest node that has children visible on screen
@@ -117,7 +124,7 @@ class DrawNodePath() {
         }
 
         if (node is TreeNode) {
-            val halfSize = LifePattern.cell.halfUniverseSize(node.level)
+            val halfSize = cell.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
@@ -130,7 +137,7 @@ class DrawNodePath() {
             )
 
             val intersectingChildrenAndOffsets = childrenAndOffsets.filter { child ->
-                LifePattern.shouldContinue(
+                shouldContinue(
                     child.node,
                     child.size,
                     child.left,
@@ -144,7 +151,6 @@ class DrawNodePath() {
                 path.add(intersectingChild)
                 updateNodePath(
                     intersectingChild.node,
-                    /* intersectingChild.size,*/
                     intersectingChild.left,
                     intersectingChild.top
                 )

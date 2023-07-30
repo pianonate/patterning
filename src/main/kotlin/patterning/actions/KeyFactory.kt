@@ -29,7 +29,10 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
     )
     private val callbackNumberedPattern = SimpleKeyCallback(
         keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
-        invokeFeatureLambda = { drawer.numberedLifeForm },
+        invokeFeatureLambda = {
+            val number = KeyHandler.latestKeyCode - '0'.code
+            drawer.setNumberedLifeForm(number)
+        },
         usage = "load one of the first 9 life forms by pressing one of the # keys"
     )
 
@@ -53,7 +56,12 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
 
     val callbackRandomPattern = SimpleKeyCallback(
         key = SHORTCUT_RANDOM_FILE,
-        invokeFeatureLambda = { runBlocking { drawer.getRandomLifeform(true) } },
+        invokeFeatureLambda = {
+            runBlocking {
+                drawer.getRandomLifeform()
+                drawer.instantiateLifeform()
+            }
+        },
         usage = "random life form from the built-in library"
     )
 
@@ -122,9 +130,12 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
         usage = "toggle between dark and light themes"
     )
     val callbackPerfTest = SimpleKeyCallback(
-        key = SHORtCUT_PERFTEST,
+        keyCombos = setOf(
+            KeyCombo(SHORtCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
+            KeyCombo(SHORtCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+        ),
         invokeFeatureLambda = {
-
+            drawer.runPerformanceTest()
         },
         usage = "performance test"
     )
@@ -172,7 +183,7 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PAUSE = ' '
-        private const val SHORtCUT_PERFTEST = 'p'
+        private const val SHORtCUT_PERFTEST = 't'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'
         private const val SHORTCUT_STEP_FASTER = ']'

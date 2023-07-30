@@ -7,7 +7,13 @@ import patterning.util.StatMap
 // the cell width times 2 ^ level will give you the size of the whole universe
 // you'll need it it to draw the viewport on screen
  class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
-    private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
+    var currentZoom: Float = 1.0f
+    var targetZoom: Float = 1.0f
+
+     private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
+    val cellBorderWidth
+        get() = size * WIDTH_RATIO
+
 
     // surprisingly caching the result of the half size calculation provides
     // a remarkable speed boost - added CachedMap to track the results of getOrPut()

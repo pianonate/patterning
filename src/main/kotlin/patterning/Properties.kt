@@ -42,6 +42,17 @@ class Properties(private val parent: PApplet) {
         properties.setString(propertyName, value)
     }
 
+    var performanceTestResults: JSONObject
+        get() = if (properties.hasKey("performanceTestResults")) {
+            properties.getJSONObject("performanceTestResults")
+        } else {
+            JSONObject()
+        }
+        set(value) {
+            properties.setJSONObject("performanceTestResults", value)
+        }
+
+
     fun saveProperties() {
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
         val screens = ge.screenDevices

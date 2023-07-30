@@ -5,7 +5,7 @@ import java.util.*
 import java.util.regex.Pattern
 import processing.core.PApplet
 
-class RLEParser internal constructor(text: String) {
+class RLEFormatParser internal constructor(text: String) {
     private val metaDataPrefix = "#"
     private val minBufferSize = 64
     private val headerPattern = "^x = \\d+, y = \\d+, rule.*$"

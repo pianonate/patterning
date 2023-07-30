@@ -45,7 +45,7 @@ class LifePattern(
     properties: Properties
 ) : Pattern(pApplet, properties) {
 
-    private var life: LifeUniverse
+    private lateinit var life: LifeUniverse
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
 
     private val asyncNextGeneration: AsyncCalculationRunner
@@ -53,8 +53,6 @@ class LifePattern(
     private val drawingInformer: DrawingInfoSupplier
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
-
-    private var cellBorderWidth = 0.0f
 
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
@@ -67,7 +65,13 @@ class LifePattern(
     private var lifeFormPosition = PVector(0f, 0f)
     private var isDrawing = false
 
-    private val nodePath: DrawNodePath = DrawNodePath()
+    // DrawNodePath is just a helper class extracted into a separate class only for readability
+    // it has shared methods so accepting them here
+    // lambdas are cool
+    private val nodePath: DrawNodePath = DrawNodePath(
+        shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
+        updateLargestDimension = { bounds -> updateLargestDimension(bounds) }
+    )
 
     private var countdownText: TextPanel? = null
     private var hudText: TextPanel? = null
@@ -90,7 +94,8 @@ class LifePattern(
 
         canvasWidth = pApplet.width.toBigDecimal()
         canvasHeight = pApplet.height.toBigDecimal()
-        cell = Cell()
+
+        //cell = Cell()
 
         movementHandler = MovementHandler(this)
         drawBounds = false
@@ -113,11 +118,11 @@ class LifePattern(
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
         if (storedLife.isEmpty()) {
-            getRandomLifeform(false) // todo: convoluted reset boolean
+            getRandomLifeform()
         }
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
-        life = instantiateLifeform()
+        instantiateLifeform()
     }
 
     private val buffer: PGraphics
@@ -198,6 +203,11 @@ class LifePattern(
         lifeFormPosition.add(dx, dy)
     }
 
+    fun runPerformanceTest() {
+        val performanceTest = PerformanceTest(this, properties)
+        performanceTest.runTest()
+    }
+
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
@@ -226,7 +236,7 @@ class LifePattern(
             // Check if the clipboard contains text data and then get it
             if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                 storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
-                life = instantiateLifeform()
+                instantiateLifeform()
             }
         } catch (e: UnsupportedFlavorException) {
             e.printStackTrace()
@@ -244,7 +254,7 @@ class LifePattern(
         center(life.rootBounds, fitBounds = false, saveState = true)
     }
 
-    fun getRandomLifeform(reset: Boolean) {
+    fun getRandomLifeform() {
         try {
             storedLife = ResourceManager.instance!!.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
         } catch (e: IOException) {
@@ -252,25 +262,27 @@ class LifePattern(
         } catch (e: URISyntaxException) {
             throw RuntimeException(e)
         }
-        if (reset) life = instantiateLifeform()
+    }
+
+    fun setNumberedLifeForm(number: Int) {
+        try {
+            storedLife =
+                ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
+            instantiateLifeform()
+        } catch (e: IOException) {
+            throw RuntimeException(e)
+        } catch (e: URISyntaxException) {
+            throw RuntimeException(e)
+        }
     }
 
     val numberedLifeForm: Unit
         get() {
-
             val number = KeyHandler.latestKeyCode - '0'.code
-            try {
-                storedLife =
-                    ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-                life = instantiateLifeform()
-            } catch (e: IOException) {
-                throw RuntimeException(e)
-            } catch (e: URISyntaxException) {
-                throw RuntimeException(e)
-            }
+            setNumberedLifeForm(number)
         }
 
-    private fun instantiateLifeform(): LifeUniverse {
+    fun instantiateLifeform() {
         RunningState.pause()
         asyncNextGeneration.cancelAndWait()
 
@@ -281,7 +293,7 @@ class LifePattern(
         try {
 
             // instance variables - do they need to be?
-            val parser = LifeFormats()
+            val parser = FileFormat()
             val newLife = parser.parseRLE(storedLife)
             universe.setupLife(newLife.fieldX!!, newLife.fieldY!!)
         } catch (e: NotLifeException) {
@@ -298,7 +310,7 @@ class LifePattern(
         // lifeForm not made local as it is intended to be used with display functions in the future
         setupNewLife(universe)
 
-        return universe
+        life = universe
 
     }
 
@@ -331,6 +343,22 @@ class LifePattern(
             .also { newTextPanel ->
                 Drawer.add(newTextPanel)
             }
+    }
+
+    // as nodes are created their bounds are calculated
+    // when the bounds get larger, we need a math context to draw with that
+    // allows the pattern to be drawn with the necessary precision
+    private fun updateLargestDimension(bounds: Bounds) {
+        val dimension = bounds.width.max(bounds.height)
+        if (dimension > largestDimension) {
+            largestDimension = dimension
+            // Assuming minBaseToExceed is a function on FlexibleInteger
+            val precision = largestDimension.minPrecisionForDrawing()
+            if (precision != previousPrecision) {
+                mc = MathContext(precision + PRECISION_BUFFER)
+                previousPrecision = precision
+            }
+        }
     }
 
     private fun setupNewLife(life: LifeUniverse) {
@@ -468,7 +496,7 @@ class LifePattern(
         color: Int = Theme.cellColor
     ) {
         fillSquareMutex.withLock {
-            val width = size - cellBorderWidth
+            val width = size - cell.cellBorderWidth
 
             lifeFormBuffer.apply {
                 fill(color)
@@ -584,6 +612,52 @@ class LifePattern(
         }
     }
 
+    private fun getMappedPosition(pos: BigDecimal, offset: BigDecimal): BigDecimal =
+        positionMap.getOrPut(PositionKey(pos, offset)) { pos + offset }
+
+    // used by PatternDrawer a well as DrawNodePath
+    // maintains no state so it can live here as a utility function
+    private fun shouldContinue(
+        node: Node,
+        size: BigDecimal,
+        nodeLeft: BigDecimal,
+        nodeTop: BigDecimal
+    ): Boolean {
+        if (node.population.isZero()) {
+            return false
+        }
+
+        /*            val left = nodeLeft + canvasOffsetX
+                    val top = nodeTop + canvasOffsetY*/
+        val left = getMappedPosition(nodeLeft, canvasOffsetX)
+        val top = getMappedPosition(nodeTop, canvasOffsetY)
+
+
+        // No need to draw anything not visible on screen
+        /*      val right = left + size
+              val bottom = top + size*/
+        val right = getMappedPosition(left, size)
+        val bottom = getMappedPosition(top, size)
+
+
+        // left and top are defined by the zoom level (cell size) multiplied
+        // by half the universe size which we start out with at the nw corner which is half the size negated
+        // each level in we add half of the size at that to the  create the new size for left and top
+        // to that, we add the canvasOffsetX to left and canvasOffsetY to top
+        //
+        // the size at this level is then added to the left to get the right side of the universe
+        // and the size is added to the top to get the bottom of the universe
+        // then we see if this universe is inside the canvas by looking to see if
+        // in any direction it is outside.
+        //
+        // if the right side is less than zero it's to the left of the canvas
+        // if the bottom is less than zero it's above the canvas
+        // if the left is larger than the width then we're to the right of the canvas
+        // if the top is larger than the height we're below the canvas
+        return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
+                left >= canvasWidth || top >= canvasHeight)
+    }
+
     private fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
         updateCanvasOffsets(canvasOffsetX + dx, canvasOffsetY + dy)
     }
@@ -666,7 +740,6 @@ class LifePattern(
         }
 
         movementHandler.handleRequestedMovement()
-        cellBorderWidth = cell.size * Cell.WIDTH_RATIO
 
         val hudMessage = getHUDMessage(life)
         hudText?.setMessage(hudMessage)
@@ -682,7 +755,7 @@ class LifePattern(
     }
 
     fun rewind() {
-        life = instantiateLifeform()
+        instantiateLifeform()
     }
 
     companion object {
@@ -705,7 +778,7 @@ class LifePattern(
         internal var canvasWidth: BigDecimal = BigDecimal.ZERO
         internal var canvasHeight: BigDecimal = BigDecimal.ZERO
 
-        lateinit var cell: Cell
+        var cell = Cell()
 
         private val undoDeque = ArrayDeque<CanvasState>()
         private val positionMap = StatMap(mutableMapOf<PositionKey, BigDecimal>())
@@ -717,67 +790,5 @@ class LifePattern(
             previousPrecision = 0
         }
 
-        // as nodes are created their bounds are calculated
-        // when the bounds get larger, we need a math context to draw with that
-        // allows the pattern to be drawn with the necessary precision
-        fun updateLargestDimension(bounds: Bounds) {
-            val dimension = bounds.width.max(bounds.height)
-            if (dimension > largestDimension) {
-                largestDimension = dimension
-                // Assuming minBaseToExceed is a function on FlexibleInteger
-                val precision = largestDimension.minPrecisionForDrawing()
-                if (precision != previousPrecision) {
-                    mc = MathContext(precision + PRECISION_BUFFER)
-                    previousPrecision = precision
-                }
-            }
-        }
-
-        private fun getMappedPosition(pos: BigDecimal, offset: BigDecimal): BigDecimal =
-            positionMap.getOrPut(PositionKey(pos, offset)) { pos + offset }
-
-
-        // used by PatternDrawer a well as DrawNodePath
-        // maintains no state so it can live here as a utility function
-        fun shouldContinue(
-            node: Node,
-            size: BigDecimal,
-            nodeLeft: BigDecimal,
-            nodeTop: BigDecimal
-        ): Boolean {
-            if (node.population.isZero()) {
-                return false
-            }
-
-            /*            val left = nodeLeft + canvasOffsetX
-                        val top = nodeTop + canvasOffsetY*/
-            val left = getMappedPosition(nodeLeft, canvasOffsetX)
-            val top = getMappedPosition(nodeTop, canvasOffsetY)
-
-
-            // No need to draw anything not visible on screen
-            /*      val right = left + size
-                  val bottom = top + size*/
-            val right = getMappedPosition(left, size)
-            val bottom = getMappedPosition(top, size)
-
-
-            // left and top are defined by the zoom level (cell size) multiplied
-            // by half the universe size which we start out with at the nw corner which is half the size negated
-            // each level in we add half of the size at that to the  create the new size for left and top
-            // to that, we add the canvasOffsetX to left and canvasOffsetY to top
-            //
-            // the size at this level is then added to the left to get the right side of the universe
-            // and the size is added to the top to get the bottom of the universe
-            // then we see if this universe is inside the canvas by looking to see if
-            // in any direction it is outside.
-            //
-            // if the right side is less than zero it's to the left of the canvas
-            // if the bottom is less than zero it's above the canvas
-            // if the left is larger than the width then we're to the right of the canvas
-            // if the top is larger than the height we're below the canvas
-            return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
-                    left >= canvasWidth || top >= canvasHeight)
-        }
     }
 }

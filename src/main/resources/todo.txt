@@ -1,7 +1,3 @@
-todo: verify DrawNodeUniverse has proper resources and encapsulation - check on LifeForm object references
-todo: instantiateLifeForm in init is convoluted with the flags on getRandomLifeForm
-todo: deal with stored life better as Processing should have no idea what stored life is - maybe invoke an exit interface that asks all Drawers for there saved pattern state (as a string) - and maybe any other properties to set
-
 todo: perf test that automates invoking each of the 9 loadable files - running them a hundred frames and collecting the memory and duration of each and the total duration at the end of the run
 
 todo: idiomaticize
@@ -129,3 +125,5 @@ todo: draw universe one cell at a time into the next generation so you can see h
 todo: show how it's calculating future generations in nextGeneraiton - i.e. draw the algorithm
 todo: draw the universe in 3D
 todo: OCTREE: https://github.com/thwegene/OCT/tree/master
+todo: doublclick invokes a zoom in
+todo: smooth zoom
