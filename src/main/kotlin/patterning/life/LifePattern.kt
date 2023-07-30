@@ -21,7 +21,6 @@ import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
 import patterning.actions.KeyFactory
-import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
 import patterning.informer.DrawingInfoSupplier
@@ -83,6 +82,9 @@ class LifePattern(
     // used for resize detection
     private var prevWidth: Int
     private var prevHeight: Int
+
+    private val zoom = Zoom(this)
+
 
     init {
         uXBuffer = buffer
@@ -185,26 +187,7 @@ class LifePattern(
         // lambdas are interested in this fact
         isDrawing = true
 
-        if (isZooming) {
-            val previousCellWidth = cell.size
-            cell.size += (targetSize - cell.size) * t
-
-            // Calculate zoom factor
-            val zoomFactor = cell.size / previousCellWidth
-
-            // Calculate the difference in canvas offset-s before and after zoom
-            val offsetX = (1 - zoomFactor) * (zoomCenterX - canvasOffsetX.toFloat())
-            val offsetY = (1 - zoomFactor) * (zoomCenterY - canvasOffsetY.toFloat())
-
-            // Update canvas offsets
-            adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
-
-            // Stop zooming if we're close enough to the target size
-            if (Math.abs(cell.size - targetSize) < 0.001) {
-                cell.size = targetSize
-                isZooming = false
-            }
-        }
+        zoom.update()
 
         drawBackground()
         drawUX(life)
@@ -299,14 +282,9 @@ class LifePattern(
         }
     }
 
-    val numberedLifeForm: Unit
-        get() {
-            val number = KeyHandler.latestKeyCode - '0'.code
-            setNumberedLifeForm(number)
-        }
-
     fun instantiateLifeform() {
         RunningState.pause()
+        zoom.stopZooming()
         asyncNextGeneration.cancelAndWait()
 
         val universe = LifeUniverse()
@@ -681,7 +659,7 @@ class LifePattern(
                 left >= canvasWidth || top >= canvasHeight)
     }
 
-    private fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
+    fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
         updateCanvasOffsets(canvasOffsetX + dx, canvasOffsetY + dy)
     }
 
@@ -692,31 +670,14 @@ class LifePattern(
         // positionMap.clear()
     }
 
-    fun zoomXY(`in`: Boolean, x: Float, y: Float) {
-        zoom(`in`, x, y)
+    fun zoom(zoomIn: Boolean, x: Float, y: Float) {
+        zoom.zoom(zoomIn, x, y)
     }
 
-    private var targetSize = cell.size
-    private var isZooming = false
-    private var zoomCenterX = 0f
-    private var zoomCenterY = 0f
-
-
-    private fun zoom(zoomIn: Boolean, x: Float, y: Float) {
-        saveUndoState()
-        val previousCellWidth = cell.size
-
-        // Adjust cell width to align with grid
-        val factor = if (zoomIn) 1.25f else 0.8f
-        targetSize = cell.size * factor
-        isZooming = true
-        this.zoomCenterX = x
-        this.zoomCenterY = y
-    }
 
     fun undoMovement() {
         if (undoDeque.isNotEmpty()) {
-            isZooming = false
+            zoom.stopZooming()
             val previous = undoDeque.removeLast()
             cell = previous.cell
             updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)

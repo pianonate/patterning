@@ -6,14 +6,11 @@ import patterning.util.StatMap
 
 // the cell width times 2 ^ level will give you the size of the whole universe
 // you'll need it it to draw the viewport on screen
- class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
-    var currentZoom: Float = 1.0f
-    var targetZoom: Float = 1.0f
+class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
 
-     private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
+    private var bigSizeCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
     val cellBorderWidth
         get() = size * WIDTH_RATIO
-
 
     // surprisingly caching the result of the half size calculation provides
     // a remarkable speed boost - added CachedMap to track the results of getOrPut()
@@ -55,16 +52,13 @@ import patterning.util.StatMap
         // these values are calculated so often that caching really seems to help
         // cell size as a big decimal times the requested size of universe at a given level
         // using MathContext to make sure we don't lose precision
-        return sizeMap.getOrPut(level) { bigSizeCached.multiply(FlexibleInteger.pow2(level).bigDecimal, LifePattern.mc) }
+        return sizeMap.getOrPut(level) {
+            bigSizeCached.multiply(
+                FlexibleInteger.pow2(level).bigDecimal,
+                LifePattern.mc
+            )
+        }
 
-    }
-
-    private var zoomingIn: Boolean = false
-
-    fun zoom(zoomIn: Boolean) {
-        zoomingIn = zoomIn
-        val factor = if (zoomIn) 1.25f else 0.8f
-        size *= factor
     }
 
     override fun toString() = "Cell{size=$size}"

@@ -68,25 +68,25 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
     private val callbackZoomIn = SimpleKeyCallback(
         // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
-        invokeFeatureLambda = { drawer.zoomXY(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat()) },
+        invokeFeatureLambda = { drawer.zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat()) },
         usage = "zoom in centered on the mouse"
     )
 
     val callbackZoomInCenter = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_CENTERED,
-        invokeFeatureLambda = { drawer.zoomXY(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2) },
+        invokeFeatureLambda = { drawer.zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2) },
         usage = "zoom in centered on the middle of the screen"
     )
 
     val callbackZoomOutCenter = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
-        invokeFeatureLambda = { drawer.zoomXY(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2) },
+        invokeFeatureLambda = { drawer.zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2) },
         usage = "zoom out centered on the middle of the screen"
     )
 
     private val callbackZoomOut = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_OUT,
-        invokeFeatureLambda = { drawer.zoomXY(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat()) },
+        invokeFeatureLambda = { drawer.zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat()) },
         usage = "zoom out centered on the mouse"
     )
 
