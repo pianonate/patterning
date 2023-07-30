@@ -25,8 +25,6 @@ import patterning.util.StatMap
     var size: Float = initialSize
         set(value) {
             field = when {
-                value > CELL_WIDTH_ROUNDING_THRESHOLD && !zoomingIn -> value.toInt().toFloat()
-                value > CELL_WIDTH_ROUNDING_THRESHOLD -> value.toInt().plus(1).toFloat()
                 value == 0.0f -> Float.MIN_VALUE // at very large levels, fit to screen will calculate a cell size of 0 - we need it to have a minimum value in this case
                 else -> value
             }
