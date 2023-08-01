@@ -7,15 +7,15 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import patterning.RunningMode
-import patterning.RunningModeObserver
 import patterning.RunningState
+import patterning.SingleStepObserver
 import patterning.Theme
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
 import patterning.informer.DrawingInfoSupplier
 import processing.core.PImage
 
-class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver,
+class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver,
     CoroutineScope by CoroutineScope(Dispatchers.Default) {
 
     private val pauseIcon: PImage
@@ -28,10 +28,10 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
         playIcon = super.icon
         currentIcon = playIcon
         // allows for highlighting playpause whenever the single step mode is changed
-        RunningState.addObserver(this)
+        RunningState.addModeChangeObserver(this)
     }
 
-    override fun onRunningModeChange() {
+    override fun onSingleStepModeChange() {
         runningModeChanged = true
         highlightFromKeyPress()
     }
@@ -64,7 +64,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
 
     private fun toggleIcon() {
         when (RunningState.runningMode) {
-            RunningMode.PLAYING -> {
+            RunningMode.PLAYING, RunningMode.TESTING -> {
                 currentIcon = pauseIcon
             }
 
@@ -72,7 +72,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
                 currentIcon = pauseIcon
                 timerJob?.cancel()
                 timerJob = launch {
-                    delay(Theme.singleModeToggleDuration.toLong())
+                    delay(Theme.controlHighlightDuration.toLong())
                     currentIcon = playIcon
                 }
             }

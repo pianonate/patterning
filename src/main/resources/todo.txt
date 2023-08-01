@@ -1,17 +1,15 @@
 todo: perf test that automates invoking each of the 9 loadable files - running them a hundred frames and collecting the memory and duration of each and the total duration at the end of the run
-
+todo: get rid of timer class - and use coroutines instead - i think there already is an example
+todo: zooming in at lower levels finishes slower because of the comparison that is made to the size that stops the zooming - that comparison should adjust itself to be range appropriate to the curent cell size - there has to be some formula to keep the zooming constant
+todo: when you lift your finger from holding down a zoom key, it should stop immediately
+todo: fix the state management that you're using the objects to propagate helper - especially fix cell because it should be fixable
+todo: put the name of the damn thing on the screen!
 todo: idiomaticize
-
-
 todo: super bounds fit at universe sizes up - maybe with a B1 B2, etc. key combination
-
 todo: lightspeed - speed up 1 step every frame - as you did in texting... but allow for starting and stopping lightspeed
-
 todo: right now Theme has a chicken/egg situation with initializing ColorConstant objects before Theme.themeTransitionDuration is set
       so i have to call it every time when it's executing. this seems wrong.  possibly ColorConstants should be handled differently than everything else as they are the only ones that actually change each go around.  the rest are constant throughout the application execution
-
 todo: get rid of using TextPanel for HUD - start from scratch on TextPanel...
-
 todo: create a new kind of ContainerPanel called an InformationRadiator that contains InformationPanels
         that each contain a left aligned name and right aligned value - Radiator
         you can display the information radiators anywhere on screen as
@@ -20,20 +18,14 @@ todo: create a new kind of ContainerPanel called an InformationRadiator that con
                 for now, recreate the ableton experience
                 anyone that wants to provide info to the ableton experience can implement the DetailsProvider interface
                 And the AbletonPanel will have to register an Observer/Observable relationship with the DetailsProvider
-
 todo: text box - only uses the list of lines and don't use message - too messy
 todo: capture events with javafx (or something else) to allow for trackpad manipulation of the app
-
 todo: if the pattern is just another Drawable then we should allow a Drawable to be optionally managed by a Governor that allows it to draw or not so we don't have to pass shouldDraw around. possibly we just set that up in the Drawer class to check whether a Drawable has a governor
-
 todo: should we use futures instead of ComplexCalculationHandler?  it's a little more complicated but it's more standard and it's more flexible - you can cancel a future and you can get a result from it - and you can get a result from it with a timeout - which is what you want for the ComplexCalculationHandler
-
 todo: put a colored basic panel on a colored basic panel and slide the second one over the first - this will show the right transition behavior - take countdown andTHen run and put it into Panel - is there a futures type thing here?
       put text on top of it that says "press any key to continue" (or click - or is there some visual that indicates this)?
-
 todo: encapsulate lifeForm drawing into a Panel which can receive and manage mouse events on itself so they
       can 'capture' the mouse events and release it in an intuitive way for the code
-
 todo: an align panel should allow also for a TextPanel or an information radiator-
 todo: DPS should increase by stepped values - can it be an algorithm or just a table?
 todo: maximum volatility gun - why does it change the offset sometimes at very high generation speed
@@ -42,16 +34,13 @@ todo: create a text panel that can slide out from an info oldControl - same as a
       the hover text goes away and the panel slides out - even if you're hovering, while the panel is being shown
       hovering is disallowed until you close the panel with by clicking on its close.
       the panel should be draggable
-
- todo: continue moving drawable stuff into UXConstants and UXDarkConstants (as appropriate)
-
+todo: continue moving drawable stuff into UXConstants and UXDarkConstants (as appropriate)
 todo: handle displaying fractional frame rates better (do it on a text panel)
 todo: oldControl display orange when they can't go any further
 todo: autofit to screen
 todo: when you invoke a keyboard command associated with a oldControl - highlight the oldControl as if it had been clicked - highlight it for 500ms
 todo: popout for movement oldControl - aligning to dimensions - sub control panel...
 todo: make all icons the same size as the play oldControl...
-
 todo: debug when turing machine gets big - what is taking its time to display as it stops and starts a lot
       to me it smells like garbage collection because you can speed it up substantially by reducing the number
       of living cells on screen.  what objects are involved to display all that on screen- certainly there is a bunch of
@@ -59,13 +48,11 @@ todo: debug when turing machine gets big - what is taking its time to display as
       instead of the current mechanism. the challenge is that in order to understand how it maps to screen dimensions, you have to actually
       use the bounds of the universe coupled with the cell size to drill into the viewport that's visible.  there has to be another way to
       directly query to find the node corresponding to the visibly displayed universe
-
 todo: debug maximum volatility gun - why is it that if you step very fast at the beginning (without clearing the undo cache), it loses coherence? (haven't been able to recently reproduce this - is it because it's running on its own thread? or steps are being handled better?
 todo: show lifeForm stats in its slide out box
 todo: notification that you have pasted with the name of the life form - above the countdown text and larger - with the name
 todo: splash message "John Conway's Game Of Life" and if nothing loaded, tell'em what's happening
 todo: magnifier over mouseX
-todo: smooth combination of zoom/center
 todo: decouple step management from speed management. use fast forward and rewind buttons to speed up slow down
 todo: move all drawing into patterning.life.PatternDrawer
 todo: somewhere on the screen show fade in the target step and the current
@@ -89,12 +76,9 @@ todo: is it possible to bind keyboard shortcuts to methods?
 todo: display keyboard shortcuts in a panel and allow for it to be moved around the screen
 todo: move HUD to upper right with a panel with an expand/collapse
 todo: display pasted in metadata in a HUD section
-todo: smooth zoom - is that possible? seems to me it would have to be possible.
 todo: detect periodic stability - it seems that the lastID stops growing in the model - is that the detector?
-todo: Add mc parser support
-
+todo: Add mc (metacrystal?) parser support
 todo: do you need to manage the size of the hashmap?
-
 todo: here's what would be cool - zoom over a section - if your mouse is over a section of what's going on,
         you can see the details at a much higher zoom level
 todo: save all pasted in valid RLEs in a folder. check if it's already there and if it's different.
@@ -103,19 +87,16 @@ todo: allow for rotating the images for visual appeal
 todo: copy / paste selections
 todo: create a test for patterning.life.PatternDrawer that allows you to know if it actually is improved in performance
 todo: double click to zoom
-todo: smooth zoom
 todo: click for info
 todo: directional big jump
 todo: file manager of RLEs
 todo: undo mouse moves? would it make sense to people
 todo: paste logic - move to separate class to handle - just for the sake of keeping patterning.Patterning clean
 todo: at the end of PatternDrawer.undoMovement maybe you show something fun to indicate you've reached the end of the stack. pulse the screen or something
-
 todo: find a threadsafe way to add a sliding window cache hit rate to StatMap - it's hard because you'll need something that is
       threadsafe because hashmap is changed substantially during nextGeneration calls and the cacheRate needs to interoperate with that
       if you're using some kind of Deque to keep a list of cache events populated on getOrPut - and without proper synchronization
       you can slow down the nextGeneration code substantially just to get at the cacheRate data
-
 todo: fit bounds keyboard shortcuts to do F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 which will zoom wo universe -1, universe -2, universe -3, etc.f
 todo: picture in picture of a zoomed in thumbnail of the whole universe - within a panel with a resizable border!
 todo: mc format reader
@@ -126,4 +107,3 @@ todo: show how it's calculating future generations in nextGeneraiton - i.e. draw
 todo: draw the universe in 3D
 todo: OCTREE: https://github.com/thwegene/OCT/tree/master
 todo: doublclick invokes a zoom in
-todo: smooth zoom

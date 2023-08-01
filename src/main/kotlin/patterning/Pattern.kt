@@ -10,5 +10,6 @@ abstract class Pattern(
     // require all Patterns to implement them
     abstract fun draw()
     abstract fun move(dx: Float, dy: Float)
+    abstract fun shutdownAsyncJobRunner()
     abstract fun updateProperties()
 }

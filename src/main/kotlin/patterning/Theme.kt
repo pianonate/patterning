@@ -45,8 +45,6 @@ object Theme {
         private set
     var shortTransitionDuration = 0
         private set
-    var singleModeToggleDuration = 0
-        private set
     var startupTextDisplayDuration = 0
         private set
     var startupTextFadeInDuration = 0
@@ -118,7 +116,6 @@ object Theme {
         controlHighlightDuration = themeConstants.controlHighlightDuration
         controlPanelTransitionDuration = themeConstants.controlPanelTransitionDuration
         shortTransitionDuration = themeConstants.shortTransitionDuration
-        singleModeToggleDuration = themeConstants.singleModeToggleDuration
         startupTextDisplayDuration = themeConstants.startupTextDisplayDuration
         startupTextFadeInDuration = themeConstants.startupTextFadeInDuration
         startupTextFadeOutDuration = themeConstants.startupTextFadeOutDuration

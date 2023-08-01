@@ -3,6 +3,8 @@ package patterning.panel
 import java.util.Timer
 import java.util.TimerTask
 import patterning.Drawer
+import patterning.RunningMode
+import patterning.RunningState
 import patterning.Theme
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
@@ -227,7 +229,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
-        if (isMouseOverMe) {
+        if (isMouseOverMe && (RunningState.runningMode != RunningMode.TESTING)) {
             keyCallback.invokeFeature() // Specific to Control
         }
     }

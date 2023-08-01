@@ -31,10 +31,9 @@ import patterning.panel.ControlPanel
 import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
-import patterning.util.AsyncCalculationRunner
+import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
-import patterning.util.StatMap
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
@@ -44,10 +43,12 @@ class LifePattern(
     properties: Properties
 ) : Pattern(pApplet, properties) {
 
+
     private lateinit var life: LifeUniverse
+    private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
 
-    private val asyncNextGeneration: AsyncCalculationRunner
+    private val asyncNextGeneration: AsyncJobRunner
     private var targetStep = 0
     private val drawingInformer: DrawingInfoSupplier
     private val hudInfo: HUDStringBuilder
@@ -115,7 +116,7 @@ class LifePattern(
         keyFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
         setupControls(keyFactory)
 
-        asyncNextGeneration = AsyncCalculationRunner { asyncNextGeneration() }
+        asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() }, threadName = "NextGeneration")
 
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
@@ -180,12 +181,12 @@ class LifePattern(
         Drawer.addAll(panels)
     }
 
-    val t = 0.1f
-
     override fun draw() {
 
         // lambdas are interested in this fact
         isDrawing = true
+
+        performanceTest.execute()
 
         zoom.update()
 
@@ -209,13 +210,13 @@ class LifePattern(
         lifeFormPosition.add(dx, dy)
     }
 
-    fun runPerformanceTest() {
-        val performanceTest = PerformanceTest(this, properties)
-        performanceTest.runTest()
-    }
 
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
+    }
+
+    override fun shutdownAsyncJobRunner() {
+        asyncNextGeneration.shutdown()
     }
 
     private fun goForwardInTime() {
@@ -270,11 +271,12 @@ class LifePattern(
         }
     }
 
-    fun setNumberedLifeForm(number: Int) {
+
+    fun setNumberedLifeForm(number: Int, testing: Boolean = false) {
         try {
             storedLife =
                 ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-            instantiateLifeform()
+            instantiateLifeform(testing)
         } catch (e: IOException) {
             throw RuntimeException(e)
         } catch (e: URISyntaxException) {
@@ -282,8 +284,8 @@ class LifePattern(
         }
     }
 
-    fun instantiateLifeform() {
-        RunningState.pause()
+    fun instantiateLifeform(testing: Boolean = false) {
+        if (!testing) RunningState.pause()
         zoom.stopZooming()
         asyncNextGeneration.cancelAndWait()
 
@@ -309,7 +311,7 @@ class LifePattern(
         }
         // new instances only created in instantiateLife to keep things simple
         // lifeForm not made local as it is intended to be used with display functions in the future
-        setupNewLife(universe)
+        setupNewLife(universe, testing)
 
         life = universe
 
@@ -362,7 +364,7 @@ class LifePattern(
         }
     }
 
-    private fun setupNewLife(life: LifeUniverse) {
+    private fun setupNewLife(life: LifeUniverse, testing: Boolean = false) {
 
         undoDeque.clear()
 
@@ -370,7 +372,7 @@ class LifePattern(
         updateLargestDimension(bounds)
         center(bounds, fitBounds = true, saveState = false)
 
-        countdownText = createTextPanel(countdownText) {
+        if (!testing) countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
                 drawingInformer,
                 Theme.countdownText,
@@ -391,8 +393,6 @@ class LifePattern(
                 .textSize(24)
                 .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
         }
-
-        positionMap.clear()
 
     }
 
@@ -447,7 +447,6 @@ class LifePattern(
             patternInfo.forEach { (key, value) ->
                 hudInfo.addOrUpdate(key, value)
             }
-            hudInfo.addOrUpdate("posHits", positionMap.hitRate)
         }
     }
 
@@ -575,11 +574,9 @@ class LifePattern(
             return
         }
 
-        //val leftWithOffset = left + canvasOffsetX
-        // val topWithOffset = top + canvasOffsetY
+        val leftWithOffset = left + canvasOffsetX
+        val topWithOffset = top + canvasOffsetY
 
-        val leftWithOffset = getMappedPosition(left, canvasOffsetX)
-        val topWithOffset = getMappedPosition(top, canvasOffsetY)
 
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
@@ -590,10 +587,9 @@ class LifePattern(
         } else if (node is TreeNode) {
 
             val halfSize = cell.halfUniverseSize(node.level)
-            /*            val leftHalfSize = left + halfSize
-                        val topHalfSize = top + halfSize*/
-            val leftHalfSize = getMappedPosition(left, halfSize)
-            val topHalfSize = getMappedPosition(top, halfSize)
+
+            val leftHalfSize = left + halfSize
+            val topHalfSize = top + halfSize
 
             if (node.population > largePopulationThreshold) {
                 coroutineScope {
@@ -613,9 +609,6 @@ class LifePattern(
         }
     }
 
-    private fun getMappedPosition(pos: BigDecimal, offset: BigDecimal): BigDecimal =
-        positionMap.getOrPut(PositionKey(pos, offset)) { pos + offset }
-
     // used by PatternDrawer a well as DrawNodePath
     // maintains no state so it can live here as a utility function
     private fun shouldContinue(
@@ -628,17 +621,13 @@ class LifePattern(
             return false
         }
 
-        /*            val left = nodeLeft + canvasOffsetX
-                    val top = nodeTop + canvasOffsetY*/
-        val left = getMappedPosition(nodeLeft, canvasOffsetX)
-        val top = getMappedPosition(nodeTop, canvasOffsetY)
+        val left = nodeLeft + canvasOffsetX
+        val top = nodeTop + canvasOffsetY
 
 
         // No need to draw anything not visible on screen
-        /*      val right = left + size
-              val bottom = top + size*/
-        val right = getMappedPosition(left, size)
-        val bottom = getMappedPosition(top, size)
+        val right = left + size
+        val bottom = top + size
 
 
         // left and top are defined by the zoom level (cell size) multiplied
@@ -667,7 +656,6 @@ class LifePattern(
         canvasOffsetX = offsetX
         canvasOffsetY = offsetY
         nodePath.offsetsMoved = true
-        // positionMap.clear()
     }
 
     fun zoom(zoomIn: Boolean, x: Float, y: Float) {
@@ -735,7 +723,7 @@ class LifePattern(
 
 
     private suspend fun asyncNextGeneration() {
-        coroutineScope { life.nextGeneration() }
+        life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
 
@@ -766,7 +754,6 @@ class LifePattern(
         var cell = Cell()
 
         private val undoDeque = ArrayDeque<CanvasState>()
-        private val positionMap = StatMap(mutableMapOf<PositionKey, BigDecimal>())
 
         private const val LIFE_FORM_PROPERTY = "lifeForm"
 

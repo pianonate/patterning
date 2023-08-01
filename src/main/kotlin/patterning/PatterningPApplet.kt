@@ -1,6 +1,11 @@
 package patterning
 
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.life.LifePattern
@@ -9,7 +14,7 @@ import processing.core.PApplet
 class PatterningPApplet : PApplet() {
     var draggingDrawing = false
 
-    private lateinit var drawer: LifePattern
+    private lateinit var pattern: LifePattern
     private lateinit var properties: Properties
 
     // used to control dragging the image around the screen with the mouse
@@ -25,15 +30,38 @@ class PatterningPApplet : PApplet() {
         size(properties.width, properties.height)
     }
 
+    class ProcessingDispatcher(private val pApplet: PApplet) : CoroutineDispatcher() {
+        private val taskQueue = ConcurrentLinkedQueue<Runnable>()
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            taskQueue.add(block)
+        }
+
+        // Call this method in your PApplet's draw() method
+        fun executeTasks() {
+            while (taskQueue.isNotEmpty()) {
+                taskQueue.poll()?.run()
+            }
+        }
+    }
+
+    val processingDispatcher = ProcessingDispatcher(this)
+
     override fun setup() {
         Theme.initialize(this)
         KeyHandler.registerKeyHandler(this)
+
+        println("Processing thread: ${Thread.currentThread().name}")
+
+        CoroutineScope(processingDispatcher).launch {
+            println("Custom dispatcher thread: ${Thread.currentThread().name}")
+        }
 
         surface.setResizable(true)
 
         properties.setWindowPosition()
 
-        drawer = LifePattern(
+        pattern = LifePattern(
             pApplet = this,
             properties
         ).also {
@@ -42,7 +70,9 @@ class PatterningPApplet : PApplet() {
     }
 
     override fun draw() {
-        drawer.draw()
+        processingDispatcher.executeTasks()  // Make sure you call this!
+
+        pattern.draw()
     }
 
     override fun mousePressed() {
@@ -70,7 +100,7 @@ class PatterningPApplet : PApplet() {
         if (draggingDrawing) {
             val dx = (mouseX - lastMouseX).roundToInt().toFloat()
             val dy = (mouseY - lastMouseY).roundToInt().toFloat()
-            drawer.move(dx, dy)
+            pattern.move(dx, dy)
             lastMouseX += dx
             lastMouseY += dy
         }
@@ -78,7 +108,8 @@ class PatterningPApplet : PApplet() {
 
     // Override the exit() method to save window properties before closing
     override fun exit() {
-        drawer.updateProperties()
+        pattern.shutdownAsyncJobRunner()
+        pattern.updateProperties()
         properties.saveProperties()
         super.exit()
     }

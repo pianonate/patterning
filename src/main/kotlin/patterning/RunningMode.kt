@@ -3,5 +3,6 @@ package patterning
 enum class RunningMode {
     PLAYING,
     PAUSED,
-    SINGLE_STEP
+    SINGLE_STEP,
+    TESTING
 }

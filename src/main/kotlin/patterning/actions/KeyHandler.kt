@@ -1,5 +1,7 @@
 package patterning.actions
 
+import patterning.RunningMode
+import patterning.RunningState
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -40,7 +42,10 @@ object KeyHandler {
 
         if (event.action == KeyEvent.PRESS) {
             _pressedKeys.add(keyCode)
-            matchingCallback.invokeFeature()
+            if (RunningState.runningMode != RunningMode.TESTING) {
+                // disallow feature invoking during testing
+                matchingCallback.invokeFeature()
+            }
             // Check if matchingCallback is KeyObservable
             if (matchingCallback is KeyObservable) {
                 matchingCallback.notifyKeyObservers()

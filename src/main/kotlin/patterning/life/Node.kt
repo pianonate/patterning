@@ -8,7 +8,6 @@ interface Node {
     val level: Int
     val bounds: Bounds
 
-
     // added globalVersion to avoid having to clear the cache whenever we increase the
     // step size on the universe - prior to this we iterated over the entire hashmap
     // and invalidated each cache entry - but when the hashmap was very large this took a long time
@@ -20,7 +19,7 @@ interface Node {
         private const val LIVING_ID = 2
         val deadNode = LeafNode(DEAD_ID, FlexibleInteger.ZERO)
         val livingNode = LeafNode(LIVING_ID, FlexibleInteger.ONE)
-        val startId = deadNode.id
+        val startId = deadNode.id + 1
         var globalVersion = 0
 
         fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {

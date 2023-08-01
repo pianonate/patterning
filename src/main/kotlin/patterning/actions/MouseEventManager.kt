@@ -2,12 +2,13 @@ package patterning.actions
 
 object MouseEventManager {
     private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
+
     fun addReceiver(receiver: MouseEventReceiver) {
         mouseEventReceivers.add(receiver)
     }
 
-    fun addAll(receivers: Collection<MouseEventReceiver>?) {
-        mouseEventReceivers.addAll(receivers!!)
+    fun addAll(receivers: Collection<MouseEventReceiver>) {
+        mouseEventReceivers.addAll(receivers)
     }
 
     var isMousePressedOverAnyReceiver = false

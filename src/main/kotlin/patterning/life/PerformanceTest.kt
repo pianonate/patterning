@@ -1,36 +1,82 @@
 package patterning.life
 
-import kotlin.system.measureTimeMillis
 import patterning.Properties
 import patterning.RunningState
+import patterning.TestModeObserver
 import processing.data.JSONObject
 
-class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) {
+class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) : TestModeObserver {
     private val performanceResults = JSONObject()
     private val patternCount = 9
-    private val framesPerPattern = 100L
+    private val framesPerPattern = 200L
 
-    fun runTest() {
-        val totalDuration = measureTimeMillis {
-            for (patternIndex in 1..patternCount) {
-                val patternMemoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
-                val patternDuration = measureTimeMillis {
-                    RunningState.pause()
-                    lifePattern.setNumberedLifeForm(patternIndex)
-                    /* lifePattern.runPattern(framesPerPattern) */
-                    RunningState.pause()
-                }
-                val patternMemoryAfter = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()
-                val patternMemoryUsed = patternMemoryAfter - patternMemoryBefore
+    // State for the ongoing test, if any
+    private var currentPatternIndex = 1
+    private var frameCount = 0L
+    private var patternStartTime = 0L
+    private var patternMemoryBefore = 0L
+    private var testStartTime = 0L
+    private var testing = false
 
-                val patternResults = JSONObject()
-                patternResults.setInt("duration", patternDuration.toInt())
-                patternResults.setInt("memory", patternMemoryUsed.toInt())
-                performanceResults.setJSONObject(patternIndex.toString(), patternResults)
+    private val runtime = Runtime.getRuntime()
+
+    init {
+        RunningState.addTestModeObserver(this)
+    }
+
+    override fun onTestModeEnter() {
+        // Reset state for new test
+        testing = true
+        currentPatternIndex = 1
+        frameCount = 0
+        testStartTime = System.currentTimeMillis()
+        patternStartTime = testStartTime
+        patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
+    }
+
+    fun execute() {
+        if (!testing) {
+            return
+        }
+
+        // Advance frame count
+        frameCount++
+
+        if (frameCount % framesPerPattern == 1L) {
+            // First frame of a new pattern
+            lifePattern.setNumberedLifeForm(number = currentPatternIndex, testing = true)
+            patternStartTime = System.currentTimeMillis()
+            patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
+        } else if (frameCount % framesPerPattern == 0L) {
+            // Last frame of a pattern
+            val patternMemoryAfter = runtime.totalMemory() - runtime.freeMemory()
+            val patternMemoryUsed = patternMemoryAfter - patternMemoryBefore
+            val patternDuration = System.currentTimeMillis() - patternStartTime
+
+            val patternResults = JSONObject()
+            patternResults.setLong("memory", patternMemoryUsed)
+            patternResults.setLong("duration", patternDuration)
+            performanceResults.setJSONObject(currentPatternIndex.toString(), patternResults)
+
+            // Advance to next pattern (if not the end of the test)
+            if (currentPatternIndex < patternCount) {
+                currentPatternIndex++
             }
         }
-        performanceResults.setInt("totalDuration", totalDuration.toInt())
-        performanceResults.setInt("totalMemory", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()).toInt())
-        properties.performanceTestResults = performanceResults
+
+        if (frameCount == framesPerPattern * patternCount) {
+            // Test is over
+            val totalDuration = System.currentTimeMillis() - testStartTime
+            val totalMemoryUsed = runtime.totalMemory() - runtime.freeMemory()
+
+            performanceResults.setLong(
+                "totalMemory",
+                totalMemoryUsed
+            )
+            performanceResults.setLong("totalDuration", totalDuration)
+            properties.performanceTestResults = performanceResults
+            testing = false
+            RunningState.endTest()
+        }
     }
 }

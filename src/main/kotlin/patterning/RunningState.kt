@@ -5,8 +5,12 @@ object RunningState {
     val runningMode: RunningMode
         get() = currentRunningMode
 
-    private val observers = mutableListOf<RunningModeObserver>()
+    private val singleStepObservers = mutableListOf<SingleStepObserver>()
+    private val testModeObservers = mutableListOf<TestModeObserver>()
+
+
     private var currentRunningMode = RunningMode.PAUSED
+    private var previousRunningMode = RunningMode.PAUSED
     private var wasSingleStepActivated = false
 
     fun toggleRunning() {
@@ -16,27 +20,32 @@ object RunningState {
             RunningMode.SINGLE_STEP -> {
                 wasSingleStepActivated = true
             }
+
+            RunningMode.TESTING -> throw IllegalStateException("Cannot toggle running state during testing.")
         }
     }
 
-    fun toggleRunnningMode() {
+    fun toggleSingleStep() {
+        if (currentRunningMode == RunningMode.TESTING)
+            throw IllegalStateException("Cannot toggle running state during testing.")
+
         currentRunningMode = if (currentRunningMode == RunningMode.SINGLE_STEP) {
             RunningMode.PAUSED
         } else {
             RunningMode.SINGLE_STEP
         }
         wasSingleStepActivated = false
-        notifyObservers()  // Add this line to notify PlayPauseControl when toggleSingleStep() is called.
+        notifySingleStepObservers()  // Add this line to notify PlayPauseControl when toggleSingleStep() is called.
     }
 
-    fun addObserver(observer: RunningModeObserver) {
-        observers.add(observer)
+    fun addModeChangeObserver(observer: SingleStepObserver) {
+        singleStepObservers.add(observer)
     }
 
 
-    private fun notifyObservers() {
-        for (observer in observers) {
-            observer.onRunningModeChange()
+    private fun notifySingleStepObservers() {
+        for (observer in singleStepObservers) {
+            observer.onSingleStepModeChange()
         }
     }
 
@@ -50,21 +59,33 @@ object RunningState {
             currentRunningMode = RunningMode.PAUSED
     }
 
+    fun addTestModeObserver(observer: TestModeObserver) {
+        testModeObservers.add(observer)
+    }
+
+    fun test() {
+        previousRunningMode = currentRunningMode
+        currentRunningMode = RunningMode.TESTING
+        for (observer in testModeObservers) {
+            observer.onTestModeEnter()
+        }
+    }
+
     fun runMessage(): String {
         return when (currentRunningMode) {
             RunningMode.PLAYING -> "running"
             RunningMode.SINGLE_STEP -> "step"
             RunningMode.PAUSED -> "paused"
+            RunningMode.TESTING -> "testing"
         }
     }
 
     fun shouldAdvance(): Boolean {
         return when (currentRunningMode) {
-            RunningMode.PLAYING, RunningMode.SINGLE_STEP -> {
-                if (currentRunningMode == RunningMode.PLAYING || wasSingleStepActivated) {
-                    if (currentRunningMode == RunningMode.SINGLE_STEP) {
-                        wasSingleStepActivated = false
-                    }
+
+            RunningMode.SINGLE_STEP -> {
+                if (wasSingleStepActivated) {
+                    wasSingleStepActivated = false
                     true
                 } else {
                     false
@@ -72,7 +93,17 @@ object RunningState {
             }
 
             RunningMode.PAUSED -> false
+            RunningMode.PLAYING -> true
+            RunningMode.TESTING -> true
         }
     }
 
+    fun endTest() {
+        when (previousRunningMode) {
+            RunningMode.PLAYING -> run()
+            RunningMode.PAUSED -> pause()
+            RunningMode.SINGLE_STEP -> toggleSingleStep()
+            RunningMode.TESTING -> throw IllegalStateException("Cannot end test mode when not in test mode.")
+        }
+    }
 }

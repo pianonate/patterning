@@ -1,5 +1,7 @@
 package patterning.life
 
+import kotlin.math.abs
+
 class Zoom(private val lifePattern: LifePattern) {
     private var targetSize = LifePattern.cell.size
     private var isZooming = false
@@ -15,7 +17,7 @@ class Zoom(private val lifePattern: LifePattern) {
         lifePattern.saveUndoState()
 
         // Adjust cell width to align with grid
-        val factor = if (zoomIn) 1.2f else 0.8f
+        val factor = if (zoomIn) 1.8f else 0.5f
         targetSize = LifePattern.cell.size * factor
         isZooming = true
         this.zoomCenterX = x
@@ -38,8 +40,8 @@ class Zoom(private val lifePattern: LifePattern) {
             lifePattern.adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
 
             // Stop zooming if we're close enough to the target size
-            if (Math.abs(LifePattern.cell.size - targetSize) < 0.001) {
-                LifePattern.cell.size = targetSize
+            // we used to set the cell.size to the target but that makes it jumpy
+            if (abs(LifePattern.cell.size - targetSize) < 0.01) {
                 isZooming = false
             }
         }

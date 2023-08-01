@@ -135,7 +135,7 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
             KeyCombo(SHORtCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
         invokeFeatureLambda = {
-            drawer.runPerformanceTest()
+            RunningState.test()
         },
         usage = "performance test"
     )
@@ -173,7 +173,7 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
 
     val callbackSingleStep = SimpleKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
-        invokeFeatureLambda = { RunningState.toggleRunnningMode() },
+        invokeFeatureLambda = { RunningState.toggleSingleStep() },
         usage = "toggle single step mode where play advances one step at a time"
     )
 

@@ -1,23 +1,28 @@
 package patterning.util
 
 import java.util.LinkedList
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-class AsyncCalculationRunner(
+class AsyncJobRunner(
     val rateWindowSeconds: Int = RATE_PER_SECOND_WINDOW,
-    val method: suspend () -> Unit
+    val method: suspend () -> Unit,
+    threadName: String
 ) {
+    private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, threadName) }
+    private val singleThreadContext = executor.asCoroutineDispatcher()
+
     private val mutex = Mutex()
     private var atomicIsRunning = AtomicBoolean(false)
-    private val handlerScope = CoroutineScope(Dispatchers.Default)
+    private val handlerScope = CoroutineScope(singleThreadContext)
     private var calculationJob: Job? = null
     private var timestamps = LinkedList<Long>()
     private var timestampsSnapshot = LinkedList<Long>()
@@ -57,6 +62,10 @@ class AsyncCalculationRunner(
                 timestampsSnapshot.clear()
             }
         }
+    }
+
+    fun shutdown() {
+        executor.shutdown()
     }
 
     fun getRate(): Float {

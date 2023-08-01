@@ -52,13 +52,11 @@ open class UXConstants internal constructor() {
 
     // durations
     val controlHighlightDuration: Int
-        get() = 1000
+        get() = 500
     val controlPanelTransitionDuration: Int
         get() = 1500
     val shortTransitionDuration: Int
         get() = 300
-    val singleModeToggleDuration: Int
-        get() = 500
     val startupTextDisplayDuration: Int
         get() = 5000
     val startupTextFadeInDuration: Int

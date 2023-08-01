@@ -324,24 +324,24 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var keepShortCutTogether = false
 
         constructor(
-            informer: DrawingInfoSupplier?,
+            informer: DrawingInfoSupplier,
             message: String,
             hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
         ) : super(
-            informer!!, hAlign!!, vAlign!!
+            informer, hAlign!!, vAlign!!
         ) {
             this.message = message
         }
 
         constructor(
-            informer: DrawingInfoSupplier?,
+            informer: DrawingInfoSupplier,
             message: String,
             position: PVector?,
             hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
         ) : super(
-            informer!!, position!!, hAlign!!, vAlign!!
+            informer, position!!, hAlign!!, vAlign!!
         ) {
             this.message = message
         }

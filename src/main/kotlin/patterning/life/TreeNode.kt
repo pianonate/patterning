@@ -1,21 +1,22 @@
 package patterning.life
 
 import patterning.util.FlexibleInteger
+import patterning.util.StatMap
 
 class TreeNode(
     val nw: Node,
     val ne: Node,
     val sw: Node,
     val se: Node,
-    override var id: Int
+    override var id: Int,
+    val generation: FlexibleInteger
 ) : Node {
 
     override val level: Int = nw.level + 1
     override val population: FlexibleInteger = nw.population + ne.population + sw.population + se.population
 
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
-
-    var cacheVersion: Int = -1 // Version when cache was last set to valid
+    private var cacheVersion: Int = -1 // Version when cache was last set to valid
 
     var nextGenerationCache: TreeNode? = null
         get() = if (isValidCache()) field else null
@@ -85,11 +86,48 @@ class TreeNode(
         }
     }
 
-    override fun hashCode(): Int = hash
+    fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
+        val size = hashMap.size
+        return countUnreferencedNodes(hashMap)
+    }
+
+    private fun countUnreferencedNodes(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
+        val visited = mutableSetOf<TreeNode>()
+        traverseTree(this, visited)
+
+        var count = 0
+
+        for ((_, nodeList) in hashMap) {
+            for (node in nodeList) {
+                if (node !in visited) {
+                    count++
+                }
+            }
+        }
+
+        return count
+    }
+
+    private fun traverseTree(node: TreeNode, visited: MutableSet<TreeNode>) {
+        if (node in visited) {
+            return
+        }
+
+        visited.add(node)
+
+        for (child in listOf(node.nw, node.ne, node.sw, node.se)) {
+            if (child.level > 0) {
+                traverseTree(child as TreeNode, visited)
+            }
+        }
+    }
 
     override fun toString(): String {
-        return "id=$id, level=$level, population=$population, bounds=$bounds"
+        return "id=$id, level=$level, population=$population, gen=$generation"
     }
+
+    override fun hashCode(): Int = hash
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
