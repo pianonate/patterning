@@ -449,7 +449,6 @@ class LifeUniverse internal constructor() {
             currentRoot = expandUniverse(currentRoot)
         }
 
-
         val nextRoot = nextGenerationRecurse(node = currentRoot, maxLevel = currentRoot.level - 4)
 
         // using the intermediate variable to allow AtomicReference to be used
