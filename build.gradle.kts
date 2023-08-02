@@ -31,7 +31,7 @@ dependencies {
 application {
     mainClass.set(patterningMain)
     // applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G")
-    applicationDefaultJvmArgs = listOf("-XX:+UseParallelGC", "-Xmx16G")
+    applicationDefaultJvmArgs = listOf("-XX:+UseParallelGC", "-Xmx16G", "-Dkotlinx.coroutines.debug")
 }
 
 tasks.register<JavaExec>("profile") {

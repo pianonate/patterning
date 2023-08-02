@@ -1,5 +1,6 @@
 package patterning.life
 
+
 import patterning.util.FlexibleInteger
 import patterning.util.StatMap
 
@@ -12,8 +13,9 @@ class TreeNode(
     val generation: FlexibleInteger
 ) : Node {
 
+
     override val level: Int = nw.level + 1
-    override val population: FlexibleInteger = nw.population + ne.population + sw.population + se.population
+    override val population: FlexibleInteger by lazy { nw.population + ne.population + sw.population + se.population }
 
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
     private var cacheVersion: Int = -1 // Version when cache was last set to valid
@@ -29,9 +31,9 @@ class TreeNode(
 
     private fun isValidCache(): Boolean = cacheVersion == Node.globalVersion
 
-    val populatedChildrenCount: Int = listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }
+    val populatedChildrenCount: Int by lazy { listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO } }
 
-    override val bounds: Bounds = run {
+    override val bounds: Bounds by lazy {
         if (this.population.isZero()) {
             Bounds(
                 FlexibleInteger.ZERO,

@@ -10,11 +10,6 @@ import java.net.URISyntaxException
 import java.util.Optional
 import java.util.function.IntSupplier
 import kotlin.math.roundToInt
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.withLock
 import patterning.Drawer
 import patterning.Pattern
 import patterning.Properties
@@ -216,12 +211,12 @@ class LifePattern(
     }
 
     override fun shutdownAsyncJobRunner() {
-        asyncNextGeneration.shutdown()
+        //asyncNextGeneration.shutdown()
     }
 
     private fun goForwardInTime() {
 
-        if (!asyncNextGeneration.isRunning) {
+        if (!asyncNextGeneration.isActive) {
             with(life) {
                 step = when {
                     step < targetStep -> step + 1
@@ -232,7 +227,7 @@ class LifePattern(
         }
 
         if (RunningState.shouldAdvance())
-            asyncNextGeneration.startCalculation()
+            asyncNextGeneration.startJob()
     }
 
     fun pasteLifeForm() {
@@ -314,6 +309,7 @@ class LifePattern(
         setupNewLife(universe, testing)
 
         life = universe
+        System.gc()
 
     }
 
@@ -487,30 +483,25 @@ class LifePattern(
         adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
 
-    private val fillSquareMutex = kotlinx.coroutines.sync.Mutex()
 
-    private suspend fun fillSquare(
+    private fun fillSquare(
         x: Float,
         y: Float,
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        fillSquareMutex.withLock {
-            val width = size - cell.cellBorderWidth
+        val width = size - cell.cellBorderWidth
 
-            lifeFormBuffer.apply {
-                fill(color)
-                noStroke()
-                rect(x, y, width, width)
-            }
+        lifeFormBuffer.apply {
+            fill(color)
+            noStroke()
+            rect(x, y, width, width)
         }
     }
 
     // Initialize viewPath, also at class level
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
-
-    private val actualRecursionsMutex = kotlinx.coroutines.sync.Mutex()
 
     private fun drawPattern(life: LifeUniverse) {
         lifeFormBuffer.beginDraw()
@@ -536,13 +527,8 @@ class LifePattern(
 
             startDelta = life.root.level - startingNode.level
 
-            runBlocking {
-                val divisor = 4.toBigDecimal()
-                largePopulationThreshold =
-                    FlexibleInteger(startingNode.population.bigDecimal.divide(divisor, mc).toBigInteger())
-                // largePopulationThreshold = FlexibleInteger.MAX_VALUE
-                drawNodeRecurse(startingNode, size, offsetX, offsetY)
-            }
+            drawNodeRecurse(startingNode, size, offsetX, offsetY)
+
         }
 
         // keep this around - it works - so if your startingNode code has issues, you can resuscitate
@@ -555,19 +541,13 @@ class LifePattern(
         lifeFormPosition[0f] = 0f
     }
 
-    private var largePopulationThreshold = FlexibleInteger.ZERO
-
-    private data class PositionKey(val pos: BigDecimal, val offset: BigDecimal)
-
-    private suspend fun drawNodeRecurse(
+    private fun drawNodeRecurse(
         node: Node,
         size: BigDecimal,
         left: BigDecimal,
         top: BigDecimal
     ) {
-        actualRecursionsMutex.withLock {
-            ++actualRecursions
-        }
+        ++actualRecursions
 
         // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
@@ -591,21 +571,10 @@ class LifePattern(
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 
-            if (node.population > largePopulationThreshold) {
-                coroutineScope {
-                    listOf(
-                        async { drawNodeRecurse(node.nw, halfSize, left, top) },
-                        async { drawNodeRecurse(node.ne, halfSize, leftHalfSize, top) },
-                        async { drawNodeRecurse(node.sw, halfSize, left, topHalfSize) },
-                        async { drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize) }
-                    ).awaitAll()
-                }
-            } else { // If the node population is small, continue on the same coroutine
-                drawNodeRecurse(node.nw, halfSize, left, top)
-                drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
-                drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
-                drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
-            }
+            drawNodeRecurse(node.nw, halfSize, left, top)
+            drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
+            drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
+            drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
         }
     }
 

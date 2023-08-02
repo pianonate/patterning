@@ -1,11 +1,6 @@
 package patterning
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.life.LifePattern
@@ -30,32 +25,9 @@ class PatterningPApplet : PApplet() {
         size(properties.width, properties.height)
     }
 
-    class ProcessingDispatcher(private val pApplet: PApplet) : CoroutineDispatcher() {
-        private val taskQueue = ConcurrentLinkedQueue<Runnable>()
-
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-            taskQueue.add(block)
-        }
-
-        // Call this method in your PApplet's draw() method
-        fun executeTasks() {
-            while (taskQueue.isNotEmpty()) {
-                taskQueue.poll()?.run()
-            }
-        }
-    }
-
-    val processingDispatcher = ProcessingDispatcher(this)
-
     override fun setup() {
         Theme.initialize(this)
         KeyHandler.registerKeyHandler(this)
-
-        println("Processing thread: ${Thread.currentThread().name}")
-
-        CoroutineScope(processingDispatcher).launch {
-            println("Custom dispatcher thread: ${Thread.currentThread().name}")
-        }
 
         surface.setResizable(true)
 
@@ -70,8 +42,6 @@ class PatterningPApplet : PApplet() {
     }
 
     override fun draw() {
-        processingDispatcher.executeTasks()  // Make sure you call this!
-
         pattern.draw()
     }
 

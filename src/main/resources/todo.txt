@@ -1,4 +1,3 @@
-todo: perf test that automates invoking each of the 9 loadable files - running them a hundred frames and collecting the memory and duration of each and the total duration at the end of the run
 todo: get rid of timer class - and use coroutines instead - i think there already is an example
 todo: zooming in at lower levels finishes slower because of the comparison that is made to the size that stops the zooming - that comparison should adjust itself to be range appropriate to the curent cell size - there has to be some formula to keep the zooming constant
 todo: when you lift your finger from holding down a zoom key, it should stop immediately

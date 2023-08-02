@@ -1,8 +1,8 @@
 package patterning.life
 
 import java.math.BigDecimal
+import java.util.concurrent.ConcurrentHashMap
 import patterning.util.FlexibleInteger
-import patterning.util.StatMap
 
 // the cell width times 2 ^ level will give you the size of the whole universe
 // you'll need it it to draw the viewport on screen
@@ -17,7 +17,7 @@ class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
     // it's pretty profound how many calls to BigDecimal.multiply we can avoid in
     // universeSizeImpl - the cache hit rate gets to 99.99999% pretty quickly
     // private val sizeMap: MutableMap<Int, BigDecimal> = HashMap()
-    private val sizeMap = StatMap(mutableMapOf<Int, BigDecimal>())
+    private val sizeMap = ConcurrentHashMap(mutableMapOf<Int, BigDecimal>())
 
     var size: Float = initialSize
         set(value) {
@@ -52,7 +52,7 @@ class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
         // these values are calculated so often that caching really seems to help
         // cell size as a big decimal times the requested size of universe at a given level
         // using MathContext to make sure we don't lose precision
-        return sizeMap.getOrPut(level) {
+        return sizeMap.computeIfAbsent(level) {
             bigSizeCached.multiply(
                 FlexibleInteger.pow2(level).bigDecimal,
                 LifePattern.mc

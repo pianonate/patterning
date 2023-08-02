@@ -1,11 +1,12 @@
 package patterning.panel
 
-import java.util.Timer
-import java.util.TimerTask
+import kotlinx.coroutines.delay
+
 import patterning.Drawer
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.Theme
+
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyHandler
@@ -13,8 +14,13 @@ import patterning.actions.KeyObservable
 import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.actions.MouseEventReceiver
+
 import patterning.informer.DrawingInfoSupplier
+
 import patterning.panel.Transition.TransitionDirection
+
+import patterning.util.AsyncJobRunner
+
 import processing.core.PImage
 import processing.core.PVector
 
@@ -214,17 +220,20 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         highlightFromKeyPress()
     }
 
+    // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
+    private val asyncJobRunner = AsyncJobRunner(
+        method = suspend {
+            delay(Theme.controlHighlightDuration.toLong())
+            isHighlightFromKeypress = false
+        },
+        threadName = "Highlight Thread"
+    )
+
     internal fun highlightFromKeyPress() {
-        isHighlightFromKeypress = true
-        Timer().schedule(
-            object : TimerTask() {
-                override fun run() {
-                    isHighlightFromKeypress = false
-                }
-            },
-            Theme.controlHighlightDuration
-                .toLong()
-        )
+        if (!asyncJobRunner.isActive) { // Only start if not already running
+            isHighlightFromKeypress = true
+            asyncJobRunner.startJob()
+        }
     }
 
     override fun onMouseReleased() {

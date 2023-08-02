@@ -1,11 +1,6 @@
 package patterning.panel
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.SingleStepObserver
@@ -13,10 +8,10 @@ import patterning.Theme
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
 import patterning.informer.DrawingInfoSupplier
+import patterning.util.AsyncJobRunner
 import processing.core.PImage
 
-class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver,
-    CoroutineScope by CoroutineScope(Dispatchers.Default) {
+class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver {
 
     private val pauseIcon: PImage
     private val playIcon: PImage
@@ -60,27 +55,28 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver,
         toggleIcon()
     }
 
-    private var timerJob: Job? = null
+    private val iconAsyncJobRunner = AsyncJobRunner(
+        method = suspend {
+            delay(Theme.controlHighlightDuration.toLong())
+            currentIcon = playIcon
+        },
+        threadName = "Icon Toggle Thread"
+    )
 
     private fun toggleIcon() {
         when (RunningState.runningMode) {
             RunningMode.PLAYING, RunningMode.TESTING -> {
                 currentIcon = pauseIcon
+                iconAsyncJobRunner.cancelAndWait()  // Cancel any running job when playing
             }
 
             RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
                 currentIcon = pauseIcon
-                timerJob?.cancel()
-                timerJob = launch {
-                    delay(Theme.controlHighlightDuration.toLong())
-                    currentIcon = playIcon
+                if (!iconAsyncJobRunner.isActive) {  // Only start if not already running
+                    iconAsyncJobRunner.startJob()
                 }
             }
         }
-    }
-
-    fun cleanup() {
-        cancel() // This cancels all coroutines launched by this CoroutineScope.
     }
 
     class Builder(

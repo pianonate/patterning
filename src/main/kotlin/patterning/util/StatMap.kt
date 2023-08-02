@@ -1,6 +1,7 @@
 package patterning.util
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 /*
 Modify the StatMap class to include a usageCount field for each entry, as mentioned earlier.
@@ -34,7 +35,10 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
 
     private val map: MutableMap<K, V>
     private val stats = CacheStats()
-    private val usageCountMap: MutableMap<K, Int> = ConcurrentHashMap() // To store the usage count
+
+    // private val usageCountMap: MutableMap<K, Int> = ConcurrentHashMap() // To store the usage count
+    private val usageCountMap = ConcurrentHashMap<K, AtomicInteger>()
+
 
     override fun iterator(): Iterator<Map.Entry<K, V>> {
         return map.iterator()
@@ -92,30 +96,34 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
         incrementUsage(key) // Update the usage count when adding or updating a value
     }
 
+    /*    private fun incrementUsage(key: K) {
+            usageCountMap.compute(key) { _, count -> count?.plus(1) ?: 1 }
+        }*/
     private fun incrementUsage(key: K) {
-        usageCountMap.compute(key) { _, count -> count?.plus(1) ?: 1 }
+        usageCountMap.getOrPut(key, { AtomicInteger(0) }).incrementAndGet()
     }
 
+
     fun getUsageCountHistogram(): Map<Int, Int> {
-        return usageCountMap.values.groupingBy { it }.eachCount()
+        return usageCountMap.values.groupingBy { it.get() }.eachCount()
     }
 
     fun getValueWithHighestUsageCount(): V? {
-        val entryWithHighestUsage = usageCountMap.maxByOrNull { it.value }
+        val entryWithHighestUsage = usageCountMap.maxByOrNull { it.value.get() }
         return entryWithHighestUsage?.let { (keyWithHighestUsage, _) ->
             this[keyWithHighestUsage]
         }
     }
 
     fun getUsageCountForKey(key: K): Int {
-        return usageCountMap[key] ?: 0
+        return usageCountMap[key]?.get() ?: 0
     }
+
 
     fun filterValuesByUsageCountOne(): List<V> {
         val filteredValues = mutableListOf<V>()
-
         for ((key, usageCount) in usageCountMap) {
-            if (usageCount == 1) {
+            if (usageCount.get() == 1) {
                 map[key]?.let { value -> filteredValues.add(value) }
             }
         }
@@ -123,9 +131,22 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
         return filteredValues
     }
 
+    fun computeIfAbsent(key: K, defaultValue: () -> V): V {
+        var isNewEntry = false
+        val value = map.computeIfAbsent(key) {
+            isNewEntry = true
+            stats.misses++
+            incrementUsage(key)
+            defaultValue()
+        }
+        if (!isNewEntry) {
+            stats.hits++
+            incrementUsage(key)
+        }
+        return value
+    }
 
-
-    fun getOrPut(key: K, defaultValue: () -> V): V {
+/*    fun getOrPut(key: K, defaultValue: suspend () -> V): V {
         val value = map[key]
 
         return if (value != null) {
@@ -135,7 +156,32 @@ class StatMap<K, V> : Iterable<Map.Entry<K, V>> {
             stats.misses++
             map.getOrPut(key, defaultValue)
         }
-    }
+    }*/
+/*private val mutexMap = ConcurrentHashMap<K, Mutex>()
+
+    suspend fun getOrPut(key: K, defaultValue: suspend () -> V): V {
+        // Get the value for the key if it exists.
+        var value = map[key]
+
+        // If the value does not exist, lock the Mutex for this key and compute the value.
+        if (value == null) {
+            // Get the Mutex for the key, or create a new Mutex if it does not exist.
+            val mutex = mutexMap.computeIfAbsent(key) { Mutex() }
+
+            // Lock the Mutex while computing the value to ensure that only one coroutine computes the value.
+            mutex.withLock {
+                // Re-check if the value exists, because another coroutine might have computed it while this coroutine was waiting for the lock.
+                value = map[key]
+                if (value == null) {
+                    value = defaultValue()
+                    map[key] = value!!
+                }
+            }
+        }
+
+        return value!!
+    }*/
+
 
     fun clear() {
         map.clear()

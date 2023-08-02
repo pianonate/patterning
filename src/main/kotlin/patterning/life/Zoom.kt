@@ -17,7 +17,9 @@ class Zoom(private val lifePattern: LifePattern) {
         lifePattern.saveUndoState()
 
         // Adjust cell width to align with grid
-        val factor = if (zoomIn) 1.8f else 0.5f
+        val factor = if (zoomIn) 2f else 0.2f
+
+
         targetSize = LifePattern.cell.size * factor
         isZooming = true
         this.zoomCenterX = x

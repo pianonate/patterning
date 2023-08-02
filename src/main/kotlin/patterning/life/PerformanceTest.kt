@@ -3,12 +3,13 @@ package patterning.life
 import patterning.Properties
 import patterning.RunningState
 import patterning.TestModeObserver
+import patterning.util.formatWithCommas
 import processing.data.JSONObject
 
 class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) : TestModeObserver {
     private val performanceResults = JSONObject()
     private val patternCount = 9
-    private val framesPerPattern = 200L
+    private val framesPerPattern = 400L
 
     // State for the ongoing test, if any
     private var currentPatternIndex = 1
@@ -32,6 +33,8 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
         testStartTime = System.currentTimeMillis()
         patternStartTime = testStartTime
         patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
+        println("testing framesPerPattern:${framesPerPattern}")
+
     }
 
     fun execute() {
@@ -57,6 +60,8 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
             patternResults.setLong("memory", patternMemoryUsed)
             patternResults.setLong("duration", patternDuration)
             performanceResults.setJSONObject(currentPatternIndex.toString(), patternResults)
+            //System.gc()
+            println("pattern:${currentPatternIndex} duration:${patternDuration.formatWithCommas()} memory:${patternMemoryUsed.formatWithCommas()} totalDuration:${(System.currentTimeMillis() - testStartTime).formatWithCommas()}")
 
             // Advance to next pattern (if not the end of the test)
             if (currentPatternIndex < patternCount) {
@@ -77,6 +82,8 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
             properties.performanceTestResults = performanceResults
             testing = false
             RunningState.endTest()
+            println("testing complete - duration: ${totalDuration.formatWithCommas()}")
+
         }
     }
 }
