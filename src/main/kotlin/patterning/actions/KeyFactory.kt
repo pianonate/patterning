@@ -28,7 +28,7 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
         usage = "play and pause"
     )
     private val callbackNumberedPattern = SimpleKeyCallback(
-        keys = setOf('1', '2', '3', '4', '5', '6', '7', '8', '9'),
+        keys = ('1'..'9').toSet(),
         invokeFeatureLambda = {
             val number = KeyHandler.latestKeyCode - '0'.code
             drawer.setNumberedLifeForm(number)

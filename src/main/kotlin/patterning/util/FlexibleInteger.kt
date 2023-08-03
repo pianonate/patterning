@@ -3,12 +3,13 @@ package patterning.util
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
+class FlexibleInteger private constructor(initialValue: Number) : Comparable<FlexibleInteger> {
 
     private val value: Number = when (initialValue) {
         is BigInteger -> {
@@ -54,22 +55,22 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     private fun handleIntAddition(a: Int, b: Int): FlexibleInteger {
         return try {
-            FlexibleInteger(Math.addExact(a, b))
+            create(Math.addExact(a, b))
         } catch (ex: ArithmeticException) {
-            FlexibleInteger(a.toLong() + b.toLong())
+            create(a.toLong() + b.toLong())
         }
     }
 
     private fun handleLongAddition(a: Long, b: Long): FlexibleInteger {
         return try {
-            FlexibleInteger(Math.addExact(a, b))
+            create(Math.addExact(a, b))
         } catch (ex: ArithmeticException) {
-            FlexibleInteger(BigInteger.valueOf(a) + BigInteger.valueOf(b))
+            create(BigInteger.valueOf(a) + BigInteger.valueOf(b))
         }
     }
 
     private fun handleBigIntegerAddition(a: BigInteger, b: BigInteger): FlexibleInteger {
-        return FlexibleInteger(a + b)
+        return create(a + b)
     }
 
     fun get(): Number = value
@@ -121,9 +122,9 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     operator fun unaryMinus(): FlexibleInteger {
         return when (value) {
-            is Int -> FlexibleInteger(-value)
-            is Long -> FlexibleInteger(-value)
-            is BigInteger -> FlexibleInteger(value.negate())
+            is Int -> create(-value)
+            is Long -> create(-value)
+            is BigInteger -> create(value.negate())
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
@@ -165,22 +166,22 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
     private fun handleIntSubtraction(a: Int, b: Int): FlexibleInteger {
         return try {
-            FlexibleInteger(Math.subtractExact(a, b))
+            create(Math.subtractExact(a, b))
         } catch (ex: ArithmeticException) {
-            FlexibleInteger(a.toLong() - b.toLong())
+            create(a.toLong() - b.toLong())
         }
     }
 
     private fun handleLongSubtraction(a: Long, b: Long): FlexibleInteger {
         return try {
-            FlexibleInteger(Math.subtractExact(a, b))
+            create(Math.subtractExact(a, b))
         } catch (ex: ArithmeticException) {
-            FlexibleInteger(BigInteger.valueOf(a) - BigInteger.valueOf(b))
+            create(BigInteger.valueOf(a) - BigInteger.valueOf(b))
         }
     }
 
     private fun handleBigIntegerSubtraction(a: BigInteger, b: BigInteger): FlexibleInteger {
-        return FlexibleInteger(a - b)
+        return create(a - b)
     }
 
 
@@ -309,10 +310,14 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
     }
 
     companion object {
-        val NEGATIVE_ONE = FlexibleInteger(-1)
-        val ONE = FlexibleInteger(1)
-        val ZERO = FlexibleInteger(0)
-        val FOUR = FlexibleInteger(4)
+        // New static map to hold previously created instances
+        private val instances: ConcurrentHashMap<Number, FlexibleInteger> = ConcurrentHashMap<Number, FlexibleInteger>()
+
+
+        val NEGATIVE_ONE = create(-1)
+        val ONE = create(1)
+        val ZERO = create(0)
+        val FOUR = create(4)
         private const val INT_MIN = Int.MIN_VALUE
         private const val INT_MAX = Int.MAX_VALUE
         private val INT_MIN_BIG_INTEGER = Int.MIN_VALUE.toBigInteger()
@@ -322,10 +327,10 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
 
         private const val UNIVERSE_LEVEL_LIMIT = 2048
 
-        private val _powers: HashMap<Int, FlexibleInteger> = hashMapOf(0 to FlexibleInteger(BigInteger.ONE))
+        private val _powers: HashMap<Int, FlexibleInteger> = hashMapOf(0 to create(BigInteger.ONE))
 
         fun pow2(x: Int): FlexibleInteger {
-            return _powers.getOrPut(x) { FlexibleInteger(BigInteger.valueOf(2).pow(x)) }
+            return _powers.getOrPut(x) { create(BigInteger.valueOf(2).pow(x)) }
         }
 
         val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
@@ -336,5 +341,24 @@ class FlexibleInteger(initialValue: Number) : Comparable<FlexibleInteger> {
             "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
             "tredecillion", "quattuordecillion"
         )
+
+        private var hits = 0L
+
+        // Static factory method to create new FlexibleInteger instances
+        fun create(initialValue: Number): FlexibleInteger {
+            hits++
+            // Check if an instance with this value already exists
+            return if (instances.containsKey(initialValue)) {
+                // If yes, return that instance
+                instances[initialValue]!!
+            } else {
+                // If not, create a new instance, store it in the map, and return it
+                val newInstance = FlexibleInteger(initialValue)
+                instances[initialValue] = newInstance
+                newInstance
+            }
+        }
+
+
     }
 }

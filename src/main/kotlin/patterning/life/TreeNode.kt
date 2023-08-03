@@ -10,12 +10,12 @@ class TreeNode(
     val sw: Node,
     val se: Node,
     override var id: Int,
-    val generation: FlexibleInteger
+    val aliveSince: Int
 ) : Node {
 
 
     override val level: Int = nw.level + 1
-    override val population: FlexibleInteger by lazy { nw.population + ne.population + sw.population + se.population }
+    override val population: FlexibleInteger = nw.population + ne.population + sw.population + se.population
 
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
     private var cacheVersion: Int = -1 // Version when cache was last set to valid
@@ -24,16 +24,16 @@ class TreeNode(
         get() = if (isValidCache()) field else null
         set(value) = run {
             field = value
-            cacheVersion = Node.globalVersion
+            cacheVersion = Node.globalCacheVersion
         }
 
     var level2NextCache: TreeNode? = null
 
-    private fun isValidCache(): Boolean = cacheVersion == Node.globalVersion
+    private fun isValidCache(): Boolean = cacheVersion == Node.globalCacheVersion
 
-    val populatedChildrenCount: Int by lazy { listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO } }
+    val populatedChildrenCount: Int = listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }
 
-    override val bounds: Bounds by lazy {
+    override val bounds: Bounds by lazy(LazyThreadSafetyMode.NONE) {
         if (this.population.isZero()) {
             Bounds(
                 FlexibleInteger.ZERO,
@@ -125,7 +125,7 @@ class TreeNode(
     }
 
     override fun toString(): String {
-        return "id=$id, level=$level, population=$population, gen=$generation"
+        return "id=$id, level=$level, population=$population, born=$aliveSince"
     }
 
     override fun hashCode(): Int = hash
@@ -138,14 +138,17 @@ class TreeNode(
         other as TreeNode
 
         if (id != other.id) return false
+        if (level != other.level) return false
+        if (population != other.population) return false
+
         if (nw != other.nw) return false
         if (ne != other.ne) return false
         if (sw != other.sw) return false
         if (se != other.se) return false
-        if (level != other.level) return false
-        if (population != other.population) return false
-        if (hash != other.hash) return false
+
+        return (hash == other.hash)
+       /* if (hash != other.hash) return false
         if (nextGenerationCache != other.nextGenerationCache) return false
-        return (level2NextCache == other.level2NextCache)
+        return (level2NextCache == other.level2NextCache)*/
     }
 }
