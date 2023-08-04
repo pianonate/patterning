@@ -45,6 +45,10 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
         // Advance frame count
         frameCount++
 
+        if (frameCount % 25L == 0L) {
+            lifePattern.handleStep(true)
+        }
+
         if (frameCount % framesPerPattern == 1L) {
             // First frame of a new pattern
             lifePattern.setNumberedLifeForm(number = currentPatternIndex, testing = true)

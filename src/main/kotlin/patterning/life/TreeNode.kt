@@ -2,7 +2,6 @@ package patterning.life
 
 
 import patterning.util.FlexibleInteger
-import patterning.util.StatMap
 
 class TreeNode(
     val nw: Node,
@@ -20,20 +19,20 @@ class TreeNode(
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
     private var cacheVersion: Int = -1 // Version when cache was last set to valid
 
-    var nextGenerationCache: TreeNode? = null
+    var nextGenCache: TreeNode? = null
         get() = if (isValidCache()) field else null
         set(value) = run {
             field = value
             cacheVersion = Node.globalCacheVersion
         }
 
-    var level2NextCache: TreeNode? = null
+    var nextGenStepCache: TreeNode? = null
 
     private fun isValidCache(): Boolean = cacheVersion == Node.globalCacheVersion
 
-    val populatedChildrenCount: Int = listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }
+    val populatedChildrenCount: Byte = (listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }).toByte()
 
-    override val bounds: Bounds by lazy(LazyThreadSafetyMode.NONE) {
+    override val bounds: Bounds = run {
         if (this.population.isZero()) {
             Bounds(
                 FlexibleInteger.ZERO,
@@ -88,7 +87,7 @@ class TreeNode(
         }
     }
 
-    fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
+   /* fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
         val size = hashMap.size
         return countUnreferencedNodes(hashMap)
     }
@@ -108,7 +107,7 @@ class TreeNode(
         }
 
         return count
-    }
+    }*/
 
     private fun traverseTree(node: TreeNode, visited: MutableSet<TreeNode>) {
         if (node in visited) {
@@ -147,8 +146,8 @@ class TreeNode(
         if (se != other.se) return false
 
         return (hash == other.hash)
-       /* if (hash != other.hash) return false
-        if (nextGenerationCache != other.nextGenerationCache) return false
-        return (level2NextCache == other.level2NextCache)*/
+        /* if (hash != other.hash) return false
+         if (nextGenerationCache != other.nextGenerationCache) return false
+         return (level2NextCache == other.level2NextCache)*/
     }
 }

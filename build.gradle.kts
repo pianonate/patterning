@@ -32,7 +32,7 @@ application {
     mainClass.set(patterningMain)
    //applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G", "-Dkotlinx.coroutines.debug")
     //applicationDefaultJvmArgs = listOf("-XX:+UseParallelGC", "-Xmx16G", "-Dkotlinx.coroutines.debug")
-    applicationDefaultJvmArgs = listOf("-Xmx16G", "-Dkotlinx.coroutines.debug")
+    applicationDefaultJvmArgs = listOf("-Xmx16G", "-XX:ParallelGCThreads=8", "-Dkotlinx.coroutines.debug")
 
 }
 

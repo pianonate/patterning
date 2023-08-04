@@ -327,7 +327,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
 
         private const val UNIVERSE_LEVEL_LIMIT = 2048
 
-        private val _powers: HashMap<Int, FlexibleInteger> = hashMapOf(0 to create(BigInteger.ONE))
+        private val _powers: HashMap<Int, FlexibleInteger> = HashMap()
 
         fun pow2(x: Int): FlexibleInteger {
             return _powers.getOrPut(x) { create(BigInteger.valueOf(2).pow(x)) }

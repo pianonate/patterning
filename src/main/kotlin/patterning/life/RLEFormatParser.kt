@@ -1,13 +1,9 @@
 package patterning.life
 
-import java.nio.IntBuffer
-import java.util.*
 import java.util.regex.Pattern
-import processing.core.PApplet
 
 class RLEFormatParser internal constructor(text: String) {
     private val metaDataPrefix = "#"
-    private val minBufferSize = 64
     private val headerPattern = "^x = \\d+, y = \\d+, rule.*$"
     val result: LifeForm = LifeForm()
 
@@ -17,38 +13,20 @@ class RLEFormatParser internal constructor(text: String) {
         parseInstructions()
     }
 
-    private fun increaseBufSize(original: IntBuffer): IntBuffer {
-        val newLength = (original.capacity() * 1.5).toInt()
-        val newBuffer = IntBuffer.allocate(newLength)
-        original.rewind()
-        newBuffer.put(original)
-        return newBuffer
-    }
-
-    @Throws(NotLifeException::class)
-    fun parseInstructions() {
+    private fun parseInstructions() {
         val instructions = result.instructions
         if (instructions.isEmpty()) {
             throw NotLifeException("no life was found in the details of the RLE")
         }
-        var initialSize = minBufferSize
-        if (result.width > 0 && result.height > 0) {
-            val size = result.width * result.height
-            if (size > 0) {
-                val densityEstimate = 1.5f
-                initialSize = initialSize.toFloat().coerceAtLeast(size * densityEstimate).toInt()
-                initialSize = MAX_BUFFER_SIZE.coerceAtMost(initialSize)
-            }
-        }
+
         var count = 1
         var x = 0
         var y = 0
-        var aliveCount = 0
         val len = instructions.length
         var inNumber = false
         var chr: Char
-        var fieldX = IntBuffer.allocate(initialSize)
-        var fieldY = IntBuffer.allocate(initialSize)
+        val fieldX = ArrayList<Int>()
+        val fieldY = ArrayList<Int>()
         for (pos in 0 until len) {
             chr = instructions[pos]
             if (chr in '0'..'9') {
@@ -66,14 +44,9 @@ class RLEFormatParser internal constructor(text: String) {
                 if (chr == 'b') {
                     x += count
                 } else if (chr in 'A'..'Z' || chr in 'a'..'y') {
-                    if (aliveCount + count > fieldX.capacity()) {
-                        fieldX = increaseBufSize(fieldX)
-                        fieldY = increaseBufSize(fieldY)
-                    }
                     while (count-- > 0) {
-                        fieldX.put(aliveCount, x++)
-                        fieldY.put(aliveCount, y)
-                        aliveCount++
+                        fieldX.add(x++)
+                        fieldY.add(y)
                     }
                 } else if (chr == '$') {
                     // skipping rows
@@ -86,8 +59,9 @@ class RLEFormatParser internal constructor(text: String) {
                 inNumber = false
             }
         }
-        result.fieldX = fieldX.slice(0, aliveCount)
-        result.fieldY = fieldY.slice(0, aliveCount)
+
+        result.fieldX = fieldX
+        result.fieldY = fieldY
     }
 
     private fun handleHeader(text: String) {
@@ -100,14 +74,14 @@ class RLEFormatParser internal constructor(text: String) {
         } else {
             throw NotLifeException("can't find the header line")
         }
-        val header = PApplet.split(line, ", ")
+        val header = line.split(", ")
         for (headerLine in header) {
-            val components = PApplet.split(headerLine, ' ')
+            val components = headerLine.split(' ')
             val component = components[0]
             val value = components[2]
             when (component) {
-                "x" -> result.width = PApplet.parseInt(value)
-                "y" -> result.height = PApplet.parseInt(value)
+                "x" -> result.width = value.toInt()
+                "y" -> result.height = value.toInt()
                 "rule" -> {
                     // parseRuleRLE ensures that the if there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
@@ -128,17 +102,6 @@ class RLEFormatParser internal constructor(text: String) {
         }
     }
 
-    /*    private fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
-            val rule = ruleStr.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            if (rule.size < 2 || rule[1].isEmpty()) {
-                throw NotLifeException("invalid rule: $ruleStr")
-            }
-            if (isNumber(rule[0])) {
-                return parseRule(rule.joinToString("/"), survived)
-            }
-            val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
-            return parseRule(parsedRuleStr, survived)
-        }*/
     private fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
         val rule = ruleStr.split("/").filter { it.isNotEmpty() }
         if (rule.size < 2 || rule[1].isEmpty()) {
@@ -188,12 +151,6 @@ class RLEFormatParser internal constructor(text: String) {
         return rule
     }
 
-    /*    public String rule2strRle(int ruleS, int ruleB) {
-        String rule = rule2str(ruleS, ruleB);
-        String[] parts = rule.split("/");
-        rule = "B" + parts[1] + "/S" + parts[0];
-        return rule;
-    }*/
     private fun rule2str(ruleS: Int, ruleB: Int): String {
         var _ruleS = ruleS
         var _ruleB = ruleB
@@ -221,16 +178,12 @@ class RLEFormatParser internal constructor(text: String) {
     }
 
     private fun isNumber(test: String): Boolean {
-        return try {
-            test.toInt()
-            true
-        } catch (e: NumberFormatException) {
-            false
-        }
+        return test.toIntOrNull() != null
+
     }
 
-    private fun handleMetaData(text: String?) {
-        val lines = PApplet.split(text, '\n')
+    private fun handleMetaData(text: String) {
+        val lines = text.split('\n')
         for (line in lines) {
             if (line.startsWith(metaDataPrefix) && line.length > 1) {
                 val secondChar = line[1]
@@ -243,9 +196,5 @@ class RLEFormatParser internal constructor(text: String) {
                 }
             }
         }
-    }
-
-    companion object {
-        private const val MAX_BUFFER_SIZE = 1048576
     }
 }

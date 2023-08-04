@@ -20,14 +20,15 @@ interface Node {
         val deadNode = LeafNode(DEAD_ID, FlexibleInteger.ZERO)
         val livingNode = LeafNode(LIVING_ID, FlexibleInteger.ONE)
         val startId = deadNode.id + 1
-        var globalCacheVersion = 0
+        var globalCacheVersion: Int = 0
 
         fun calcHash(nwId: Int, neId: Int, swId: Int, seId: Int): Int {
-            var result = 17
-            result = 31 * result xor nwId
-            result = 31 * result xor neId
-            result = 31 * result xor swId
-            result = 31 * result xor seId
+            val prime = 31
+            var result = 1
+            result = prime * result + nwId
+            result = prime * result + neId
+            result = prime * result + swId
+            result = prime * result + seId
             return result
         }
     }

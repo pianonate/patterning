@@ -216,13 +216,15 @@ class LifePattern(
 
     private fun goForwardInTime() {
 
-        if (!asyncNextGeneration.isActive) {
-            with(life) {
-                step = when {
-                    step < targetStep -> step + 1
-                    step > targetStep -> step - 1
-                    else -> step
-                }
+        if (asyncNextGeneration.isActive) {
+            return
+        }
+
+        with(life) {
+            step = when {
+                step < targetStep -> step + 1
+                step > targetStep -> step - 1
+                else -> step
             }
         }
 
@@ -293,7 +295,7 @@ class LifePattern(
             // instance variables - do they need to be?
             val parser = FileFormat()
             val newLife = parser.parseRLE(storedLife)
-            universe.setupLife(newLife.fieldX!!, newLife.fieldY!!)
+            universe.setupLife(newLife.fieldX, newLife.fieldY)
         } catch (e: NotLifeException) {
             // todo: on failure you need to
             println(

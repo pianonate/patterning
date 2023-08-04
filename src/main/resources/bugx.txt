@@ -1,1 +1,2 @@
+* probably bug in Zoom at super large universe sizes
 * there is a bug in movement but i don't know how to repro

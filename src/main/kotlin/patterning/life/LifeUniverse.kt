@@ -1,8 +1,5 @@
 package patterning.life
 
-import java.math.BigDecimal
-import java.math.RoundingMode
-import java.nio.IntBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.async
@@ -21,7 +18,9 @@ import patterning.util.FlexibleInteger
 class LifeUniverse internal constructor() {
     private var lastId: Int = Node.startId
 
-    private var hashMap = ConcurrentHashMap<Int, TreeNode>(HASHMAP_INITIAL_CAPACITY)
+    private var hashMap = ConcurrentHashMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
+    //private var hashMap = ConcurrentHashMap<Int, TreeNode>(HASHMAP_INITIAL_CAPACITY)
+
     private var emptyTreeCache: MutableMap<Int, TreeNode> = HashMap()
     private val level2Cache: MutableMap<Int, TreeNode> = HashMap(LEVEL_2_CACHE_INITIAL_CAPACITY)
     private val _bitcounts: ByteArray = ByteArray(0x758)
@@ -101,12 +100,14 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    private fun moveField(fieldX: IntBuffer, fieldY: IntBuffer, offsetX: Int, offsetY: Int) {
-        for (i in 0 until fieldX.capacity()) {
+    private fun moveField(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>, offsetX: Int, offsetY: Int) {
+        for (i in 0 until fieldX.size) {
             val x = fieldX[i]
             val y = fieldY[i]
-            fieldX.put(i, x + offsetX)
-            fieldY.put(i, y + offsetY)
+
+            fieldX[i] = x + offsetX
+            fieldY[i] = y + offsetY
+
         }
     }
 
@@ -127,8 +128,8 @@ class LifeUniverse internal constructor() {
 
     // this is just used when setting up the field initially unless I'm missing
     // something
-    private fun getBounds(fieldX: IntBuffer, fieldY: IntBuffer): Bounds {
-        if (fieldX.capacity() == 0) {
+    private fun getBounds(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): Bounds {
+        if (fieldX.size == 0) {
             return Bounds(
                 FlexibleInteger.ZERO,
                 FlexibleInteger.ZERO,
@@ -141,7 +142,7 @@ class LifeUniverse internal constructor() {
         var maxX = minX
         var minY = FlexibleInteger.create(fieldY[0])
         var maxY = minY
-        val len = fieldX.capacity()
+        val len = fieldX.size
 
         for (i in 1 until len) {
             val x = FlexibleInteger.create(fieldX[i])
@@ -168,14 +169,14 @@ class LifeUniverse internal constructor() {
         )
     }
 
-    fun setupLife(fieldX: IntBuffer, fieldY: IntBuffer) {
+    fun setupLife(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>) {
         LifePattern.resetMathContext()
         val bounds = getBounds(fieldX, fieldY)
         val level = bounds.getLevelFromBounds()
 
         /* nothing coming in will be so ginormous that it will exceed Integer.MAX_VALUE */
         val offset = FlexibleInteger.pow2(level - 1).toInt()
-        val count = fieldX.capacity()
+        val count = fieldX.size
         moveField(fieldX, fieldY, offset, offset)
         runBlocking { root = setupLifeRecurse(0, count - 1, fieldX, fieldY, level) }
     }
@@ -183,8 +184,8 @@ class LifeUniverse internal constructor() {
     private fun setupLifeRecurse(
         start: Int,
         end: Int,
-        fieldX: IntBuffer,
-        fieldY: IntBuffer,
+        fieldX: ArrayList<Int>,
+        fieldY: ArrayList<Int>,
         recurseLevel: Int
     ): TreeNode {
         if (start > end) {
@@ -194,64 +195,41 @@ class LifeUniverse internal constructor() {
             return level2Setup(start, end, fieldX, fieldY)!!
         }
 
-        val nextLevel = recurseLevel - 1
-        val offset = 1 shl nextLevel
-        val (part2, part3, part4) = partitionField(start, end, fieldX, fieldY, offset)
-
-        return createNode(
-            setupLifeRecurse(start, part2 - 1, fieldX, fieldY, nextLevel),
-            setupLifeRecurse(part2, part3 - 1, fieldX, fieldY, nextLevel),
-            setupLifeRecurse(part3, part4 - 1, fieldX, fieldY, nextLevel),
-            setupLifeRecurse(part4, end, fieldX, fieldY, nextLevel)
-        )
-    }
-
-    private fun partitionField(
-        start: Int,
-        end: Int,
-        fieldX: IntBuffer,
-        fieldY: IntBuffer,
-        offset: Int
-    ): Triple<Int, Int, Int> {
+        val offset = 1 shl (recurseLevel - 1)
         val part3 = partition(start, end, fieldY, fieldX, offset)
         val part2 = partition(start, part3 - 1, fieldX, fieldY, offset)
         val part4 = partition(part3, end, fieldX, fieldY, offset)
 
-        return Triple(part2, part3, part4)
+        return createNode(
+            setupLifeRecurse(start, part2 - 1, fieldX, fieldY, recurseLevel - 1),
+            setupLifeRecurse(part2, part3 - 1, fieldX, fieldY, recurseLevel - 1),
+            setupLifeRecurse(part3, part4 - 1, fieldX, fieldY, recurseLevel - 1),
+            setupLifeRecurse(part4, end, fieldX, fieldY, recurseLevel - 1)
+        )
     }
 
     private fun partition(
         start: Int, end: Int,
-        testField: IntBuffer, otherField: IntBuffer,
+        testField: ArrayList<Int>, otherField: ArrayList<Int>,
         offset: Int
     ): Int {
-        var leftIndex = start
-        var rightIndex = end
 
-        val leftPartition = mutableListOf<Pair<Int, Int>>()
-        val rightPartition = mutableListOf<Pair<Int, Int>>()
+        val elements = (start..end).map { Pair(testField[it], otherField[it]) }
 
-        for (i in start..end) {
-            val pair = Pair(testField[i], otherField[i])
-            if (testField[i] and offset == 0) {
-                leftPartition.add(pair)
-                leftIndex++
-            } else {
-                rightPartition.add(pair)
-                rightIndex--
-            }
-        }
+        val (leftPartition, rightPartition) = elements.partition { it.first and offset == 0 }
 
-        // Overwrite the original IntBuffers with the sorted elements
+        val leftIndex = start + leftPartition.size
+
+        // Overwrite the original ArrayList<Int> with the sorted elements
         (leftPartition + rightPartition).forEachIndexed { index, pair ->
-            testField.put(start + index, pair.first)
-            otherField.put(start + index, pair.second)
+            testField[start + index] = pair.first
+            otherField[start + index] = pair.second
         }
 
         return leftIndex
     }
 
-    private fun level2Setup(start: Int, end: Int, fieldX: IntBuffer, fieldY: IntBuffer): TreeNode? {
+    private fun level2Setup(start: Int, end: Int, fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): TreeNode? {
         var set = 0
         var x: Int
         var y: Int
@@ -309,7 +287,38 @@ class LifeUniverse internal constructor() {
         }
     }
 
+    // create or search for a node given its children
     private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
+        val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
+
+        var newNode: TreeNode? = null
+
+        // using compute for thread safety - it returns a nodelist so we either just return the one associated
+        // with finding a matching node in it, or we create a new node, add it to the nodelist and then return that
+        // back to the compute
+        // finally whether we created a new one or found an existing match, we return that TreeNode to be
+        // cached in the next generation cache
+        hashMap.compute(hash) { _, oldNodeList ->
+            val nodeList = oldNodeList ?: mutableListOf()
+
+            for (node in nodeList) {
+
+                if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
+                    newNode = node
+                    return@compute nodeList
+                }
+            }
+
+            newNode = TreeNode(nw, ne, sw, se, lastId++, aliveSince = birthFrame)
+            nodeList.add(newNode!!)
+
+            nodeList // return the updated list
+        }
+
+        return newNode ?: throw Exception("New node should not be null")
+    }
+
+    /* private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
         val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
 
         // using compute for thread safety - it returns a TreeNode
@@ -321,7 +330,7 @@ class LifeUniverse internal constructor() {
             // Otherwise create a new TreeNode, add it to the HashMap, and return it
             return@compute TreeNode(nw, ne, sw, se, lastId++, birthFrame)
         } ?: throw Exception("New node should not be null")
-    }
+    }*/
 
     private fun updatePatternInfo() {
 
@@ -334,15 +343,15 @@ class LifeUniverse internal constructor() {
                 patternInfo.addOrUpdate("misses", hashmap.misses)
                 patternInfo.addOrUpdate("%", hashmap.hitRate * 100)
                 patternInfo.addOrUpdate("puts", hashmap.puts)*/
-        lifeInfo.addOrUpdate("recurse", recurse)
-        lifeInfo.addOrUpdate("quick", quick)
+        lifeInfo.addOrUpdate("normalRecurse", recurse)
+        lifeInfo.addOrUpdate("stepRecurse", recurseStep)
         val bounds = rootBounds
         lifeInfo.addOrUpdate("width", bounds.width)
         lifeInfo.addOrUpdate("height", bounds.height)
     }
 
     private var recurse = 0
-    private var quick = 0
+    private var recurseStep = 0
 
     suspend fun nextGeneration() {
         var currentRoot = this.root
@@ -365,9 +374,11 @@ class LifeUniverse internal constructor() {
                   }
               }*/
         recurse = 0
-        quick = 0
+        recurseStep = 0
 
         // when you're super stepping you need the first argument re:step to grow it immediately large enough!
+        // and if stepNextGeneration is expanding the universe then the population sizes won't match up
+        // so so make sure we're big enough to handle the expansion
         while (currentRoot.level <= step + 2 ||
             currentRoot.nw.population != ((currentRoot.nw as TreeNode).se as TreeNode).se.population ||
             currentRoot.ne.population != ((currentRoot.ne as TreeNode).sw as TreeNode).sw.population ||
@@ -377,12 +388,13 @@ class LifeUniverse internal constructor() {
             currentRoot = expandUniverse(currentRoot)
         }
 
-        val populationDivisor =
+        /*val populationDivisor =
             FlexibleInteger.create(
                 currentRoot.population.bigDecimal.divide(BigDecimal(4), RoundingMode.HALF_UP).toBigInteger()
-            )
+            )*/
         val nextRoot = nextGenerationRecurse(node = currentRoot, maxLevel = currentRoot.level - 2)
-        //val nextRoot = nextGenerationRecurse(node = currentRoot, populationDivisor = populationDivisor)
+        // val nextRoot = nextGenerationRecurse(node = currentRoot, populationDivisor = populationDivisor)
+
 
         // using the intermediate variable to allow AtomicReference to be used
         this.root = nextRoot
@@ -401,19 +413,27 @@ class LifeUniverse internal constructor() {
         )
     }
 
+    /*
+        nextGenerationRecurse is general function that must work for all scenarios,
+        not just the specific condition nodeQuickNextGeneration is optimized for.
+        It employs a straightforward division of the grid into four 2x2 sub-grids.
+        Because it's a more generic solution, it doesn't take the specific optimized
+        path that nodeQuickNextGeneration does.
+    */
+
     private suspend fun nextGenerationRecurse(node: TreeNode, maxLevel: Int): TreeNode {
-        node.nextGenerationCache?.let { return it }
+        node.nextGenCache?.let { return it }
         recurse++
 
         if (step == node.level - 2) {
-            return nodeQuickNextGeneration(node/*, node.level -1*/)
+            return stepGenerationRecurse(node)
         }
 
         if (node.level == 2) {
             // level two's are straightforward to create and not that many of them
             // so we cache them on the node itself
-            node.level2NextCache = node.level2NextCache ?: nodeLevel2Next(node)
-            return node.level2NextCache as TreeNode
+            node.nextGenStepCache = node.nextGenStepCache ?: nodeLevel2Next(node)
+            return node.nextGenStepCache as TreeNode
         }
 
         val nw = node.nw as TreeNode
@@ -421,12 +441,8 @@ class LifeUniverse internal constructor() {
         val sw = node.sw as TreeNode
         val se = node.se as TreeNode
 
-        val n00 = createNode(
-            (nw.nw as TreeNode).se,
-            (nw.ne as TreeNode).sw,
-            (nw.sw as TreeNode).ne,
-            (nw.se as TreeNode).nw
-        )
+        val n00 =
+            createNode((nw.nw as TreeNode).se, (nw.ne as TreeNode).sw, (nw.sw as TreeNode).ne, (nw.se as TreeNode).nw)
         val n01 = createNode(nw.ne.se, (ne.nw as TreeNode).sw, nw.se.ne, (ne.sw as TreeNode).nw)
         val n02 = createNode(ne.nw.se, (ne.ne as TreeNode).sw, ne.sw.ne, (ne.se as TreeNode).nw)
         val n10 = createNode(nw.sw.se, nw.se.sw, (sw.nw as TreeNode).ne, (sw.ne as TreeNode).nw)
@@ -450,53 +466,54 @@ class LifeUniverse internal constructor() {
             val newSW = nextGenerationRecurse(createNode(n10, n11, n20, n21), maxLevel)
             val newSE = nextGenerationRecurse(createNode(n11, n12, n21, n22), maxLevel)
             createNode(newNW, newNE, newSW, newSE)
-        }).also { node.nextGenerationCache = it }
+        }).also { node.nextGenCache = it }
     }
 
-    private fun nodeQuickNextGeneration(node: TreeNode): TreeNode {
+    /* nodeStepGeneration following is specifically optimized for the scenario
+        when the level of the current node is exactly two more than the
+        number of generations to compute.It leverages this
+        condition to perform fewer operations and directly compute
+        the next generation. This is achieved by dividing the grid
+        into nine overlapping 2x2 sub-grids,
+        enabling the calculation of the next generation in fewer steps.*/
 
-        if (node.level2NextCache != null) {
-            return node.level2NextCache as TreeNode
+    private fun stepGenerationRecurse(node: TreeNode): TreeNode {
+
+        if (node.nextGenStepCache != null) {
+            return node.nextGenStepCache as TreeNode
         }
-        quick++
 
         if (node.level == 2) {
-            return nodeLevel2Next(node).also { node.level2NextCache = it }
+            return nodeLevel2Next(node).also { node.nextGenStepCache = it }
         }
 
-        val nw = node.nw
-        val ne = node.ne
-        val sw = node.sw
-        val se = node.se
-        val n00 = nodeQuickNextGeneration(nw as TreeNode)
-        val n01 = nodeQuickNextGeneration(
-            createNode(nw.ne, (ne as TreeNode).nw, nw.se, ne.sw)
-        )
-        val n02 = nodeQuickNextGeneration(ne)
-        val n10 = nodeQuickNextGeneration(
-            createNode(nw.sw, nw.se, (sw as TreeNode).nw, sw.ne),
-        )
-        val n11 = nodeQuickNextGeneration(
-            createNode(nw.se, ne.sw, sw.ne, (se as TreeNode).nw),
-        )
-        val n12 = nodeQuickNextGeneration(
-            createNode(ne.sw, ne.se, se.nw, se.ne),
-        )
-        val n20 = nodeQuickNextGeneration(sw)
-        val n21 = nodeQuickNextGeneration(
-            createNode(sw.ne, se.nw, sw.se, se.sw),
-        )
-        val n22 = nodeQuickNextGeneration(se)
+        recurseStep++
+
+        val nw = node.nw as TreeNode
+        val ne = node.ne as TreeNode
+        val sw = node.sw as TreeNode
+        val se = node.se as TreeNode
+
+        val n00 = stepGenerationRecurse(nw)
+        val n01 = stepGenerationRecurse(createNode(nw.ne, ne.nw, nw.se, ne.sw))
+        val n02 = stepGenerationRecurse(ne)
+        val n10 = stepGenerationRecurse(createNode(nw.sw, nw.se, sw.nw, sw.ne))
+        val n11 = stepGenerationRecurse(createNode(nw.se, ne.sw, sw.ne, se.nw))
+        val n12 = stepGenerationRecurse(createNode(ne.sw, ne.se, se.nw, se.ne))
+        val n20 = stepGenerationRecurse(sw)
+        val n21 = stepGenerationRecurse(createNode(sw.ne, se.nw, sw.se, se.sw))
+        val n22 = stepGenerationRecurse(se)
+
         return createNode(
-            nodeQuickNextGeneration(createNode(n00, n01, n10, n11)),
-            nodeQuickNextGeneration(createNode(n01, n02, n11, n12)),
-            nodeQuickNextGeneration(createNode(n10, n11, n20, n21)),
-            nodeQuickNextGeneration(createNode(n11, n12, n21, n22))
-        ).also { node.level2NextCache = it }
+            stepGenerationRecurse(createNode(n00, n01, n10, n11)),
+            stepGenerationRecurse(createNode(n01, n02, n11, n12)),
+            stepGenerationRecurse(createNode(n10, n11, n20, n21)),
+            stepGenerationRecurse(createNode(n11, n12, n21, n22))
+        ).also { node.nextGenStepCache = it }
     }
 
     companion object {
         private val HASHMAP_INITIAL_CAPACITY = FlexibleInteger.pow2(24).toInt()
-        private val LEVEL_2_CACHE_INITIAL_CAPACITY = 0x10000
+        private const val LEVEL_2_CACHE_INITIAL_CAPACITY = 0x10000
     }
 }
