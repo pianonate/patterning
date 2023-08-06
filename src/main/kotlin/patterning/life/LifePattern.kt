@@ -66,7 +66,7 @@ class LifePattern(
     )
 
     private var countdownText: TextPanel? = null
-    private var hudText: TextPanel? = null
+    private val hudText: TextPanel
 
     private var lifeFormBuffer: PGraphics
     private var uXBuffer: PGraphics
@@ -115,6 +115,14 @@ class LifePattern(
         if (storedLife.isEmpty()) {
             getRandomLifeform()
         }
+
+        hudText = TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+            .textSize(14)
+            .wrap()
+            .build().also {
+                Drawer.add(it)
+            }
+
         // life will have been loaded in prior - either from saved life
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform()
@@ -381,11 +389,11 @@ class LifePattern(
                 .wrap()
                 .textSize(24)
         }
-        hudText = createTextPanel(hudText) {
-            TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
-                .textSize(14)
-                .wrap()
-        }
+        /*        hudText = createTextPanel(hudText) {
+                    TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+                        .textSize(14)
+                        .wrap()
+                }*/
     }
 
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
@@ -679,7 +687,7 @@ class LifePattern(
         movementHandler.handleRequestedMovement()
 
         val hudMessage = getHUDMessage(life)
-        hudText?.setMessage(hudMessage)
+        hudText?.message = hudMessage
         Drawer.drawAll()
 
         uXBuffer.endDraw()

@@ -35,19 +35,23 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private var fadeValue = 0
 
     // the message
-    private var message: String
-    private var lastMessage: String
+    private var lastMessage: String = ""
     private var messageLines: List<String> = mutableListOf()
 
 
     // state management
     private lateinit var state: State
 
+    var message: String = ""
+        set(value) {
+            lastMessage = field
+            field = value
+        }
+
     init {
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
         message = builder.message
-        lastMessage = builder.message
 
         // just for keyboard shortcuts for now
         keepShortCutTogether = builder.keepShortCutTogether
@@ -77,7 +81,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
     // Countdown methods
     private fun startCountdown() {
-        setMessage(initialMessage)
+        message = initialMessage
         startDisplay()
     }
 
@@ -89,13 +93,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private fun getTextPanelBuffer(): PGraphics {
 
         val parentBuffer = drawingInformer.getPGraphics()
-
-        val testMessage = if (countdownFrom.isPresent) getCountdownMessage(countdownFrom.asInt.toLong()) else message
-        messageLines = wrapText(testMessage, parentBuffer)
-
-
-        // Adjust the text size if it exceeds the bounds of the screen
-        val adjustedTextSize = getAdjustedTextSize(parentBuffer, messageLines, textSize)
 
         // Compute the maximum width and total height of all lines in case there is
         // word wrapping
@@ -118,14 +115,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
         // set the font for this PGraphics as it will not change
         textBuffer.beginDraw()
-        setFont(textBuffer, adjustedTextSize)
+        setFont(textBuffer, textSize)
         textBuffer.endDraw()
         return textBuffer
-    }
-
-    fun setMessage(message: String) {
-        lastMessage = this.message
-        this.message = message
     }
 
     // for sizes to be correctly calculated, the font must be the same
@@ -144,16 +136,18 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return "$initialMessage: $count"
     }
 
-    private fun wrapText(theMessage: String, buffer: PGraphics): List<String> {
-        val words: MutableList<String> =
-            ArrayList(listOf(*theMessage.split(" ".toRegex()).dropLastWhile { it.isEmpty() }
-                .toTypedArray()))
+    private fun wrapText(): List<String> {
+        val words: MutableList<String> = message.split(" ").filter { it.isNotEmpty() }.toMutableList()
+
         val lines: MutableList<String> = ArrayList()
         var line = StringBuilder()
         if (!wrap) {
-            lines.add(theMessage)
+            lines.add(message)
             return lines
         }
+
+        val buffer = drawingInformer.getPGraphics()
+
         setFont(buffer, textSize)
         val evalWidth = getTextWidth()
         while (words.isNotEmpty()) {
@@ -190,32 +184,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return lines
     }
 
-    // used to make sure that a long line will fit on the screen at this size
-    private fun getAdjustedTextSize(parentBuffer: PGraphics, lines: List<String>?, startingSize: Float): Float {
-
-        // inherently we can have word wrapped text so make sure that we find the longest line to get the width
-        // set the font on the buffer we're using to evaluate text width
-        setFont(parentBuffer, startingSize)
-        var adjustedTextSize = startingSize
-        var longestLine: String? = ""
-
-        // Determine the longest line
-        for (line in lines!!) {
-            if (parentBuffer.textWidth(line) > parentBuffer.textWidth(longestLine)) {
-                longestLine = line
-            }
-        }
-        val targetWidth = getTextWidth()
-
-        // fit within the width minus a margin
-        while (parentBuffer.textWidth(longestLine) > targetWidth - doubleTextMargin /*|| ((parentBuffer.textAscent() + parentBuffer.textDescent()) > (parentBuffer.height - doubleTextMargin))*/) {
-            adjustedTextSize -= .1.toFloat() // smooth baby
-            adjustedTextSize = adjustedTextSize.coerceAtLeast(1f) // Prevent the textSize from going below 1
-            parentBuffer.textSize(adjustedTextSize)
-        }
-        return adjustedTextSize
-    }
-
     private fun getTextWidth(): Int {
         return if (textWidth.isPresent) {
             textWidth.asInt
@@ -230,8 +198,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             (lastMessage != message) ||
             (drawingInformer.isResized())
         ) {
+            messageLines = wrapText()
             panelBuffer = getTextPanelBuffer()
-            messageLines = wrapText(message, drawingInformer.getPGraphics())
         }
     }
 
@@ -449,7 +417,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         var newCount = countdownFrom.asInt.toLong()
 
         init {
-            setMessage(getCountdownMessage(newCount))
+            message = getCountdownMessage(newCount)
         }
 
         override fun update() {
@@ -461,7 +429,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
                     // Stop the countdown when it reaches 0
                     transition()
                 } else {
-                    setMessage("$initialMessage: $newCount")
+                    message = "$initialMessage: $newCount"
                 }
             }
         }

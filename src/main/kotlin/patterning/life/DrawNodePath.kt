@@ -5,8 +5,7 @@ import java.math.BigDecimal
 class DrawNodePath(
     private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
     private val updateLargestDimension: (Bounds) -> Unit
-)
-{
+) {
 
     var offsetsMoved: Boolean = true
     private var level: Int = 0
@@ -58,6 +57,10 @@ class DrawNodePath(
         var newTreeNode: TreeNode = new
 
         for (entry in path) {
+            if (entry.node is LeafNode) {
+                return false
+            }
+
             val existingPathNode = entry.node as TreeNode
 
             // Traverse down to the child node according to the direction in the path entry

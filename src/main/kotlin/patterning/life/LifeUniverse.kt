@@ -1,6 +1,7 @@
 package patterning.life
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -16,7 +17,6 @@ import patterning.util.FlexibleInteger
  */
 
 class LifeUniverse internal constructor() {
-    private var lastId: Int = Node.startId
 
     private var hashMap = ConcurrentHashMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
     //private var hashMap = ConcurrentHashMap<Int, TreeNode>(HASHMAP_INITIAL_CAPACITY)
@@ -28,6 +28,9 @@ class LifeUniverse internal constructor() {
     private val survivalRule = 1 shl 2 or (1 shl 3)
     private var generation: FlexibleInteger = FlexibleInteger.ZERO
     private var birthFrame = 0
+
+    //private var lastId: Int = Node.startId
+    private var lastId: AtomicInteger = AtomicInteger(Node.startId)
 
     private val rootReference = runBlocking { AtomicReference(emptyTree(3)) }
 
@@ -309,7 +312,7 @@ class LifeUniverse internal constructor() {
                 }
             }
 
-            newNode = TreeNode(nw, ne, sw, se, lastId++, aliveSince = birthFrame)
+            newNode = TreeNode(nw, ne, sw, se, lastId.getAndIncrement() /*++*/, aliveSince = birthFrame)
             nodeList.add(newNode!!)
 
             nodeList // return the updated list
@@ -338,7 +341,7 @@ class LifeUniverse internal constructor() {
         lifeInfo.addOrUpdate("step", FlexibleInteger.pow2(step))
         lifeInfo.addOrUpdate("generation", generation)
         lifeInfo.addOrUpdate("population", root.population)
-        lifeInfo.addOrUpdate("lastId", FlexibleInteger.create(lastId))
+        lifeInfo.addOrUpdate("lastId", FlexibleInteger.create(lastId.get()))
         /*        patternInfo.addOrUpdate("hits", hashmap.hits)
                 patternInfo.addOrUpdate("misses", hashmap.misses)
                 patternInfo.addOrUpdate("%", hashmap.hitRate * 100)
