@@ -1,13 +1,14 @@
 package patterning.life
 
 
+import java.util.Stack
 import patterning.util.FlexibleInteger
 
 class TreeNode(
-    val nw: Node,
-    val ne: Node,
-    val sw: Node,
-    val se: Node,
+    override val nw: Node,
+    override val ne: Node,
+    override val sw: Node,
+    override val se: Node,
     override var id: Int,
     val aliveSince: Int
 ) : Node {
@@ -87,38 +88,57 @@ class TreeNode(
         }
     }
 
-   /* fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
-        val size = hashMap.size
-        return countUnreferencedNodes(hashMap)
-    }
+    /* fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
+         val size = hashMap.size
+         return countUnreferencedNodes(hashMap)
+     }
 
-    private fun countUnreferencedNodes(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
-        val visited = mutableSetOf<TreeNode>()
-        traverseTree(this, visited)
+     private fun countUnreferencedNodes(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
+         val visited = mutableSetOf<TreeNode>()
+         traverseTree(this, visited)
 
-        var count = 0
+         var count = 0
 
-        for ((_, nodeList) in hashMap) {
-            for (node in nodeList) {
-                if (node !in visited) {
-                    count++
-                }
-            }
-        }
+         for ((_, nodeList) in hashMap) {
+             for (node in nodeList) {
+                 if (node !in visited) {
+                     count++
+                 }
+             }
+         }
 
-        return count
-    }*/
+         return count
+     }
 
-    private fun traverseTree(node: TreeNode, visited: MutableSet<TreeNode>) {
-        if (node in visited) {
-            return
-        }
+     private fun traverseTree(node: TreeNode, visited: MutableSet<TreeNode>) {
+         if (node in visited) {
+             return
+         }
 
-        visited.add(node)
+         visited.add(node)
 
-        for (child in listOf(node.nw, node.ne, node.sw, node.se)) {
-            if (child.level > 0) {
-                traverseTree(child as TreeNode, visited)
+         for (child in listOf(node.nw, node.ne, node.sw, node.se)) {
+             if (child.level > 0) {
+                 traverseTree(child as TreeNode, visited)
+             }
+         }
+     } */
+
+    private fun traverse(root: Node) {
+        val stack = Stack<Node>()
+        stack.push(root)
+
+        while (stack.isNotEmpty()) {
+            val node = stack.pop()
+
+            // Process the node here
+
+            // Add children nodes to the stack if they exist
+            if (node is TreeNode) {
+                stack.push(node.nw)
+                stack.push(node.ne)
+                stack.push(node.sw)
+                stack.push(node.se)
             }
         }
     }

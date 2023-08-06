@@ -1,15 +1,12 @@
 package patterning.panel
 
-import java.util.Optional
 import java.util.OptionalInt
 import java.util.OptionalLong
-import java.util.function.IntSupplier
 import kotlin.math.ceil
 import patterning.Drawable
 import patterning.Drawer
+import patterning.DrawingInformer
 import patterning.Theme
-import patterning.informer.DrawingInfoSupplier
-import patterning.informer.DrawingInformer
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
@@ -21,7 +18,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private val doubleTextMargin = textMargin * 2
     private val textSize: Float
     private val textWidth: OptionalInt
-    private val textWidthSupplier: Optional<IntSupplier>
     private val wrap: Boolean
 
     // optional capabilities
@@ -41,11 +37,11 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // the message
     private var message: String
     private var lastMessage: String
-    private var messageLines: List<String>? = null
+    private var messageLines: List<String> = mutableListOf()
 
 
     // state management
-    private var state: State? = null
+    private lateinit var state: State
 
     init {
         // construct the TextPanel with the default Panel constructor
@@ -57,7 +53,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         keepShortCutTogether = builder.keepShortCutTogether
         textSize = builder.textSize
         textWidth = builder.textWidth
-        textWidthSupplier = builder.textWidthSupplier
         wrap = builder.wrap
         displayDuration = builder.displayDuration
         fadeInDuration = builder.fadeInDuration
@@ -69,7 +64,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         initialMessage = builder.message
 
         // create initial panelBuffer for the text
-        panelBuffer = getTextPanelBuffer(drawingInformer.supplyPGraphics())
+        panelBuffer = getTextPanelBuffer()
 
         // automatically start the display unless we're a countdown
         // which needs to be manually invoked by the caller...
@@ -91,7 +86,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         transitionTime = System.currentTimeMillis() // start displaying immediately
     }
 
-    private fun getTextPanelBuffer(parentBuffer: PGraphics): PGraphics {
+    private fun getTextPanelBuffer(): PGraphics {
+
+        val parentBuffer = drawingInformer.getPGraphics()
 
         val testMessage = if (countdownFrom.isPresent) getCountdownMessage(countdownFrom.asInt.toLong()) else message
         messageLines = wrapText(testMessage, parentBuffer)
@@ -104,7 +101,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // word wrapping
         var maxWidth = 0f
         var totalHeight = 0f
-        for (line in messageLines!!) {
+        for (line in messageLines) {
             if (parentBuffer.textWidth(line) > maxWidth) {
                 maxWidth = parentBuffer.textWidth(line)
             }
@@ -135,7 +132,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // on both the parent and the new textBuffer
     // necessary because createGraphics doesn't inherit the font from the parent
     private fun setFont(buffer: PGraphics, textSize: Float) {
-        val informer = drawingInformer as DrawingInformer
+        val informer = drawingInformer
         val shouldInitialize = !informer.isDrawing()
         if (shouldInitialize) buffer.beginDraw()
         buffer.textFont(buffer.parent.createFont(Theme.fontName, textSize))
@@ -223,7 +220,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return if (textWidth.isPresent) {
             textWidth.asInt
         } else {
-            textWidthSupplier.map { intSupplier: IntSupplier -> OptionalInt.of(intSupplier.asInt) }.get().asInt
+            drawingInformer.getPGraphics().width
         }
     }
 
@@ -233,8 +230,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             (lastMessage != message) ||
             (drawingInformer.isResized())
         ) {
-            panelBuffer = getTextPanelBuffer(drawingInformer.supplyPGraphics())
-            messageLines = wrapText(message, drawingInformer.supplyPGraphics())
+            panelBuffer = getTextPanelBuffer()
+            messageLines = wrapText(message, drawingInformer.getPGraphics())
         }
     }
 
@@ -242,7 +239,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
         // used for fading in the text and the various states
         // a patterning.ux.panel.TextPanel can advance through
-        state!!.update()
+        state.update()
 
         drawMultiLineText()
     }
@@ -252,26 +249,22 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         panelBuffer.beginDraw()
         panelBuffer.pushStyle()
 
-        panelBuffer.textAlign(hAlign!!.toPApplet(), vAlign!!.toPApplet())
+        panelBuffer.textAlign(hAlign.toPApplet(), vAlign.toPApplet())
 
         // Determine where to start drawing the text based on the alignment
-        var x = textMargin.toFloat()
-        var y = 0f
-        when (hAlign) {
-            AlignHorizontal.LEFT -> x = textMargin.toFloat()
-            AlignHorizontal.CENTER -> x = panelBuffer.width / 2f
-            AlignHorizontal.RIGHT -> x = (panelBuffer.width - textMargin).toFloat()
-            else -> {}
+        val x = when (hAlign) {
+            AlignHorizontal.LEFT -> textMargin.toFloat()
+            AlignHorizontal.CENTER -> panelBuffer.width / 2f
+            AlignHorizontal.RIGHT -> (panelBuffer.width - textMargin).toFloat()
         }
 
         // Determine the starting y position based on the alignment
-        //todo: for multiline you can use textLeading to control the actual spacing...
         val lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent()
-        val totalTextHeight = lineHeight * messageLines!!.size
-        when (vAlign) {
-            AlignVertical.CENTER -> y = panelBuffer.height / 2f - totalTextHeight / 2f + doubleTextMargin
-            AlignVertical.BOTTOM -> y = (panelBuffer.height - textMargin).toFloat()
-            else -> {}
+        val totalTextHeight = lineHeight * messageLines.size
+        val y = when (vAlign) {
+            AlignVertical.TOP -> 0f
+            AlignVertical.CENTER -> panelBuffer.height / 2f - totalTextHeight / 2f + doubleTextMargin
+            AlignVertical.BOTTOM -> (panelBuffer.height - textMargin).toFloat() - totalTextHeight + lineHeight
         }
 
         // Interpolate between start and end colors
@@ -280,8 +273,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         val endColor = Theme.textColor
         val currentColor = panelBuffer.lerpColor(startColor, endColor, fadeValue / 255.0f)
 
-        for (i in messageLines!!.indices) {
-            val line = messageLines!![i]
+        for (i in messageLines.indices) {
+            val line = messageLines[i]
             val lineY = y + lineHeight * i
 
             // Draw the actual text in the calculated color
@@ -319,12 +312,11 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // Countdown variables
         internal var countdownFrom = OptionalInt.empty()
         internal var textWidth = OptionalInt.empty()
-        internal var textWidthSupplier = Optional.empty<IntSupplier>()
         internal var runMethod: Runnable? = null
         internal var keepShortCutTogether = false
 
         constructor(
-            informer: DrawingInfoSupplier,
+            informer: DrawingInformer,
             message: String,
             hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
@@ -335,7 +327,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
 
         constructor(
-            informer: DrawingInfoSupplier,
+            informer: DrawingInformer,
             message: String,
             position: PVector?,
             hAlign: AlignHorizontal?,
@@ -368,13 +360,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
         fun textWidth(textWidth: Int): Builder {
             this.textWidth = OptionalInt.of(textWidth)
-            check(!textWidthSupplier.isPresent) { "Cannot set both int textWidth and Optional<IntSupplier> textWidth" }
-            return this
-        }
-
-        fun textWidth(textWidth: Optional<IntSupplier>): Builder {
-            textWidthSupplier = textWidth
-            check(!this.textWidth.isPresent) { "Cannot set both int textWidth and Optional<IntSupplier> textWidth" }
             return this
         }
 
@@ -404,9 +389,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
 
         override fun build(): TextPanel {
-            if (textWidth.isEmpty && textWidthSupplier.isEmpty) {
-                textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width)
-            }
+            /*            if (textWidth.isEmpty) {
+                            textWidth = OptionalInt.of(drawingInformer.supplyPGraphics().width)
+                        }*/
             return TextPanel(this)
         }
     }

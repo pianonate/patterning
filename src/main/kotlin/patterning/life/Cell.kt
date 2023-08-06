@@ -45,7 +45,6 @@ class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
         return universeSizeImpl(level - 1)
     }
 
-    // todo also cache this value the way you cache getHalfSize()
     private fun universeSizeImpl(level: Int): BigDecimal {
         if (level < 0) return BigDecimal.ZERO
 

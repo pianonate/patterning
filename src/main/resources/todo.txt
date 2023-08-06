@@ -1,5 +1,3 @@
-todo: get rid of timer class - and use coroutines instead - i think there already is an example
-todo: zooming in at lower levels finishes slower because of the comparison that is made to the size that stops the zooming - that comparison should adjust itself to be range appropriate to the curent cell size - there has to be some formula to keep the zooming constant
 todo: when you lift your finger from holding down a zoom key, it should stop immediately
 todo: fix the state management that you're using the objects to propagate helper - especially fix cell because it should be fixable
 todo: put the name of the damn thing on the screen!
@@ -106,3 +104,6 @@ todo: show how it's calculating future generations in nextGeneraiton - i.e. draw
 todo: draw the universe in 3D
 todo: OCTREE: https://github.com/thwegene/OCT/tree/master
 todo: doublclick invokes a zoom in
+todo: pressedKeys in MovementHandler.handleMovementKeys feels as if the encapsulation is wrong.  here's what i wrote before:
+    get rid of direct access to pressedKeys and instead use a method that tells you what is happening here
+    it breaks encapsulation otherwise to have to extract it from KeyHandler and peer inside, IMO

@@ -1,12 +1,12 @@
 package patterning.panel
 
+import patterning.DrawingInformer
 import patterning.Theme
 import patterning.actions.KeyCallback
-import patterning.informer.DrawingInfoSupplier
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
 
-    class Builder(drawingInformer: DrawingInfoSupplier?, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
+    class Builder(drawingInformer: DrawingInformer, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
         ContainerPanel.Builder<Builder>(drawingInformer, hAlign, vAlign) {
         public override fun setOrientation(orientation: Orientation): Builder {
             this.orientation = orientation

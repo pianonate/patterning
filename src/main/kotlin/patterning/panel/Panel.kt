@@ -4,10 +4,10 @@ import java.awt.Component
 import java.awt.MouseInfo
 import java.util.OptionalInt
 import patterning.Drawable
+import patterning.DrawingInformer
 import patterning.PatterningPApplet
 import patterning.Theme
 import patterning.actions.MouseEventReceiver
-import patterning.informer.DrawingInfoSupplier
 import patterning.panel.Transition.TransitionDirection
 import patterning.panel.Transition.TransitionType
 import processing.core.PConstants
@@ -20,15 +20,15 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     private val radius: OptionalInt
 
     var parentPanel: Panel? = null
-    var drawingInformer: DrawingInfoSupplier
+    var drawingInformer: DrawingInformer
 
     // size & positioning
     var position: PVector? = null
     var width: Int
     var height: Int
     protected var fill: Int
-    var hAlign: AlignHorizontal?
-    var vAlign: AlignVertical?
+    var hAlign: AlignHorizontal
+    var vAlign: AlignVertical
 
     // transition
     private var transitionAble: Boolean
@@ -59,7 +59,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         transitionType = builder.transitionType
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
-        val parentBuffer = drawingInformer.supplyPGraphics()
+        val parentBuffer = drawingInformer.getPGraphics()
         panelBuffer = initPanelBuffer(parentBuffer)
         if (transitionAble) {
             transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
@@ -108,7 +108,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
 
-        val parentBuffer = drawingInformer.supplyPGraphics()
+        val parentBuffer = drawingInformer.getPGraphics()
         parentBuffer.pushStyle()
 
         /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
@@ -212,14 +212,14 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         }
 
     abstract class Builder<T : Builder<T>?> {
-        val drawingInformer: DrawingInfoSupplier
+        val drawingInformer: DrawingInformer
         var x = 0
         var y = 0
         var width = 0
         var height = 0
         var alignable = false
-        var hAlign: AlignHorizontal? = null
-        var vAlign: AlignVertical? = null
+        var hAlign: AlignHorizontal = AlignHorizontal.LEFT
+        var vAlign: AlignVertical = AlignVertical.TOP
         var fill = Theme.defaultPanelColor
         var transitionDirection: TransitionDirection? = null
         var transitionType: TransitionType? = null
@@ -227,8 +227,20 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         var radius: OptionalInt = OptionalInt.empty()
 
         // used by Control
-        constructor(drawingInformer: DrawingInfoSupplier, width: Int, height: Int) {
+        constructor(drawingInformer: DrawingInformer, width: Int, height: Int) {
             setRect(0, 0, width, height) // parent positioned
+            this.drawingInformer = drawingInformer
+        }
+
+        // used by TextPanel for explicitly positioned text
+        constructor(
+            drawingInformer: DrawingInformer,
+            position: PVector,
+            hAlign: AlignHorizontal,
+            vAlign: AlignVertical
+        ) {
+            setRect(position.x.toInt(), position.y.toInt(), 0, 0) // parent positioned
+            setAlignment(hAlign, vAlign, false)
             this.drawingInformer = drawingInformer
         }
 
@@ -239,18 +251,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             this.height = height
         }
 
-        // used by TextPanel for explicitly positioned text
-        constructor(
-            drawingInformer: DrawingInfoSupplier,
-            position: PVector,
-            hAlign: AlignHorizontal,
-            vAlign: AlignVertical
-        ) {
-            setRect(position.x.toInt(), position.y.toInt(), 0, 0) // parent positioned
-            setAlignment(hAlign, vAlign, false)
-            this.drawingInformer = drawingInformer
-        }
-
         private fun setAlignment(hAlign: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
             alignable = alignAble
             this.hAlign = hAlign
@@ -259,7 +259,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
 
         // used by BasicPanel for demonstration purposes
         constructor(
-            drawingInformer: DrawingInfoSupplier,
+            drawingInformer: DrawingInformer,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical,
             width: Int,
@@ -272,7 +272,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
 
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
         constructor(
-            drawingInformer: DrawingInfoSupplier,
+            drawingInformer: DrawingInformer,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) {

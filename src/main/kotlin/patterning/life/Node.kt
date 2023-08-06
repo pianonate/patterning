@@ -7,6 +7,10 @@ interface Node {
     val population: FlexibleInteger
     val level: Int
     val bounds: Bounds
+    val nw: Node
+    val ne: Node
+    val sw: Node
+    val se: Node
 
     // added globalVersion to avoid having to clear the cache whenever we increase the
     // step size on the universe - prior to this we iterated over the entire hashmap

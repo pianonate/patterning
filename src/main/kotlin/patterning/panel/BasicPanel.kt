@@ -1,19 +1,19 @@
 package patterning.panel
 
-import patterning.informer.DrawingInfoSupplier
+import patterning.DrawingInformer
 
 class BasicPanel private constructor(builder: Builder?) : Panel(builder!!) {
     override fun panelSubclassDraw() {
     }
 
     class Builder(
-        drawingInfoSupplier: DrawingInfoSupplier?,
+        drawingInformer: DrawingInformer,
         hAlign: AlignHorizontal?,
         vAlign: AlignVertical?,
         width: Int,
         height: Int
     ) : Panel.Builder<Builder?>(
-        drawingInfoSupplier!!, hAlign!!, vAlign!!, width, height
+        drawingInformer, hAlign!!, vAlign!!, width, height
     ) {
         override fun build(): BasicPanel {
             return BasicPanel(this)

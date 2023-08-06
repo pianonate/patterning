@@ -1,13 +1,13 @@
 package patterning.panel
 
 import kotlinx.coroutines.delay
+import patterning.DrawingInformer
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.SingleStepObserver
 import patterning.Theme
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
-import patterning.informer.DrawingInfoSupplier
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
 
@@ -22,7 +22,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
         pauseIcon = loadIcon(builder.pausedIconName)
         playIcon = super.icon
         currentIcon = playIcon
-        // allows for highlighting playpause whenever the single step mode is changed
+        // allows for highlighting play pause whenever the single step mode is changed
         RunningState.addModeChangeObserver(this)
     }
 
@@ -80,7 +80,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
     }
 
     class Builder(
-        drawingInformer: DrawingInfoSupplier?,
+        drawingInformer: DrawingInformer,
         callback: KeyCallback?,
         iconName: String?,
         val pausedIconName: String,

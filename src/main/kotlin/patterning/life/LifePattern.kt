@@ -7,10 +7,9 @@ import java.io.IOException
 import java.math.BigDecimal
 import java.math.MathContext
 import java.net.URISyntaxException
-import java.util.Optional
-import java.util.function.IntSupplier
 import kotlin.math.roundToInt
 import patterning.Drawer
+import patterning.DrawingInformer
 import patterning.Pattern
 import patterning.Properties
 import patterning.RunningState
@@ -18,8 +17,6 @@ import patterning.Theme
 import patterning.actions.KeyFactory
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
-import patterning.informer.DrawingInfoSupplier
-import patterning.informer.DrawingInformer
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
 import patterning.panel.ControlPanel
@@ -45,7 +42,7 @@ class LifePattern(
 
     private val asyncNextGeneration: AsyncJobRunner
     private var targetStep = 0
-    private val drawingInformer: DrawingInfoSupplier
+    private val drawingInformer: DrawingInformer
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
 
@@ -85,7 +82,7 @@ class LifePattern(
     init {
         uXBuffer = buffer
         lifeFormBuffer = buffer
-        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized }) { isDrawing }
+        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized }, { isDrawing })
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height
@@ -297,7 +294,6 @@ class LifePattern(
             val newLife = parser.parseRLE(storedLife)
             universe.setupLife(newLife.fieldX, newLife.fieldY)
         } catch (e: NotLifeException) {
-            // todo: on failure you need to
             println(
                 """
     get a life - here's what failed:
@@ -382,18 +378,15 @@ class LifePattern(
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .textWidth(Optional.of(IntSupplier { pApplet.width / 2 }))
                 .wrap()
                 .textSize(24)
         }
         hudText = createTextPanel(hudText) {
             TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
-                .textSize(24)
-                .textWidth(Optional.of(IntSupplier { canvasWidth.toInt() }))
+                .textSize(14)
+                .wrap()
         }
-
     }
-
 
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) saveUndoState()

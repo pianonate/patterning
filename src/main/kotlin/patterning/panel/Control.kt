@@ -1,12 +1,11 @@
 package patterning.panel
 
 import kotlinx.coroutines.delay
-
 import patterning.Drawer
+import patterning.DrawingInformer
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.Theme
-
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyHandler
@@ -14,13 +13,8 @@ import patterning.actions.KeyObservable
 import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.actions.MouseEventReceiver
-
-import patterning.informer.DrawingInfoSupplier
-
 import patterning.panel.Transition.TransitionDirection
-
 import patterning.util.AsyncJobRunner
-
 import processing.core.PImage
 import processing.core.PVector
 
@@ -173,7 +167,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
 
         // if the text won't display, make it possible to display
-        val screenWidth = localParentPanel.drawingInformer.supplyPGraphics().width
+        val screenWidth = localParentPanel.drawingInformer.getPGraphics().width
         if (hoverText.position!!.x + hoverText.width > screenWidth) {
             hoverText.position!!.x = (screenWidth - hoverText.width).toFloat()
         }
@@ -244,7 +238,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
 
     open class Builder(
-        drawingInformer: DrawingInfoSupplier?,
+        drawingInformer: DrawingInformer,
         val callback: KeyCallback,
         val iconName: String,
         val size: Int

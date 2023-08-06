@@ -32,8 +32,6 @@ class MovementHandler(private val drawer: LifePattern) {
             }
         }
 
-        // todo: get rid of direct access to pressedKeys and instead use a method that tells you what is happening here
-        // it breaks encapsulation otherwise to have to extract it from KeyHandler and peer inside, IMO
         val currentDirection = directions.filter { pressedKeys.contains(it[0]) }.sumOf { it[0] }
 
         if (currentDirection != lastDirection) {

@@ -380,10 +380,10 @@ class LifeUniverse internal constructor() {
         // and if stepNextGeneration is expanding the universe then the population sizes won't match up
         // so so make sure we're big enough to handle the expansion
         while (currentRoot.level <= step + 2 ||
-            currentRoot.nw.population != ((currentRoot.nw as TreeNode).se as TreeNode).se.population ||
-            currentRoot.ne.population != ((currentRoot.ne as TreeNode).sw as TreeNode).sw.population ||
-            currentRoot.sw.population != ((currentRoot.sw as TreeNode).ne as TreeNode).ne.population ||
-            currentRoot.se.population != ((currentRoot.se as TreeNode).nw as TreeNode).nw.population
+            currentRoot.nw.population != currentRoot.nw.se.se.population ||
+            currentRoot.ne.population != currentRoot.ne.sw.sw.population ||
+            currentRoot.sw.population != currentRoot.sw.ne.ne.population ||
+            currentRoot.se.population != currentRoot.se.nw.nw.population
         ) {
             currentRoot = expandUniverse(currentRoot)
         }
@@ -403,7 +403,7 @@ class LifeUniverse internal constructor() {
         birthFrame += 1
     }
 
-    private fun expandUniverse(node: TreeNode): TreeNode {
+    private fun expandUniverse(node: Node): TreeNode {
         val t = emptyTree(node.level - 1)
         return createNode(
             createNode(t, t, t, node.nw),
@@ -436,21 +436,21 @@ class LifeUniverse internal constructor() {
             return node.nextGenStepCache as TreeNode
         }
 
-        val nw = node.nw as TreeNode
-        val ne = node.ne as TreeNode
-        val sw = node.sw as TreeNode
-        val se = node.se as TreeNode
+        val nw = node.nw
+        val ne = node.ne
+        val sw = node.sw
+        val se = node.se
 
         val n00 =
-            createNode((nw.nw as TreeNode).se, (nw.ne as TreeNode).sw, (nw.sw as TreeNode).ne, (nw.se as TreeNode).nw)
-        val n01 = createNode(nw.ne.se, (ne.nw as TreeNode).sw, nw.se.ne, (ne.sw as TreeNode).nw)
-        val n02 = createNode(ne.nw.se, (ne.ne as TreeNode).sw, ne.sw.ne, (ne.se as TreeNode).nw)
-        val n10 = createNode(nw.sw.se, nw.se.sw, (sw.nw as TreeNode).ne, (sw.ne as TreeNode).nw)
-        val n11 = createNode(nw.se.se, ne.sw.sw, sw.ne.ne, (se.nw as TreeNode).nw)
-        val n12 = createNode(ne.sw.se, ne.se.sw, se.nw.ne, (se.ne as TreeNode).nw)
-        val n20 = createNode(sw.nw.se, sw.ne.sw, (sw.sw as TreeNode).ne, (sw.se as TreeNode).nw)
-        val n21 = createNode(sw.ne.se, se.nw.sw, sw.se.ne, (se.sw as TreeNode).nw)
-        val n22 = createNode(se.nw.se, se.ne.sw, se.sw.ne, (se.se as TreeNode).nw)
+            createNode(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw)
+        val n01 = createNode(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw)
+        val n02 = createNode(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw)
+        val n10 = createNode(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw)
+        val n11 = createNode(nw.se.se, ne.sw.sw, sw.ne.ne, se.nw.nw)
+        val n12 = createNode(ne.sw.se, ne.se.sw, se.nw.ne, se.ne.nw)
+        val n20 = createNode(sw.nw.se, sw.ne.sw, sw.sw.ne, sw.se.nw)
+        val n21 = createNode(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw)
+        val n22 = createNode(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw)
 
         return (if (node.level > maxLevel) {
             coroutineScope {
@@ -489,20 +489,20 @@ class LifeUniverse internal constructor() {
 
         recurseStep++
 
-        val nw = node.nw as TreeNode
-        val ne = node.ne as TreeNode
-        val sw = node.sw as TreeNode
-        val se = node.se as TreeNode
+        val nw = node.nw
+        val ne = node.ne
+        val sw = node.sw
+        val se = node.se
 
-        val n00 = stepGenerationRecurse(nw)
+        val n00 = stepGenerationRecurse(nw as TreeNode)
         val n01 = stepGenerationRecurse(createNode(nw.ne, ne.nw, nw.se, ne.sw))
-        val n02 = stepGenerationRecurse(ne)
+        val n02 = stepGenerationRecurse(ne as TreeNode)
         val n10 = stepGenerationRecurse(createNode(nw.sw, nw.se, sw.nw, sw.ne))
         val n11 = stepGenerationRecurse(createNode(nw.se, ne.sw, sw.ne, se.nw))
         val n12 = stepGenerationRecurse(createNode(ne.sw, ne.se, se.nw, se.ne))
-        val n20 = stepGenerationRecurse(sw)
+        val n20 = stepGenerationRecurse(sw as TreeNode)
         val n21 = stepGenerationRecurse(createNode(sw.ne, se.nw, sw.se, se.sw))
-        val n22 = stepGenerationRecurse(se)
+        val n22 = stepGenerationRecurse(se as TreeNode)
 
         return createNode(
             stepGenerationRecurse(createNode(n00, n01, n10, n11)),

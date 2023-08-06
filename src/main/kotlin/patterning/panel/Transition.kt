@@ -1,12 +1,12 @@
 package patterning.panel
 
+import patterning.DrawingInformer
 import patterning.Theme
-import patterning.informer.DrawingInfoSupplier
 import processing.core.PApplet
 import processing.core.PGraphics
 
 class Transition(
-    private val drawingInformer: DrawingInfoSupplier,
+    private val drawingInformer: DrawingInformer,
     private val direction: TransitionDirection,
     private val type: TransitionType,
     private val duration: Int = Theme.shortTransitionDuration
@@ -20,7 +20,7 @@ class Transition(
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val uxBuffer = drawingInformer.supplyPGraphics()
+        val uxBuffer = drawingInformer.getPGraphics()
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {

@@ -7,6 +7,11 @@ class LeafNode(
     override val population: FlexibleInteger,
 ) : Node {
     override val level: Int = 0
+    override val nw: Node = this
+    override val ne: Node = this
+    override val sw: Node = this
+    override val se: Node = this
+
     override val bounds: Bounds = if (population == FlexibleInteger.ONE)
         Bounds(
             top = FlexibleInteger.NEGATIVE_ONE,

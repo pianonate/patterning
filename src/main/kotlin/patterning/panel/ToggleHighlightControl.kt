@@ -1,8 +1,8 @@
 package patterning.panel
 
+import patterning.DrawingInformer
 import patterning.actions.KeyCallback
 import patterning.actions.KeyObservable
-import patterning.informer.DrawingInfoSupplier
 
 class ToggleHighlightControl private constructor(builder: Builder?) : Control(
     builder!!
@@ -17,7 +17,7 @@ class ToggleHighlightControl private constructor(builder: Builder?) : Control(
         isHighlightFromKeypress = !isHighlightFromKeypress
     }
 
-    class Builder(drawingInformer: DrawingInfoSupplier?, callback: KeyCallback?, iconName: String?, size: Int) :
+    class Builder(drawingInformer: DrawingInformer, callback: KeyCallback?, iconName: String?, size: Int) :
         Control.Builder(drawingInformer, callback!!, iconName!!, size) {
         override fun build(): ToggleHighlightControl {
             return ToggleHighlightControl(this)
