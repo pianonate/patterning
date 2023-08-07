@@ -64,7 +64,6 @@ class Cell(initialSize: Float = DEFAULT_CELL_WIDTH) {
 
     companion object {
         private const val DEFAULT_CELL_WIDTH = 4.0f
-        private const val CELL_WIDTH_ROUNDING_THRESHOLD = 1.6f
-        const val WIDTH_RATIO = .05f
+        private const val WIDTH_RATIO = .05f
     }
 }

@@ -9,7 +9,7 @@ import processing.data.JSONObject
 class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) : TestModeObserver {
     private val performanceResults = JSONObject()
     private val patternCount = 9
-    private val framesPerPattern = 400L
+    private val framesPerPattern = 200L
 
     // State for the ongoing test, if any
     private var currentPatternIndex = 1
@@ -63,9 +63,17 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
             val patternResults = JSONObject()
             patternResults.setLong("memory", patternMemoryUsed)
             patternResults.setLong("duration", patternDuration)
+            println(
+                """
+                |pattern:${currentPatternIndex}
+                |duration:${patternDuration.formatWithCommas()}
+                |memory:${patternMemoryUsed.formatWithCommas()}
+                |lastId:${lifePattern.lastId.formatWithCommas()}
+                """.trimMargin().replace("\n", " ")
+            )
+
             performanceResults.setJSONObject(currentPatternIndex.toString(), patternResults)
             //System.gc()
-            println("pattern:${currentPatternIndex} duration:${patternDuration.formatWithCommas()} memory:${patternMemoryUsed.formatWithCommas()} totalDuration:${(System.currentTimeMillis() - testStartTime).formatWithCommas()}")
 
             // Advance to next pattern (if not the end of the test)
             if (currentPatternIndex < patternCount) {
@@ -76,6 +84,7 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
         if (frameCount == framesPerPattern * patternCount) {
             // Test is over
             val totalDuration = System.currentTimeMillis() - testStartTime
+            println("testing complete - duration: ${totalDuration.formatWithCommas()}")
             val totalMemoryUsed = runtime.totalMemory() - runtime.freeMemory()
 
             performanceResults.setLong(
@@ -86,7 +95,6 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
             properties.performanceTestResults = performanceResults
             testing = false
             RunningState.endTest()
-            println("testing complete - duration: ${totalDuration.formatWithCommas()}")
 
         }
     }

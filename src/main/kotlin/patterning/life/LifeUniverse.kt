@@ -3,8 +3,6 @@ package patterning.life
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import patterning.util.FlexibleInteger
 
@@ -29,8 +27,8 @@ class LifeUniverse internal constructor() {
     private var generation: FlexibleInteger = FlexibleInteger.ZERO
     private var birthFrame = 0
 
-    //private var lastId: Int = Node.startId
-    private var lastId: AtomicInteger = AtomicInteger(Node.startId)
+    var lastId: AtomicInteger = AtomicInteger(Node.startId)
+        private set
 
     private val rootReference = runBlocking { AtomicReference(emptyTree(3)) }
 
@@ -342,42 +340,20 @@ class LifeUniverse internal constructor() {
         lifeInfo.addOrUpdate("generation", generation)
         lifeInfo.addOrUpdate("population", root.population)
         lifeInfo.addOrUpdate("lastId", FlexibleInteger.create(lastId.get()))
-        /*        patternInfo.addOrUpdate("hits", hashmap.hits)
-                patternInfo.addOrUpdate("misses", hashmap.misses)
-                patternInfo.addOrUpdate("%", hashmap.hitRate * 100)
-                patternInfo.addOrUpdate("puts", hashmap.puts)*/
-        lifeInfo.addOrUpdate("normalRecurse", recurse)
-        lifeInfo.addOrUpdate("stepRecurse", recurseStep)
-        val bounds = rootBounds
-        lifeInfo.addOrUpdate("width", bounds.width)
-        lifeInfo.addOrUpdate("height", bounds.height)
+        /* lifeInfo.addOrUpdate("normalRecurse", recurse.get())
+         lifeInfo.addOrUpdate("stepRecurse", recurseStep.get())*/
+        lifeInfo.addOrUpdate("width", root.bounds.width)
+        lifeInfo.addOrUpdate("height", root.bounds.height)
     }
 
-    private var recurse = 0
-    private var recurseStep = 0
+    /*    private var recurse = AtomicInteger(0)
+        private var recurseStep = AtomicInteger(0)*/
 
     suspend fun nextGeneration() {
         var currentRoot = this.root
-        // val biggestUsage = hashMap.getValueWithHighestUsageCount()?.get(0)
 
-        /*        println(
-                    "size: ${hashMap.size} unused: ${currentRoot.countUnusedInMap(hashMap)} biggest:${biggestUsage!!.id} usage ${
-                        hashMap.getUsageCountForKey(
-                            biggestUsage.hashCode()
-                        )
-                    }"
-                )*/
-
-        /*      if (hashMap.size > 2_000_000) {
-                  val myScope = CoroutineScope((Dispatchers.Default))
-                  myScope.launch {
-                      withContext(Dispatchers.IO) {
-                          removeOldest()
-                      }
-                  }
-              }*/
-        recurse = 0
-        recurseStep = 0
+        /*      recurse = AtomicInteger(0)
+              recurseStep = AtomicInteger(0)*/
 
         // when you're super stepping you need the first argument re:step to grow it immediately large enough!
         // and if stepNextGeneration is expanding the universe then the population sizes won't match up
@@ -391,15 +367,8 @@ class LifeUniverse internal constructor() {
             currentRoot = expandUniverse(currentRoot)
         }
 
-        /*val populationDivisor =
-            FlexibleInteger.create(
-                currentRoot.population.bigDecimal.divide(BigDecimal(4), RoundingMode.HALF_UP).toBigInteger()
-            )*/
-        val nextRoot = nextGenerationRecurse(node = currentRoot, maxLevel = currentRoot.level - 2)
-        // val nextRoot = nextGenerationRecurse(node = currentRoot, populationDivisor = populationDivisor)
+        val nextRoot = nextGenerationRecurse(node = currentRoot)
 
-
-        // using the intermediate variable to allow AtomicReference to be used
         this.root = nextRoot
 
         generation += FlexibleInteger.pow2(step)
@@ -424,9 +393,9 @@ class LifeUniverse internal constructor() {
         path that nodeQuickNextGeneration does.
     */
 
-    private suspend fun nextGenerationRecurse(node: TreeNode, maxLevel: Int): TreeNode {
+    private fun nextGenerationRecurse(node: TreeNode): TreeNode {
         node.nextGenCache?.let { return it }
-        recurse++
+        // recurse.getAndIncrement()
 
         if (step == node.level - 2) {
             return stepGenerationRecurse(node)
@@ -455,21 +424,12 @@ class LifeUniverse internal constructor() {
         val n21 = createNode(sw.ne.se, se.nw.sw, sw.se.ne, se.sw.nw)
         val n22 = createNode(se.nw.se, se.ne.sw, se.sw.ne, se.se.nw)
 
-        return (if (node.level > maxLevel) {
-            coroutineScope {
-                val asyncNW = async { nextGenerationRecurse(createNode(n00, n01, n10, n11), maxLevel) }
-                val asyncNE = async { nextGenerationRecurse(createNode(n01, n02, n11, n12), maxLevel) }
-                val asyncSW = async { nextGenerationRecurse(createNode(n10, n11, n20, n21), maxLevel) }
-                val asyncSE = async { nextGenerationRecurse(createNode(n11, n12, n21, n22), maxLevel) }
-                createNode(asyncNW.await(), asyncNE.await(), asyncSW.await(), asyncSE.await())
-            }
-        } else {
-            val newNW = nextGenerationRecurse(createNode(n00, n01, n10, n11), maxLevel)
-            val newNE = nextGenerationRecurse(createNode(n01, n02, n11, n12), maxLevel)
-            val newSW = nextGenerationRecurse(createNode(n10, n11, n20, n21), maxLevel)
-            val newSE = nextGenerationRecurse(createNode(n11, n12, n21, n22), maxLevel)
-            createNode(newNW, newNE, newSW, newSE)
-        }).also { node.nextGenCache = it }
+        return (createNode(
+            nextGenerationRecurse(createNode(n00, n01, n10, n11)),
+            nextGenerationRecurse(createNode(n01, n02, n11, n12)),
+            nextGenerationRecurse(createNode(n10, n11, n20, n21)),
+            nextGenerationRecurse(createNode(n11, n12, n21, n22))
+        ).also { node.nextGenCache = it })
     }
 
     /* nodeStepGeneration following is specifically optimized for the scenario
@@ -481,16 +441,13 @@ class LifeUniverse internal constructor() {
         enabling the calculation of the next generation in fewer steps.*/
 
     private fun stepGenerationRecurse(node: TreeNode): TreeNode {
+        // recurseStep.getAndIncrement()
 
-        if (node.nextGenStepCache != null) {
-            return node.nextGenStepCache as TreeNode
-        }
+        node.nextGenStepCache?.let { return it }
 
         if (node.level == 2) {
             return nodeLevel2Next(node).also { node.nextGenStepCache = it }
         }
-
-        recurseStep++
 
         val nw = node.nw
         val ne = node.ne

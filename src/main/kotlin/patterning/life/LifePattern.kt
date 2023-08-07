@@ -78,7 +78,6 @@ class LifePattern(
 
     private val zoom = Zoom(this)
 
-
     init {
         uXBuffer = buffer
         lifeFormBuffer = buffer
@@ -127,6 +126,10 @@ class LifePattern(
         // or from the packaged resources so this doesn't need extra protection
         instantiateLifeform()
     }
+
+    val lastId: Int
+        get() = life.lastId.get()
+
 
     private val buffer: PGraphics
         get() = pApplet.createGraphics(pApplet.width, pApplet.height)
