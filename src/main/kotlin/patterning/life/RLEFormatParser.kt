@@ -6,19 +6,27 @@ class RLEFormatParser internal constructor(text: String) {
     private val metaDataPrefix = "#"
     private val headerPattern = "^x = \\d+, y = \\d+, rule.*$"
     val result: LifeForm = LifeForm()
-
+    
     init {
         handleMetaData(text)
         handleHeader(text)
         parseInstructions()
+        
+        result.title = if (result.title.isEmpty()) {
+            if (result.comments.size == 0)
+                "untitled"
+            else
+                result.comments[0].take(20)
+        } else
+            result.title
     }
-
+    
     private fun parseInstructions() {
         val instructions = result.instructions
         if (instructions.isEmpty()) {
             throw NotLifeException("no life was found in the details of the RLE")
         }
-
+        
         var count = 1
         var x = 0
         var y = 0
@@ -59,11 +67,11 @@ class RLEFormatParser internal constructor(text: String) {
                 inNumber = false
             }
         }
-
+        
         result.fieldX = fieldX
         result.fieldY = fieldY
     }
-
+    
     private fun handleHeader(text: String) {
         val compiledPattern = Pattern.compile(headerPattern, Pattern.MULTILINE)
         val matcher = compiledPattern.matcher(text)
@@ -88,20 +96,20 @@ class RLEFormatParser internal constructor(text: String) {
                     // that's what the true and false are for here
                     result.rulesS = parseRuleRLE(value, true)
                     result.ruleB = parseRuleRLE(value, false)
-
+                    
                     // add the rule used to the comments list and also to the result object
                     // in a consistent manner
                     val readable = rule2str(result.rulesS, result.ruleB)
                     result.comments.add("\nRule: $readable\n")
                     result.rule = readable
                 }
-
+                
                 else ->  // if we got here we don't have something we know about
                     throw NotLifeException("invalid header: $line")
             }
         }
     }
-
+    
     private fun parseRuleRLE(ruleStr: String, survived: Boolean): Int {
         val rule = ruleStr.split("/").filter { it.isNotEmpty() }
         if (rule.size < 2 || rule[1].isEmpty()) {
@@ -113,8 +121,8 @@ class RLEFormatParser internal constructor(text: String) {
         val parsedRuleStr = rule[0].substring(1) + "/" + rule[1].substring(1)
         return parseRule(parsedRuleStr, survived)
     }
-
-
+    
+    
     /* Why all the nonsense?  because the patterning.LifeUniverse uses the rules to form the eval bitmask
    necessary to calculate neighbors and aliveness. The rule string parked on the rule field
    is what comes out of the RLE file so just look at that if you want to debug
@@ -150,7 +158,7 @@ class RLEFormatParser internal constructor(text: String) {
         }
         return rule
     }
-
+    
     private fun rule2str(ruleS: Int, ruleB: Int): String {
         var _ruleS = ruleS
         var _ruleB = ruleB
@@ -176,12 +184,12 @@ class RLEFormatParser internal constructor(text: String) {
         }
         return rule.toString()
     }
-
+    
     private fun isNumber(test: String): Boolean {
         return test.toIntOrNull() != null
-
+        
     }
-
+    
     private fun handleMetaData(text: String) {
         val lines = text.split('\n')
         for (line in lines) {

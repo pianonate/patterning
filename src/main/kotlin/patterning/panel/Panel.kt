@@ -18,10 +18,10 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     // alignment
     private val alignAble: Boolean
     private val radius: OptionalInt
-
+    
     var parentPanel: Panel? = null
     var drawingInformer: DrawingInformer
-
+    
     // size & positioning
     var position: PVector? = null
     var width: Int
@@ -29,14 +29,14 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     protected var fill: Int
     var hAlign: AlignHorizontal
     var vAlign: AlignVertical
-
+    
     // transition
     private var transitionAble: Boolean
     private var transition: Transition? = null
-
+    
     // image buffers and callbacks
-    protected var panelBuffer: PGraphics
-
+    internal var panelBuffer: PGraphics
+    
     // mouse stuff
     var isPressed = false
     var isHovering = false
@@ -44,7 +44,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     private var transitionDirection: TransitionDirection?
     private var transitionType: TransitionType?
     private var transitionDuration: Int
-
+    
     init {
         setPosition(builder.x, builder.y)
         drawingInformer = builder.drawingInformer
@@ -65,7 +65,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
         }
     }
-
+    
     fun setPosition(x: Int, y: Int) {
         if (position == null) {
             position = PVector()
@@ -73,11 +73,11 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         position!!.x = x.toFloat()
         position!!.y = y.toFloat()
     }
-
+    
     fun initPanelBuffer(parentBuffer: PGraphics): PGraphics {
         return parentBuffer.parent.createGraphics(width, height)
     }
-
+    
     override fun onMousePressed() {
         isPressed = isMouseOverMe
         if (isPressed) {
@@ -85,58 +85,61 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             isHoveringPrevious = true
         }
     }
-
+    
     override fun onMouseReleased() {
         if (isMouseOverMe) {
             isPressed = false
         }
     }
-
+    
     override fun mousePressedOverMe(): Boolean {
         return isMouseOverMe
     }
-
+    
     fun setTransition(direction: TransitionDirection?, type: TransitionType?, duration: Int) {
         transitionDirection = direction
         transitionType = type
         transitionDuration = duration
         transitionAble = true
     }
-
+    
     open fun updatePanelBuffer() {}
-
+    
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
-
+        
         val parentBuffer = drawingInformer.getPGraphics()
         parentBuffer.pushStyle()
-
+        
+        if (this is TextPanel) {
+            val x = 3
+        }
         /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
         updatePanelBuffer()
-
+        
         panelBuffer.beginDraw()
         panelBuffer.pushStyle()
         panelBuffer.fill(fill)
         panelBuffer.noStroke()
         panelBuffer.clear()
-
+        
         // handle alignment if requested
         if (alignAble) {
             updateAlignment(parentBuffer)
         }
-
+        
         // output the background Rect for this panel
         if (radius.isPresent) {
             panelBuffer.rect(0f, 0f, width.toFloat(), height.toFloat(), radius.asInt.toFloat())
         } else {
             panelBuffer.rect(0f, 0f, width.toFloat(), height.toFloat())
         }
-
+        
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw()
         panelBuffer.endDraw()
         parentBuffer.popStyle()
-
+        
         // it appears to draw the text over the cells more clearly
         // with the blendMode of DIFFERENCE
         // additionally there seems to be a bug that when drawing text with an outline
@@ -150,10 +153,9 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         } else {
             parentBuffer.image(panelBuffer, position!!.x, position!!.y)
         }
-        if (this is TextPanel) parentBuffer.blendMode(PConstants.BLEND)
-
+        
     }
-
+    
     private fun updateAlignment(buffer: PGraphics) {
         var posX = 0
         var posY = 0
@@ -169,9 +171,9 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         }
         setPosition(posX, posY)
     }
-
+    
     protected abstract fun panelSubclassDraw()
-
+    
     private val effectivePosition: PVector?
         get() =// used in isMouseOverMe when a Panel contains other Panels
             // can walk up the hierarchy if you have nested panels
@@ -183,13 +185,13 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             } else {
                 position
             }
-
+    
     protected val isMouseOverMe: Boolean
         get() {
             return try {
                 // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
                 val processing = parentPanel!!.panelBuffer.parent
-
+                
                 // our Patterning class extends Processing so we can use it here also
                 val patterning = processing as PatterningPApplet
                 if (patterning.draggingDrawing) {
@@ -210,7 +212,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
                 false
             }
         }
-
+    
     abstract class Builder<T : Builder<T>?> {
         val drawingInformer: DrawingInformer
         var x = 0
@@ -225,13 +227,13 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         var transitionType: TransitionType? = null
         var transitionDuration = 0
         var radius: OptionalInt = OptionalInt.empty()
-
+        
         // used by Control
         constructor(drawingInformer: DrawingInformer, width: Int, height: Int) {
             setRect(0, 0, width, height) // parent positioned
             this.drawingInformer = drawingInformer
         }
-
+        
         // used by TextPanel for explicitly positioned text
         constructor(
             drawingInformer: DrawingInformer,
@@ -243,20 +245,20 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             setAlignment(hAlign, vAlign, false)
             this.drawingInformer = drawingInformer
         }
-
+        
         private fun setRect(x: Int, y: Int, width: Int, height: Int) {
             this.x = x
             this.y = y
             this.width = width
             this.height = height
         }
-
+        
         private fun setAlignment(hAlign: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
             alignable = alignAble
             this.hAlign = hAlign
             this.vAlign = vAlign
         }
-
+        
         // used by BasicPanel for demonstration purposes
         constructor(
             drawingInformer: DrawingInformer,
@@ -269,7 +271,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
         }
-
+        
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
         constructor(
             drawingInformer: DrawingInformer,
@@ -280,30 +282,30 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
         }
-
+        
         fun fill(fill: Int): T {
             this.fill = fill
             return self()
         }
-
+        
         // Method to allow subclass builders to return "this" correctly
         protected open fun self(): T {
             @Suppress("UNCHECKED_CAST")
             return this as T
         }
-
+        
         fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int): T {
             transitionDirection = direction
             transitionType = type
             transitionDuration = duration
             return self()
         }
-
+        
         fun radius(radius: Int): T {
             this.radius = OptionalInt.of(radius)
             return self()
         }
-
+        
         abstract fun build(): Panel?
     }
 }

@@ -37,7 +37,8 @@ object KeyHandler {
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
         val keyCode = event.keyCode
-        // elvis operator - if not null, assign to matchingCallback - if null, return
+
+        // if not found, bail
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
 
         if (event.action == KeyEvent.PRESS) {

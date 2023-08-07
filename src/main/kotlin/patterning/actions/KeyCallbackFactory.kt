@@ -8,7 +8,7 @@ import patterning.life.LifePattern
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) {
+class KeyCallbackFactory(private val pApplet: PApplet, private val drawer: LifePattern) {
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -188,13 +188,13 @@ class KeyFactory(private val pApplet: PApplet, private val drawer: LifePattern) 
         private const val SHORTCUT_REWIND = 'w'
         private const val SHORTCUT_STEP_FASTER = ']'
         private const val SHORTCUT_STEP_SLOWER = '['
-        private const val SHORTCUT_ZOOM_IN = '='
-        private const val SHORTCUT_ZOOM_OUT = '-'
         private const val SHORTCUT_UNDO = 'z'
-        private const val SHORTCUT_ZOOM_CENTERED = 'z'
-
         // private const val SHORTCUT_DRAW_SPEED = 's'
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
+
+        const val SHORTCUT_ZOOM_IN = '='
+        const val SHORTCUT_ZOOM_CENTERED = 'z'
+        const val SHORTCUT_ZOOM_OUT = '-'
     }
 }

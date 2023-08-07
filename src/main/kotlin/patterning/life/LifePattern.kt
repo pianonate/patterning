@@ -14,7 +14,7 @@ import patterning.Pattern
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
-import patterning.actions.KeyFactory
+import patterning.actions.KeyCallbackFactory
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
 import patterning.panel.AlignHorizontal
@@ -34,18 +34,19 @@ class LifePattern(
     pApplet: PApplet,
     properties: Properties
 ) : Pattern(pApplet, properties) {
-
-
+    
+    
     private lateinit var life: LifeUniverse
+    private lateinit var lifeForm: LifeForm
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
-
+    
     private val asyncNextGeneration: AsyncJobRunner
     private var targetStep = 0
     private val drawingInformer: DrawingInformer
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
-
+    
     // lifeFormPosition is used because we now separate the drawing speed from the framerate
     // we may not draw an image every frame
     // if we haven't drawn an image, we still want to be able to move and drag
@@ -56,7 +57,7 @@ class LifePattern(
     // to see what i'm talking about
     private var lifeFormPosition = PVector(0f, 0f)
     private var isDrawing = false
-
+    
     // DrawNodePath is just a helper class extracted into a separate class only for readability
     // it has shared methods so accepting them here
     // lambdas are cool
@@ -64,20 +65,20 @@ class LifePattern(
         shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
         updateLargestDimension = { bounds -> updateLargestDimension(bounds) }
     )
-
+    
     private var countdownText: TextPanel? = null
     private val hudText: TextPanel
-
+    
     private var lifeFormBuffer: PGraphics
     private var uXBuffer: PGraphics
     private var drawBounds: Boolean
-
+    
     // used for resize detection
     private var prevWidth: Int
     private var prevHeight: Int
-
+    
     private val zoom = Zoom(this)
-
+    
     init {
         uXBuffer = buffer
         lifeFormBuffer = buffer
@@ -85,64 +86,66 @@ class LifePattern(
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height
-
+        
         canvasWidth = pApplet.width.toBigDecimal()
         canvasHeight = pApplet.height.toBigDecimal()
-
+        
         //cell = Cell()
-
+        
         movementHandler = MovementHandler(this)
         drawBounds = false
         hudInfo = HUDStringBuilder()
-
+        
         createTextPanel(null) {
             TextPanel.Builder(drawingInformer, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(Theme.startupTextSize)
                 .fadeInDuration(Theme.startupTextFadeInDuration)
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
-                .displayDuration(Theme.startupTextDisplayDuration.toLong())
+                .displayDuration(Theme.startupTextDisplayDuration)
         }
-
-        val keyFactory = KeyFactory(pApplet, this)
-        keyFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
-        setupControls(keyFactory)
-
+        
+        val keyCallbackFactory = KeyCallbackFactory(pApplet, this)
+        keyCallbackFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
+        setupControls(keyCallbackFactory)
+        
         asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() }, threadName = "NextGeneration")
-
+        
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
         if (storedLife.isEmpty()) {
             getRandomLifeform()
         }
-
-        hudText = TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
+        
+        hudText = TextPanel.Builder(
+            informer = drawingInformer,
+            hAlign = AlignHorizontal.RIGHT,
+            vAlign = AlignVertical.BOTTOM
+        )
             .textSize(14)
             .wrap()
             .build().also {
                 Drawer.add(it)
             }
-
-        // life will have been loaded in prior - either from saved life
-        // or from the packaged resources so this doesn't need extra protection
+        
         instantiateLifeform()
     }
-
+    
     val lastId: Int
         get() = life.lastId.get()
-
-
+    
+    
     private val buffer: PGraphics
         get() = pApplet.createGraphics(pApplet.width, pApplet.height)
-
+    
     private val isWindowResized: Boolean
         get() {
             val widthChanged = prevWidth != pApplet.width
             val heightChanged = prevHeight != pApplet.height
             return widthChanged || heightChanged
         }
-
-    private fun setupControls(keyFactory: KeyFactory) {
-
+    
+    private fun setupControls(keyCallbackFactory: KeyCallbackFactory) {
+        
         val panelLeft: ControlPanel
         val panelTop: ControlPanel
         val panelRight: ControlPanel
@@ -150,84 +153,84 @@ class LifePattern(
         panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
             .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
             .setOrientation(Orientation.VERTICAL)
-            .addControl("zoomIn.png", keyFactory.callbackZoomInCenter)
-            .addControl("zoomOut.png", keyFactory.callbackZoomOutCenter)
-            .addControl("fitToScreen.png", keyFactory.callbackFitUniverseOnScreen)
-            .addControl("center.png", keyFactory.callbackCenterView)
-            .addControl("undo.png", keyFactory.callbackUndoMovement)
+            .addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
+            .addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
+            .addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
+            .addControl("center.png", keyCallbackFactory.callbackCenterView)
+            .addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
             .build()
         panelTop = ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
             .transition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, transitionDuration)
             .setOrientation(Orientation.HORIZONTAL)
-            .addControl("random.png", keyFactory.callbackRandomPattern)
-            .addControl("stepSlower.png", keyFactory.callbackStepSlower)
+            .addControl("random.png", keyCallbackFactory.callbackRandomPattern)
+            .addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
             // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
             .addPlayPauseControl(
                 "play.png",
                 "pause.png",
-                keyFactory.callbackPause,
+                keyCallbackFactory.callbackPause,
             )
             //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-            .addControl("stepFaster.png", keyFactory.callbackStepFaster)
-            .addControl("rewind.png", keyFactory.callbackRewind)
+            .addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
+            .addControl("rewind.png", keyCallbackFactory.callbackRewind)
             .build()
         panelRight = ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
             .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
             .setOrientation(Orientation.VERTICAL)
-            .addToggleHighlightControl("boundary.png", keyFactory.callbackDrawBounds)
-            .addToggleHighlightControl("darkmode.png", keyFactory.callbackThemeToggle)
-            .addToggleHighlightControl("singleStep.png", keyFactory.callbackSingleStep)
+            .addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
+            .addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
+            .addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
             .build()
         val panels = listOf(panelLeft, panelTop, panelRight)
-
+        
         MouseEventManager.addAll(panels)
         Drawer.addAll(panels)
     }
-
+    
     override fun draw() {
-
+        
         // lambdas are interested in this fact
         isDrawing = true
-
+        
         performanceTest.execute()
-
+        
         zoom.update()
-
+        
         drawBackground()
         drawUX(life)
         drawPattern(life)
-
+        
         pApplet.apply {
             image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
             image(uXBuffer, 0f, 0f)
         }
-
+        
         isDrawing = false
-
+        
         goForwardInTime()
     }
-
+    
     override fun move(dx: Float, dy: Float) {
         saveUndoState()
         adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
         lifeFormPosition.add(dx, dy)
     }
-
-
+    
+    
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
-
+    
     override fun shutdownAsyncJobRunner() {
         //asyncNextGeneration.shutdown()
     }
-
+    
     private fun goForwardInTime() {
-
+        
         if (asyncNextGeneration.isActive) {
             return
         }
-
+        
         with(life) {
             step = when {
                 step < targetStep -> step + 1
@@ -235,16 +238,16 @@ class LifePattern(
                 else -> step
             }
         }
-
+        
         if (RunningState.shouldAdvance())
             asyncNextGeneration.startJob()
     }
-
+    
     fun pasteLifeForm() {
         try {
             // Get the system clipboard
             val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-
+            
             // Check if the clipboard contains text data and then get it
             if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                 storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
@@ -256,16 +259,16 @@ class LifePattern(
             e.printStackTrace()
         }
     }
-
+    
     fun fitUniverseOnScreen() {
         center(life.rootBounds, fitBounds = true, saveState = true)
     }
-
-
+    
+    
     fun centerView() {
         center(life.rootBounds, fitBounds = false, saveState = true)
     }
-
+    
     fun getRandomLifeform() {
         try {
             storedLife = ResourceManager.instance!!.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
@@ -275,8 +278,8 @@ class LifePattern(
             throw RuntimeException(e)
         }
     }
-
-
+    
+    
     fun setNumberedLifeForm(number: Int, testing: Boolean = false) {
         try {
             storedLife =
@@ -288,22 +291,22 @@ class LifePattern(
             throw RuntimeException(e)
         }
     }
-
+    
     fun instantiateLifeform(testing: Boolean = false) {
         if (!testing) RunningState.pause()
         zoom.stopZooming()
         asyncNextGeneration.cancelAndWait()
-
+        
         val universe = LifeUniverse()
         targetStep = 0
         universe.step = 0
-
+        
         try {
-
+            
             // instance variables - do they need to be?
             val parser = FileFormat()
-            val newLife = parser.parseRLE(storedLife)
-            universe.setupLife(newLife.fieldX, newLife.fieldY)
+            lifeForm = parser.parseRLE(storedLife)
+            universe.setupLife(lifeForm.fieldX, lifeForm.fieldY)
         } catch (e: NotLifeException) {
             println(
                 """
@@ -316,26 +319,34 @@ class LifePattern(
         // new instances only created in instantiateLife to keep things simple
         // lifeForm not made local as it is intended to be used with display functions in the future
         setupNewLife(universe, testing)
-
+        
         life = universe
+        
+        createTextPanel(null) {
+            TextPanel.Builder(drawingInformer, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
+                .textSize(Theme.startupTextSize)
+                .fadeInDuration(Theme.startupTextFadeInDuration)
+                .fadeOutDuration(Theme.startupTextFadeOutDuration)
+                .displayDuration(Theme.startupTextDisplayDuration)
+        }
         System.gc()
-
+        
     }
-
+    
     fun handleStep(faster: Boolean) {
         var increment = if (faster) 1 else -1
         if (targetStep + increment < 0) increment = 0
         targetStep += increment
     }
-
+    
     fun toggleDrawBounds() {
         drawBounds = !drawBounds
     }
-
+    
     private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
         return dimension.divide(BigDecimal.TWO, mc) - offset
     }
-
+    
     private fun createTextPanel(
         existingTextPanel: TextPanel?, // could be null
         builderFunction: () -> TextPanel.Builder
@@ -345,14 +356,14 @@ class LifePattern(
                 Drawer.remove(it)
             }
         }
-
+        
         return builderFunction()
             .build()
             .also { newTextPanel ->
                 Drawer.add(newTextPanel)
             }
     }
-
+    
     // as nodes are created their bounds are calculated
     // when the bounds get larger, we need a math context to draw with that
     // allows the pattern to be drawn with the necessary precision
@@ -368,15 +379,15 @@ class LifePattern(
             }
         }
     }
-
+    
     private fun setupNewLife(life: LifeUniverse, testing: Boolean = false) {
-
+        
         undoDeque.clear()
-
+        
         val bounds = life.rootBounds
         updateLargestDimension(bounds)
         center(bounds, fitBounds = true, saveState = false)
-
+        
         if (!testing) countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
                 drawingInformer,
@@ -389,7 +400,7 @@ class LifePattern(
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                .wrap()
+               // .wrap()
                 .textSize(24)
         }
         /*        hudText = createTextPanel(hudText) {
@@ -398,43 +409,43 @@ class LifePattern(
                         .wrap()
                 }*/
     }
-
+    
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) saveUndoState()
-
+        
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
         val patternWidth = bounds.width.bigDecimal
         val patternHeight = bounds.height.bigDecimal
-
+        
         if (fitBounds) {
             val widthRatio =
                 patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvasWidth.divide(it, mc) } ?: BigDecimal.ONE
             val heightRatio =
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
-
+            
             cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
-
+        
         val bigCell = cell.bigSize
-
+        
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
         val halfCanvasWidth = canvasWidth.divide(BigDecimal.TWO, mc)
         val halfCanvasHeight = canvasHeight.divide(BigDecimal.TWO, mc)
         val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, mc)
         val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, mc)
-
+        
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
         val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal * -bigCell)
-
+        
         updateCanvasOffsets(offsetX, offsetY)
-
+        
     }
-
-
+    
+    
     private fun getHUDMessage(life: LifeUniverse): String {
-
+        
         return hudInfo.getFormattedString(
             pApplet.frameCount,
             12
@@ -451,45 +462,45 @@ class LifePattern(
             }
         }
     }
-
+    
     private data class CanvasState(
         val cell: Cell,
         val canvasOffsetX: BigDecimal,
         val canvasOffsetY: BigDecimal
     )
-
+    
     fun saveUndoState() {
         undoDeque.add(CanvasState(Cell(cell.size), canvasOffsetX, canvasOffsetY))
     }
-
+    
     fun handlePlay() {
         Drawer.takeIf { Drawer.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
         } ?: RunningState.toggleRunning()
     }
-
+    
     private fun updateWindowResized() {
-
+        
         // create new buffers
         uXBuffer = buffer
         lifeFormBuffer = buffer
-
+        
         // Calculate the center of the visible portion before resizing
         val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
         val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
-
+        
         // Update the canvas size
         canvasWidth = pApplet.width.toBigDecimal()
         canvasHeight = pApplet.height.toBigDecimal()
-
+        
         // Calculate the center of the visible portion after resizing
         val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
         val centerYAfter = calcCenterOnResize(canvasHeight, canvasOffsetY)
-
+        
         adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
-
-
+    
+    
     private fun fillSquare(
         x: Float,
         y: Float,
@@ -497,22 +508,22 @@ class LifePattern(
         color: Int = Theme.cellColor
     ) {
         val width = size - cell.cellBorderWidth
-
+        
         lifeFormBuffer.apply {
             fill(color)
             noStroke()
             rect(x, y, width, width)
         }
     }
-
+    
     // Initialize viewPath, also at class level
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
-
+    
     private fun drawPattern(life: LifeUniverse) {
         lifeFormBuffer.beginDraw()
         lifeFormBuffer.clear()
-
+        
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen
         // for very large drawing this can save hundreds of stack calls
@@ -524,29 +535,29 @@ class LifePattern(
         //with(getStartingEntry(life)) {
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = FlexibleInteger.ZERO
-
-
+            
+            
             val startingNode = node
             val size = size
             val offsetX = left
             val offsetY = top
-
+            
             startDelta = life.root.level - startingNode.level
-
+            
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
-
+            
         }
-
+        
         // keep this around - it works - so if your startingNode code has issues, you can resuscitate
         //drawNodeRecurse(life.root, size, -halfSize, -halfSize)
-
+        
         drawBounds(life)
-
+        
         lifeFormBuffer.endDraw()
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
     }
-
+    
     private fun drawNodeRecurse(
         node: Node,
         size: BigDecimal,
@@ -554,16 +565,16 @@ class LifePattern(
         top: BigDecimal
     ) {
         ++actualRecursions
-
+        
         // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
             return
         }
-
+        
         val leftWithOffset = left + canvasOffsetX
         val topWithOffset = top + canvasOffsetY
-
-
+        
+        
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
@@ -571,19 +582,19 @@ class LifePattern(
         } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), cell.size)
         } else if (node is TreeNode) {
-
+            
             val halfSize = cell.halfUniverseSize(node.level)
-
+            
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
-
+            
             drawNodeRecurse(node.nw, halfSize, left, top)
             drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
             drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
             drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
         }
     }
-
+    
     // used by PatternDrawer a well as DrawNodePath
     // maintains no state so it can live here as a utility function
     private fun shouldContinue(
@@ -595,16 +606,16 @@ class LifePattern(
         if (node.population.isZero()) {
             return false
         }
-
+        
         val left = nodeLeft + canvasOffsetX
         val top = nodeTop + canvasOffsetY
-
-
+        
+        
         // No need to draw anything not visible on screen
         val right = left + size
         val bottom = top + size
-
-
+        
+        
         // left and top are defined by the zoom level (cell size) multiplied
         // by half the universe size which we start out with at the nw corner which is half the size negated
         // each level in we add half of the size at that to the  create the new size for left and top
@@ -622,22 +633,22 @@ class LifePattern(
         return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
                 left >= canvasWidth || top >= canvasHeight)
     }
-
+    
     fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
         updateCanvasOffsets(canvasOffsetX + dx, canvasOffsetY + dy)
     }
-
+    
     private fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
         canvasOffsetX = offsetX
         canvasOffsetY = offsetY
         nodePath.offsetsMoved = true
     }
-
+    
     fun zoom(zoomIn: Boolean, x: Float, y: Float) {
         zoom.zoom(zoomIn, x, y)
     }
-
-
+    
+    
     fun undoMovement() {
         if (undoDeque.isNotEmpty()) {
             zoom.stopZooming()
@@ -646,19 +657,19 @@ class LifePattern(
             updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
         }
     }
-
+    
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
-
+        
         val bounds = life.rootBounds
-
+        
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = BoundingBox(bounds, cell.bigSize)
         boundingBox.draw(lifeFormBuffer)
-
+        
         var currentLevel = life.root.level - 2
-
+        
         while (currentLevel < life.root.level) {
             val halfSize = FlexibleInteger.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize)
@@ -666,53 +677,53 @@ class LifePattern(
             currentLevel++
         }
     }
-
+    
     private fun drawBackground() {
         if (isWindowResized) {
             updateWindowResized()
         }
-
+        
         prevWidth = pApplet.width
         prevHeight = pApplet.height
-
+        
         pApplet.apply {
             background(Theme.backGroundColor)
         }
-
+        
     }
-
+    
     private fun drawUX(life: LifeUniverse) {
         uXBuffer.apply {
             beginDraw()
             clear()
         }
-
+        
         movementHandler.handleRequestedMovement()
-
+        
         val hudMessage = getHUDMessage(life)
-        hudText?.message = hudMessage
+        hudText.message = hudMessage
         Drawer.drawAll()
-
+        
         uXBuffer.endDraw()
     }
-
-
+    
+    
     private suspend fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
-
+    
     fun rewind() {
         instantiateLifeform()
     }
-
+    
     companion object {
         // without this precision on the MathContext, small imprecision propagates at
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
         // Bounds.mathContext is kept up to date with the largest dimension of the universe
         var mc = MathContext(0)
-
+        
         // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
         // now that i'm thinking about it, this is probably the required precision for a float
         // which is what the cell.cellSize is - especially for really small numbers
@@ -720,22 +731,22 @@ class LifePattern(
         private const val PRECISION_BUFFER = 10
         private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
         private var previousPrecision: Int = 0
-
+        
         internal var canvasOffsetX = BigDecimal.ZERO
         internal var canvasOffsetY = BigDecimal.ZERO
         internal var canvasWidth: BigDecimal = BigDecimal.ZERO
         internal var canvasHeight: BigDecimal = BigDecimal.ZERO
-
+        
         var cell = Cell()
-
+        
         private val undoDeque = ArrayDeque<CanvasState>()
-
+        
         private const val LIFE_FORM_PROPERTY = "lifeForm"
-
+        
         fun resetMathContext() {
             largestDimension = FlexibleInteger.ZERO
             previousPrecision = 0
         }
-
+        
     }
 }
