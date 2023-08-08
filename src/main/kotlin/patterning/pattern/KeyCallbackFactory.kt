@@ -204,8 +204,8 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
             KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
         invokeFeatureLambda = {
-            if (pattern is Pastable) {
-                (pattern as Pastable).paste()
+            if (pattern is Pasteable) {
+                (pattern as Pasteable).paste()
             }
         },
         usage = "paste a new pattern into the app - currently only supports RLE encoded lifeforms"

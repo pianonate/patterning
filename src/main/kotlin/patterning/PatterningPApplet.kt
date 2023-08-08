@@ -44,6 +44,7 @@ class PatterningPApplet : PApplet() {
     }
     
     override fun draw() {
+        background(Theme.backGroundColor)
         pattern.draw()
     }
     

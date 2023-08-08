@@ -25,7 +25,7 @@ import patterning.panel.Transition
 import patterning.pattern.KeyCallbackFactory
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
-import patterning.pattern.Pastable
+import patterning.pattern.Pasteable
 import patterning.pattern.Pattern
 import patterning.pattern.PerformanceTestable
 import patterning.pattern.Playable
@@ -48,7 +48,7 @@ class LifePattern(
 ) : Pattern(pApplet, canvas, properties),
     Movable,
     NumberedPatternLoader,
-    Pastable,
+    Pasteable,
     PerformanceTestable,
     Playable,
     Rewindable,
@@ -75,7 +75,6 @@ class LifePattern(
     // it's a nifty way to handle things - just follow lifeFormPosition through the code
     // to see what i'm talking about
     private var lifeFormPosition = PVector(0f, 0f)
-    private var isDrawing = false
     
     // DrawNodePath is just a helper class extracted into a separate class only for readability
     // it has shared methods so accepting them here
@@ -101,7 +100,7 @@ class LifePattern(
     init {
         uxBuffer = canvas.getPGraphics() // buffer
         patternBuffer = canvas.getPGraphics() // buffer
-        drawingInformer = DrawingInformer({ uxBuffer })
+        drawingInformer = DrawingInformer { uxBuffer }
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height
@@ -205,14 +204,17 @@ class LifePattern(
     // Pattern overrides
     override fun draw() {
         
-        // lambdas are interested in this fact
-        isDrawing = true
-        
         performanceTest.execute()
         
         zoom.update()
         
-        drawBackground()
+        if (isWindowResized) {
+            updateWindowResized()
+        }
+        
+        prevWidth = pApplet.width
+        prevHeight = pApplet.height
+        
         drawUX(life)
         drawPattern(life)
         
@@ -220,8 +222,6 @@ class LifePattern(
             image(patternBuffer, lifeFormPosition.x, lifeFormPosition.y)
             image(uxBuffer, 0f, 0f)
         }
-        
-        isDrawing = false
         
         goForwardInTime()
     }
@@ -280,7 +280,9 @@ class LifePattern(
         }
     }
     
-    // Pastable overrides
+    /**
+     * Pasteable overrides
+     */
     override fun paste() {
         try {
             // Get the system clipboard
@@ -703,20 +705,6 @@ class LifePattern(
             universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }
-    }
-    
-    private fun drawBackground() {
-        if (isWindowResized) {
-            updateWindowResized()
-        }
-        
-        prevWidth = pApplet.width
-        prevHeight = pApplet.height
-        
-        pApplet.apply {
-            background(Theme.backGroundColor)
-        }
-        
     }
     
     private fun drawUX(life: LifeUniverse) {

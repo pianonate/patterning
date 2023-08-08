@@ -1,5 +1,5 @@
 package patterning.pattern
 
-interface Pastable {
+interface Pasteable {
     fun paste()
 }
