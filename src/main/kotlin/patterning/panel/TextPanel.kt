@@ -18,6 +18,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private val textSize: Float
     private val textWidth: OptionalInt
     private val wrap: Boolean
+    private val offsetBottom: Boolean
     
     // optional capabilities
     private val fadeInDuration: OptionalInt
@@ -56,6 +57,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         textSize = builder.textSize
         textWidth = builder.textWidth
         wrap = builder.wrap
+        offsetBottom = builder.offsetBottom
+        
         displayDuration = builder.displayDuration
         fadeInDuration = builder.fadeInDuration
         fadeOutDuration = builder.fadeOutDuration
@@ -64,19 +67,26 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         runMethod = builder.runMethod
         countdownFrom = builder.countdownFrom
         initialMessage = builder.message
-        
+        initSize()
         startDisplay()
     }
     
-    private fun startDisplay() {
-        state = FadeInState()
-        transitionTime = System.currentTimeMillis() // start displaying immediately
+    private fun initSize() {
+        val buffer = drawingInformer.getPGraphics()
+        buffer.beginDraw()
+        messageLines = wrapText()
+        buffer.endDraw()
+        setPanelSize(buffer)
+        initPanelBuffer(buffer)
+        if (offsetBottom) {
+            // we can't know the height of a TextPanel at initialization
+            // as we don't have a valid PGraphics to work with
+            position!!.y -= height.toFloat()
+        }
+        
     }
     
-    private fun getTextPanelBuffer(): PGraphics {
-        
-        val parentBuffer = drawingInformer.getPGraphics()
-        
+    private fun setPanelSize(parentBuffer: PGraphics) {
         // Compute the maximum width and total height of all lines in case there is
         // word wrapping
         var maxWidth = 0f
@@ -94,6 +104,17 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // take either the specified width - which has just been sized to fit
         // or the width of the longest line of text in case of word wrapping
         width = getTextWidth().coerceAtMost(ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
+    }
+    
+    private fun startDisplay() {
+        state = FadeInState()
+        transitionTime = System.currentTimeMillis() // start displaying immediately
+    }
+    
+    private fun getTextPanelBuffer(): PGraphics {
+        
+        val parentBuffer = drawingInformer.getPGraphics()
+        setPanelSize(parentBuffer)
         val textBuffer = parentBuffer.parent.createGraphics(width, height)
         
         // set the font for this PGraphics as it will not change
@@ -116,13 +137,13 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
     
     private fun wrapText(): List<String> {
+        val buffer = drawingInformer.getPGraphics()
+        setFont(buffer, textSize)
+        
         val words: MutableList<String> = message.split(" ").filter { it.isNotEmpty() }.toMutableList()
         
         val lines: MutableList<String> = ArrayList()
         var line = StringBuilder()
-        
-        val buffer = drawingInformer.getPGraphics()
-        setFont(buffer, textSize)
         
         if (!wrap) {
             lines.add(message)
@@ -251,6 +272,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var fadeInDuration = OptionalInt.empty()
         internal var fadeOutDuration = OptionalInt.empty()
         internal var displayDuration = OptionalInt.empty()
+        internal var offsetBottom = false
         
         // Countdown variables
         internal var countdownFrom = OptionalInt.empty()
@@ -273,6 +295,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             informer: DrawingInformer,
             message: String,
             position: PVector?,
+            offsetBottom: Boolean,
             hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
         ) : super(

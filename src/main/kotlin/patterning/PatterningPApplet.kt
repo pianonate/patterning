@@ -1,5 +1,6 @@
 package patterning
 
+import Canvas
 import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
@@ -35,6 +36,7 @@ class PatterningPApplet : PApplet() {
         
         pattern = LifePattern(
             pApplet = this,
+            canvas = Canvas(this),
             properties
         ).also {
             println(KeyHandler.usageText)

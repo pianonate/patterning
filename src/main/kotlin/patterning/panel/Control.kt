@@ -133,11 +133,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
         // would try to draw itself within the control at a microscopic size
         val hoverText = TextPanel.Builder(
-            localParentPanel.drawingInformer,
-            hoverMessage,
-            PVector(hoverX.toFloat(), hoverY.toFloat()),
-            AlignHorizontal.LEFT,
-            AlignVertical.TOP
+            informer = localParentPanel.drawingInformer,
+            message = hoverMessage,
+            position = PVector(hoverX.toFloat(), hoverY.toFloat()),
+            offsetBottom = true,
+            hAlign = AlignHorizontal.LEFT,
+            vAlign = AlignVertical.TOP
         )
             .fill(Theme.controlHighlightColor)
             .radius(Theme.controlHighlightCornerRadius)
@@ -147,19 +148,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
             .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
             .build()
-        
-        // hover text is word wrapped and sized to fit
-        // we pass in the max and set up the position to display
-        // for RIGHT aligned VERTICAL control panels, we need to change the x position to make it appear
-        // next to the control.  Not a problem for TOP, LEFT, BOTTOM controls
-        // we could put this logic into TextPanel so that it adjusts
-        // its own x position based on the alignment of this control but that would clutter TextPanel
-        //
-        // maybe a generic capability of aligning controls to each other
-        // could be added in the future if it becomes a common need -for now, we just do it here
-        if (orientation === Orientation.VERTICAL && localParentPanel.hAlign === AlignHorizontal.RIGHT) {
-            hoverText.position!!.x += (hoverTextWidth - hoverText.width).toFloat()
-        }
         
         // similar treatment for HORIZONTAL aligned BOTTOM control panels
         if (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM) {

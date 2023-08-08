@@ -1,10 +1,12 @@
 package patterning.pattern
 
+import Canvas
 import patterning.Properties
 import processing.core.PApplet
 
 abstract class Pattern(
     val pApplet: PApplet,
+    val canvas: Canvas,
     val properties: Properties
 ) {
     // currently these are the only methods called by PatterningPApplet so we

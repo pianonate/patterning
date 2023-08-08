@@ -1,5 +1,6 @@
 package patterning.life
 
+import Canvas
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
@@ -42,8 +43,9 @@ import processing.core.PVector
 
 class LifePattern(
     pApplet: PApplet,
+    canvas: Canvas,
     properties: Properties
-) : Pattern(pApplet, properties),
+) : Pattern(pApplet, canvas, properties),
     Movable,
     NumberedPatternLoader,
     Pastable,
@@ -86,8 +88,8 @@ class LifePattern(
     private var countdownText: TextPanel? = null
     private val hudText: TextPanel
     
-    private var lifeFormBuffer: PGraphics
-    private var uXBuffer: PGraphics
+    private var patternBuffer: PGraphics
+    private var uxBuffer: PGraphics
     private var drawBounds: Boolean
     
     // used for resize detection
@@ -97,9 +99,9 @@ class LifePattern(
     private val zoom = Zoom(this)
     
     init {
-        uXBuffer = buffer
-        lifeFormBuffer = buffer
-        drawingInformer = DrawingInformer({ uXBuffer })
+        uxBuffer = canvas.getPGraphics() // buffer
+        patternBuffer = canvas.getPGraphics() // buffer
+        drawingInformer = DrawingInformer({ uxBuffer })
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height
@@ -149,10 +151,6 @@ class LifePattern(
     
     val lastId: Int
         get() = life.lastId.get()
-    
-    
-    private val buffer: PGraphics
-        get() = pApplet.createGraphics(pApplet.width, pApplet.height)
     
     private val isWindowResized: Boolean
         get() {
@@ -219,8 +217,8 @@ class LifePattern(
         drawPattern(life)
         
         pApplet.apply {
-            image(lifeFormBuffer, lifeFormPosition.x, lifeFormPosition.y)
-            image(uXBuffer, 0f, 0f)
+            image(patternBuffer, lifeFormPosition.x, lifeFormPosition.y)
+            image(uxBuffer, 0f, 0f)
         }
         
         isDrawing = false
@@ -525,8 +523,8 @@ class LifePattern(
     private fun updateWindowResized() {
         
         // create new buffers
-        uXBuffer = buffer
-        lifeFormBuffer = buffer
+        uxBuffer = canvas.getPGraphics()
+        patternBuffer = canvas.getPGraphics()
         
         // Calculate the center of the visible portion before resizing
         val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
@@ -552,7 +550,7 @@ class LifePattern(
     ) {
         val width = size - cell.cellBorderWidth
         
-        lifeFormBuffer.apply {
+        patternBuffer.apply {
             fill(color)
             noStroke()
             rect(x, y, width, width)
@@ -564,8 +562,8 @@ class LifePattern(
     private var startDelta = 0
     
     private fun drawPattern(life: LifeUniverse) {
-        lifeFormBuffer.beginDraw()
-        lifeFormBuffer.clear()
+        patternBuffer.beginDraw()
+        patternBuffer.clear()
         
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen
@@ -596,7 +594,7 @@ class LifePattern(
         
         drawBounds(life)
         
-        lifeFormBuffer.endDraw()
+        patternBuffer.endDraw()
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
     }
@@ -695,14 +693,14 @@ class LifePattern(
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = BoundingBox(bounds, cell.bigSize)
-        boundingBox.draw(lifeFormBuffer)
+        boundingBox.draw(patternBuffer)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = FlexibleInteger.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize)
-            universeBox.draw(lifeFormBuffer, drawCrosshair = true)
+            universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }
     }
@@ -722,7 +720,7 @@ class LifePattern(
     }
     
     private fun drawUX(life: LifeUniverse) {
-        uXBuffer.apply {
+        uxBuffer.apply {
             beginDraw()
             clear()
         }
@@ -733,7 +731,7 @@ class LifePattern(
         hudText.message = hudMessage
         Drawer.drawAll()
         
-        uXBuffer.endDraw()
+        uxBuffer.endDraw()
     }
     
     
