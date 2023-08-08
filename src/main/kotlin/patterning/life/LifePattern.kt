@@ -10,11 +10,9 @@ import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Drawer
 import patterning.DrawingInformer
-import patterning.Pattern
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
-import patterning.actions.KeyCallbackFactory
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
 import patterning.panel.AlignHorizontal
@@ -23,9 +21,20 @@ import patterning.panel.ControlPanel
 import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
+import patterning.pattern.KeyCallbackFactory
+import patterning.pattern.Movable
+import patterning.pattern.NumberedPatternLoader
+import patterning.pattern.Pastable
+import patterning.pattern.Pattern
+import patterning.pattern.Playable
+import patterning.pattern.Rewindable
+import patterning.pattern.Steppable
+import patterning.pattern.Zoomable
+
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
+
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
@@ -33,8 +42,14 @@ import processing.core.PVector
 class LifePattern(
     pApplet: PApplet,
     properties: Properties
-) : Pattern(pApplet, properties) {
-    
+) : Pattern(pApplet, properties),
+    Movable,
+    NumberedPatternLoader,
+    Pastable,
+    Playable,
+    Rewindable,
+    Steppable,
+    Zoomable {
     
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
@@ -82,7 +97,7 @@ class LifePattern(
     init {
         uXBuffer = buffer
         lifeFormBuffer = buffer
-        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized }, { isDrawing })
+        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized })
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height
@@ -187,6 +202,7 @@ class LifePattern(
         Drawer.addAll(panels)
     }
     
+    // Pattern overrides
     override fun draw() {
         
         // lambdas are interested in this fact
@@ -216,14 +232,91 @@ class LifePattern(
         lifeFormPosition.add(dx, dy)
     }
     
-    
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
     
-    override fun shutdownAsyncJobRunner() {
-        //asyncNextGeneration.shutdown()
+    // Movable overrides
+    override fun center() {
+        center(life.rootBounds, fitBounds = false, saveState = true)
     }
+    
+    override fun fitToScreen() {
+        center(life.rootBounds, fitBounds = true, saveState = true)
+    }
+    
+    override fun saveUndoState() {
+        undoDeque.add(CanvasState(Cell(cell.size), canvasOffsetX, canvasOffsetY))
+    }
+    
+    override fun toggleDrawBounds() {
+        drawBounds = !drawBounds
+    }
+    
+    override fun undoMovement() {
+        if (undoDeque.isNotEmpty()) {
+            zoom.stopZooming()
+            val previous = undoDeque.removeLast()
+            cell = previous.cell
+            updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
+        }
+    }
+    
+    // NumberedPatternLoader overrides
+    override fun setRandom() {
+        getRandomLifeform()
+        instantiateLifeform()
+    }
+    
+    override fun setNumberedPattern(number: Int, testing: Boolean) {
+        try {
+            storedLife =
+                ResourceManager.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
+            instantiateLifeform(testing)
+        } catch (e: IOException) {
+            throw RuntimeException(e)
+        } catch (e: URISyntaxException) {
+            throw RuntimeException(e)
+        }
+    }
+    
+    // Pastable overrides
+    override fun paste() {
+        try {
+            // Get the system clipboard
+            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+            
+            // Check if the clipboard contains text data and then get it
+            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+                storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
+                instantiateLifeform()
+            }
+        } catch (e: UnsupportedFlavorException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+    
+    // Rewindable overrides
+    
+    override fun rewind() {
+        instantiateLifeform()
+    }
+    
+    // Steppable overrides
+    override fun handleStep(faster: Boolean) {
+        var increment = if (faster) 1 else -1
+        if (targetStep + increment < 0) increment = 0
+        targetStep += increment
+    }
+    
+    // Zoomable overrides
+    override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
+        zoom.zoom(zoomIn, x, y)
+    }
+    
+    // Private methods
     
     private fun goForwardInTime() {
         
@@ -243,35 +336,9 @@ class LifePattern(
             asyncNextGeneration.startJob()
     }
     
-    fun pasteLifeForm() {
+    private fun getRandomLifeform() {
         try {
-            // Get the system clipboard
-            val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-            
-            // Check if the clipboard contains text data and then get it
-            if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
-                storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
-                instantiateLifeform()
-            }
-        } catch (e: UnsupportedFlavorException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-    
-    fun fitUniverseOnScreen() {
-        center(life.rootBounds, fitBounds = true, saveState = true)
-    }
-    
-    
-    fun centerView() {
-        center(life.rootBounds, fitBounds = false, saveState = true)
-    }
-    
-    fun getRandomLifeform() {
-        try {
-            storedLife = ResourceManager.instance!!.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
+            storedLife = ResourceManager.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
         } catch (e: IOException) {
             throw RuntimeException(e)
         } catch (e: URISyntaxException) {
@@ -279,20 +346,7 @@ class LifePattern(
         }
     }
     
-    
-    fun setNumberedLifeForm(number: Int, testing: Boolean = false) {
-        try {
-            storedLife =
-                ResourceManager.instance!!.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-            instantiateLifeform(testing)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        } catch (e: URISyntaxException) {
-            throw RuntimeException(e)
-        }
-    }
-    
-    fun instantiateLifeform(testing: Boolean = false) {
+    private fun instantiateLifeform(testing: Boolean = false) {
         if (!testing) RunningState.pause()
         zoom.stopZooming()
         asyncNextGeneration.cancelAndWait()
@@ -331,16 +385,6 @@ class LifePattern(
         }
         System.gc()
         
-    }
-    
-    fun handleStep(faster: Boolean) {
-        var increment = if (faster) 1 else -1
-        if (targetStep + increment < 0) increment = 0
-        targetStep += increment
-    }
-    
-    fun toggleDrawBounds() {
-        drawBounds = !drawBounds
     }
     
     private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
@@ -400,7 +444,7 @@ class LifePattern(
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-               // .wrap()
+                // .wrap()
                 .textSize(24)
         }
         /*        hudText = createTextPanel(hudText) {
@@ -469,11 +513,8 @@ class LifePattern(
         val canvasOffsetY: BigDecimal
     )
     
-    fun saveUndoState() {
-        undoDeque.add(CanvasState(Cell(cell.size), canvasOffsetX, canvasOffsetY))
-    }
     
-    fun handlePlay() {
+    override fun handlePlay() {
         Drawer.takeIf { Drawer.isManaging(countdownText!!) }?.let {
             countdownText?.interruptCountdown()
         } ?: RunningState.toggleRunning()
@@ -644,20 +685,6 @@ class LifePattern(
         nodePath.offsetsMoved = true
     }
     
-    fun zoom(zoomIn: Boolean, x: Float, y: Float) {
-        zoom.zoom(zoomIn, x, y)
-    }
-    
-    
-    fun undoMovement() {
-        if (undoDeque.isNotEmpty()) {
-            zoom.stopZooming()
-            val previous = undoDeque.removeLast()
-            cell = previous.cell
-            updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
-        }
-    }
-    
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
         
@@ -711,10 +738,6 @@ class LifePattern(
     private suspend fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
-    }
-    
-    fun rewind() {
-        instantiateLifeform()
     }
     
     companion object {

@@ -1,5 +1,6 @@
-package patterning
+package patterning.pattern
 
+import patterning.Properties
 import processing.core.PApplet
 
 abstract class Pattern(
@@ -10,6 +11,5 @@ abstract class Pattern(
     // require all Patterns to implement them
     abstract fun draw()
     abstract fun move(dx: Float, dy: Float)
-    abstract fun shutdownAsyncJobRunner()
     abstract fun updateProperties()
 }

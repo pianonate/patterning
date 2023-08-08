@@ -1,10 +1,12 @@
 todo: idiomaticize
+
 todo: super bounds fit at universe sizes up - maybe with a B1 B2, etc. key combination
 todo: set a specific text color - handle switching between dark and light mode
 todo: add UX to switch between patterns - what about jetbrains modern UX cross platform thingy
 todo: lightspeed - speed up 1 step every frame - as you did in texting... but allow for starting and stopping lightspeed
 todo: should TextPanel transitions actually just be handled by the Transition class instead of the TextPanel class?
 todo: maybe text panel should just allow for running a method after a delay that can be immediately invoked by a keypress the way countdown currently works - so that countdown state is not something that needs to happen but rather just the lambda itself
+todo: do you have to call setFont() twice in TexPanel?
 todo: right now Theme has a chicken/egg situation with initializing ColorConstant objects before Theme.themeTransitionDuration is set
       so i have to call it every time when it's executing. this seems wrong.  possibly ColorConstants should be handled differently than everything else as they are the only ones that actually change each go around.  the rest are constant throughout the application execution
 todo: get rid of using TextPanel for HUD - start from scratch on TextPanel...

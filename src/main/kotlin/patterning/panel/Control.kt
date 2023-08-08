@@ -25,7 +25,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
-
+    
     init {
         size = builder.size
         fill = Theme.controlColor
@@ -37,27 +37,27 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 keyCallback.toString() +
                 Theme.shortcutParenEnd
     }
-
+    
     protected fun registerCallback(callback: KeyCallback): ControlKeyCallback {
         val keyCallback = ControlKeyCallback(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
     }
-
-
+    
+    
     protected fun loadIcon(iconName: String): PImage {
         val icon = panelBuffer.parent.loadImage(Theme.iconPath + iconName)
         icon.resize(width - Theme.iconMargin, height - Theme.iconMargin)
         return icon
     }
-
+    
     override fun panelSubclassDraw() {
         mouseHover(isMouseOverMe)
         drawHover()
         drawPressed()
         drawIcon()
     }
-
+    
     private fun drawHover() {
         if (isHovering) {
             drawControlHighlight(Theme.controlHighlightColor)
@@ -72,17 +72,17 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             }
         }
     }
-
+    
     private fun getHoverTextPanel(): TextPanel {
         val margin = Theme.hoverTextMargin
         val hoverTextWidth = Theme.hoverTextWidth
         var hoverX = parentPanel!!.position!!.x.toInt()
         var hoverY = parentPanel!!.position!!.y.toInt()
         var transitionDirection: TransitionDirection? = null
-
+        
         val localParentPanel = parentPanel
         val orientation = (localParentPanel as ControlPanel).orientation
-
+        
         when (orientation) {
             Orientation.VERTICAL -> {
                 when (localParentPanel.hAlign) {
@@ -91,19 +91,19 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverY = (hoverY + position!!.y).toInt()
                         transitionDirection = TransitionDirection.RIGHT
                     }
-
+                    
                     AlignHorizontal.RIGHT -> {
                         hoverX = hoverX - margin - hoverTextWidth
                         hoverY = (hoverY + position!!.y).toInt()
                         transitionDirection = TransitionDirection.LEFT
                     }
-
+                    
                     else -> {
                         // Handle all other cases here.
                     }
                 }
             }
-
+            
             Orientation.HORIZONTAL -> {
                 hoverX = (hoverX + position!!.x).toInt()
                 when (localParentPanel.vAlign) {
@@ -111,19 +111,19 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverY = localParentPanel.position!!.y.toInt() + size + margin
                         transitionDirection = TransitionDirection.DOWN
                     }
-
+                    
                     AlignVertical.BOTTOM -> {
                         hoverY = localParentPanel.position!!.y.toInt() - margin
                         transitionDirection = TransitionDirection.UP
                     }
-
+                    
                     else -> {
                         // Handle all other cases here.
                     }
                 }
             }
         }
-
+        
         // the Control parentPanel is a ContainerPanel that has a DrawingInfoSupplier
         // which has a PGraphicsSupplier of the current UXBuffer
         // we can't use the parent Control PGraphicsSupplier as it is provided by the ContainerPanel so that the
@@ -147,7 +147,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
             .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
             .build()
-
+        
         // hover text is word wrapped and sized to fit
         // we pass in the max and set up the position to display
         // for RIGHT aligned VERTICAL control panels, we need to change the x position to make it appear
@@ -160,12 +160,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         if (orientation === Orientation.VERTICAL && localParentPanel.hAlign === AlignHorizontal.RIGHT) {
             hoverText.position!!.x += (hoverTextWidth - hoverText.width).toFloat()
         }
-
+        
         // similar treatment for HORIZONTAL aligned BOTTOM control panels
         if (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM) {
             hoverText.position!!.y -= hoverText.height.toFloat()
         }
-
+        
         // if the text won't display, make it possible to display
         val screenWidth = localParentPanel.drawingInformer.getPGraphics().width
         if (hoverText.position!!.x + hoverText.width > screenWidth) {
@@ -173,7 +173,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
         return hoverText
     }
-
+    
     private fun mouseHover(isHovering: Boolean) {
         if (isPressed && !isHovering) {
             // If pressed and not hovering, reset the pressed state
@@ -184,24 +184,24 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             isHoveringPrevious = isHovering
         }
     }
-
+    
     private fun drawPressed() {
         if (isPressed || isHighlightFromKeypress) {
             drawControlHighlight(Theme.controlMousePressedColor)
         }
     }
-
+    
     protected open fun getCurrentIcon(): PImage {
         return icon
     }
-
+    
     private fun drawIcon() {
         val thisIcon = getCurrentIcon()
         val x = (width - thisIcon.width).toFloat() / 2
         val y = (height - thisIcon.height).toFloat() / 2
         panelBuffer.image(thisIcon, x, y)
     }
-
+    
     private fun drawControlHighlight(color: Int) {
         // highlight the control with a semi-transparent rect
         panelBuffer.fill(color) // Semi-transparent gray
@@ -209,11 +209,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // Rounded rectangle with radius
         panelBuffer.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
-
+    
     override fun notifyKeyPress(observer: KeyObservable) {
         highlightFromKeyPress()
     }
-
+    
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
     private val asyncJobRunner = AsyncJobRunner(
         method = suspend {
@@ -222,36 +222,36 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         },
         threadName = "Highlight Thread"
     )
-
+    
     internal fun highlightFromKeyPress() {
         if (!asyncJobRunner.isActive) { // Only start if not already running
             isHighlightFromKeypress = true
             asyncJobRunner.startJob()
         }
     }
-
+    
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
         if (isMouseOverMe && (RunningState.runningMode != RunningMode.TESTING)) {
             keyCallback.invokeFeature() // Specific to Control
         }
     }
-
+    
     open class Builder(
         drawingInformer: DrawingInformer,
         val callback: KeyCallback,
         val iconName: String,
         val size: Int
-    ) : Panel.Builder<Builder?>(
-        drawingInformer!!, size, size
+    ) : Panel.Builder<Builder>(
+        drawingInformer, size, size
     ) {
         public override fun self(): Builder {
             return this
         }
-
-        override fun build(): Control? {
+        
+        override fun build(): Control {
             return Control(this)
         }
     }
-
+    
 }

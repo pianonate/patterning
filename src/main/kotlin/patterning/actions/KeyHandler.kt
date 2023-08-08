@@ -6,20 +6,20 @@ import processing.core.PApplet
 import processing.event.KeyEvent
 
 object KeyHandler {
-
+    
     private val _pressedKeys: MutableSet<Int> = mutableSetOf()
     val pressedKeys: Set<Int> get() = _pressedKeys
-
+    
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
-
+    
     var latestKeyCode: Int = 0
         get() = pressedKeys.last()
         private set
-
+    
     fun registerKeyHandler(processing: PApplet) {
         processing.registerMethod("keyEvent", this)
     }
-
+    
     fun addKeyCallback(callback: KeyCallback) {
         val keyCombos = callback.keyCombos
         val duplicateKeyCombos = keyCallbacks.keys.flatten().intersect(keyCombos)
@@ -32,15 +32,15 @@ object KeyHandler {
         }
         keyCallbacks[keyCombos] = callback
     }
-
-
+    
+    
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
         val keyCode = event.keyCode
-
+        
         // if not found, bail
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
-
+        
         if (event.action == KeyEvent.PRESS) {
             _pressedKeys.add(keyCode)
             if (RunningState.runningMode != RunningMode.TESTING) {
@@ -57,15 +57,15 @@ object KeyHandler {
             latestKeyCode = keyCode
         }
     }
-
+    
     val usageText: String
         get() {
             val usageText = StringBuilder("\nKey Usage:\n")
-
+            
             val maxKeysWidth = keyCallbacks.values
                 .filter { it.isValidForCurrentOS }
                 .maxOf { callback -> callback.toString().length }
-
+            
             keyCallbacks.values
                 .filter { callback ->
                     callback.isValidForCurrentOS
@@ -76,7 +76,7 @@ object KeyHandler {
                     val usageDescription = callback.usage
                     usageText.append("${keysString.padEnd(maxKeysWidth + 1)}: $usageDescription\n")
                 }
-
+            
             return usageText.toString()
         }
 }

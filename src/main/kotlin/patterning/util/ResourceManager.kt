@@ -3,18 +3,16 @@ package patterning.util
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
-import java.net.URISyntaxException
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.*
+import java.util.Random
 import java.util.jar.JarFile
 import java.util.stream.Collectors
 
-class ResourceManager private constructor() {
-    @Throws(IOException::class, URISyntaxException::class)
+object ResourceManager {
     fun getRandomResourceAsString(directoryName: String): String {
         val files = getResourceFilePaths(directoryName)
         if (files.isEmpty()) {
@@ -23,8 +21,7 @@ class ResourceManager private constructor() {
         val randomFile = files[Random().nextInt(files.size)]
         return getResourceAsString(randomFile)
     }
-
-    @Throws(IOException::class, URISyntaxException::class)
+    
     private fun getResourceFilePaths(directoryName: String): List<String> {
         val url = classLoader.getResource(directoryName) ?: throw IOException("Directory not found: $directoryName")
         return when (url.protocol) {
@@ -33,8 +30,7 @@ class ResourceManager private constructor() {
             else -> throw IOException("Cannot list files for URL $url")
         }
     }
-
-    @Throws(IOException::class)
+    
     private fun getResourceFilePathsFromJar(url: URL, directoryName: String): List<String> {
         val dirPath = url.path
         val jarPath = dirPath.substring(5, dirPath.indexOf("!")) // strip out only the JAR file
@@ -54,8 +50,7 @@ class ResourceManager private constructor() {
         }
         return filenames
     }
-
-    @Throws(IOException::class, URISyntaxException::class)
+    
     private fun getResourceFilePathsFromFileSystem(url: URL, directoryName: String): List<String> {
         val dirPath = Paths.get(url.toURI())
         val filenames: MutableList<String> = ArrayList()
@@ -68,8 +63,7 @@ class ResourceManager private constructor() {
         }
         return filenames
     }
-
-    @Throws(IOException::class)
+    
     private fun getResourceAsString(resourceName: String): String {
         classLoader.getResourceAsStream(resourceName).use { `is` ->
             if (`is` == null) {
@@ -80,11 +74,10 @@ class ResourceManager private constructor() {
             }
         }
     }
-
+    
     private val classLoader: ClassLoader
         get() = ResourceManager::class.java.classLoader
-
-    @Throws(IOException::class, URISyntaxException::class)
+    
     fun getResourceAtFileIndexAsString(directoryName: String, fileIndex: Int): String {
         var number = fileIndex
         val files = getResourceFilePaths(directoryName)
@@ -96,16 +89,7 @@ class ResourceManager private constructor() {
         }
         return getResourceAsString(files[number - 1])
     }
-
-    companion object {
-        val RLE_DIRECTORY = "rle"
-        var instance: ResourceManager? = null
-            get() {
-                if (field == null) {
-                    field = ResourceManager()
-                }
-                return field
-            }
-            private set
-    }
+    
+    val RLE_DIRECTORY = "rle"
+    
 }

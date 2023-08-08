@@ -5,13 +5,13 @@ class ControlKeyCallback(
     private val keyCallback: KeyCallback,
     private val primaryObserver: KeyObserver
 ) : KeyCallback by keyCallback, KeyObservable {
-
+    
     override fun notifyKeyObservers() {
         primaryObserver.notifyKeyPress(this)
     }
-
+    
     override fun toString(): String {
         return keyCallback.toString()
     }
-
+    
 }

@@ -78,7 +78,6 @@ class PatterningPApplet : PApplet() {
     
     // Override the exit() method to save window properties before closing
     override fun exit() {
-        pattern.shutdownAsyncJobRunner()
         pattern.updateProperties()
         properties.saveProperties()
         super.exit()

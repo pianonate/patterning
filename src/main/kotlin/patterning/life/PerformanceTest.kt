@@ -51,7 +51,7 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
 
         if (frameCount % framesPerPattern == 1L) {
             // First frame of a new pattern
-            lifePattern.setNumberedLifeForm(number = currentPatternIndex, testing = true)
+            lifePattern.setNumberedPattern(number = currentPatternIndex, testing = true)
             patternStartTime = System.currentTimeMillis()
             patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
         } else if (frameCount % framesPerPattern == 0L) {

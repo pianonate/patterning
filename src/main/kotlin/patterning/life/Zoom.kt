@@ -1,8 +1,8 @@
 package patterning.life
 
 import kotlin.math.abs
-import patterning.actions.KeyCallbackFactory
 import patterning.actions.KeyHandler
+import patterning.pattern.KeyCallbackFactory
 
 class Zoom(private val lifePattern: LifePattern) {
     private var targetSize = LifePattern.cell.size

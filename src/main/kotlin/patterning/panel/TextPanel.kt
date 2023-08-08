@@ -110,12 +110,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // on both the parent and the new textBuffer
     // necessary because createGraphics doesn't inherit the font from the parent
     private fun setFont(buffer: PGraphics, textSize: Float) {
-        val informer = drawingInformer
-        val shouldInitialize = !informer.isDrawing()
-        if (shouldInitialize) buffer.beginDraw()
         buffer.textFont(buffer.parent.createFont(Theme.fontName, textSize))
         buffer.textSize(textSize)
-        if (shouldInitialize) buffer.endDraw()
     }
     
     private fun getCountdownMessage(count: Long): String {

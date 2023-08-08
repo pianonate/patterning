@@ -60,11 +60,6 @@ class AsyncJobRunner(
         }
     }
 
-
-/*    fun shutdown() {
-        executor.shutdown()
-    }*/
-
     fun getRate(): Float {
         val currentTime = System.currentTimeMillis()
         val cutoffTime = currentTime - rateWindow
