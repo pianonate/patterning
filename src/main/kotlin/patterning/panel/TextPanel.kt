@@ -43,9 +43,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     var message: String = ""
         set(value) {
             if (message.isNotEmpty()) lastMessage = field
-            if (message.startsWith("press") || message.startsWith("patter")) {
-                println("message: $message")
-            }
             field = value
         }
     
@@ -177,10 +174,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     
     /* called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on */
     override fun updatePanelBuffer() {
-        if (
-            (lastMessage != message) ||
-            (drawingInformer.isResized())
-        ) {
+        if (lastMessage != message) {
             messageLines = wrapText()
             panelBuffer = getTextPanelBuffer()
         }
@@ -229,7 +223,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             
             // Draw the actual text in the calculated color
             panelBuffer.fill(currentColor)
-            //println(currentColor)
             panelBuffer.text(line, x, lineY)
             
         }

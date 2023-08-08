@@ -26,6 +26,7 @@ import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pastable
 import patterning.pattern.Pattern
+import patterning.pattern.PerformanceTestable
 import patterning.pattern.Playable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
@@ -46,6 +47,7 @@ class LifePattern(
     Movable,
     NumberedPatternLoader,
     Pastable,
+    PerformanceTestable,
     Playable,
     Rewindable,
     Steppable,
@@ -97,7 +99,7 @@ class LifePattern(
     init {
         uXBuffer = buffer
         lifeFormBuffer = buffer
-        drawingInformer = DrawingInformer({ uXBuffer }, { isWindowResized })
+        drawingInformer = DrawingInformer({ uXBuffer })
         // resize trackers
         prevWidth = pApplet.width
         prevHeight = pApplet.height

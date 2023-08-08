@@ -191,7 +191,9 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ),
         invokeFeatureLambda = {
-            RunningState.test()
+            if (pattern is PerformanceTestable) {
+                RunningState.test()
+            }
         },
         usage = "performance test"
     )

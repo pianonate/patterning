@@ -17,7 +17,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             // rather than the UXBuffer, which is the more common case...
             child.parentPanel = this
             child.drawingInformer =
-                DrawingInformer({ containerPanelBuffer }, { drawingInformer.isResized() })
+                DrawingInformer({ containerPanelBuffer })
         }
         orientation = builder.orientation
         updatePanelSize()
