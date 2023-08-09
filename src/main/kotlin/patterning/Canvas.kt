@@ -21,7 +21,6 @@ class Canvas(private val pApplet: PApplet) {
     var offsetY = BigDecimal.ZERO
         private set
     
-    private var backgroundBuffer: PGraphics = PGraphics()
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     
     
@@ -55,8 +54,11 @@ class Canvas(private val pApplet: PApplet) {
      */
     internal fun drawBackground() {
         resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
-        handleResize()
-        pApplet.image(backgroundBuffer, 0f, 0f)
+        if (resized || Theme.isTransitioning) {
+            updateDimensions()
+            mitigateFlicker()
+        }
+        pApplet.background(Theme.backGroundColor)
     }
     
     /**
@@ -93,23 +95,5 @@ class Canvas(private val pApplet: PApplet) {
     private fun mitigateFlicker() {
         val nativeSurface = pApplet.surface.native as Component
         nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
-    }
-    
-    /**
-     * updating the background needs to happen on any of the following conditions
-     * 1. the window has been resized
-     * 2. the theme is transitioning (i.e., the background color is changing)
-     * 3. the background has not been initialized
-     */
-    private fun handleResize() {
-        if (resized || Theme.isTransitioning || backgroundBuffer.width == 0) {
-            updateDimensions()
-            
-            backgroundBuffer = getPGraphics()
-            backgroundBuffer.beginDraw()
-            mitigateFlicker()
-            backgroundBuffer.background(Theme.backGroundColor)
-            backgroundBuffer.endDraw()
-        }
     }
 }
