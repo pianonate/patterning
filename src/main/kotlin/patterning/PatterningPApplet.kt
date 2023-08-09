@@ -28,6 +28,15 @@ class PatterningPApplet : PApplet() {
         size(properties.width, properties.height)
     }
     
+    /**
+     * we can't load properties until setup because of idiosyncrasies of processing
+     * and i don't want to find a different way right now to load a properties file
+     * so we don't have the stored window position until now
+     *
+     * if we did have it, we could construct Canvas with the actual width, height.
+     * i also didn't want Canvas to be a var, so we internally expose the updateDimensions()
+     * to work around Processing
+     */
     override fun setup() {
         Theme.init(this)
         KeyHandler.registerKeyHandler(this)
@@ -35,6 +44,8 @@ class PatterningPApplet : PApplet() {
         surface.setResizable(true)
         
         properties.setWindowPosition()
+        
+        canvas.updateDimensions()
         
         pattern = LifePattern(
             pApplet = this,

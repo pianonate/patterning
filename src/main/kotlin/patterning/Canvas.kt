@@ -2,21 +2,25 @@ package patterning
 
 import java.awt.Color
 import java.awt.Component
+import java.math.BigDecimal
 import processing.core.PApplet
 import processing.core.PGraphics
 
 class Canvas(private val pApplet: PApplet) {
     
-    private var prevWidth: Int
-    private var prevHeight: Int
+    private var prevWidth: Int = 0
+    private var prevHeight: Int = 0
     var resized = false
+        private set
+    var width: BigDecimal = BigDecimal.ZERO
+        private set
+    var height: BigDecimal = BigDecimal.ZERO
         private set
     
     private var backgroundBuffer: PGraphics = PGraphics()
     
     init {
-        prevWidth = pApplet.width
-        prevHeight = pApplet.height
+        updateDimensions()
     }
     
     fun getPGraphics(): PGraphics {
@@ -26,9 +30,14 @@ class Canvas(private val pApplet: PApplet) {
     internal fun drawBackground() {
         resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
         handleResize()
+        pApplet.image(backgroundBuffer, 0f, 0f)
+    }
+    
+    internal fun updateDimensions() {
         prevWidth = pApplet.width
         prevHeight = pApplet.height
-        pApplet.image(backgroundBuffer, 0f, 0f)
+        width = BigDecimal(pApplet.width)
+        height = BigDecimal(pApplet.height)
     }
     
     /**
@@ -65,6 +74,8 @@ class Canvas(private val pApplet: PApplet) {
      */
     private fun handleResize() {
         if (resized || Theme.isTransitioning || backgroundBuffer.width == 0) {
+            updateDimensions()
+            
             backgroundBuffer = getPGraphics()
             backgroundBuffer.beginDraw()
             mitigateFlicker()

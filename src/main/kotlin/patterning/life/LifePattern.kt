@@ -101,8 +101,8 @@ class LifePattern(
         
         drawingInformer = DrawingInformer { uxBuffer }
         
-        canvasWidth = pApplet.width.toBigDecimal()
-        canvasHeight = pApplet.height.toBigDecimal()
+        canvasWidth = canvas.width // pApplet.width.toBigDecimal()
+        canvasHeight = canvas.height // pApplet.height.toBigDecimal()
         
         //cell = Cell()
         
@@ -519,8 +519,8 @@ class LifePattern(
         val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
         
         // Update the canvas size
-        canvasWidth = pApplet.width.toBigDecimal()
-        canvasHeight = pApplet.height.toBigDecimal()
+        canvasWidth = canvas.width // pApplet.width.toBigDecimal()
+        canvasHeight = canvas.height // pApplet.height.toBigDecimal()
         
         // Calculate the center of the visible portion after resizing
         val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
@@ -687,14 +687,14 @@ class LifePattern(
         
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, cell.bigSize)
+        val boundingBox = BoundingBox(bounds, cell.bigSize, canvas)
         boundingBox.draw(patternBuffer)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = FlexibleInteger.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize, canvas)
             universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }
@@ -738,8 +738,8 @@ class LifePattern(
         
         internal var canvasOffsetX = BigDecimal.ZERO
         internal var canvasOffsetY = BigDecimal.ZERO
-        internal var canvasWidth: BigDecimal = BigDecimal.ZERO
-        internal var canvasHeight: BigDecimal = BigDecimal.ZERO
+        private var canvasWidth: BigDecimal = BigDecimal.ZERO
+        private var canvasHeight: BigDecimal = BigDecimal.ZERO
         
         var cell = Cell()
         
