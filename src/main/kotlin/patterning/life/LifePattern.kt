@@ -101,11 +101,6 @@ class LifePattern(
         
         drawingInformer = DrawingInformer { uxBuffer }
         
-        canvasWidth = canvas.width // pApplet.width.toBigDecimal()
-        canvasHeight = canvas.height // pApplet.height.toBigDecimal()
-        
-        //cell = Cell()
-        
         movementHandler = MovementHandler(this)
         drawBounds = false
         hudInfo = HUDStringBuilder()
@@ -447,9 +442,9 @@ class LifePattern(
         
         if (fitBounds) {
             val widthRatio =
-                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvasWidth.divide(it, mc) } ?: BigDecimal.ONE
+                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvas.width.divide(it, mc) } ?: BigDecimal.ONE
             val heightRatio =
-                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvasHeight.divide(it, mc) } ?: BigDecimal.ONE
+                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, mc) } ?: BigDecimal.ONE
             
             cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
@@ -458,8 +453,8 @@ class LifePattern(
         
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
-        val halfCanvasWidth = canvasWidth.divide(BigDecimal.TWO, mc)
-        val halfCanvasHeight = canvasHeight.divide(BigDecimal.TWO, mc)
+        val halfCanvasWidth = canvas.width.divide(BigDecimal.TWO, mc)
+        val halfCanvasHeight = canvas.height.divide(BigDecimal.TWO, mc)
         val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, mc)
         val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, mc)
         
@@ -515,16 +510,12 @@ class LifePattern(
         initBuffers()
         
         // Calculate the center of the visible portion before resizing
-        val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
-        val centerYBefore = calcCenterOnResize(canvasHeight, canvasOffsetY)
-        
-        // Update the canvas size
-        canvasWidth = canvas.width // pApplet.width.toBigDecimal()
-        canvasHeight = canvas.height // pApplet.height.toBigDecimal()
+        val centerXBefore = calcCenterOnResize(canvas.width, canvasOffsetX)
+        val centerYBefore = calcCenterOnResize(canvas.height, canvasOffsetY)
         
         // Calculate the center of the visible portion after resizing
-        val centerXAfter = calcCenterOnResize(canvasWidth, canvasOffsetX)
-        val centerYAfter = calcCenterOnResize(canvasHeight, canvasOffsetY)
+        val centerXAfter = calcCenterOnResize(canvas.width, canvasOffsetX)
+        val centerYAfter = calcCenterOnResize(canvas.height, canvasOffsetY)
         
         adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
     }
@@ -667,7 +658,7 @@ class LifePattern(
         // if the left is larger than the width then we're to the right of the canvas
         // if the top is larger than the height we're below the canvas
         return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
-                left >= canvasWidth || top >= canvasHeight)
+                left >= canvas.width || top >= canvas.height)
     }
     
     fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
@@ -738,8 +729,6 @@ class LifePattern(
         
         internal var canvasOffsetX = BigDecimal.ZERO
         internal var canvasOffsetY = BigDecimal.ZERO
-        private var canvasWidth: BigDecimal = BigDecimal.ZERO
-        private var canvasHeight: BigDecimal = BigDecimal.ZERO
         
         var cell = Cell()
         
