@@ -14,13 +14,14 @@ object Drawer {
     }
     
     fun drawAll() {
-        // Add all drawables that need to be added
-        drawables.addAll(toBeAdded)
-        toBeAdded.clear()
         
         for (drawable in drawables) {
             drawable.draw()
         }
+        
+        // Add all drawables that need to be added
+        drawables.addAll(toBeAdded)
+        toBeAdded.clear()
         
         // clean up drawables that need to be removed
         drawables.removeAll(toBeRemoved)

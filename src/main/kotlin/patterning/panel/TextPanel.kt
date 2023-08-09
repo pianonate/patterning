@@ -57,6 +57,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         textSize = builder.textSize
         textWidth = builder.textWidth
         wrap = builder.wrap
+        
         offsetBottom = builder.offsetBottom
         
         displayDuration = builder.displayDuration
@@ -67,35 +68,54 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         runMethod = builder.runMethod
         countdownFrom = builder.countdownFrom
         initialMessage = builder.message
-        initSize()
+        setTextPanelBuffer()
+        
         startDisplay()
     }
     
-    private fun initSize() {
-        val buffer = drawingInformer.getPGraphics()
-        buffer.beginDraw()
-        messageLines = wrapText()
-        buffer.endDraw()
-        setPanelSize(buffer)
-        initPanelBuffer(buffer)
-        if (offsetBottom) {
-            // we can't know the height of a TextPanel at initialization
-            // as we don't have a valid PGraphics to work with
-            position!!.y -= height.toFloat()
-        }
+    private fun startDisplay() {
+        state = FadeInState()
+        transitionTime = System.currentTimeMillis() // start displaying immediately
+    }
+    
+    
+    private fun setTextPanelBuffer() {
+        
+        // we can't use the current UXBuffer as it causes flickering on init of the text
+        // when beginDraw, endDraw are called
+        val sizingBuffer = drawingInformer.getPGraphics().parent.createGraphics(1, 1)
+        
+        sizingBuffer.beginDraw()
+        setFont(sizingBuffer, textSize)
+        messageLines = wrapText(sizingBuffer)
+        sizingBuffer.endDraw()
+        
+        setPanelSize(sizingBuffer)
+        
+        val textBuffer = sizingBuffer.parent.createGraphics(width, height)
+        
+        // set the font for this PGraphics as it will not change
+        textBuffer.beginDraw()
+        setFont(textBuffer, textSize)
+        textBuffer.endDraw()
+        panelBuffer = textBuffer
         
     }
     
-    private fun setPanelSize(parentBuffer: PGraphics) {
+    /**
+     * the passed in buffer could be any buffer that has had the the correct
+     * font set on it
+     */
+    private fun setPanelSize(sizingBuffer: PGraphics) {
         // Compute the maximum width and total height of all lines in case there is
         // word wrapping
         var maxWidth = 0f
         var totalHeight = 0f
         for (line in messageLines) {
-            if (parentBuffer.textWidth(line) > maxWidth) {
-                maxWidth = parentBuffer.textWidth(line)
+            if (sizingBuffer.textWidth(line) > maxWidth) {
+                maxWidth = sizingBuffer.textWidth(line)
             }
-            totalHeight += parentBuffer.textAscent() + parentBuffer.textDescent()
+            totalHeight += sizingBuffer.textAscent() + sizingBuffer.textDescent()
         }
         
         // Adjust the width and height according to the size of the wrapped text
@@ -104,24 +124,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // take either the specified width - which has just been sized to fit
         // or the width of the longest line of text in case of word wrapping
         width = getTextWidth().coerceAtMost(ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
-    }
-    
-    private fun startDisplay() {
-        state = FadeInState()
-        transitionTime = System.currentTimeMillis() // start displaying immediately
-    }
-    
-    private fun getTextPanelBuffer(): PGraphics {
-        
-        val parentBuffer = drawingInformer.getPGraphics()
-        setPanelSize(parentBuffer)
-        val textBuffer = parentBuffer.parent.createGraphics(width, height)
-        
-        // set the font for this PGraphics as it will not change
-        textBuffer.beginDraw()
-        setFont(textBuffer, textSize)
-        textBuffer.endDraw()
-        return textBuffer
     }
     
     // for sizes to be correctly calculated, the font must be the same
@@ -136,24 +138,22 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return "$initialMessage: $count"
     }
     
-    private fun wrapText(): List<String> {
-        val buffer = drawingInformer.getPGraphics()
-        setFont(buffer, textSize)
-        
-        val words: MutableList<String> = message.split(" ").filter { it.isNotEmpty() }.toMutableList()
-        
-        val lines: MutableList<String> = ArrayList()
-        var line = StringBuilder()
+    private fun wrapText(sizingBuffer: PGraphics): List<String> {
         
         if (!wrap) {
-            lines.add(message)
-            return lines
+            return listOf(message)
         }
+        
+        val lines: MutableList<String> = ArrayList()
+        
+        var line = StringBuilder()
+        
+        val words: MutableList<String> = message.split(" ").filter { it.isNotEmpty() }.toMutableList()
         
         val evalWidth = getTextWidth()
         while (words.isNotEmpty()) {
             val word = words[0]
-            val prospectiveLineWidth = buffer.textWidth(line.toString() + word)
+            val prospectiveLineWidth = sizingBuffer.textWidth(line.toString() + word)
             
             // If the word alone is wider than the wordWrapWidth, it should be put on its own line
             if (prospectiveLineWidth > evalWidth && line.isEmpty()) {
@@ -168,7 +168,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             }
             if (keepShortCutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
-                if (words.size == 2 && buffer.textWidth(line.toString() + words[0] + " " + words[1]) > evalWidth) {
+                if (words.size == 2 && sizingBuffer.textWidth(line.toString() + words[0] + " " + words[1]) > evalWidth) {
                     // Add the current line to the lines list
                     lines.add(line.toString().trim { it <= ' ' })
                     line = StringBuilder()
@@ -196,8 +196,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     /* called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on */
     override fun updatePanelBuffer() {
         if (lastMessage != message) {
-            messageLines = wrapText()
-            panelBuffer = getTextPanelBuffer()
+            setTextPanelBuffer()
         }
     }
     
@@ -302,6 +301,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             informer, position!!, hAlign!!, vAlign!!
         ) {
             this.message = message
+            this.offsetBottom = offsetBottom
         }
         
         fun textSize(textSize: Int): Builder {

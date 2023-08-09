@@ -1,5 +1,6 @@
 todo: idiomaticize
 
+todo: dragginDrawing is exposed - it should be part of MouseEventManager maybe
 todo: super bounds fit at universe sizes up - maybe with a B1 B2, etc. key combination
 todo: set a specific text color - handle switching between dark and light mode
 todo: add UX to switch between patterns - what about jetbrains modern UX cross platform thingy
@@ -112,3 +113,4 @@ todo: pressedKeys in MovementHandler.handleMovementKeys feels as if the encapsul
     it breaks encapsulation otherwise to have to extract it from KeyHandler and peer inside, IMO
 todo: determine a mechanism to discover limits when stepGenerationRecurse is out of control
 todo: make app multiplatform - you'll need a BigInteger for Native - unless you don't care about native...
+todo: TextPanel objects don't have to drawMultiLine text if they haven't changed - but you'd have to communicate to the Panel caller that it shouldn't start a new panelBuffer.beginDraw() if you do as it will clear it out and you'd lose the text

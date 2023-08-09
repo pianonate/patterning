@@ -16,8 +16,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             // child panels need special handling to orient themselves to this container Panel
             // rather than the UXBuffer, which is the more common case...
             child.parentPanel = this
-            child.drawingInformer =
-                DrawingInformer({ containerPanelBuffer })
+            child.drawingInformer = DrawingInformer { containerPanelBuffer }
         }
         orientation = builder.orientation
         updatePanelSize()
@@ -29,7 +28,7 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
         // given we've already called super(builder), set
         // as the one created in Panel won't work
         // there's probably a better way but i think it can wait
-        panelBuffer = initPanelBuffer(drawingInformer.getPGraphics())
+        initPanelBuffer(drawingInformer.getPGraphics())
     }
     
     private val containerPanelBuffer: PGraphics

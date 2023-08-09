@@ -8,14 +8,15 @@ import patterning.life.LifePattern
 import processing.core.PApplet
 
 class PatterningPApplet : PApplet() {
-    var draggingDrawing = false
     
+    private val canvas = Canvas(this)
     private lateinit var pattern: LifePattern
     private lateinit var properties: Properties
     
     // used to control dragging the image around the screen with the mouse
     private var lastMouseX = 0f
     private var lastMouseY = 0f
+    var draggingDrawing = false
     
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
@@ -36,7 +37,7 @@ class PatterningPApplet : PApplet() {
         
         pattern = LifePattern(
             pApplet = this,
-            canvas = Canvas(this),
+            canvas = canvas,
             properties
         ).also {
             println(KeyHandler.usageText)
@@ -44,6 +45,7 @@ class PatterningPApplet : PApplet() {
     }
     
     override fun draw() {
+        
         background(Theme.backGroundColor)
         pattern.draw()
     }

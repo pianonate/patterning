@@ -35,7 +35,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     private var transition: Transition? = null
     
     // image buffers and callbacks
-    internal var panelBuffer: PGraphics
+    internal lateinit var panelBuffer: PGraphics
     
     // mouse stuff
     var isPressed = false
@@ -59,8 +59,12 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         transitionType = builder.transitionType
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
+        
+        // we don't say UXBuffer here because sometimes the parentBuffer is the uxBuffer
+        // and sometimes it's going to be the buffer from a container panel so we need to
+        // be using the correct one when we do invoke alignment
         val parentBuffer = drawingInformer.getPGraphics()
-        panelBuffer = initPanelBuffer(parentBuffer)
+        initPanelBuffer(parentBuffer)
         if (transitionAble) {
             transition = Transition(drawingInformer, transitionDirection!!, transitionType!!, transitionDuration)
         }
@@ -74,8 +78,8 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         position!!.y = y.toFloat()
     }
     
-    fun initPanelBuffer(parentBuffer: PGraphics): PGraphics {
-        return parentBuffer.parent.createGraphics(width, height)
+    fun initPanelBuffer(parentBuffer: PGraphics) {
+        panelBuffer = parentBuffer.parent.createGraphics(width, height)
     }
     
     override fun onMousePressed() {
@@ -109,11 +113,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     override fun draw() {
         
         val parentBuffer = drawingInformer.getPGraphics()
-        parentBuffer.pushStyle()
         
-        if (this is TextPanel) {
-            val x = 3
-        }
         /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
         updatePanelBuffer()
         
@@ -138,7 +138,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw()
         panelBuffer.endDraw()
-        parentBuffer.popStyle()
         
         // it appears to draw the text over the cells more clearly
         // with the blendMode of DIFFERENCE
@@ -189,25 +188,27 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
     protected val isMouseOverMe: Boolean
         get() {
             return try {
-                // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
-                val processing = parentPanel!!.panelBuffer.parent
-                
-                // our Patterning class extends Processing so we can use it here also
-                val patterning = processing as PatterningPApplet
-                if (patterning.draggingDrawing) {
-                    false
-                } else {
-                    val mousePosition = MouseInfo.getPointerInfo().location
-                    val windowPosition = (processing.getSurface().native as Component).locationOnScreen
-                    val mouseX = mousePosition.x - windowPosition.x
-                    val mouseY = mousePosition.y - windowPosition.y
-                    if (mouseX < 0 || mouseX > processing.width || mouseY < 0 || mouseY > processing.height) {
+                parentPanel?.let {
+                    // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
+                    val pApplet = it.panelBuffer.parent
+                    
+                    // our Patterning class extends Processing so we can use it here also
+                    val patterningPApplet = pApplet as PatterningPApplet
+                    if (patterningPApplet.draggingDrawing) {
                         false
                     } else {
-                        val effectivePosition = effectivePosition
-                        mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                        val mousePosition = MouseInfo.getPointerInfo().location
+                        val windowPosition = (pApplet.getSurface().native as Component).locationOnScreen
+                        val mouseX = mousePosition.x - windowPosition.x
+                        val mouseY = mousePosition.y - windowPosition.y
+                        if (mouseX < 0 || mouseX > pApplet.width || mouseY < 0 || mouseY > pApplet.height) {
+                            false
+                        } else {
+                            val effectivePosition = effectivePosition
+                            mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                        }
                     }
-                }
+                } ?: false
             } catch (e: Exception) {
                 false
             }

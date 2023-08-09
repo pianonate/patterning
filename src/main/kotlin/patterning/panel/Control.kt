@@ -73,6 +73,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         }
     }
     
+    
     private fun getHoverTextPanel(): TextPanel {
         val margin = Theme.hoverTextMargin
         val hoverTextWidth = Theme.hoverTextWidth
@@ -98,9 +99,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         transitionDirection = TransitionDirection.LEFT
                     }
                     
-                    else -> {
-                        // Handle all other cases here.
-                    }
                 }
             }
             
@@ -116,13 +114,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverY = localParentPanel.position!!.y.toInt() - margin
                         transitionDirection = TransitionDirection.UP
                     }
-                    
-                    else -> {
-                        // Handle all other cases here.
-                    }
                 }
             }
         }
+        
+        val offsetBottom = (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM)
         
         // the Control parentPanel is a ContainerPanel that has a DrawingInfoSupplier
         // which has a PGraphicsSupplier of the current UXBuffer
@@ -132,13 +128,14 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // instead we pass the hover text the parent ContainerPanel's DrawingInfoSupplier which comes from
         // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
         // would try to draw itself within the control at a microscopic size
-        val hoverText = TextPanel.Builder(
-            informer = localParentPanel.drawingInformer,
-            message = hoverMessage,
-            position = PVector(hoverX.toFloat(), hoverY.toFloat()),
-            offsetBottom = true,
-            hAlign = AlignHorizontal.LEFT,
-            vAlign = AlignVertical.TOP
+        
+        return TextPanel.Builder(
+            localParentPanel.drawingInformer,
+            hoverMessage,
+            PVector(hoverX.toFloat(), hoverY.toFloat()),
+            offsetBottom = offsetBottom,
+            AlignHorizontal.LEFT,
+            AlignVertical.TOP
         )
             .fill(Theme.controlHighlightColor)
             .radius(Theme.controlHighlightCornerRadius)
@@ -148,18 +145,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
             .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
             .build()
-        
-        // similar treatment for HORIZONTAL aligned BOTTOM control panels
-        if (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM) {
-            hoverText.position!!.y -= hoverText.height.toFloat()
-        }
-        
-        // if the text won't display, make it possible to display
-        val screenWidth = localParentPanel.drawingInformer.getPGraphics().width
-        if (hoverText.position!!.x + hoverText.width > screenWidth) {
-            hoverText.position!!.x = (screenWidth - hoverText.width).toFloat()
-        }
-        return hoverText
     }
     
     private fun mouseHover(isHovering: Boolean) {

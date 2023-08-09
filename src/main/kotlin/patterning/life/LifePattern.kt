@@ -98,8 +98,8 @@ class LifePattern(
     private val zoom = Zoom(this)
     
     init {
-        uxBuffer = canvas.getPGraphics() // buffer
-        patternBuffer = canvas.getPGraphics() // buffer
+        uxBuffer = canvas.getPGraphics()
+        patternBuffer = canvas.getPGraphics()
         drawingInformer = DrawingInformer { uxBuffer }
         // resize trackers
         prevWidth = pApplet.width
@@ -446,14 +446,9 @@ class LifePattern(
                 }
                 .fadeInDuration(2000)
                 .countdownFrom(3)
-                // .wrap()
+                .wrap()
                 .textSize(24)
         }
-        /*        hudText = createTextPanel(hudText) {
-                    TextPanel.Builder(drawingInformer, "", AlignHorizontal.RIGHT, AlignVertical.BOTTOM)
-                        .textSize(14)
-                        .wrap()
-                }*/
     }
     
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
