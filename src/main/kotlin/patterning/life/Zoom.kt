@@ -5,8 +5,12 @@ import patterning.Canvas
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
 
-class Zoom(private val lifePattern: LifePattern, private val canvas: Canvas) {
-    private var targetSize = LifePattern.cell.size
+class Zoom(
+    private val lifePattern: LifePattern,
+    private val canvas: Canvas,
+    private val zoomLevel: ZoomLevel
+) {
+    private var targetSize = zoomLevel.level
     private var isZooming = false
     private var zoomCenterX = 0f
     private var zoomCenterY = 0f
@@ -28,7 +32,7 @@ class Zoom(private val lifePattern: LifePattern, private val canvas: Canvas) {
         // Adjust cell width to align with grid
         val factor = if (zoomIn) 2f else 0.2f
         
-        targetSize = LifePattern.cell.size * factor
+        targetSize = zoomLevel.level * factor
         
         this.zoomCenterX = x
         this.zoomCenterY = y
@@ -50,11 +54,11 @@ class Zoom(private val lifePattern: LifePattern, private val canvas: Canvas) {
                 }
             }
             
-            val previousCellWidth = LifePattern.cell.size
-            LifePattern.cell.size += (targetSize - LifePattern.cell.size) * t
+            val previousCellWidth = zoomLevel.level
+            zoomLevel.level += (targetSize - zoomLevel.level) * t
             
             // Calculate zoom factor
-            val zoomFactor = LifePattern.cell.size / previousCellWidth
+            val zoomFactor = zoomLevel.level / previousCellWidth
             
             // Calculate the difference in canvas offset-s before and after zoom
             val offsetX = (1 - zoomFactor) * (zoomCenterX - canvas.offsetX.toFloat())
@@ -65,7 +69,7 @@ class Zoom(private val lifePattern: LifePattern, private val canvas: Canvas) {
             
             // Stop zooming if we're close enough to the target size
             // we used to set the cell.size to the target but that makes it jumpy
-            if (abs(LifePattern.cell.size - targetSize) < 0.01) {
+            if (abs(zoomLevel.level - targetSize) < 0.01) {
                 stopZooming()
             }
         }

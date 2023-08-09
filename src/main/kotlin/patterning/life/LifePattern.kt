@@ -62,6 +62,10 @@ class LifePattern(
     
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
+    
+    private val zoomLevel = ZoomLevel()
+    private val zoom = Zoom(this, canvas, zoomLevel)
+    
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
     
@@ -86,7 +90,8 @@ class LifePattern(
     // lambdas are cool
     private val nodePath: DrawNodePath = DrawNodePath(
         shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
-        updateLargestDimension = { bounds -> updateLargestDimension(bounds) }
+        updateLargestDimension = { bounds -> updateLargestDimension(bounds) },
+        zoomLevel
     )
     
     private var countdownText: TextPanel? = null
@@ -96,11 +101,8 @@ class LifePattern(
     private lateinit var uxBuffer: PGraphics
     private var drawBounds: Boolean
     
-    private val zoom = Zoom(this, canvas)
     
     init {
-        /*        uxBuffer = canvas.getPGraphics()
-                patternBuffer = canvas.getPGraphics()*/
         initBuffers()
         canvas.addOffsetsMovedObserver(nodePath)
         
@@ -228,6 +230,11 @@ class LifePattern(
         center(life.rootBounds, fitBounds = false, saveState = true)
     }
     
+    override fun toggleDrawBounds() {
+        drawBounds = !drawBounds
+    }
+    
+    
     override fun fitToScreen() {
         center(life.rootBounds, fitBounds = true, saveState = true)
     }
@@ -236,20 +243,17 @@ class LifePattern(
      * move
      * center
      * zoom
+     * KeyCallbackFactory - move state
      */
     override fun saveUndoState() {
-        undoDeque.add(CanvasState(Cell(cell.size), canvas.offsetX, canvas.offsetY))
-    }
-    
-    override fun toggleDrawBounds() {
-        drawBounds = !drawBounds
+        undoDeque.add(CanvasState(zoomLevel.level, canvas.offsetX, canvas.offsetY))
     }
     
     override fun undoMovement() {
         if (undoDeque.isNotEmpty()) {
             zoom.stopZooming()
             val previous = undoDeque.removeLast()
-            cell = previous.cell
+            zoomLevel.level = previous.level
             canvas.updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
         }
     }
@@ -456,10 +460,10 @@ class LifePattern(
             val heightRatio =
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, mc) } ?: BigDecimal.ONE
             
-            cell.size = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
+            zoomLevel.level = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
         }
         
-        val bigCell = cell.bigSize
+        val bigCell = zoomLevel.bigLevel
         
         val drawingWidth = patternWidth.multiply(bigCell, mc)
         val drawingHeight = patternHeight.multiply(bigCell, mc)
@@ -485,7 +489,7 @@ class LifePattern(
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
-            hudInfo.addOrUpdate("cell", cell.size)
+            hudInfo.addOrUpdate("cell", zoomLevel.level)
             hudInfo.addOrUpdate("running", RunningState.runMessage())
             //            hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
@@ -497,7 +501,7 @@ class LifePattern(
     }
     
     private data class CanvasState(
-        val cell: Cell,
+        val level: Float,
         val canvasOffsetX: BigDecimal,
         val canvasOffsetY: BigDecimal
     )
@@ -537,7 +541,7 @@ class LifePattern(
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size - cell.cellBorderWidth
+        val width = size - (zoomLevel.level * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
         if (color != Theme.cellColor) patternBuffer.fill(color)
@@ -617,10 +621,10 @@ class LifePattern(
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), cell.size)
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), zoomLevel.level)
         } else if (node is TreeNode) {
             
-            val halfSize = cell.halfUniverseSize(node.level)
+            val halfSize = zoomLevel.halfUniverseSize(node.level)
             
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
@@ -678,14 +682,14 @@ class LifePattern(
         
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, cell.bigSize, canvas)
+        val boundingBox = BoundingBox(bounds, zoomLevel.bigLevel, canvas)
         boundingBox.draw(patternBuffer)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = FlexibleInteger.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), cell.bigSize, canvas)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), zoomLevel.bigLevel, canvas)
             universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }
@@ -712,6 +716,8 @@ class LifePattern(
     }
     
     companion object {
+        private const val BORDER_WIDTH_RATIO = .05f
+        
         // without this precision on the MathContext, small imprecision propagates at
         // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
         // off the screen.  don't skimp on precision!
@@ -725,9 +731,6 @@ class LifePattern(
         private const val PRECISION_BUFFER = 10
         private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
         private var previousPrecision: Int = 0
-        
-        var cell = Cell()
-            private set
         
         private val undoDeque = ArrayDeque<CanvasState>()
         

@@ -5,14 +5,13 @@ import patterning.OffsetsMovedObserver
 
 class DrawNodePath(
     private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
-    private val updateLargestDimension: (Bounds) -> Unit
+    private val updateLargestDimension: (Bounds) -> Unit,
+    private val zoomLevel: ZoomLevel
 ) : OffsetsMovedObserver {
     
     private var offsetsMoved: Boolean = true
     private var level: Int = 0
     private val path: MutableList<DrawNodePathEntry> = mutableListOf()
-    private val cell: Cell
-        get() = LifePattern.cell
     
     init {
         path.add(DrawNodePathEntry(Node.deadNode, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, Direction.NW))
@@ -27,8 +26,8 @@ class DrawNodePath(
         val newLevel = root.level
         updateLargestDimension(root.bounds)
         
-        val halfSizeOffset = -cell.halfUniverseSize(newLevel)
-        val universeSize = cell.universeSize(newLevel)
+        val halfSizeOffset = -zoomLevel.halfUniverseSize(newLevel)
+        val universeSize = zoomLevel.universeSize(newLevel)
         
         // every generation the root changes so we have to use the latest root
         // to walk through the nodePath to find the lowest node that has children visible on screen
@@ -132,7 +131,7 @@ class DrawNodePath(
         }
         
         if (node is TreeNode) {
-            val halfSize = cell.halfUniverseSize(node.level)
+            val halfSize = zoomLevel.halfUniverseSize(node.level)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
             
