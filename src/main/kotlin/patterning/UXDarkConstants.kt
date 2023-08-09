@@ -1,7 +1,12 @@
 package patterning
 
-class UXDarkConstants internal constructor() : UXConstants() {
+import processing.core.PConstants
 
+class UXDarkConstants internal constructor() : UXConstants() {
+    
+    override val blendMode:Int
+        get() = PConstants.SCREEN
+    
     override val backgroundColor: UInt
         get() = 0u
     override val cellColor: UInt

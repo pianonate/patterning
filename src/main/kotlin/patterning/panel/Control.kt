@@ -188,7 +188,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
     
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
-    private val asyncJobRunner = AsyncJobRunner(
+    private val highlightAsyncToggle = AsyncJobRunner(
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
             isHighlightFromKeypress = false
@@ -197,9 +197,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     )
     
     internal fun highlightFromKeyPress() {
-        if (!asyncJobRunner.isActive) { // Only start if not already running
+        if (!highlightAsyncToggle.isActive) { // Only start if not already running
             isHighlightFromKeypress = true
-            asyncJobRunner.startJob()
+            highlightAsyncToggle.startJob()
         }
     }
     

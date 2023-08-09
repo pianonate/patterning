@@ -1,6 +1,5 @@
 package patterning.life
 
-import Canvas
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
@@ -9,6 +8,7 @@ import java.math.BigDecimal
 import java.math.MathContext
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
+import patterning.Canvas
 import patterning.Drawer
 import patterning.DrawingInformer
 import patterning.Properties
@@ -87,8 +87,8 @@ class LifePattern(
     private var countdownText: TextPanel? = null
     private val hudText: TextPanel
     
-    private var patternBuffer: PGraphics
-    private var uxBuffer: PGraphics
+    private lateinit var patternBuffer: PGraphics
+    private lateinit var uxBuffer: PGraphics
     private var drawBounds: Boolean
     
     // used for resize detection
@@ -98,8 +98,10 @@ class LifePattern(
     private val zoom = Zoom(this)
     
     init {
-        uxBuffer = canvas.getPGraphics()
-        patternBuffer = canvas.getPGraphics()
+/*        uxBuffer = canvas.getPGraphics()
+        patternBuffer = canvas.getPGraphics()*/
+        initBuffers()
+        
         drawingInformer = DrawingInformer { uxBuffer }
         // resize trackers
         prevWidth = pApplet.width
@@ -151,12 +153,12 @@ class LifePattern(
     val lastId: Int
         get() = life.lastId.get()
     
-    private val isWindowResized: Boolean
-        get() {
-            val widthChanged = prevWidth != pApplet.width
-            val heightChanged = prevHeight != pApplet.height
-            return widthChanged || heightChanged
-        }
+    /*    private val isWindowResized: Boolean
+            get() {
+                val widthChanged = prevWidth != pApplet.width
+                val heightChanged = prevHeight != pApplet.height
+                return widthChanged || heightChanged
+            }*/
     
     private fun setupControls(keyCallbackFactory: KeyCallbackFactory) {
         
@@ -204,13 +206,13 @@ class LifePattern(
     // Pattern overrides
     override fun draw() {
         
+        if (canvas.resized) {
+            updateWindowResized()
+        }
+        
         performanceTest.execute()
         
         zoom.update()
-        
-        if (isWindowResized) {
-            updateWindowResized()
-        }
         
         prevWidth = pApplet.width
         prevHeight = pApplet.height
@@ -517,11 +519,15 @@ class LifePattern(
         } ?: RunningState.toggleRunning()
     }
     
+    private fun initBuffers() {
+        uxBuffer = canvas.getPGraphics()
+        patternBuffer = canvas.getPGraphics()
+    }
+    
     private fun updateWindowResized() {
         
         // create new buffers
-        uxBuffer = canvas.getPGraphics()
-        patternBuffer = canvas.getPGraphics()
+        initBuffers()
         
         // Calculate the center of the visible portion before resizing
         val centerXBefore = calcCenterOnResize(canvasWidth, canvasOffsetX)
@@ -547,11 +553,16 @@ class LifePattern(
     ) {
         val width = size - cell.cellBorderWidth
         
-        patternBuffer.apply {
+        // we default the patternBuffer to the cell color so no need to change it
+        if (color != Theme.cellColor) patternBuffer.fill(color)
+        
+        patternBuffer.rect(x,y,width,width)
+        
+/*        patternBuffer.apply {
             fill(color)
             noStroke()
             rect(x, y, width, width)
-        }
+        }*/
     }
     
     // Initialize viewPath, also at class level
@@ -561,6 +572,8 @@ class LifePattern(
     private fun drawPattern(life: LifeUniverse) {
         patternBuffer.beginDraw()
         patternBuffer.clear()
+        patternBuffer.noStroke()
+        patternBuffer.fill(Theme.cellColor)
         
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen

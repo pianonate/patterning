@@ -3,7 +3,10 @@ package patterning
 import processing.core.PApplet
 
 object Theme {
-
+    
+    var blendMode = 0
+        private set
+    
     // colors
     private lateinit var _backgroundColor: ColorConstant
     private lateinit var _cellColor: ColorConstant
@@ -13,31 +16,31 @@ object Theme {
     private lateinit var _defaultPanelColor: ColorConstant
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
-
+    
     val backGroundColor: Int
         get() = _backgroundColor.color
-
+    
     val cellColor: Int
         get() = _cellColor.color
-
+    
     val controlColor: Int
         get() = _controlColor.color
-
+    
     val controlHighlightColor: Int
         get() = _controlHighlightColor.color
-
+    
     val controlMousePressedColor: Int
         get() = _controlMousePressedColor.color
-
+    
     val defaultPanelColor: Int
         get() = _defaultPanelColor.color
-
+    
     val textColor: Int
         get() = _textColor.color
-
+    
     val textColorStart: Int
         get() = _textColorStart.color
-
+    
     // durations
     var controlHighlightDuration = 0
         private set
@@ -53,7 +56,7 @@ object Theme {
         private set
     var themeTransitionDuration = 0
         private set
-
+    
     // names
     var countdownText: String = ""
         private set
@@ -67,7 +70,7 @@ object Theme {
         private set
     var startupText: String = ""
         private set
-
+    
     // sizes
     var controlSize = 0
         private set
@@ -97,11 +100,13 @@ object Theme {
         private set
     var currentThemeType: ThemeType = ThemeType.DARK
         private set
-
+    
     fun setTheme(newTheme: ThemeType) {
         currentThemeType = newTheme
-
+        
         val themeConstants = newTheme.themeConstants
+        blendMode = themeConstants.blendMode
+        
         // colors
         _backgroundColor.setColor(themeConstants.backgroundColor)
         _cellColor.setColor(themeConstants.cellColor)
@@ -111,7 +116,7 @@ object Theme {
         _defaultPanelColor.setColor(themeConstants.defaultPanelColor)
         _textColor.setColor(themeConstants.textColor)
         _textColorStart.setColor(themeConstants.textColorStart)
-
+        
         //durations
         controlHighlightDuration = themeConstants.controlHighlightDuration
         controlPanelTransitionDuration = themeConstants.controlPanelTransitionDuration
@@ -120,7 +125,7 @@ object Theme {
         startupTextFadeInDuration = themeConstants.startupTextFadeInDuration
         startupTextFadeOutDuration = themeConstants.startupTextFadeOutDuration
         themeTransitionDuration = themeConstants.themeTransitionDuration
-
+        
         // sizes and radii
         controlSize = themeConstants.controlSize
         controlHighlightCornerRadius = themeConstants.controlHighlightCornerRadius
@@ -135,7 +140,7 @@ object Theme {
         startupTextSize = themeConstants.startupTextSize
         strokeWeightBounds = themeConstants.strokeWeightBounds
         strokeWeightDashedLine = themeConstants.strokeWeightDashedLine
-
+        
         // strings
         countdownText = themeConstants.countdownText
         fontName = themeConstants.fontName
@@ -143,18 +148,22 @@ object Theme {
         shortcutParenStart = themeConstants.shortcutParenStart
         shortcutParenEnd = themeConstants.shortcutParenEnd
         startupText = themeConstants.startupText
+        
     }
-
-    fun initialize(p: PApplet) {
-        _backgroundColor = ColorConstant(p)
-        _cellColor = ColorConstant(p)
-        _controlColor = ColorConstant(p)
-        _controlHighlightColor = ColorConstant(p)
-        _controlMousePressedColor = ColorConstant(p)
-        _defaultPanelColor = ColorConstant(p)
-        _textColor = ColorConstant(p)
-        _textColorStart = ColorConstant(p) // for lerping purposes
+    
+    internal val isTransitioning: Boolean
+        get() = _backgroundColor.transitionInProgress
+    
+    fun init(pApplet: PApplet) {
+        _backgroundColor = ColorConstant(pApplet)
+        _cellColor = ColorConstant(pApplet)
+        _controlColor = ColorConstant(pApplet)
+        _controlHighlightColor = ColorConstant(pApplet)
+        _controlMousePressedColor = ColorConstant(pApplet)
+        _defaultPanelColor = ColorConstant(pApplet)
+        _textColor = ColorConstant(pApplet)
+        _textColorStart = ColorConstant(pApplet) // for lerping purposes
         setTheme(ThemeType.DARK) // Default theme
     }
-
+    
 }

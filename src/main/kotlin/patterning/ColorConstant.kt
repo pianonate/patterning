@@ -3,12 +3,13 @@ package patterning
 import processing.core.PApplet
 
 class ColorConstant(private val p: PApplet) {
+    internal var transitionInProgress = false
+
     private var currentColor = 0u
     private var previousColor = 0u
     private var transitionStartTime: Long = 0
-    private var transitionInProgress = false
     private var isInitialized = false
-
+    
     fun setColor(newColor: UInt) {
         if (isInitialized) {
             previousColor = currentColor
@@ -20,7 +21,7 @@ class ColorConstant(private val p: PApplet) {
         }
         currentColor = newColor
     }
-
+    
     val color: Int
         get() {
             if (!transitionInProgress) {

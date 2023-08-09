@@ -1,11 +1,12 @@
 package patterning
 
-import Canvas
 import kotlin.math.roundToInt
+
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.life.LifePattern
 import processing.core.PApplet
+
 
 class PatterningPApplet : PApplet() {
     
@@ -28,7 +29,7 @@ class PatterningPApplet : PApplet() {
     }
     
     override fun setup() {
-        Theme.initialize(this)
+        Theme.init(this)
         KeyHandler.registerKeyHandler(this)
         
         surface.setResizable(true)
@@ -45,9 +46,11 @@ class PatterningPApplet : PApplet() {
     }
     
     override fun draw() {
-        
-        background(Theme.backGroundColor)
+        canvas.drawBackground()
         pattern.draw()
+        if (Theme.isTransitioning) {
+            println("theme: ${Theme.backGroundColor}")
+        }
     }
     
     override fun mousePressed() {

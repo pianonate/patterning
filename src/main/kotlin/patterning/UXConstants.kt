@@ -1,6 +1,11 @@
 package patterning
 
+import processing.core.PConstants
+
 open class UXConstants internal constructor() {
+    open val blendMode: Int
+        get() = PConstants.BLEND
+    
     // sizes
     val controlSize: Int
         get() = 35
@@ -37,7 +42,7 @@ open class UXConstants internal constructor() {
     open val textColorStart: UInt
         get() = 0xFFFFFFFFu
     open val textColor: UInt
-        get() = 0xFF888888u
+        get() = 0xFF444444u
 
     open val controlColor: UInt
         get() = 0xDD404040u // partially transparent 40

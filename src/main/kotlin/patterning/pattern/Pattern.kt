@@ -1,6 +1,6 @@
 package patterning.pattern
 
-import Canvas
+import patterning.Canvas
 import patterning.Properties
 import processing.core.PApplet
 

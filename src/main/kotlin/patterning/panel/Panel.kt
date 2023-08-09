@@ -10,7 +10,6 @@ import patterning.Theme
 import patterning.actions.MouseEventReceiver
 import patterning.panel.Transition.TransitionDirection
 import patterning.panel.Transition.TransitionType
-import processing.core.PConstants
 import processing.core.PGraphics
 import processing.core.PVector
 
@@ -139,14 +138,8 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         panelSubclassDraw()
         panelBuffer.endDraw()
         
-        // it appears to draw the text over the cells more clearly
-        // with the blendMode of DIFFERENCE
-        // additionally there seems to be a bug that when drawing text with an outline
-        // sometimes it can't draw the text over the other text correctly
-        // the bug is strange because if you step through code in the debugger, it doesn't happen
-        // almost as if it's some kind of weird threading issue or side effect
-        // for now, I've eliminated outlines as a means to highlight the text against the background
-        if (this is TextPanel) parentBuffer.blendMode(PConstants.DIFFERENCE)
+        if (this is TextPanel) parentBuffer.blendMode(Theme.blendMode)
+        
         if (transitionAble && transition!!.isTransitioning) {
             transition!!.image(panelBuffer, position!!.x, position!!.y)
         } else {
