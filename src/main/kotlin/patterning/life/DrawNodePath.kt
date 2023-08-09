@@ -1,13 +1,14 @@
 package patterning.life
 
 import java.math.BigDecimal
+import patterning.Canvas
 import patterning.OffsetsMovedObserver
 
 class DrawNodePath(
     private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
     private val updateLargestDimension: (Bounds) -> Unit,
     private val universeSize: UniverseSize,
-    private val zoom: Zoom
+    private val zoom: Canvas.Zoom
 ) : OffsetsMovedObserver {
     
     private var offsetsMoved: Boolean = true

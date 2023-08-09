@@ -3,7 +3,6 @@ package patterning.pattern
 interface Movable {
     fun center()
     fun fitToScreen()
-    fun saveUndoState()
     fun toggleDrawBounds()
-    fun undoMovement()
+    fun zoom(zoomIn: Boolean, x: Float, y: Float)
 }

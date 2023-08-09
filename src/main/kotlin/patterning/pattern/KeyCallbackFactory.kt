@@ -1,6 +1,7 @@
 package patterning.pattern
 
 import kotlinx.coroutines.runBlocking
+import patterning.Canvas
 import patterning.RunningState
 import patterning.Theme
 import patterning.ThemeType
@@ -12,7 +13,11 @@ import patterning.actions.ValidOS
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Pattern) {
+class KeyCallbackFactory(
+    private val pApplet: PApplet,
+    private val pattern: Pattern,
+    private val canvas: Canvas
+) {
     
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -93,8 +98,8 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
         // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
         invokeFeatureLambda = {
-            if (pattern is Zoomable) {
-                (pattern as Zoomable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
             }
         },
         usage = "zoom in centered on the mouse"
@@ -103,8 +108,8 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
     val callbackZoomInCenter = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_CENTERED,
         invokeFeatureLambda = {
-            if (pattern is Zoomable) {
-                (pattern as Zoomable).zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
             }
         },
         usage = "zoom in centered on the middle of the screen"
@@ -113,8 +118,8 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
     val callbackZoomOutCenter = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
         invokeFeatureLambda = {
-            if (pattern is Zoomable) {
-                (pattern as Zoomable).zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
             }
         },
         usage = "zoom out centered on the middle of the screen"
@@ -123,8 +128,8 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
     private val callbackZoomOut = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_OUT,
         invokeFeatureLambda = {
-            if (pattern is Zoomable) {
-                (pattern as Zoomable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
             }
         },
         usage = "zoom out centered on the mouse"
@@ -157,7 +162,7 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
         ),
         invokeFeatureLambda = {
             if (pattern is Movable) {
-                (pattern as Movable).undoMovement()
+                canvas.undoMovement()
             }
         },
         usage = "undo  movements / actions such as centering or fitting to screen"
@@ -228,7 +233,7 @@ class KeyCallbackFactory(private val pApplet: PApplet, private val pattern: Patt
                             MovementHandler.SOUTH
                         )
                     }) {
-                    (pattern as Movable).saveUndoState()
+                    canvas.saveUndoState()
                 }
             }
         },

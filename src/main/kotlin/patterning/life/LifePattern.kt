@@ -7,26 +7,21 @@ import java.io.IOException
 import java.math.BigDecimal
 import java.math.MathContext
 import java.net.URISyntaxException
-
 import kotlin.math.roundToInt
-
 import patterning.Canvas
 import patterning.Drawer
 import patterning.DrawingInformer
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
-
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
-
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
 import patterning.panel.ControlPanel
 import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
-
 import patterning.pattern.KeyCallbackFactory
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -36,12 +31,9 @@ import patterning.pattern.PerformanceTestable
 import patterning.pattern.Playable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
-import patterning.pattern.Zoomable
-
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
-
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
@@ -57,14 +49,14 @@ class LifePattern(
     PerformanceTestable,
     Playable,
     Rewindable,
-    Steppable,
-    Zoomable {
+    Steppable {
     
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
     
     private val universeSize = UniverseSize()
-    private val zoom = Zoom(lifePattern = this, canvas = canvas)
+    //private val zoom = Zoom(lifePattern = this, canvas = canvas)
+    private val zoom = canvas.zoom
     
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
@@ -121,7 +113,7 @@ class LifePattern(
                 .displayDuration(Theme.startupTextDisplayDuration)
         }
         
-        val keyCallbackFactory = KeyCallbackFactory(pApplet, this)
+        val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = this, canvas = canvas)
         keyCallbackFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
         setupControls(keyCallbackFactory)
         
@@ -217,7 +209,7 @@ class LifePattern(
     }
     
     override fun move(dx: Float, dy: Float) {
-        saveUndoState()
+        canvas.saveUndoState()
         canvas.adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
         lifeFormPosition.add(dx, dy)
     }
@@ -240,24 +232,14 @@ class LifePattern(
         center(life.rootBounds, fitBounds = true, saveState = true)
     }
     
-    /**
-     * move
-     * center
-     * zoom
-     * KeyCallbackFactory - move state
-     */
-    override fun saveUndoState() {
-        undoDeque.add(CanvasState(zoom.level, canvas.offsetX, canvas.offsetY))
+
+/*    fun saveUndoState() {
+        canvas.saveUndoState()
     }
     
-    override fun undoMovement() {
-        if (undoDeque.isNotEmpty()) {
-            zoom.stopZooming()
-            val previous = undoDeque.removeLast()
-            zoom.level = previous.level
-            canvas.updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
-        }
-    }
+    fun undoMovement() {
+        canvas.undoMovement()
+    }*/
     
     // NumberedPatternLoader overrides
     override fun setRandom() {
@@ -425,7 +407,7 @@ class LifePattern(
     
     private fun setupNewLife(life: LifeUniverse, testing: Boolean = false) {
         
-        undoDeque.clear()
+        canvas.clearHistory()
         
         val bounds = life.rootBounds
         updateLargestDimension(bounds)
@@ -449,7 +431,7 @@ class LifePattern(
     }
     
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
-        if (saveState) saveUndoState()
+        if (saveState) canvas.saveUndoState()
         
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
         val patternWidth = bounds.width.bigDecimal
@@ -730,7 +712,7 @@ class LifePattern(
         private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
         private var previousPrecision: Int = 0
         
-        private val undoDeque = ArrayDeque<CanvasState>()
+        //private val undoDeque = ArrayDeque<CanvasState>()
         
         private const val LIFE_FORM_PROPERTY = "lifeForm"
         

@@ -62,7 +62,7 @@ class Zoom(
         
         if (targetSize <= MINIMUM_ZOOM_LEVEL) return
         
-        lifePattern.saveUndoState()
+        //lifePattern.saveUndoState()
         
         val factor = if (zoomIn) ZOOM_FACTOR else 1 / ZOOM_FACTOR
         targetSize = level * factor
@@ -102,7 +102,6 @@ class Zoom(
                 level += stepSize
                 stepsTaken++  // Increment the step counter
             }
-        
             
             // Calculate zoom factor
             val zoomFactor = level / previousCellWidth
@@ -119,41 +118,6 @@ class Zoom(
             }
         }
     }
-    
-    
-    /*  fun update() {
-          if (isZooming) {
-              
-              if (!KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_IN.code) &&
-                  !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_OUT.code) &&
-                  !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_CENTERED.code)
-              ) {
-                  if (zoomInvokeCount > 1) {
-                      stopZooming()
-                      return
-                  }
-              }
-              
-              val previousCellWidth = level
-              level += (targetSize - level) * t
-              
-              // Calculate zoom factor
-              val zoomFactor = level / previousCellWidth
-              
-              // Calculate the difference in canvas offset-s before and after zoom
-              val offsetX = (1 - zoomFactor) * (zoomCenterX - canvas.offsetX.toFloat())
-              val offsetY = (1 - zoomFactor) * (zoomCenterY - canvas.offsetY.toFloat())
-              
-              // Update canvas offsets
-              canvas.adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
-              
-              // Stop zooming if we're close enough to the target size
-              // we used to set the cell.size to the target but that makes it jumpy
-              if (abs(level - targetSize) < 0.01) {
-                  stopZooming()
-              }
-          }
-      }*/
     
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f

@@ -5,13 +5,14 @@ import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.life.LifePattern
+import patterning.pattern.Pattern
 import processing.core.PApplet
 
 
 class PatterningPApplet : PApplet() {
     
     private val canvas = Canvas(this)
-    private lateinit var pattern: LifePattern
+    private lateinit var pattern: Pattern
     private lateinit var properties: Properties
     
     // used to control dragging the image around the screen with the mouse

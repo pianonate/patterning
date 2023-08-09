@@ -3,10 +3,23 @@ package patterning
 import java.awt.Color
 import java.awt.Component
 import java.math.BigDecimal
+import kotlin.math.pow
+import patterning.actions.KeyHandler
+import patterning.pattern.KeyCallbackFactory
 import processing.core.PApplet
 import processing.core.PGraphics
 
 class Canvas(private val pApplet: PApplet) {
+    
+    val zoom = Zoom()
+    
+    private data class CanvasState(
+        val level: Float,
+        val canvasOffsetX: BigDecimal,
+        val canvasOffsetY: BigDecimal
+    )
+    
+    private val undoDeque = ArrayDeque<CanvasState>()
     
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
@@ -45,6 +58,23 @@ class Canvas(private val pApplet: PApplet) {
         this.offsetY = offsetY
         for (observer in offsetsMovedObservers) {
             observer.onOffsetsMoved()
+        }
+    }
+    
+    fun clearHistory() {
+        undoDeque.clear()
+    }
+    
+    fun saveUndoState() {
+        undoDeque.add(CanvasState(zoom.level, offsetX, offsetY))
+    }
+    
+    fun undoMovement() {
+        if (undoDeque.isNotEmpty()) {
+            zoom.stopZooming()
+            val previous = undoDeque.removeLast()
+            zoom.level = previous.level
+            updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
         }
     }
     
@@ -95,5 +125,124 @@ class Canvas(private val pApplet: PApplet) {
     private fun mitigateFlicker() {
         val nativeSurface = pApplet.surface.native as Component
         nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
+    }
+    
+    inner class Zoom(
+        initialLevel: Float = DEFAULT_ZOOM_LEVEL
+    ) {
+        private var _level = initialLevel // backing property
+        private var _targetSize = initialLevel // backing property for targetSize
+        
+        private var isZooming = false
+        private var zoomCenterX = 0f
+        private var zoomCenterY = 0f
+        
+        private var stepsTaken: Int = 0
+        private var stepSize: Float = 0f  // This is the amount to change the level by on each update
+        private val totalSteps = 50  // Say you want to reach the target in 10 updates
+        
+        
+        // used to stop immediately if the user releases the zoom key while holding it down
+        // if the user only presses it once then the invoke count will only be 1
+        // and we should let the zoom play out
+        private var zoomInvokeCount = 0
+        
+        private var targetSize: Float
+            get() = _targetSize
+            set(value) {
+                _targetSize = if (value > 1) {
+                    2.0f.pow(kotlin.math.round(kotlin.math.log2(value)))
+                } else if (value <= 1 && value > 0) {
+                    1.0f / (2.0f.pow(kotlin.math.round(kotlin.math.log2(1 / value))))
+                } else {
+                    MINIMUM_ZOOM_LEVEL
+                }
+            }
+        
+        var level: Float
+            get() = _level
+            set(value) {
+                _level = value
+                bigLevelCached = _level.toBigDecimal()
+            }
+        
+        private var bigLevelCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
+        
+        var bigLevel: BigDecimal = BigDecimal.ZERO
+            get() = bigLevelCached
+            private set // Make the setter private to disallow external modification
+        
+        fun stopZooming() {
+            isZooming = false
+            if (zoomInvokeCount > 0) zoomInvokeCount = 0
+        }
+        
+        fun zoom(zoomIn: Boolean, x: Float, y: Float) {
+            
+            if (targetSize <= MINIMUM_ZOOM_LEVEL) return
+            
+            saveUndoState()
+            
+            val factor = if (zoomIn) ZOOM_FACTOR else 1 / ZOOM_FACTOR
+            targetSize = level * factor
+            
+            stepSize = (targetSize - level) / totalSteps  // Compute the step size
+            
+            
+            this.zoomCenterX = x
+            this.zoomCenterY = y
+            
+            isZooming = true
+            zoomInvokeCount++
+            stepsTaken = 0
+            
+        }
+        
+        fun update() {
+            if (isZooming) {
+                
+                if (!KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_IN.code) &&
+                    !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_OUT.code) &&
+                    !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_CENTERED.code)
+                ) {
+                    if (zoomInvokeCount > 1) {
+                        stopZooming()
+                        return
+                    }
+                }
+                
+                val previousCellWidth = level
+                
+                if (stepsTaken == totalSteps - 1) {
+                    // On the last step, set the level directly to targetSize
+                    level = targetSize
+                } else {
+                    // Otherwise, increment by the step size
+                    level += stepSize
+                    stepsTaken++  // Increment the step counter
+                }
+                
+                // Calculate zoom factor
+                val zoomFactor = level / previousCellWidth
+                
+                // Calculate the difference in canvas offset-s before and after zoom
+                val offsetX = (1 - zoomFactor) * (zoomCenterX - offsetX.toFloat())
+                val offsetY = (1 - zoomFactor) * (zoomCenterY - offsetY.toFloat())
+                
+                // Update canvas offsets
+                adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
+                
+                if (level == targetSize) {
+                    stopZooming()
+                }
+            }
+        }
+        
+    }
+    
+    companion object {
+        private const val DEFAULT_ZOOM_LEVEL = 1f
+        private const val MINIMUM_ZOOM_LEVEL = 0.00001f
+        private const val ZOOM_FACTOR = 4f
     }
 }
