@@ -39,13 +39,12 @@ class Canvas(private val pApplet: PApplet) {
      *
      * this is a hacky way to get around that.
      *
-     * first off - we have to get the int value of the new theme's background color.
-     * the reason we use UInts for all colors is so they can be specified in hex format
-     * and it makes it easy to specify the alpha part. just a choice.
-     * but in mitigateFlicker we're getting at the surface.native AWT component and we need to
+     * first off - we have to get the theme's background color. we use this because when
+     * the theme is transitioning, this color changes for the duration of the transition.
+     * to mitigateFlicker we get the surface.native AWT component and
      * set it's background Color. The AWT Color can't just be given an int so we need
      * Processing's PApplet.color fun to convert it to something Color can use and then
-     * be applied to the background
+     * be applied to the native AWT background
      *
      * the discovery on how to fix this flickering took awhile so the documentation is way
      * longer than the code itself :)

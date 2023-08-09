@@ -91,21 +91,15 @@ class LifePattern(
     private lateinit var uxBuffer: PGraphics
     private var drawBounds: Boolean
     
-    // used for resize detection
-    private var prevWidth: Int
-    private var prevHeight: Int
     
     private val zoom = Zoom(this)
     
     init {
-/*        uxBuffer = canvas.getPGraphics()
-        patternBuffer = canvas.getPGraphics()*/
+        /*        uxBuffer = canvas.getPGraphics()
+                patternBuffer = canvas.getPGraphics()*/
         initBuffers()
         
         drawingInformer = DrawingInformer { uxBuffer }
-        // resize trackers
-        prevWidth = pApplet.width
-        prevHeight = pApplet.height
         
         canvasWidth = pApplet.width.toBigDecimal()
         canvasHeight = pApplet.height.toBigDecimal()
@@ -153,12 +147,6 @@ class LifePattern(
     val lastId: Int
         get() = life.lastId.get()
     
-    /*    private val isWindowResized: Boolean
-            get() {
-                val widthChanged = prevWidth != pApplet.width
-                val heightChanged = prevHeight != pApplet.height
-                return widthChanged || heightChanged
-            }*/
     
     private fun setupControls(keyCallbackFactory: KeyCallbackFactory) {
         
@@ -213,9 +201,6 @@ class LifePattern(
         performanceTest.execute()
         
         zoom.update()
-        
-        prevWidth = pApplet.width
-        prevHeight = pApplet.height
         
         drawUX(life)
         drawPattern(life)
@@ -556,13 +541,13 @@ class LifePattern(
         // we default the patternBuffer to the cell color so no need to change it
         if (color != Theme.cellColor) patternBuffer.fill(color)
         
-        patternBuffer.rect(x,y,width,width)
+        patternBuffer.rect(x, y, width, width)
         
-/*        patternBuffer.apply {
-            fill(color)
-            noStroke()
-            rect(x, y, width, width)
-        }*/
+        /*        patternBuffer.apply {
+                    fill(color)
+                    noStroke()
+                    rect(x, y, width, width)
+                }*/
     }
     
     // Initialize viewPath, also at class level
