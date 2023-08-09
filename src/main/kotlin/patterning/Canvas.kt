@@ -16,23 +16,52 @@ class Canvas(private val pApplet: PApplet) {
         private set
     var height: BigDecimal = BigDecimal.ZERO
         private set
+    var offsetX = BigDecimal.ZERO
+        private set
+    var offsetY = BigDecimal.ZERO
+        private set
     
     private var backgroundBuffer: PGraphics = PGraphics()
+    private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
+    
     
     init {
         updateDimensions()
+    }
+    
+    fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {
+        offsetsMovedObservers.add(observer)
     }
     
     fun getPGraphics(): PGraphics {
         return pApplet.createGraphics(pApplet.width, pApplet.height)
     }
     
+    fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
+        updateCanvasOffsets(offsetX + dx, offsetY + dy)
+    }
+    
+    fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
+        this.offsetX = offsetX
+        this.offsetY = offsetY
+        for (observer in offsetsMovedObservers) {
+            observer.onOffsetsMoved()
+        }
+    }
+    
+    /**
+     * internal for PatterningPApplet to delegate drawing background
+     * in a more rigorous way :)
+     */
     internal fun drawBackground() {
         resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
         handleResize()
         pApplet.image(backgroundBuffer, 0f, 0f)
     }
     
+    /**
+     * internal work around for initialization challenges with Processing
+     */
     internal fun updateDimensions() {
         prevWidth = pApplet.width
         prevHeight = pApplet.height

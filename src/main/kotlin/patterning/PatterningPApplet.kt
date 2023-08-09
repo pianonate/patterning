@@ -59,9 +59,7 @@ class PatterningPApplet : PApplet() {
     override fun draw() {
         canvas.drawBackground()
         pattern.draw()
-        if (Theme.isTransitioning) {
-            println("theme: ${Theme.backGroundColor}")
-        }
+        
     }
     
     override fun mousePressed() {

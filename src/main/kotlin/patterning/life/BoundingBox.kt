@@ -16,8 +16,8 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private val leftBD = bounds.left.bigDecimal
     private val topBD = bounds.top.bigDecimal
     
-    private val leftWithOffset = leftBD.multiply(cellSize, LifePattern.mc).add(LifePattern.canvasOffsetX)
-    private val topWithOffset = topBD.multiply(cellSize, LifePattern.mc).add(LifePattern.canvasOffsetY)
+    private val leftWithOffset = leftBD.multiply(cellSize, LifePattern.mc).add(canvas.offsetX)
+    private val topWithOffset = topBD.multiply(cellSize, LifePattern.mc).add(canvas.offsetY)
     
     private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, LifePattern.mc)
     private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, LifePattern.mc)

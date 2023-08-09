@@ -1,10 +1,11 @@
 package patterning.life
 
 import kotlin.math.abs
+import patterning.Canvas
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
 
-class Zoom(private val lifePattern: LifePattern) {
+class Zoom(private val lifePattern: LifePattern, private val canvas: Canvas) {
     private var targetSize = LifePattern.cell.size
     private var isZooming = false
     private var zoomCenterX = 0f
@@ -56,11 +57,11 @@ class Zoom(private val lifePattern: LifePattern) {
             val zoomFactor = LifePattern.cell.size / previousCellWidth
             
             // Calculate the difference in canvas offset-s before and after zoom
-            val offsetX = (1 - zoomFactor) * (zoomCenterX - LifePattern.canvasOffsetX.toFloat())
-            val offsetY = (1 - zoomFactor) * (zoomCenterY - LifePattern.canvasOffsetY.toFloat())
+            val offsetX = (1 - zoomFactor) * (zoomCenterX - canvas.offsetX.toFloat())
+            val offsetY = (1 - zoomFactor) * (zoomCenterY - canvas.offsetY.toFloat())
             
             // Update canvas offsets
-            lifePattern.adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
+            canvas.adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
             
             // Stop zooming if we're close enough to the target size
             // we used to set the cell.size to the target but that makes it jumpy
