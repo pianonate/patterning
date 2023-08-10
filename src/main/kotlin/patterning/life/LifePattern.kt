@@ -54,7 +54,6 @@ class LifePattern(
     private lateinit var lifeForm: LifeForm
     
     private val universeSize = UniverseSize(canvas)
-    private val zoom = canvas.zoom
     private var biggestDimension: FlexibleInteger = FlexibleInteger.ZERO
     
     
@@ -83,7 +82,7 @@ class LifePattern(
     private val nodePath: DrawNodePath = DrawNodePath(
         shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
         universeSize = universeSize,
-        zoom = zoom
+        canvas = canvas
     )
     
     private var countdownText: TextPanel? = null
@@ -196,7 +195,7 @@ class LifePattern(
         
         performanceTest.execute()
         
-        zoom.update()
+        canvas.updateZoom()
         
         drawUX(life)
         drawPattern(life)
@@ -246,7 +245,7 @@ class LifePattern(
     }
     
     override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
-        zoom.zoom(zoomIn, x, y)
+        canvas.zoom(zoomIn, x, y)
     }
     
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
@@ -264,10 +263,10 @@ class LifePattern(
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
                     ?: BigDecimal.ONE
             
-            zoom.level = widthRatio.coerceAtMost(heightRatio).multiply(BigDecimal.valueOf(.9), canvas.mc)
+            canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio).multiply(BigDecimal.valueOf(.9), canvas.mc)
         }
         
-        val level = zoom.level
+        val level = canvas.zoomLevel
         
         val drawingWidth = patternWidth.multiply(level, canvas.mc)
         val drawingHeight = patternHeight.multiply(level, canvas.mc)
@@ -373,7 +372,7 @@ class LifePattern(
     
     private fun instantiateLifeform(testing: Boolean = false) {
         if (!testing) RunningState.pause()
-        zoom.stopZooming()
+        canvas.stopZooming()
         asyncNextGeneration.cancelAndWait()
         
         val universe = LifeUniverse()
@@ -465,7 +464,7 @@ class LifePattern(
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
-            hudInfo.addOrUpdate("cell", zoom.level)
+            hudInfo.addOrUpdate("cell", canvas.zoomLevel)
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
             
             hudInfo.addOrUpdate("running", RunningState.runMessage())
@@ -495,7 +494,7 @@ class LifePattern(
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size - (zoom.levelAsFloat() * BORDER_WIDTH_RATIO)
+        val width = size - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
         // unless you start doing something custom...
@@ -567,10 +566,10 @@ class LifePattern(
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), zoom.levelAsFloat())
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
         } else if (node is TreeNode) {
             
-            val halfSize = universeSize.getHalf(node.level, zoom.level)
+            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
             
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
@@ -628,14 +627,14 @@ class LifePattern(
         
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, zoom.level, canvas)
+        val boundingBox = BoundingBox(bounds, canvas.zoomLevel, canvas)
         boundingBox.draw(patternBuffer)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), zoom.level, canvas)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas.zoomLevel, canvas)
             universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }

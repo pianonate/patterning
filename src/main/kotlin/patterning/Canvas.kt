@@ -18,7 +18,7 @@ import processing.core.PGraphics
 
 class Canvas(private val pApplet: PApplet) : MathContextAware {
     
-    val zoom = Zoom()
+    private val zoom = Zoom()
     
     private data class CanvasState(
         val level: BigDecimal,
@@ -41,6 +41,25 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         private set
     var offsetY: BigDecimal = BigDecimal.ZERO
         private set
+    
+    var zoomLevel: BigDecimal
+        get() = zoom.level
+        set(value) {
+            zoom.level = value
+        }
+    
+    val zoomLevelAsFloat: Float
+        get() = zoom.levelAsFloat()
+    
+    fun updateZoom() = zoom.update()
+    
+    fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
+    
+    
+    fun stopZooming() {
+        zoom.stopZooming()
+    }
+    
     
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     
@@ -181,10 +200,10 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
     }
     
-    inner class Zoom(
+    private inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
-        internal var minZoomLevel = BigDecimal.ZERO
+        var minZoomLevel: BigDecimal = BigDecimal.ZERO
         private var _level = initialLevel.toBigDecimal()
         private var _targetSize = initialLevel.toBigDecimal() // backing property for targetSize
         
@@ -316,7 +335,6 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
                 }
             }
         }
-        
     }
     
     companion object {
