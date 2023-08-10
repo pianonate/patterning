@@ -1,3 +1,5 @@
+todo: finish canvas propagate canvas in place of DrawingInformer
+
 todo: idiomaticize
 
 todo: dragginDrawing is exposed - it should be part of MouseEventManager maybe
@@ -115,3 +117,4 @@ todo: determine a mechanism to discover limits when stepGenerationRecurse is out
 todo: make app multiplatform - you'll need a BigInteger for Native - unless you don't care about native...
 todo: TextPanel objects don't have to drawMultiLine text if they haven't changed - but you'd have to communicate to the Panel caller that it shouldn't start a new panelBuffer.beginDraw() if you do as it will clear it out and you'd lose the text
 todo: turn undo of moves and zooms into something that plays in reverse but plays fast - so all offset changes are recorded but we add the ability to "mark" an offset change so that when we undo it it reverses to the previous mark over some predefined number of steps so it will be something like a fast rewind
+todo: handle zooming out of huge universes

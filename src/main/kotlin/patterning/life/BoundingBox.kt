@@ -16,11 +16,11 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private val leftBD = bounds.left.bigDecimal
     private val topBD = bounds.top.bigDecimal
     
-    private val leftWithOffset = leftBD.multiply(cellSize, LifePattern.mc).add(canvas.offsetX)
-    private val topWithOffset = topBD.multiply(cellSize, LifePattern.mc).add(canvas.offsetY)
+    private val leftWithOffset = leftBD.multiply(cellSize, canvas.mc).add(canvas.offsetX)
+    private val topWithOffset = topBD.multiply(cellSize, canvas.mc).add(canvas.offsetY)
     
-    private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, LifePattern.mc)
-    private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, LifePattern.mc)
+    private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, canvas.mc)
+    private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, canvas.mc)
     
     private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
     private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
@@ -41,7 +41,7 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private val horizontalLine: Line
         get() {
             val startX = left
-            val startYDecimal = topWithOffset + heightDecimal.divide(BigDecimal.TWO, LifePattern.mc)
+            val startYDecimal = topWithOffset + heightDecimal.divide(BigDecimal.TWO, canvas.mc)
             val startY = when {
                 startYDecimal < BigDecimal.ZERO -> -1f
                 startYDecimal > canvas.height -> canvas.height.toFloat() + 1
@@ -55,7 +55,7 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     
     private val verticalLine: Line
         get() {
-            val startXDecimal = leftWithOffset + widthDecimal.divide(BigDecimal.TWO, LifePattern.mc)
+            val startXDecimal = leftWithOffset + widthDecimal.divide(BigDecimal.TWO, canvas.mc)
             val startX = when {
                 startXDecimal < BigDecimal.ZERO -> -1f
                 startXDecimal > canvas.width -> canvas.width.toFloat() + 1

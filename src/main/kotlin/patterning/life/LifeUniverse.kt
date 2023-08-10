@@ -171,7 +171,6 @@ class LifeUniverse internal constructor() {
     }
 
     fun setupLife(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>) {
-        LifePattern.resetMathContext()
         val bounds = getBounds(fieldX, fieldY)
         val level = bounds.getLevelFromBounds()
 

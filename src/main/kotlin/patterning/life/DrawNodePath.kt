@@ -6,7 +6,6 @@ import patterning.OffsetsMovedObserver
 
 class DrawNodePath(
     private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
-    private val updateLargestDimension: (Bounds) -> Unit,
     private val universeSize: UniverseSize,
     private val zoom: Canvas.Zoom
 ) : OffsetsMovedObserver {
@@ -26,8 +25,6 @@ class DrawNodePath(
     fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
         
         val newLevel = root.level
-        updateLargestDimension(root.bounds)
-        
         val halfSizeOffset = -universeSize.getHalf(newLevel, zoom.level)
         val universeSize = universeSize.getSize(newLevel, zoom.level)
         

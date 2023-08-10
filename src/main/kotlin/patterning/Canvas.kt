@@ -3,13 +3,16 @@ package patterning
 import java.awt.Color
 import java.awt.Component
 import java.math.BigDecimal
+import java.math.MathContext
 import kotlin.math.pow
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
+import patterning.pattern.MathContextAware
+import patterning.util.FlexibleInteger
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class Canvas(private val pApplet: PApplet) {
+class Canvas(private val pApplet: PApplet) : MathContextAware {
     
     val zoom = Zoom()
     
@@ -23,6 +26,7 @@ class Canvas(private val pApplet: PApplet) {
     
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
+    
     var resized = false
         private set
     var width: BigDecimal = BigDecimal.ZERO
@@ -36,9 +40,44 @@ class Canvas(private val pApplet: PApplet) {
     
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     
+    // without this precision on the MathContext, small imprecision propagates at
+    // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
+    // off the screen.  don't skimp on precision!
+    // udpateBiggestDimension allows us to ensure we keep this up to date
+    lateinit var mc: MathContext
+        private set
     
     init {
+        resetMathContext()
         updateDimensions()
+    }
+    
+    // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
+    // now that i'm thinking about it, this is probably the required precision for a float
+    // which is what the cell.cellSize is - especially for really small numbers
+    // without it we'd be off by only looking at the integer part of the largest dimension
+    private var previousPrecision: Int = 0
+    
+    fun updateBiggestDimension(biggestDimension: FlexibleInteger) {
+        // update math context for calculations
+        val precision = biggestDimension.minPrecisionForDrawing()
+        if (precision != previousPrecision) {
+            mc = MathContext(precision)
+            previousPrecision = precision
+        }
+        
+        // update the minimum zoom level so we don't ask for zooms that can't happen
+        val calculatedMinZoom = BigDecimal.ONE.divide(biggestDimension.bigDecimal, mc)
+        zoom.minZoomLevel = if (calculatedMinZoom <= Float.MIN_VALUE.toBigDecimal()) {
+            Float.MIN_VALUE
+        } else {
+            calculatedMinZoom.toFloat()
+        }
+    }
+    
+    override fun resetMathContext() {
+        previousPrecision = 0
+        mc = MathContext(FlexibleInteger.PRECISION_BUFFER)
     }
     
     fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {
@@ -95,10 +134,26 @@ class Canvas(private val pApplet: PApplet) {
      * internal work around for initialization challenges with Processing
      */
     internal fun updateDimensions() {
+        
         prevWidth = pApplet.width
         prevHeight = pApplet.height
+        
+        // Calculate the center of the visible portion before resizing
+        val centerXBefore = calcCenterOnResize(width, offsetX)
+        val centerYBefore = calcCenterOnResize(height, offsetY)
+        
         width = BigDecimal(pApplet.width)
         height = BigDecimal(pApplet.height)
+        
+        val centerXAfter = calcCenterOnResize(width, offsetX)
+        val centerYAfter = calcCenterOnResize(height, offsetY)
+        
+        adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
+        
+    }
+    
+    private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
+        return dimension.divide(BigDecimal.TWO, mc) - offset
     }
     
     /**
@@ -130,6 +185,7 @@ class Canvas(private val pApplet: PApplet) {
     inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
+        internal var minZoomLevel: Float = MINIMUM_ZOOM_LEVEL
         private var _level = initialLevel // backing property
         private var _targetSize = initialLevel // backing property for targetSize
         
@@ -140,7 +196,6 @@ class Canvas(private val pApplet: PApplet) {
         private var stepsTaken: Int = 0
         private var stepSize: Float = 0f  // This is the amount to change the level by on each update
         private val totalSteps = 50  // Say you want to reach the target in 10 updates
-        
         
         // used to stop immediately if the user releases the zoom key while holding it down
         // if the user only presses it once then the invoke count will only be 1
@@ -153,9 +208,10 @@ class Canvas(private val pApplet: PApplet) {
                 _targetSize = if (value > 1) {
                     2.0f.pow(kotlin.math.round(kotlin.math.log2(value)))
                 } else if (value <= 1 && value > 0) {
-                    1.0f / (2.0f.pow(kotlin.math.round(kotlin.math.log2(1 / value))))
+                    val result = 1.0f / (2.0f.pow(kotlin.math.round(kotlin.math.log2(1 / value))))
+                    result.coerceAtLeast(Float.MIN_VALUE)
                 } else {
-                    MINIMUM_ZOOM_LEVEL
+                    minZoomLevel
                 }
             }
         
@@ -179,15 +235,14 @@ class Canvas(private val pApplet: PApplet) {
         
         fun zoom(zoomIn: Boolean, x: Float, y: Float) {
             
-            if (targetSize <= MINIMUM_ZOOM_LEVEL) return
-            
-            saveUndoState()
-            
             val factor = if (zoomIn) ZOOM_FACTOR else 1 / ZOOM_FACTOR
             targetSize = level * factor
             
-            stepSize = (targetSize - level) / totalSteps  // Compute the step size
+            if (targetSize <= minZoomLevel) return
             
+            saveUndoState()
+            
+            stepSize = (targetSize - level) / totalSteps  // Compute the step size
             
             this.zoomCenterX = x
             this.zoomCenterY = y
@@ -242,7 +297,7 @@ class Canvas(private val pApplet: PApplet) {
     
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f
-        private const val MINIMUM_ZOOM_LEVEL = 0.00001f
+        private const val MINIMUM_ZOOM_LEVEL = Float.MIN_VALUE
         private const val ZOOM_FACTOR = 4f
     }
 }

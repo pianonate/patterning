@@ -55,6 +55,10 @@ class PatterningPApplet : PApplet() {
         ).also {
             println(KeyHandler.usageText)
         }
+        
+        pattern.registerObserver { newBiggestDimension ->
+            canvas.updateBiggestDimension(newBiggestDimension)
+        }
     }
     
     override fun draw() {

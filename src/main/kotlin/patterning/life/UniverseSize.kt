@@ -34,9 +34,7 @@ class UniverseSize() {
         return sizeMap.computeIfAbsent(key) {
             val bigLevel = zoomLevel.toBigDecimal()
             bigLevel.multiply(
-                FlexibleInteger.pow2(universeLevel).bigDecimal,
-                LifePattern.mc
-            )
+                FlexibleInteger.pow2(universeLevel).bigDecimal)
         }
     }
     

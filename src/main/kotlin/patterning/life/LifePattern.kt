@@ -5,7 +5,6 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
 import java.math.BigDecimal
-import java.math.MathContext
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Canvas
@@ -55,8 +54,9 @@ class LifePattern(
     private lateinit var lifeForm: LifeForm
     
     private val universeSize = UniverseSize()
-    //private val zoom = Zoom(lifePattern = this, canvas = canvas)
     private val zoom = canvas.zoom
+    private var biggestDimension: FlexibleInteger = FlexibleInteger.ZERO
+    
     
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
@@ -82,7 +82,6 @@ class LifePattern(
     // lambdas are cool
     private val nodePath: DrawNodePath = DrawNodePath(
         shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
-        updateLargestDimension = { bounds -> updateLargestDimension(bounds) },
         universeSize = universeSize,
         zoom = zoom
     )
@@ -186,11 +185,13 @@ class LifePattern(
         Drawer.addAll(panels)
     }
     
-    // Pattern overrides
+    /**
+     * Pattern overrides
+     */
     override fun draw() {
         
         if (canvas.resized) {
-            updateWindowResized()
+            initBuffers()
         }
         
         performanceTest.execute()
@@ -218,30 +219,74 @@ class LifePattern(
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
     
-    // Movable overrides
+    // as nodes are created their bounds are calculated
+    // when the bounds get larger, we need a math context to draw with that
+    // allows the pattern to be drawn with the necessary precision
+    private fun updateBoundsChanged(bounds: Bounds) {
+        val dimension = bounds.width.max(bounds.height)
+        if (dimension > biggestDimension) {
+            biggestDimension = dimension
+            notifyPatternObservers(biggestDimension)
+        }
+    }
+    
+    /**
+     * Movable overrides
+     */
     override fun center() {
         center(life.rootBounds, fitBounds = false, saveState = true)
+    }
+    
+    override fun fitToScreen() {
+        center(life.rootBounds, fitBounds = true, saveState = true)
     }
     
     override fun toggleDrawBounds() {
         drawBounds = !drawBounds
     }
     
-    
-    override fun fitToScreen() {
-        center(life.rootBounds, fitBounds = true, saveState = true)
+    override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
+        zoom.zoom(zoomIn, x, y)
     }
     
-
-/*    fun saveUndoState() {
-        canvas.saveUndoState()
+    private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
+        if (saveState) canvas.saveUndoState()
+        
+        // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
+        val patternWidth = bounds.width.bigDecimal
+        val patternHeight = bounds.height.bigDecimal
+        
+        if (fitBounds) {
+            val widthRatio =
+                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvas.width.divide(it, canvas.mc) }
+                    ?: BigDecimal.ONE
+            val heightRatio =
+                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
+                    ?: BigDecimal.ONE
+            
+            zoom.level = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
+        }
+        
+        val bigCell = zoom.bigLevel
+        
+        val drawingWidth = patternWidth.multiply(bigCell, canvas.mc)
+        val drawingHeight = patternHeight.multiply(bigCell, canvas.mc)
+        val halfCanvasWidth = canvas.width.divide(BigDecimal.TWO, canvas.mc)
+        val halfCanvasHeight = canvas.height.divide(BigDecimal.TWO, canvas.mc)
+        val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, canvas.mc)
+        val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, canvas.mc)
+        
+        // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal * -bigCell)
+        
+        canvas.updateCanvasOffsets(offsetX, offsetY)
+        
     }
     
-    fun undoMovement() {
-        canvas.undoMovement()
-    }*/
-    
-    // NumberedPatternLoader overrides
+    /**
+     * NumberedPatternLoader overrides
+     */
     override fun setRandom() {
         getRandomLifeform()
         instantiateLifeform()
@@ -252,6 +297,16 @@ class LifePattern(
             storedLife =
                 ResourceManager.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
             instantiateLifeform(testing)
+        } catch (e: IOException) {
+            throw RuntimeException(e)
+        } catch (e: URISyntaxException) {
+            throw RuntimeException(e)
+        }
+    }
+    
+    private fun getRandomLifeform() {
+        try {
+            storedLife = ResourceManager.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
         } catch (e: IOException) {
             throw RuntimeException(e)
         } catch (e: URISyntaxException) {
@@ -279,26 +334,25 @@ class LifePattern(
         }
     }
     
-    // Rewindable overrides
-    
+    /**
+     * Rewindable overrides
+     */
     override fun rewind() {
         instantiateLifeform()
     }
     
-    // Steppable overrides
+    /**
+     * Steppable overrides
+     */
     override fun handleStep(faster: Boolean) {
         var increment = if (faster) 1 else -1
         if (targetStep + increment < 0) increment = 0
         targetStep += increment
     }
     
-    // Zoomable overrides
-    override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
-        zoom.zoom(zoomIn, x, y)
-    }
-    
-    // Private methods
-    
+    /**
+     * private fun
+     */
     private fun goForwardInTime() {
         
         if (asyncNextGeneration.isActive) {
@@ -317,16 +371,6 @@ class LifePattern(
             asyncNextGeneration.startJob()
     }
     
-    private fun getRandomLifeform() {
-        try {
-            storedLife = ResourceManager.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        } catch (e: URISyntaxException) {
-            throw RuntimeException(e)
-        }
-    }
-    
     private fun instantiateLifeform(testing: Boolean = false) {
         if (!testing) RunningState.pause()
         zoom.stopZooming()
@@ -342,6 +386,7 @@ class LifePattern(
             val parser = FileFormat()
             lifeForm = parser.parseRLE(storedLife)
             universe.setupLife(lifeForm.fieldX, lifeForm.fieldY)
+            this.patternChanged()
         } catch (e: NotLifeException) {
             println(
                 """
@@ -368,10 +413,6 @@ class LifePattern(
         
     }
     
-    private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
-        return dimension.divide(BigDecimal.TWO, mc) - offset
-    }
-    
     private fun createTextPanel(
         existingTextPanel: TextPanel?, // could be null
         builderFunction: () -> TextPanel.Builder
@@ -389,28 +430,13 @@ class LifePattern(
             }
     }
     
-    // as nodes are created their bounds are calculated
-    // when the bounds get larger, we need a math context to draw with that
-    // allows the pattern to be drawn with the necessary precision
-    private fun updateLargestDimension(bounds: Bounds) {
-        val dimension = bounds.width.max(bounds.height)
-        if (dimension > largestDimension) {
-            largestDimension = dimension
-            // Assuming minBaseToExceed is a function on FlexibleInteger
-            val precision = largestDimension.minPrecisionForDrawing()
-            if (precision != previousPrecision) {
-                mc = MathContext(precision + PRECISION_BUFFER)
-                previousPrecision = precision
-            }
-        }
-    }
-    
     private fun setupNewLife(life: LifeUniverse, testing: Boolean = false) {
         
         canvas.clearHistory()
         
         val bounds = life.rootBounds
-        updateLargestDimension(bounds)
+        //updateBoundsChanged(bounds)
+        biggestDimension = FlexibleInteger.ZERO
         center(bounds, fitBounds = true, saveState = false)
         
         if (!testing) countdownText = createTextPanel(countdownText) {
@@ -430,39 +456,6 @@ class LifePattern(
         }
     }
     
-    private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
-        if (saveState) canvas.saveUndoState()
-        
-        // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = bounds.width.bigDecimal
-        val patternHeight = bounds.height.bigDecimal
-        
-        if (fitBounds) {
-            val widthRatio =
-                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvas.width.divide(it, mc) } ?: BigDecimal.ONE
-            val heightRatio =
-                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, mc) } ?: BigDecimal.ONE
-            
-            zoom.level = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
-        }
-        
-        val bigCell = zoom.bigLevel
-        
-        val drawingWidth = patternWidth.multiply(bigCell, mc)
-        val drawingHeight = patternHeight.multiply(bigCell, mc)
-        val halfCanvasWidth = canvas.width.divide(BigDecimal.TWO, mc)
-        val halfCanvasHeight = canvas.height.divide(BigDecimal.TWO, mc)
-        val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, mc)
-        val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, mc)
-        
-        // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal * -bigCell)
-        
-        canvas.updateCanvasOffsets(offsetX, offsetY)
-        
-    }
-    
     
     private fun getHUDMessage(life: LifeUniverse): String {
         
@@ -473,6 +466,8 @@ class LifePattern(
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
             hudInfo.addOrUpdate("cell", zoom.level)
+            hudInfo.addOrUpdate("mc", canvas.mc.precision)
+            
             hudInfo.addOrUpdate("running", RunningState.runMessage())
             //            hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
@@ -482,13 +477,6 @@ class LifePattern(
             }
         }
     }
-    
-    private data class CanvasState(
-        val level: Float,
-        val canvasOffsetX: BigDecimal,
-        val canvasOffsetY: BigDecimal
-    )
-    
     
     override fun handlePlay() {
         Drawer.takeIf { Drawer.isManaging(countdownText!!) }?.let {
@@ -501,23 +489,6 @@ class LifePattern(
         patternBuffer = canvas.getPGraphics()
     }
     
-    private fun updateWindowResized() {
-        
-        // create new buffers
-        initBuffers()
-        
-        // Calculate the center of the visible portion before resizing
-        val centerXBefore = calcCenterOnResize(canvas.width, canvas.offsetX)
-        val centerYBefore = calcCenterOnResize(canvas.height, canvas.offsetY)
-        
-        // Calculate the center of the visible portion after resizing
-        val centerXAfter = calcCenterOnResize(canvas.width, canvas.offsetX)
-        val centerYAfter = calcCenterOnResize(canvas.height, canvas.offsetY)
-        
-        canvas.adjustCanvasOffsets(centerXAfter - centerXBefore, centerYAfter - centerYBefore)
-    }
-    
-    
     private fun fillSquare(
         x: Float,
         y: Float,
@@ -527,18 +498,12 @@ class LifePattern(
         val width = size - (zoom.level * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
+        // unless you start doing something custom...
         if (color != Theme.cellColor) patternBuffer.fill(color)
         
         patternBuffer.rect(x, y, width, width)
-        
-        /*        patternBuffer.apply {
-                    fill(color)
-                    noStroke()
-                    rect(x, y, width, width)
-                }*/
     }
     
-    // Initialize viewPath, also at class level
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
     
@@ -548,6 +513,8 @@ class LifePattern(
         patternBuffer.noStroke()
         patternBuffer.fill(Theme.cellColor)
         
+        updateBoundsChanged(life.root.bounds)
+        
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen
         // for very large drawing this can save hundreds of stack calls
@@ -556,7 +523,6 @@ class LifePattern(
         // there may be some performance gain to this although i doubt it's a lot
         // this is more for the thrill of solving a complicated problem and it's
         // no small thing that stack traces become much smaller
-        //with(getStartingEntry(life)) {
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = FlexibleInteger.ZERO
             
@@ -698,28 +664,7 @@ class LifePattern(
     companion object {
         private const val BORDER_WIDTH_RATIO = .05f
         
-        // without this precision on the MathContext, small imprecision propagates at
-        // large levels on the LifeUniverse - sometimes this will cause the image to jump around or completely
-        // off the screen.  don't skimp on precision!
-        // Bounds.mathContext is kept up to date with the largest dimension of the universe
-        var mc = MathContext(0)
-        
-        // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
-        // now that i'm thinking about it, this is probably the required precision for a float
-        // which is what the cell.cellSize is - especially for really small numbers
-        // without it we'd be off by only looking at the integer part of the largest dimension
-        private const val PRECISION_BUFFER = 10
-        private var largestDimension: FlexibleInteger = FlexibleInteger.ZERO
-        private var previousPrecision: Int = 0
-        
-        //private val undoDeque = ArrayDeque<CanvasState>()
-        
         private const val LIFE_FORM_PROPERTY = "lifeForm"
-        
-        fun resetMathContext() {
-            largestDimension = FlexibleInteger.ZERO
-            previousPrecision = 0
-        }
         
     }
 }
