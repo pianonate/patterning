@@ -12,27 +12,27 @@ class TreeNode(
     override var id: Int,
     val aliveSince: Int
 ) : Node {
-
-
+    
+    
     override val level: Int = nw.level + 1
     override val population: FlexibleInteger = nw.population + ne.population + sw.population + se.population
-
+    
     private val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
     private var cacheVersion: Int = -1 // Version when cache was last set to valid
-
+    
     var nextGenCache: TreeNode? = null
         get() = if (isValidCache()) field else null
         set(value) = run {
             field = value
             cacheVersion = Node.globalCacheVersion
         }
-
+    
     var nextGenStepCache: TreeNode? = null
-
+    
     private fun isValidCache(): Boolean = cacheVersion == Node.globalCacheVersion
-
+    
     val populatedChildrenCount: Byte = (listOf(nw, ne, sw, se).count { it.population > FlexibleInteger.ZERO }).toByte()
-
+    
     override val bounds: Bounds = run {
         if (this.population.isZero()) {
             Bounds(
@@ -42,18 +42,18 @@ class TreeNode(
                 FlexibleInteger.ZERO
             )
         } else {
-
+            
             // Initialize bounds to crazy size - currently set to the universe limit
             var bounds = Bounds(
-                FlexibleInteger.MAX_VALUE,
-                FlexibleInteger.MAX_VALUE,
-                FlexibleInteger.MIN_VALUE,
-                FlexibleInteger.MIN_VALUE,
+                LifeUniverse.MAX_VALUE,
+                LifeUniverse.MAX_VALUE,
+                LifeUniverse.MIN_VALUE,
+                LifeUniverse.MIN_VALUE,
             )
-
-            val offset = if (level == 1) FlexibleInteger.ONE else FlexibleInteger.pow2(level - 2)
+            
+            val offset = if (level == 1) FlexibleInteger.ONE else LifeUniverse.pow2(level - 2)
             val negatedOffset = if (level == 1) FlexibleInteger.ZERO else -offset
-
+            
             bounds = calculateChildBounds(nw, negatedOffset, negatedOffset, bounds)
             bounds = calculateChildBounds(ne, negatedOffset, offset, bounds)
             bounds = calculateChildBounds(sw, offset, negatedOffset, bounds)
@@ -61,7 +61,7 @@ class TreeNode(
             bounds
         }
     }
-
+    
     private fun calculateChildBounds(
         child: Node,
         topBottomOffset: FlexibleInteger,
@@ -70,7 +70,7 @@ class TreeNode(
     ): Bounds {
         return if (child.population.isNotZero()) {
             val childBounds = child.bounds
-
+            
             val translatedBounds = Bounds(
                 childBounds.top + topBottomOffset,
                 childBounds.left + leftRightOffset,
@@ -87,7 +87,7 @@ class TreeNode(
             bounds
         }
     }
-
+    
     /* fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
          val size = hashMap.size
          return countUnreferencedNodes(hashMap)
@@ -123,16 +123,16 @@ class TreeNode(
              }
          }
      } */
-
+    
     private fun traverse(root: Node) {
         val stack = Stack<Node>()
         stack.push(root)
-
+        
         while (stack.isNotEmpty()) {
             val node = stack.pop()
-
+            
             // Process the node here
-
+            
             // Add children nodes to the stack if they exist
             if (node is TreeNode) {
                 stack.push(node.nw)
@@ -142,29 +142,29 @@ class TreeNode(
             }
         }
     }
-
+    
     override fun toString(): String {
         return "id=$id, level=$level, population=$population, born=$aliveSince"
     }
-
+    
     override fun hashCode(): Int = hash
-
-
+    
+    
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
-
+        
         other as TreeNode
-
+        
         if (id != other.id) return false
         if (level != other.level) return false
         if (population != other.population) return false
-
+        
         if (nw != other.nw) return false
         if (ne != other.ne) return false
         if (sw != other.sw) return false
         if (se != other.se) return false
-
+        
         return (hash == other.hash)
         /* if (hash != other.hash) return false
          if (nextGenerationCache != other.nextGenerationCache) return false

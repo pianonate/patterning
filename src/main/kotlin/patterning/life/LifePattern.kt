@@ -53,7 +53,7 @@ class LifePattern(
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
     
-    private val universeSize = UniverseSize()
+    private val universeSize = UniverseSize(canvas)
     private val zoom = canvas.zoom
     private var biggestDimension: FlexibleInteger = FlexibleInteger.ZERO
     
@@ -264,21 +264,21 @@ class LifePattern(
                 patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
                     ?: BigDecimal.ONE
             
-            zoom.level = (widthRatio.coerceAtMost(heightRatio) * BigDecimal.valueOf(.9)).toFloat()
+            zoom.level = widthRatio.coerceAtMost(heightRatio).multiply(BigDecimal.valueOf(.9), canvas.mc)
         }
         
-        val bigCell = zoom.bigLevel
+        val level = zoom.level
         
-        val drawingWidth = patternWidth.multiply(bigCell, canvas.mc)
-        val drawingHeight = patternHeight.multiply(bigCell, canvas.mc)
+        val drawingWidth = patternWidth.multiply(level, canvas.mc)
+        val drawingHeight = patternHeight.multiply(level, canvas.mc)
         val halfCanvasWidth = canvas.width.divide(BigDecimal.TWO, canvas.mc)
         val halfCanvasHeight = canvas.height.divide(BigDecimal.TWO, canvas.mc)
         val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, canvas.mc)
         val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, canvas.mc)
         
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal * -bigCell)
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal * -bigCell)
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal.multiply(-level, canvas.mc))
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal.multiply(-level, canvas.mc))
         
         canvas.updateCanvasOffsets(offsetX, offsetY)
         
@@ -495,7 +495,7 @@ class LifePattern(
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size - (zoom.level * BORDER_WIDTH_RATIO)
+        val width = size - (zoom.levelAsFloat() * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
         // unless you start doing something custom...
@@ -567,7 +567,7 @@ class LifePattern(
         if (size <= BigDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), zoom.level)
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), zoom.levelAsFloat())
         } else if (node is TreeNode) {
             
             val halfSize = universeSize.getHalf(node.level, zoom.level)
@@ -628,14 +628,14 @@ class LifePattern(
         
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, zoom.bigLevel, canvas)
+        val boundingBox = BoundingBox(bounds, zoom.level, canvas)
         boundingBox.draw(patternBuffer)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
-            val halfSize = FlexibleInteger.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), zoom.bigLevel, canvas)
+            val halfSize = LifeUniverse.pow2(currentLevel)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), zoom.level, canvas)
             universeBox.draw(patternBuffer, drawCrosshair = true)
             currentLevel++
         }

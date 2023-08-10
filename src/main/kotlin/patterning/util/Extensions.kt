@@ -1,9 +1,22 @@
 package patterning.util
 
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 import java.text.NumberFormat
+import kotlin.math.ceil
+import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
+/**
+ * Number extension functions
+ */
 fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
 
+/**
+ * Double extension functions
+ */
 // Extension function to count decimal places in a Double
 fun Double.countDecimalPlaces(): Int {
     val str = this.toString()
@@ -12,5 +25,59 @@ fun Double.countDecimalPlaces(): Int {
         0
     } else {
         str.length - index - 1
+    }
+}
+
+
+/**
+ * FlexibleInteger extension functions
+ */
+
+
+// i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
+// now that i'm thinking about it, this is probably the required precision for a float
+// which is what the cell.cellSize is - especially for really small numbers
+// without it we'd be off by only looking at the integer part of the largest dimension
+const val PRECISION_BUFFER = 10
+
+fun FlexibleInteger.minPrecisionForDrawing(): Int {
+    return when (val number = this.value) { // Access the value property of FlexibleInteger
+        0 -> PRECISION_BUFFER
+        is Int, is Long -> ceil(ln(number.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
+        is BigInteger -> BigDecimal(number).precision() + PRECISION_BUFFER
+        else -> throw IllegalArgumentException("Unsupported number type")
+    }
+}
+
+fun FlexibleInteger.hudFormatted(): String {
+    if (value == 0) return "0"
+    return if (value is Int) {
+        if (value < 1_000_000_000)
+            value.formatWithCommas()
+        else formatLargeNumber()
+    } else {
+        formatLargeNumber()
+    }
+}
+
+private val largeNumberNames = arrayOf(
+    "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
+    "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
+    "tredecillion", "quattuordecillion"
+)
+
+private fun FlexibleInteger.formatLargeNumber(): String {
+    
+    val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
+    val exponent = bigIntegerValue.toString().length - 1
+    val index = (exponent - 3) / 3
+    return when {
+        index < largeNumberNames.size -> {
+            val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
+            val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
+            "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
+        }
+        
+        else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
     }
 }

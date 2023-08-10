@@ -1,5 +1,6 @@
 package patterning.life
 
+import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -175,7 +176,7 @@ class LifeUniverse internal constructor() {
         val level = bounds.getLevelFromBounds()
 
         /* nothing coming in will be so ginormous that it will exceed Integer.MAX_VALUE */
-        val offset = FlexibleInteger.pow2(level - 1).toInt()
+        val offset = pow2(level - 1).toInt()
         val count = fieldX.size
         moveField(fieldX, fieldY, offset, offset)
         runBlocking { root = setupLifeRecurse(0, count - 1, fieldX, fieldY, level) }
@@ -335,7 +336,7 @@ class LifeUniverse internal constructor() {
     private fun updatePatternInfo() {
 
         lifeInfo.addOrUpdate("level", FlexibleInteger.create(root.level))
-        lifeInfo.addOrUpdate("step", FlexibleInteger.pow2(step))
+        lifeInfo.addOrUpdate("step", pow2(step))
         lifeInfo.addOrUpdate("generation", generation)
         lifeInfo.addOrUpdate("population", root.population)
         lifeInfo.addOrUpdate("lastId", FlexibleInteger.create(lastId.get()))
@@ -370,7 +371,7 @@ class LifeUniverse internal constructor() {
 
         this.root = nextRoot
 
-        generation += FlexibleInteger.pow2(step)
+        generation += pow2(step)
         birthFrame += 1
     }
 
@@ -472,7 +473,18 @@ class LifeUniverse internal constructor() {
     }
 
     companion object {
-        private val HASHMAP_INITIAL_CAPACITY = FlexibleInteger.pow2(24).toInt()
         private const val LEVEL_2_CACHE_INITIAL_CAPACITY = 0x10000
+        
+        private const val UNIVERSE_LEVEL_LIMIT = 2048
+        
+        private val _powers: HashMap<Int, FlexibleInteger> = HashMap()
+        
+        fun pow2(x: Int): FlexibleInteger {
+            return _powers.getOrPut(x) { FlexibleInteger.create(BigInteger.valueOf(2).pow(x)) }
+        }
+        
+        val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
+        val MIN_VALUE by lazy { -MAX_VALUE }
+        private val HASHMAP_INITIAL_CAPACITY = pow2(24).toInt()
     }
 }

@@ -1,14 +1,18 @@
 package patterning
 
+
 import java.awt.Color
 import java.awt.Component
 import java.math.BigDecimal
 import java.math.MathContext
-import kotlin.math.pow
+import kotlin.math.log2
+import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
 import patterning.pattern.MathContextAware
 import patterning.util.FlexibleInteger
+import patterning.util.PRECISION_BUFFER
+import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
 import processing.core.PGraphics
 
@@ -17,7 +21,7 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     val zoom = Zoom()
     
     private data class CanvasState(
-        val level: Float,
+        val level: BigDecimal,
         val canvasOffsetX: BigDecimal,
         val canvasOffsetY: BigDecimal
     )
@@ -33,9 +37,9 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         private set
     var height: BigDecimal = BigDecimal.ZERO
         private set
-    var offsetX = BigDecimal.ZERO
+    var offsetX: BigDecimal = BigDecimal.ZERO
         private set
-    var offsetY = BigDecimal.ZERO
+    var offsetY: BigDecimal = BigDecimal.ZERO
         private set
     
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
@@ -67,17 +71,12 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         }
         
         // update the minimum zoom level so we don't ask for zooms that can't happen
-        val calculatedMinZoom = BigDecimal.ONE.divide(biggestDimension.bigDecimal, mc)
-        zoom.minZoomLevel = if (calculatedMinZoom <= Float.MIN_VALUE.toBigDecimal()) {
-            Float.MIN_VALUE
-        } else {
-            calculatedMinZoom.toFloat()
-        }
+        zoom.minZoomLevel = BigDecimal.ONE.divide(biggestDimension.bigDecimal, mc)
     }
     
     override fun resetMathContext() {
         previousPrecision = 0
-        mc = MathContext(FlexibleInteger.PRECISION_BUFFER)
+        mc = MathContext(PRECISION_BUFFER)
     }
     
     fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {
@@ -185,48 +184,71 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
-        internal var minZoomLevel: Float = MINIMUM_ZOOM_LEVEL
-        private var _level = initialLevel // backing property
-        private var _targetSize = initialLevel // backing property for targetSize
+        internal var minZoomLevel = BigDecimal.ZERO
+        private var _level = initialLevel.toBigDecimal()
+        private var _targetSize = initialLevel.toBigDecimal() // backing property for targetSize
         
         private var isZooming = false
-        private var zoomCenterX = 0f
-        private var zoomCenterY = 0f
+        private var zoomCenterX = BigDecimal.ZERO
+        private var zoomCenterY = BigDecimal.ZERO
         
-        private var stepsTaken: Int = 0
-        private var stepSize: Float = 0f  // This is the amount to change the level by on each update
-        private val totalSteps = 50  // Say you want to reach the target in 10 updates
+        private var stepsTaken = 0
+        private var stepSize = BigDecimal.ZERO  // This is the amount to change the level by on each update
+        private val totalSteps = 20  // Say you want to reach the target in 10 updates
         
         // used to stop immediately if the user releases the zoom key while holding it down
         // if the user only presses it once then the invoke count will only be 1
         // and we should let the zoom play out
         private var zoomInvokeCount = 0
         
-        private var targetSize: Float
+        private var targetSize: BigDecimal
             get() = _targetSize
             set(value) {
-                _targetSize = if (value > 1) {
-                    2.0f.pow(kotlin.math.round(kotlin.math.log2(value)))
-                } else if (value <= 1 && value > 0) {
-                    val result = 1.0f / (2.0f.pow(kotlin.math.round(kotlin.math.log2(1 / value))))
-                    result.coerceAtLeast(Float.MIN_VALUE)
-                } else {
-                    minZoomLevel
+                _targetSize = when {
+                    value > BigDecimal.ONE -> computeTargetSize(value)
+                    value in BigDecimal.ZERO..BigDecimal.ONE -> computeTargetSize(value)
+                    else -> minZoomLevel
                 }
             }
         
-        var level: Float
+        /**
+         * the purpose is to constrain values to powers of 2 for zooming in and out as that generally
+         * provides a pleasing effect. however figuring out powers of 2 on super large universes is
+         * problematic so if casing toDouble() results in POSITIVE_INFINITY then we just return the
+         * requested targetSize - truly an edge case for a very large universe
+         */
+        private fun computeTargetSize(value: BigDecimal): BigDecimal {
+            val isGreaterThanOne = value > BigDecimal.ONE
+            
+            val adjustedValue = if (isGreaterThanOne) value else BigDecimal.ONE.divide(value, mc)
+            
+            val logValueDouble = log2(adjustedValue.toDouble())
+            if (logValueDouble == Double.POSITIVE_INFINITY) return value
+            
+            val logValue = logValueDouble.roundToInt()
+            val resultPower = BigDecimal(2).pow(logValue)
+            
+            return if (isGreaterThanOne) resultPower else BigDecimal.ONE.divide(resultPower, mc)
+        }
+        
+        
+        var level: BigDecimal
             get() = _level
             set(value) {
                 _level = value
-                bigLevelCached = _level.toBigDecimal()
+                cachedFloatLevel = null // Invalidate the cache
             }
         
-        private var bigLevelCached: BigDecimal = BigDecimal.ZERO // Cached value initialized with initial size
+        private var cachedFloatLevel: Float? = null
         
-        var bigLevel: BigDecimal = BigDecimal.ZERO
-            get() = bigLevelCached
-            private set // Make the setter private to disallow external modification
+        fun levelAsFloat(): Float {
+            return cachedFloatLevel ?: run {
+                require(_level > BigDecimal.ZERO) { "zoom levels can't be < 0 $_level" }
+                val floatValue = _level.toFloat()
+                cachedFloatLevel = floatValue
+                floatValue
+            }
+        }
         
         fun stopZooming() {
             isZooming = false
@@ -235,17 +257,19 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         
         fun zoom(zoomIn: Boolean, x: Float, y: Float) {
             
-            val factor = if (zoomIn) ZOOM_FACTOR else 1 / ZOOM_FACTOR
-            targetSize = level * factor
+            val factor = if (zoomIn) ZOOM_FACTOR_IN else ZOOM_FACTOR_OUT
+            targetSize = level * factor.toBigDecimal()
             
-            if (targetSize <= minZoomLevel) return
+            if (targetSize <= minZoomLevel) {
+                return
+            }
             
             saveUndoState()
             
-            stepSize = (targetSize - level) / totalSteps  // Compute the step size
+            stepSize = (targetSize - level).divide(totalSteps.toBigDecimal(), mc)  // Compute the step size
             
-            this.zoomCenterX = x
-            this.zoomCenterY = y
+            this.zoomCenterX = x.toBigDecimal()
+            this.zoomCenterY = y.toBigDecimal()
             
             isZooming = true
             zoomInvokeCount++
@@ -278,14 +302,14 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
                 }
                 
                 // Calculate zoom factor
-                val zoomFactor = level / previousCellWidth
+                val zoomFactor = level.divide(previousCellWidth, mc)
                 
                 // Calculate the difference in canvas offset-s before and after zoom
-                val offsetX = (1 - zoomFactor) * (zoomCenterX - offsetX.toFloat())
-                val offsetY = (1 - zoomFactor) * (zoomCenterY - offsetY.toFloat())
+                val offsetX = (BigDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), mc)
+                val offsetY = (BigDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), mc)
                 
                 // Update canvas offsets
-                adjustCanvasOffsets(offsetX.toBigDecimal(), offsetY.toBigDecimal())
+                adjustCanvasOffsets(offsetX, offsetY)
                 
                 if (level == targetSize) {
                     stopZooming()
@@ -298,6 +322,8 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private const val MINIMUM_ZOOM_LEVEL = Float.MIN_VALUE
-        private const val ZOOM_FACTOR = 4f
+        private const val ZOOM_FACTOR_IN = 4f
+        private const val ZOOM_FACTOR_OUT = .25f
+        
     }
 }

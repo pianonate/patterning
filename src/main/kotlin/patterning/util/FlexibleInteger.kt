@@ -2,16 +2,13 @@ package patterning.util
 
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.math.RoundingMode
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.roundToInt
 
 class FlexibleInteger private constructor(initialValue: Number) : Comparable<FlexibleInteger> {
     
-    private val value: Number = when (initialValue) {
+    val value: Number = when (initialValue) {
         is BigInteger -> {
             when (initialValue) {
                 in INT_MIN_BIG_INTEGER..INT_MAX_BIG_INTEGER -> initialValue.toInt()
@@ -245,15 +242,6 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    fun minPrecisionForDrawing(): Int {
-        return when (value) {
-            0 -> PRECISION_BUFFER
-            is Int, is Long -> ceil(ln(value.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
-            is BigInteger -> BigDecimal(value).precision() + PRECISION_BUFFER
-            else -> throw IllegalArgumentException("Unsupported number type")
-        }
-    }
-    
     fun getLevel(): Int {
         return when (value) {
             0 -> 1
@@ -267,32 +255,32 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    fun hudFormatted(): String {
-        if (value == 0) return "0"
-        return if (value is Int) {
-            if (value < 1_000_000_000)
-                value.formatWithCommas()
-            else formatLargeNumber()
-        } else {
-            formatLargeNumber()
-        }
-    }
-    
-    private fun formatLargeNumber(): String {
-        
-        val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
-        val exponent = bigIntegerValue.toString().length - 1
-        val index = (exponent - 3) / 3
-        return when {
-            index < largeNumberNames.size -> {
-                val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
-                val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
-                "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
+    /*    fun hudFormatted(): String {
+            if (value == 0) return "0"
+            return if (value is Int) {
+                if (value < 1_000_000_000)
+                    value.formatWithCommas()
+                else formatLargeNumber()
+            } else {
+                formatLargeNumber()
             }
-            
-            else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
         }
-    }
+        
+        private fun formatLargeNumber(): String {
+            
+            val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
+            val exponent = bigIntegerValue.toString().length - 1
+            val index = (exponent - 3) / 3
+            return when {
+                index < largeNumberNames.size -> {
+                    val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
+                    val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
+                    "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
+                }
+                
+                else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
+            }
+        }*/
     
     
     override fun equals(other: Any?): Boolean {
@@ -313,12 +301,6 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         // New static map to hold previously created instances
         private val instances: ConcurrentHashMap<Number, FlexibleInteger> = ConcurrentHashMap<Number, FlexibleInteger>()
         
-        // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
-        // now that i'm thinking about it, this is probably the required precision for a float
-        // which is what the cell.cellSize is - especially for really small numbers
-        // without it we'd be off by only looking at the integer part of the largest dimension
-        const val PRECISION_BUFFER = 10
-        
         val NEGATIVE_ONE = create(-1)
         val ZERO = create(0)
         val ONE = create(1)
@@ -329,23 +311,6 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         private val INT_MAX_BIG_INTEGER = Int.MAX_VALUE.toBigInteger()
         private val LONG_MIN_BIG_INTEGER = Long.MIN_VALUE.toBigInteger()
         private val LONG_MAX_BIG_INTEGER = Long.MAX_VALUE.toBigInteger()
-        
-        private const val UNIVERSE_LEVEL_LIMIT = 2048
-        
-        private val _powers: HashMap<Int, FlexibleInteger> = HashMap()
-        
-        fun pow2(x: Int): FlexibleInteger {
-            return _powers.getOrPut(x) { create(BigInteger.valueOf(2).pow(x)) }
-        }
-        
-        val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
-        val MIN_VALUE by lazy { -MAX_VALUE }
-        
-        private val largeNumberNames = arrayOf(
-            "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
-            "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
-            "tredecillion", "quattuordecillion"
-        )
         
         private var hits = 0L
         
