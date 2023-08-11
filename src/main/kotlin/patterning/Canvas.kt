@@ -14,29 +14,29 @@ import patterning.util.FlexibleInteger
 import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
+import processing.core.PFont
 import processing.core.PGraphics
+import processing.core.PImage
 
 class Canvas(private val pApplet: PApplet) : MathContextAware {
-    
-    private val zoom = Zoom()
-    
     private data class CanvasState(
         val level: BigDecimal,
         val canvasOffsetX: BigDecimal,
         val canvasOffsetY: BigDecimal
     )
     
-    private data class NamedBuffers(val graphics: PGraphics, val resizable: Boolean)
+    data class NamedBufferReference(val drawBuffer: DrawBuffer, val resizable: Boolean)
     
-    private val bufferCache = mutableMapOf<String, NamedBuffers>()
-    
+    private val zoom = Zoom()
+    private val bufferCache: MutableMap<String, NamedBufferReference> = mutableMapOf()
+    private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     private val undoDeque = ArrayDeque<CanvasState>()
     
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
     
-    var resized = false
-        private set
+    private var resized = false
+    
     var width: BigDecimal = BigDecimal.ZERO
         private set
     var height: BigDecimal = BigDecimal.ZERO
@@ -46,6 +46,14 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     var offsetY: BigDecimal = BigDecimal.ZERO
         private set
     
+    init {
+        resetMathContext()
+        updateDimensions()
+    }
+    
+    /**
+     * zoom delegates
+     */
     var zoomLevel: BigDecimal
         get() = zoom.level
         set(value) {
@@ -61,19 +69,12 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     
     fun stopZooming() = zoom.stopZooming()
     
-    private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
-    
     // without this precision on the MathContext, small imprecision propagates at
     // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
     // off the screen.  don't skimp on precision!
-    // udpateBiggestDimension allows us to ensure we keep this up to date
+    // updateBiggestDimension allows us to ensure we keep this up to date
     lateinit var mc: MathContext
         private set
-    
-    init {
-        resetMathContext()
-        updateDimensions()
-    }
     
     // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
     // now that i'm thinking about it, this is probably the required precision for a float
@@ -102,14 +103,40 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         offsetsMovedObservers.add(observer)
     }
     
-    // Create or retrieve the PGraphics instance by its name.
-    fun getPGraphics(name: String, resizable: Boolean = true): PGraphics {
-        return bufferCache[name]?.graphics ?: run {
+    /**
+     * Initialize a buffer with the specified name.
+     * If the buffer with the given name already exists, it won't recreate it.
+     */
+    private fun initBuffer(name: String, resizable: Boolean = true) {
+        if (!bufferCache.containsKey(name)) {
             val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-            bufferCache[name] = NamedBuffers(newGraphics, resizable)
-            newGraphics
+            bufferCache[name] = NamedBufferReference(DrawBuffer(newGraphics), resizable)
         }
     }
+    
+    /**
+     * Retrieve the PGraphics instance by its name. Assumes the buffer has been initialized before.
+     */
+    fun getDrawBuffer(name: String, resizable: Boolean = true): DrawBuffer {
+        if (!bufferCache.containsKey(name)) {
+            val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
+            bufferCache[name] = NamedBufferReference(DrawBuffer(newGraphics), resizable)
+        }
+        return bufferCache[name]!!.drawBuffer
+    }
+    
+    fun getGraphics(width: Int, height: Int): PGraphics {
+        return pApplet.createGraphics(width, height)
+    }
+    
+    fun createFont(name: String, size: Float): PFont {
+        return pApplet.createFont(name, size)
+    }
+    
+    fun loadImage(fileSpec: String): PImage {
+        return pApplet.loadImage(fileSpec)
+    }
+    
     
     fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
         updateCanvasOffsets(offsetX + dx, offsetY + dy)
@@ -144,7 +171,7 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
         
         if (resized) {
-            invalidateResizableBuffers()
+            updateResizableBuffers()
             updateDimensions()
         }
         
@@ -153,13 +180,11 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         }
     }
     
-    private fun invalidateResizableBuffers() {
-        bufferCache.entries.removeIf { (_, bufferInfo) ->
+    private fun updateResizableBuffers() {
+        bufferCache.forEach { (_, bufferInfo) ->
             if (bufferInfo.resizable) {
-                bufferInfo.graphics.dispose() // Ensure you dispose of any resources held by the PGraphics instance
-                true // Remove this entry from the map
-            } else {
-                false
+                val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
+                bufferInfo.drawBuffer.updateGraphics(newGraphics)
             }
         }
     }

@@ -4,45 +4,12 @@ import processing.core.PApplet
 
 object Theme {
     
-    var currentThemeType: ThemeType = ThemeType.DARK
+    var currentThemeType = ThemeType.DARK
         private set
-    var blendMode = 0
+    var blendMode = 0 // used to provide text readability in dark and light mode
         private set
     
-    internal val isTransitioning: Boolean
-        get() = _backgroundColor.transitionInProgress
-    
-    fun init(pApplet: PApplet) {
-        _backgroundColor = ColorConstant(pApplet)
-        _cellColor = ColorConstant(pApplet)
-        _controlColor = ColorConstant(pApplet)
-        _controlHighlightColor = ColorConstant(pApplet)
-        _controlMousePressedColor = ColorConstant(pApplet)
-        _defaultPanelColor = ColorConstant(pApplet)
-        _textColor = ColorConstant(pApplet)
-        _textColorStart = ColorConstant(pApplet) // for lerping purposes
-        
-        setTheme(ThemeType.DARK)
-    }
-    
-    // colors
-    private lateinit var _backgroundColor: ColorConstant
-    private lateinit var _cellColor: ColorConstant
-    private lateinit var _controlColor: ColorConstant
-    private lateinit var _controlHighlightColor: ColorConstant
-    private lateinit var _controlMousePressedColor: ColorConstant
-    private lateinit var _defaultPanelColor: ColorConstant
-    private lateinit var _textColor: ColorConstant
-    private lateinit var _textColorStart: ColorConstant  // for lerping purposes
-    
-    val backGroundColor get() = _backgroundColor.color
-    val cellColor get() = _cellColor.color
-    val controlColor get() = _controlColor.color
-    val controlHighlightColor get() = _controlHighlightColor.color
-    val controlMousePressedColor get() = _controlMousePressedColor.color
-    val defaultPanelColor get() = _defaultPanelColor.color
-    val textColor get() = _textColor.color
-    val textColorStart get() = _textColorStart.color
+    val isTransitioning get() = _backgroundColor.transitionInProgress
     
     // durations
     const val controlHighlightDuration = 500
@@ -80,6 +47,42 @@ object Theme {
     const val startupTextSize = 50
     const val strokeWeightBounds = 3f
     const val strokeWeightDashedLine = 1f
+    
+    /**
+     * everything related to theme colors inluding the init
+     * is below here - just to allow for easy access to constants
+     * at the top of the file
+     */
+    private lateinit var _backgroundColor: ColorConstant
+    private lateinit var _cellColor: ColorConstant
+    private lateinit var _controlColor: ColorConstant
+    private lateinit var _controlHighlightColor: ColorConstant
+    private lateinit var _controlMousePressedColor: ColorConstant
+    private lateinit var _defaultPanelColor: ColorConstant
+    private lateinit var _textColor: ColorConstant
+    private lateinit var _textColorStart: ColorConstant  // for lerping purposes
+    
+    val backGroundColor get() = _backgroundColor.color
+    val cellColor get() = _cellColor.color
+    val controlColor get() = _controlColor.color
+    val controlHighlightColor get() = _controlHighlightColor.color
+    val controlMousePressedColor get() = _controlMousePressedColor.color
+    val defaultPanelColor get() = _defaultPanelColor.color
+    val textColor get() = _textColor.color
+    val textColorStart get() = _textColorStart.color
+    
+    fun init(pApplet: PApplet) {
+        _backgroundColor = ColorConstant(pApplet)
+        _cellColor = ColorConstant(pApplet)
+        _controlColor = ColorConstant(pApplet)
+        _controlHighlightColor = ColorConstant(pApplet)
+        _controlMousePressedColor = ColorConstant(pApplet)
+        _defaultPanelColor = ColorConstant(pApplet)
+        _textColor = ColorConstant(pApplet)
+        _textColorStart = ColorConstant(pApplet) // for lerping purposes
+        
+        setTheme(ThemeType.DARK)
+    }
     
     fun setTheme(newTheme: ThemeType) {
         currentThemeType = newTheme

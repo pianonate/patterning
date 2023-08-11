@@ -3,7 +3,7 @@ package patterning.panel
 import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
-import patterning.DrawingInformer
+import patterning.DrawingContext
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.Theme
@@ -45,9 +45,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         return keyCallback
     }
     
-    
     protected fun loadIcon(iconName: String): PImage {
-        val icon = panelBuffer.parent.loadImage(Theme.iconPath + iconName)
+        val icon = canvas.loadImage(Theme.iconPath + iconName)
         icon.resize(width - Theme.iconMargin, height - Theme.iconMargin)
         return icon
     }
@@ -78,25 +77,26 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private fun getHoverTextPanel(): TextPanel {
         val margin = Theme.hoverTextMargin
         val hoverTextWidth = Theme.hoverTextWidth
-        var hoverX = parentPanel!!.position!!.x.toInt()
-        var hoverY = parentPanel!!.position!!.y.toInt()
+        var hoverX = parentPanel!!.position.x.toInt()
+        var hoverY = parentPanel!!.position.y.toInt()
         var transitionDirection: TransitionDirection? = null
         
-        val localParentPanel = parentPanel
-        val orientation = (localParentPanel as ControlPanel).orientation
+        val localParentPanel = parentPanel as ControlPanel
+        
+        val orientation = localParentPanel.orientation
         
         when (orientation) {
             Orientation.VERTICAL -> {
                 when (localParentPanel.hAlign) {
                     AlignHorizontal.LEFT, AlignHorizontal.CENTER -> {
                         hoverX += size + margin
-                        hoverY = (hoverY + position!!.y).toInt()
+                        hoverY = (hoverY + position.y).toInt()
                         transitionDirection = TransitionDirection.RIGHT
                     }
                     
                     AlignHorizontal.RIGHT -> {
                         hoverX = hoverX - margin - hoverTextWidth
-                        hoverY = (hoverY + position!!.y).toInt()
+                        hoverY = (hoverY + position.y).toInt()
                         transitionDirection = TransitionDirection.LEFT
                     }
                     
@@ -104,15 +104,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             }
             
             Orientation.HORIZONTAL -> {
-                hoverX = (hoverX + position!!.x).toInt()
+                hoverX = (hoverX + position.x).toInt()
                 when (localParentPanel.vAlign) {
                     AlignVertical.TOP, AlignVertical.CENTER -> {
-                        hoverY = localParentPanel.position!!.y.toInt() + size + margin
+                        hoverY = localParentPanel.position.y.toInt() + size + margin
                         transitionDirection = TransitionDirection.DOWN
                     }
                     
                     AlignVertical.BOTTOM -> {
-                        hoverY = localParentPanel.position!!.y.toInt() - margin
+                        hoverY = localParentPanel.position.y.toInt() - margin
                         transitionDirection = TransitionDirection.UP
                     }
                 }
@@ -131,7 +131,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // would try to draw itself within the control at a microscopic size
         
         return TextPanel.Builder(
-            localParentPanel.drawingInformer,
+            localParentPanel.drawingContext,
             canvas,
             hoverMessage,
             PVector(hoverX.toFloat(), hoverY.toFloat()),
@@ -174,15 +174,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         val thisIcon = getCurrentIcon()
         val x = (width - thisIcon.width).toFloat() / 2
         val y = (height - thisIcon.height).toFloat() / 2
-        panelBuffer.image(thisIcon, x, y)
+        panelGraphics.image(thisIcon, x, y)
     }
     
     private fun drawControlHighlight(color: Int) {
         // highlight the control with a semi-transparent rect
-        panelBuffer.fill(color) // Semi-transparent gray
+        panelGraphics.fill(color) // Semi-transparent gray
         val roundedRectSize = size.toFloat()
         // Rounded rectangle with radius
-        panelBuffer.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
+        panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
     
     override fun notifyKeyPress(observer: KeyObservable) {
@@ -213,13 +213,13 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
     
     open class Builder(
-        drawingInformer: DrawingInformer,
+        drawingContext: DrawingContext,
         canvas: Canvas,
         val callback: KeyCallback,
         val iconName: String,
         val size: Int
     ) : Panel.Builder(
-        drawingInformer, canvas, size, size
+        drawingContext, canvas, size, size
     ) {
         override fun build() = Control(this)
     }

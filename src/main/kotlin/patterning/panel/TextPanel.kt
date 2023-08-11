@@ -3,9 +3,10 @@ package patterning.panel
 import java.util.OptionalInt
 import kotlin.math.ceil
 import patterning.Canvas
+import patterning.DrawBuffer
 import patterning.Drawable
 import patterning.Drawer
-import patterning.DrawingInformer
+import patterning.DrawingContext
 import patterning.Theme
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -48,7 +49,10 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             field = value
         }
     
+    private val sizing: DrawBuffer = canvas.getDrawBuffer(Theme.sizingBuffer, resizable = false)
+    
     init {
+        
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
         message = builder.message
@@ -79,44 +83,48 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         transitionTime = System.currentTimeMillis() // start displaying immediately
     }
     
-    
+    /**
+     * we go through the above to get the actual
+     * height and width of the text so that we can
+     * create a PGraphics of that size
+     * and _then_ we have to also set font on it!
+     *
+     * we can't use the current UX.graphics as it causes flickering on it
+     * when beginDraw, endDraw are called
+     */
     private fun setTextPanelBuffer() {
         
-        // we can't use the current UXBuffer as it causes flickering on init of the text
-        // when beginDraw, endDraw are called
-        val sizingBuffer = canvas.getPGraphics(Theme.sizingBuffer, resizable = false)
+        with(sizing.graphics) {
+            beginDraw()
+            setFont(graphics = this)
+            wrapText(graphics = this)
+            endDraw()
+            setPanelSize(graphics = this)
+        }
         
-        sizingBuffer.beginDraw()
-        setFont(sizingBuffer, textSize)
-        messageLines = wrapText(sizingBuffer)
-        sizingBuffer.endDraw()
-        
-        setPanelSize(sizingBuffer)
-        
-        val textBuffer = sizingBuffer.parent.createGraphics(width, height)
-        
-        // set the font for this PGraphics as it will not change
-        textBuffer.beginDraw()
-        setFont(textBuffer, textSize)
-        textBuffer.endDraw()
-        panelBuffer = textBuffer
+        with(canvas.getGraphics(width, height)) {
+            beginDraw()
+            setFont(graphics = this)
+            endDraw()
+            panelGraphics = this
+        }
         
     }
     
     /**
-     * the passed in buffer could be any buffer that has had the the correct
+     * the passed in graphics could be any graphics that has had the the correct
      * font set on it
      */
-    private fun setPanelSize(sizingBuffer: PGraphics) {
+    private fun setPanelSize(graphics: PGraphics) {
         // Compute the maximum width and total height of all lines in case there is
         // word wrapping
         var maxWidth = 0f
         var totalHeight = 0f
         for (line in messageLines) {
-            if (sizingBuffer.textWidth(line) > maxWidth) {
-                maxWidth = sizingBuffer.textWidth(line)
+            if (graphics.textWidth(line) > maxWidth) {
+                maxWidth = graphics.textWidth(line)
             }
-            totalHeight += sizingBuffer.textAscent() + sizingBuffer.textDescent()
+            totalHeight += graphics.textAscent() + graphics.textDescent()
         }
         
         // Adjust the width and height according to the size of the wrapped text
@@ -127,22 +135,25 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         width = getTextWidth().coerceAtMost(ceil((maxWidth + doubleTextMargin).toDouble()).toInt())
     }
     
-    // for sizes to be correctly calculated, the font must be the same
-    // on both the parent and the new textBuffer
-    // necessary because createGraphics doesn't inherit the font from the parent
-    private fun setFont(buffer: PGraphics, textSize: Float) {
-        buffer.textFont(buffer.parent.createFont(Theme.fontName, textSize))
-        buffer.textSize(textSize)
+    /**
+     * for sizes to be correctly calculated, the font must be the same
+     * on both the parent and the newly created text PGraphics
+     * necessary because createGraphics doesn't inherit the font from the parent
+     */
+    private fun setFont(graphics: PGraphics) {
+        graphics.textFont(canvas.createFont(Theme.fontName, textSize))
+        graphics.textSize(textSize)
     }
     
     private fun getCountdownMessage(count: Long): String {
         return "$initialMessage: $count"
     }
     
-    private fun wrapText(sizingBuffer: PGraphics): List<String> {
+    private fun wrapText(graphics: PGraphics) {
         
         if (!wrap) {
-            return listOf(message)
+            messageLines = listOf(message)
+            return
         }
         
         val lines: MutableList<String> = ArrayList()
@@ -154,7 +165,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         val evalWidth = getTextWidth()
         while (words.isNotEmpty()) {
             val word = words[0]
-            val prospectiveLineWidth = sizingBuffer.textWidth(line.toString() + word)
+            val prospectiveLineWidth = graphics.textWidth(line.toString() + word)
             
             // If the word alone is wider than the wordWrapWidth, it should be put on its own line
             if (prospectiveLineWidth > evalWidth && line.isEmpty()) {
@@ -169,7 +180,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             }
             if (keepShortCutTogether) {
                 // Check if there are exactly two words remaining and they don't fit on the current line
-                if (words.size == 2 && sizingBuffer.textWidth(line.toString() + words[0] + " " + words[1]) > evalWidth) {
+                if (words.size == 2 && graphics.textWidth(line.toString() + words[0] + " " + words[1]) > evalWidth) {
                     // Add the current line to the lines list
                     lines.add(line.toString().trim { it <= ' ' })
                     line = StringBuilder()
@@ -183,14 +194,14 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         if (line.isNotEmpty()) {
             lines.add(line.toString().trim { it <= ' ' })
         }
-        return lines
+        messageLines = lines
     }
     
     private fun getTextWidth(): Int {
         return if (textWidth.isPresent) {
             textWidth.asInt
         } else {
-            drawingInformer.getPGraphics().width
+            canvas.width.toInt()
         }
     }
     
@@ -211,44 +222,44 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     
     private fun drawMultiLineText() {
         
-        panelBuffer.beginDraw()
-        panelBuffer.pushStyle()
+        panelGraphics.beginDraw()
+        panelGraphics.pushStyle()
         
-        panelBuffer.textAlign(hAlign.toPApplet(), vAlign.toPApplet())
+        panelGraphics.textAlign(hAlign.toPApplet(), vAlign.toPApplet())
         
         // Determine where to start drawing the text based on the alignment
         val x = when (hAlign) {
             AlignHorizontal.LEFT -> textMargin.toFloat()
-            AlignHorizontal.CENTER -> panelBuffer.width / 2f
-            AlignHorizontal.RIGHT -> (panelBuffer.width - textMargin).toFloat()
+            AlignHorizontal.CENTER -> panelGraphics.width / 2f
+            AlignHorizontal.RIGHT -> (panelGraphics.width - textMargin).toFloat()
         }
         
         // Determine the starting y position based on the alignment
-        val lineHeight = panelBuffer.textAscent() + panelBuffer.textDescent()
+        val lineHeight = panelGraphics.textAscent() + panelGraphics.textDescent()
         val totalTextHeight = lineHeight * messageLines.size
         val y = when (vAlign) {
             AlignVertical.TOP -> 0f
-            AlignVertical.CENTER -> panelBuffer.height / 2f - totalTextHeight / 2f + doubleTextMargin
-            AlignVertical.BOTTOM -> (panelBuffer.height - textMargin).toFloat() - totalTextHeight + lineHeight
+            AlignVertical.CENTER -> panelGraphics.height / 2f - totalTextHeight / 2f + doubleTextMargin
+            AlignVertical.BOTTOM -> (panelGraphics.height - textMargin).toFloat() - totalTextHeight + lineHeight
         }
         
         // Interpolate between start and end colors
         // fade value goes from 0 to 255 to make this happen
         val startColor = Theme.textColorStart
         val endColor = Theme.textColor
-        val currentColor = panelBuffer.lerpColor(startColor, endColor, fadeValue / 255.0f)
+        val currentColor = panelGraphics.lerpColor(startColor, endColor, fadeValue / 255.0f)
         
         for (i in messageLines.indices) {
             val line = messageLines[i]
             val lineY = y + lineHeight * i
             
             // Draw the actual text in the calculated color
-            panelBuffer.fill(currentColor)
-            panelBuffer.text(line, x, lineY)
+            panelGraphics.fill(currentColor)
+            panelGraphics.text(line, x, lineY)
             
         }
-        panelBuffer.popStyle()
-        panelBuffer.endDraw()
+        panelGraphics.popStyle()
+        panelGraphics.endDraw()
     }
     
     fun interruptCountdown() {
@@ -281,7 +292,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var keepShortCutTogether = false
         
         constructor(
-            informer: DrawingInformer,
+            informer: DrawingContext,
             canvas: Canvas,
             message: String = "",
             hAlign: AlignHorizontal,
@@ -293,15 +304,15 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
         
         constructor(
-            informer: DrawingInformer,
+            informer: DrawingContext,
             canvas: Canvas,
             message: String,
-            position: PVector?,
+            position: PVector,
             offsetBottom: Boolean,
-            hAlign: AlignHorizontal?,
-            vAlign: AlignVertical?
+            hAlign: AlignHorizontal,
+            vAlign: AlignVertical
         ) : super(
-            informer, canvas, position!!, hAlign!!, vAlign!!
+            informer, canvas, position, hAlign, vAlign
         ) {
             this.message = message
             this.offsetBottom = offsetBottom

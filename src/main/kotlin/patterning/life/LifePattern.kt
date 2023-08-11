@@ -8,8 +8,9 @@ import java.math.BigDecimal
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Canvas
+import patterning.DrawBuffer
 import patterning.Drawer
-import patterning.DrawingInformer
+import patterning.DrawingContext
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
@@ -34,7 +35,6 @@ import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
 import processing.core.PApplet
-import processing.core.PGraphics
 import processing.core.PVector
 
 class LifePattern(
@@ -62,7 +62,7 @@ class LifePattern(
     
     private val asyncNextGeneration: AsyncJobRunner
     private var targetStep = 0
-    private val drawingInformer: DrawingInformer
+    private val drawingContext: DrawingContext
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
     
@@ -88,23 +88,26 @@ class LifePattern(
     private var countdownText: TextPanel? = null
     private val hudText: TextPanel
     
-    private lateinit var patternBuffer: PGraphics
-    private lateinit var uxBuffer: PGraphics
+    private var pattern: DrawBuffer
+    private var ux: DrawBuffer
     private var drawBounds: Boolean
     
     
     init {
-        initBuffers()
+        
+        
         canvas.addOffsetsMovedObserver(nodePath)
         
-        drawingInformer = DrawingInformer { uxBuffer }
+        ux = canvas.getDrawBuffer(Theme.uxBuffer)
+        pattern = canvas.getDrawBuffer(Theme.patternBuffer)
+        drawingContext = DrawingContext { ux.graphics }
         
         movementHandler = MovementHandler(this)
         drawBounds = false
         hudInfo = HUDStringBuilder()
         
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
+            TextPanel.Builder(drawingContext, canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(Theme.startupTextSize)
                 .fadeInDuration(Theme.startupTextFadeInDuration)
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
@@ -124,7 +127,7 @@ class LifePattern(
         }
         
         hudText = TextPanel.Builder(
-            informer = drawingInformer,
+            informer = drawingContext,
             canvas = canvas,
             hAlign = AlignHorizontal.RIGHT,
             vAlign = AlignVertical.BOTTOM
@@ -148,7 +151,7 @@ class LifePattern(
         val panelTop: ControlPanel
         val panelRight: ControlPanel
         val transitionDuration = Theme.controlPanelTransitionDuration
-        panelLeft = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
+        panelLeft = ControlPanel.Builder(drawingContext, canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
             .apply {
                 transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
                 setOrientation(Orientation.VERTICAL)
@@ -159,7 +162,7 @@ class LifePattern(
                 addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
             }.build()
         
-        panelTop = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
+        panelTop = ControlPanel.Builder(drawingContext, canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
             .apply {
                 transition(
                     Transition.TransitionDirection.DOWN,
@@ -180,7 +183,7 @@ class LifePattern(
                 addControl("rewind.png", keyCallbackFactory.callbackRewind)
             }.build()
         
-        panelRight = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
+        panelRight = ControlPanel.Builder(drawingContext, canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
             .apply {
                 transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                 setOrientation(Orientation.VERTICAL)
@@ -199,10 +202,6 @@ class LifePattern(
      */
     override fun draw() {
         
-        if (canvas.resized) {
-            initBuffers()
-        }
-        
         performanceTest.execute()
         
         canvas.updateZoom()
@@ -211,8 +210,8 @@ class LifePattern(
         drawPattern(life)
         
         pApplet.apply {
-            image(patternBuffer, lifeFormPosition.x, lifeFormPosition.y)
-            image(uxBuffer, 0f, 0f)
+            image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
+            image(ux.graphics, 0f, 0f)
         }
         
         goForwardInTime()
@@ -412,7 +411,7 @@ class LifePattern(
         life = universe
         
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, canvas, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
+            TextPanel.Builder(drawingContext, canvas, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
                 .textSize(Theme.startupTextSize)
                 .fadeInDuration(Theme.startupTextFadeInDuration)
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
@@ -451,7 +450,7 @@ class LifePattern(
         
         if (!testing) countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
-                drawingInformer,
+                drawingContext,
                 canvas,
                 Theme.countdownText,
                 AlignHorizontal.CENTER,
@@ -495,11 +494,6 @@ class LifePattern(
         } ?: RunningState.toggleRunning()
     }
     
-    private fun initBuffers() {
-        uxBuffer = canvas.getPGraphics(name = Theme.uxBuffer)
-        patternBuffer = canvas.getPGraphics(name = Theme.patternBuffer)
-    }
-    
     private fun fillSquare(
         x: Float,
         y: Float,
@@ -510,19 +504,21 @@ class LifePattern(
         
         // we default the patternBuffer to the cell color so no need to change it
         // unless you start doing something custom...
-        if (color != Theme.cellColor) patternBuffer.fill(color)
+        if (color != Theme.cellColor) pattern.graphics.fill(color)
         
-        patternBuffer.rect(x, y, width, width)
+        pattern.graphics.rect(x, y, width, width)
     }
     
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
     
     private fun drawPattern(life: LifeUniverse) {
-        patternBuffer.beginDraw()
-        patternBuffer.clear()
-        patternBuffer.noStroke()
-        patternBuffer.fill(Theme.cellColor)
+        
+        val graphics = pattern.graphics
+        graphics.beginDraw()
+        graphics.clear()
+        graphics.noStroke()
+        graphics.fill(Theme.cellColor)
         
         updateBoundsChanged(life.root.bounds)
         
@@ -551,7 +547,7 @@ class LifePattern(
         
         drawBounds(life)
         
-        patternBuffer.endDraw()
+        graphics.endDraw()
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
     }
@@ -640,20 +636,20 @@ class LifePattern(
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = BoundingBox(bounds, canvas.zoomLevel, canvas)
-        boundingBox.draw(patternBuffer)
+        boundingBox.draw(pattern)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas.zoomLevel, canvas)
-            universeBox.draw(patternBuffer, drawCrosshair = true)
+            universeBox.draw(pattern, drawCrosshair = true)
             currentLevel++
         }
     }
     
     private fun drawUX(life: LifeUniverse) {
-        uxBuffer.apply {
+        ux.graphics.apply {
             beginDraw()
             clear()
         }
@@ -664,7 +660,7 @@ class LifePattern(
         hudText.message = hudMessage
         Drawer.drawAll()
         
-        uxBuffer.endDraw()
+        ux.graphics.endDraw()
     }
     
     private suspend fun asyncNextGeneration() {

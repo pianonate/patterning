@@ -1,21 +1,21 @@
 package patterning.panel
 
 import patterning.Canvas
-import patterning.DrawingInformer
+import patterning.DrawingContext
 
 class BasicPanel private constructor(builder: Builder) : Panel(builder) {
     override fun panelSubclassDraw() {
     }
     
     class Builder(
-        drawingInformer: DrawingInformer,
+        drawingContext: DrawingContext,
         canvas: Canvas,
         hAlign: AlignHorizontal,
         vAlign: AlignVertical,
         width: Int,
         height: Int
     ) : Panel.Builder(
-        drawingInformer, canvas,hAlign, vAlign, width, height
+        drawingContext, canvas,hAlign, vAlign, width, height
     ) {
         override fun build() = BasicPanel(this)
     }
