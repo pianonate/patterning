@@ -136,15 +136,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             offsetBottom = offsetBottom,
             AlignHorizontal.LEFT,
             AlignVertical.TOP
-        )
-            .fill(Theme.controlHighlightColor)
-            .radius(Theme.controlHighlightCornerRadius)
-            .textSize(Theme.hoverTextSize)
-            .textWidth(hoverTextWidth)
-            .wrap()
-            .keepShortCutTogether() // keeps the last two words on the same line when text wrapping
-            .transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
-            .build()
+        ).apply {
+            fill(Theme.controlHighlightColor)
+            radius(Theme.controlHighlightCornerRadius)
+            textSize(Theme.hoverTextSize)
+            textWidth(hoverTextWidth)
+            wrap()
+            keepShortCutTogether() // keeps the last two words on the same line when text wrapping
+            transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
+        }.build()
     }
     
     private fun mouseHover(isHovering: Boolean) {
@@ -215,10 +215,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         val callback: KeyCallback,
         val iconName: String,
         val size: Int
-    ) : Panel.Builder<Builder>(
+    ) : Panel.Builder(
         drawingInformer, size, size
     ) {
-        
         override fun build() = Control(this)
     }
     

@@ -264,7 +264,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         fun transition()
     }
     
-    class Builder : Panel.Builder<Builder> {
+    class Builder : Panel.Builder {
         internal val message: String
         internal var wrap = false
         internal var textSize = Theme.defaultTextSize
@@ -304,53 +304,25 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             this.offsetBottom = offsetBottom
         }
         
-        fun textSize(textSize: Int): Builder {
-            this.textSize = textSize.toFloat()
-            return this
-        }
+        fun textSize(textSize: Int) = apply { this.textSize = textSize.toFloat() }
         
-        fun fadeInDuration(fadeInDuration: Int): Builder {
-            this.fadeInDuration = OptionalInt.of(fadeInDuration)
-            return this
-        }
+        fun fadeInDuration(fadeInDuration: Int) = apply { this.fadeInDuration = OptionalInt.of(fadeInDuration) }
         
-        fun fadeOutDuration(fadeOutDuration: Int): Builder {
-            this.fadeOutDuration = OptionalInt.of(fadeOutDuration)
-            return this
-        }
+        fun fadeOutDuration(fadeOutDuration: Int) = apply { this.fadeOutDuration = OptionalInt.of(fadeOutDuration) }
         
-        fun countdownFrom(countdownFrom: Int): Builder {
-            this.countdownFrom = OptionalInt.of(countdownFrom)
-            return this
-        }
+        fun countdownFrom(countdownFrom: Int) = apply { this.countdownFrom = OptionalInt.of(countdownFrom) }
         
-        fun textWidth(textWidth: Int): Builder {
-            this.textWidth = OptionalInt.of(textWidth)
-            return this
-        }
+        fun textWidth(textWidth: Int) = apply { this.textWidth = OptionalInt.of(textWidth) }
         
-        fun wrap(): Builder {
-            wrap = true
-            return this
-        }
+        fun wrap() = apply { wrap = true }
         
-        fun keepShortCutTogether(): Builder {
-            keepShortCutTogether = true
-            return this
-        }
+        fun keepShortCutTogether() = apply { keepShortCutTogether = true }
         
-        fun runMethod(runMethod: Runnable?): Builder {
-            this.runMethod = runMethod
-            return this
-        }
+        fun runMethod(runMethod: Runnable) = apply { this.runMethod = runMethod }
         
-        fun displayDuration(displayDuration: Int): Builder {
-            this.displayDuration = OptionalInt.of(displayDuration)
-            return this
-        }
+        fun displayDuration(displayDuration: Int) = apply { this.displayDuration = OptionalInt.of(displayDuration) }
         
         override fun build() = TextPanel(this)
-        
     }
     
     private inner class FadeInState : State {

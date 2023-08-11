@@ -3,7 +3,7 @@ package patterning.panel
 import patterning.DrawingInformer
 import processing.core.PGraphics
 
-abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel(builder) {
+abstract class ContainerPanel protected constructor(builder: Builder) : Panel(builder) {
     private val childPanels: List<Panel>
     val orientation: Orientation
     
@@ -61,24 +61,20 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
         }
     }
     
-    abstract class Builder<P : Builder<P>>  // Constructor for aligned Panel with default dimensions (0, 0)
+    // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
-        (drawingInformer: DrawingInformer, hAlign: AlignHorizontal?, vAlign: AlignVertical?) :
-        Panel.Builder<P>(
-            drawingInformer, hAlign!!, vAlign!!
+    abstract class Builder
+        (drawingInformer: DrawingInformer, hAlign: AlignHorizontal, vAlign: AlignVertical) :
+        Panel.Builder(
+            drawingInformer, hAlign, vAlign
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
         
         var orientation = Orientation.HORIZONTAL
-        protected open fun setOrientation(orientation: Orientation): P {
-            this.orientation = orientation
-            return self()
-        }
         
-        protected fun addPanel(child: Panel): P {
-            childPanels.add(child)
-            return self()
-        }
+        fun setOrientation(orientation: Orientation) = apply { this.orientation = orientation }
+        
+        fun addPanel(child: Panel) = apply { childPanels.add(child) }
         
         abstract override fun build(): ContainerPanel
     }

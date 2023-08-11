@@ -148,36 +148,45 @@ class LifePattern(
         val panelRight: ControlPanel
         val transitionDuration = Theme.controlPanelTransitionDuration
         panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
-            .transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
-            .setOrientation(Orientation.VERTICAL)
-            .addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
-            .addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
-            .addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
-            .addControl("center.png", keyCallbackFactory.callbackCenterView)
-            .addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
-            .build()
+            .apply {
+                transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
+                setOrientation(Orientation.VERTICAL)
+                addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
+                addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
+                addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
+                addControl("center.png", keyCallbackFactory.callbackCenterView)
+                addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
+            }.build()
+        
         panelTop = ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
-            .transition(Transition.TransitionDirection.DOWN, Transition.TransitionType.SLIDE, transitionDuration)
-            .setOrientation(Orientation.HORIZONTAL)
-            .addControl("random.png", keyCallbackFactory.callbackRandomPattern)
-            .addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
-            // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-            .addPlayPauseControl(
-                "play.png",
-                "pause.png",
-                keyCallbackFactory.callbackPause,
-            )
-            //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-            .addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
-            .addControl("rewind.png", keyCallbackFactory.callbackRewind)
-            .build()
+            .apply {
+                transition(
+                    Transition.TransitionDirection.DOWN,
+                    Transition.TransitionType.SLIDE,
+                    transitionDuration
+                )
+                setOrientation(Orientation.HORIZONTAL)
+                addControl("random.png", keyCallbackFactory.callbackRandomPattern)
+                addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
+                // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+                addPlayPauseControl(
+                    "play.png",
+                    "pause.png",
+                    keyCallbackFactory.callbackPause,
+                )
+                //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
+                addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
+                addControl("rewind.png", keyCallbackFactory.callbackRewind)
+            }.build()
+        
         panelRight = ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-            .transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
-            .setOrientation(Orientation.VERTICAL)
-            .addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
-            .addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-            .addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
-            .build()
+            .apply {
+                transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
+                setOrientation(Orientation.VERTICAL)
+                addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
+                addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
+                addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
+            }.build()
         val panels = listOf(panelLeft, panelTop, panelRight)
         
         MouseEventManager.addAll(panels)

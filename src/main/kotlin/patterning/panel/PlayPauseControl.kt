@@ -81,15 +81,12 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
     
     class Builder(
         drawingInformer: DrawingInformer,
-        callback: KeyCallback?,
-        iconName: String?,
+        callback: KeyCallback,
+        iconName: String,
         val pausedIconName: String,
         size: Int,
         
-        ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
-        override fun self(): Builder {
-            return this
-        }
+        ) : Control.Builder(drawingInformer, callback, iconName, size) {
         
         override fun build() = PlayPauseControl(this)
     }

@@ -7,13 +7,9 @@ import patterning.actions.KeyCallback
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
     
     class Builder(drawingInformer: DrawingInformer, hAlign: AlignHorizontal, vAlign: AlignVertical) :
-        ContainerPanel.Builder<Builder>(drawingInformer, hAlign, vAlign) {
-        public override fun setOrientation(orientation: Orientation): Builder {
-            this.orientation = orientation
-            return this
-        }
+        ContainerPanel.Builder(drawingInformer, hAlign, vAlign) {
         
-        fun addControl(iconName: String, callback: KeyCallback): Builder {
+        fun addControl(iconName: String, callback: KeyCallback) = apply {
             val c = Control.Builder(
                 drawingInformer,
                 callback,
@@ -21,10 +17,9 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 Theme.controlSize
             ).build()
             addPanel(c)
-            return this
         }
         
-        fun addToggleHighlightControl(iconName: String, callback: KeyCallback): Builder {
+        fun addToggleHighlightControl(iconName: String, callback: KeyCallback) = apply {
             val c: Control = ToggleHighlightControl.Builder(
                 drawingInformer,
                 callback,
@@ -32,14 +27,13 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 Theme.controlSize
             ).build()
             addPanel(c)
-            return this
         }
         
         fun addPlayPauseControl(
             playIconName: String,
             pauseIconName: String,
             callback: KeyCallback,
-        ): Builder {
+        ) = apply {
             val c: Control = PlayPauseControl.Builder(
                 drawingInformer,
                 callback,
@@ -48,7 +42,6 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 Theme.controlSize,
             ).build()
             addPanel(c)
-            return this
         }
         
         override fun build() = ControlPanel(this)

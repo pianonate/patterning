@@ -13,7 +13,38 @@ import patterning.panel.Transition.TransitionType
 import processing.core.PGraphics
 import processing.core.PVector
 
-abstract class Panel protected constructor(builder: Builder<*>) : Drawable, MouseEventReceiver {
+/**
+ * Panel is the base of all UI elements in Patterning
+ *
+ * I'm using the kotlin apply function to allow for a builder pattern
+ * if i want to use method chaining via something like this I'd have to implement it with generics
+ *
+ * ```
+ * TextPanel.Build()
+ *  .radius(10)
+ *  .fill(20)
+ *  .textSize(30)
+ *  .build()
+ * ```
+ * To keep it simple, instead I'm using basic inheritance with apply blocks
+ * to allow for method chaining which has to be done like this:
+ * ```
+ *   TextPanel.Build.apply {
+ *      radius(10)
+ *      fill(20)
+ *      textSize(30)
+ *   }.build()
+ *   ```
+ *   the apply ensures that you can apply methods from anywhere in the hierarchy without
+ *   having to worry about the return type of each. The receiver of the apply block will always be
+ *   TextPanel.builder type - allowing you to call methods from both the parent and the child
+ *   seamlessly
+ *
+ *   Note that you'll only need to use apply if you're trying to chain methods from different levels
+ *   of the hierarchy - the compiler will tell you if it can't find something when you chain the first way
+ *   with methods from across the hierarchy.
+ */
+abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEventReceiver {
     // alignment
     private val alignAble: Boolean
     private val radius: OptionalInt
@@ -207,7 +238,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             }
         }
     
-    abstract class Builder<T : Builder<T>> {
+    abstract class Builder/*<T : Builder<T>> */ {
         val drawingInformer: DrawingInformer
         var x = 0
         var y = 0
@@ -277,28 +308,15 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             this.drawingInformer = drawingInformer
         }
         
-        fun fill(fill: Int): T {
-            this.fill = fill
-            return self()
-        }
+        fun fill(fill: Int) = apply { this.fill = fill }
         
-        fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int): T {
+        fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int) = apply {
             transitionDirection = direction
             transitionType = type
             transitionDuration = duration
-            return self()
         }
         
-        fun radius(radius: Int): T {
-            this.radius = OptionalInt.of(radius)
-            return self()
-        }
-        
-        // Method to allow subclass builders to return "this" correctly
-        protected open fun self(): T {
-            @Suppress("UNCHECKED_CAST")
-            return this as T
-        }
+        fun radius(radius: Int) = apply { this.radius = OptionalInt.of(radius) }
         
         abstract fun build(): Panel
     }
