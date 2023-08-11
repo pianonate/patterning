@@ -1,3 +1,0 @@
-* stack saves = 0 sometimes - on maximum volatility gun - nonsense
-* probably bug in Zoom at super large universe sizes
-* there is a bug in movement but i don't know how to repro

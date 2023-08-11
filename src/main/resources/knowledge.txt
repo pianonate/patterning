@@ -1,1 +1,0 @@
-scale matters for those BigDecimals - they'll get arbitrarily long after the decimal point unless you manage scale yourself.  Right now you'll do that in PatternDrawer.center() but you may need to revisit this as it can have a huge impact on performance
