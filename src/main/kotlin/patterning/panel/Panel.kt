@@ -207,7 +207,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             }
         }
     
-    abstract class Builder<T : Builder<T>?> {
+    abstract class Builder<T : Builder<T>> {
         val drawingInformer: DrawingInformer
         var x = 0
         var y = 0
@@ -224,7 +224,7 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
         
         // used by Control
         constructor(drawingInformer: DrawingInformer, width: Int, height: Int) {
-            setRect(0, 0, width, height) // parent positioned
+            setRect(x = 0, y = 0, width = width, height = height) // parent positioned
             this.drawingInformer = drawingInformer
         }
         
@@ -282,12 +282,6 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             return self()
         }
         
-        // Method to allow subclass builders to return "this" correctly
-        protected open fun self(): T {
-            @Suppress("UNCHECKED_CAST")
-            return this as T
-        }
-        
         fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int): T {
             transitionDirection = direction
             transitionType = type
@@ -300,6 +294,12 @@ abstract class Panel protected constructor(builder: Builder<*>) : Drawable, Mous
             return self()
         }
         
-        abstract fun build(): Panel?
+        // Method to allow subclass builders to return "this" correctly
+        protected open fun self(): T {
+            @Suppress("UNCHECKED_CAST")
+            return this as T
+        }
+        
+        abstract fun build(): Panel
     }
 }

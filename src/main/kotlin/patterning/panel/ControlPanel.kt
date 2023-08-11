@@ -51,12 +51,6 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             return this
         }
         
-        override fun build(): ControlPanel {
-            return ControlPanel(this)
-        }
-        
-        override fun self(): Builder {
-            return this
-        }
+        override fun build() = ControlPanel(this)
     }
 }

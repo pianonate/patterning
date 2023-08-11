@@ -12,12 +12,12 @@ import patterning.util.AsyncJobRunner
 import processing.core.PImage
 
 class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver {
-
+    
     private val pauseIcon: PImage
     private val playIcon: PImage
     private var currentIcon: PImage
     private var runningModeChanged = false
-
+    
     init {
         pauseIcon = loadIcon(builder.pausedIconName)
         playIcon = super.icon
@@ -25,36 +25,36 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
         // allows for highlighting play pause whenever the single step mode is changed
         RunningState.addModeChangeObserver(this)
     }
-
+    
     override fun onSingleStepModeChange() {
         runningModeChanged = true
         highlightFromKeyPress()
     }
-
+    
     override fun getCurrentIcon(): PImage {
         return currentIcon
     }
-
+    
     override fun notifyKeyPress(observer: KeyObservable) {
         highlightFromKeyPress()
-
+        
         if (runningModeChanged) {
             when (RunningState.runningMode) {
                 RunningMode.SINGLE_STEP -> {
                     currentIcon = playIcon
                 }
-
+                
                 else -> toggleIcon()
             }
             runningModeChanged = false
         } else toggleIcon()
     }
-
+    
     override fun onMouseReleased() {
         super.onMouseReleased() // this will change the play pause state
         toggleIcon()
     }
-
+    
     private val iconAsyncJobRunner = AsyncJobRunner(
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
@@ -62,14 +62,14 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
         },
         threadName = "Icon Toggle Thread"
     )
-
+    
     private fun toggleIcon() {
         when (RunningState.runningMode) {
             RunningMode.PLAYING, RunningMode.TESTING -> {
                 currentIcon = pauseIcon
                 iconAsyncJobRunner.cancelAndWait()  // Cancel any running job when playing
             }
-
+            
             RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
                 currentIcon = pauseIcon
                 if (!iconAsyncJobRunner.isActive) {  // Only start if not already running
@@ -78,21 +78,19 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
             }
         }
     }
-
+    
     class Builder(
         drawingInformer: DrawingInformer,
         callback: KeyCallback?,
         iconName: String?,
         val pausedIconName: String,
         size: Int,
-
+        
         ) : Control.Builder(drawingInformer, callback!!, iconName!!, size) {
         override fun self(): Builder {
             return this
         }
-
-        override fun build(): PlayPauseControl {
-            return PlayPauseControl(this)
-        }
+        
+        override fun build() = PlayPauseControl(this)
     }
 }

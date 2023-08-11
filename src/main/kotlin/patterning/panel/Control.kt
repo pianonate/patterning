@@ -19,7 +19,7 @@ import processing.core.PImage
 import processing.core.PVector
 
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
-    internal val keyCallback: ControlKeyCallback
+    private val keyCallback: ControlKeyCallback
     private val size: Int
     var isHighlightFromKeypress = false
     protected var icon: PImage
@@ -38,7 +38,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 Theme.shortcutParenEnd
     }
     
-    protected fun registerCallback(callback: KeyCallback): ControlKeyCallback {
+    private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
         val keyCallback = ControlKeyCallback(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
@@ -218,13 +218,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     ) : Panel.Builder<Builder>(
         drawingInformer, size, size
     ) {
-        public override fun self(): Builder {
-            return this
-        }
         
-        override fun build(): Control {
-            return Control(this)
-        }
+        override fun build() = Control(this)
     }
     
 }

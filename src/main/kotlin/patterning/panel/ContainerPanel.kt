@@ -80,11 +80,6 @@ abstract class ContainerPanel protected constructor(builder: Builder<*>) : Panel
             return self()
         }
         
-        @Suppress("UNCHECKED_CAST")
-        override fun self(): P {
-            return this as P
-        }
-        
         abstract override fun build(): ContainerPanel
     }
 }

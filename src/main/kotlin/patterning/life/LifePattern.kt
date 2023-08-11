@@ -408,6 +408,7 @@ class LifePattern(
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
                 .displayDuration(Theme.startupTextDisplayDuration)
         }
+        
         System.gc()
         
     }

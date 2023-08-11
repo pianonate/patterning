@@ -349,14 +349,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             return this
         }
         
+        override fun build() = TextPanel(this)
         
-        override fun self(): Builder {
-            return this
-        }
-        
-        override fun build(): TextPanel {
-            return TextPanel(this)
-        }
     }
     
     private inner class FadeInState : State {
