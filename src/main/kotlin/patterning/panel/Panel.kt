@@ -243,7 +243,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             }
         }
     
-    abstract class Builder/*<T : Builder<T>> */ {
+    abstract class Builder {
         val drawingInformer: DrawingInformer
         val canvas: Canvas
         var x = 0

@@ -2,9 +2,9 @@ package patterning
 
 enum class ThemeType(//
     // Add more themes as needed...
-    val themeConstants: UXConstants
+    val themeConstants: UXLightConstants
 ) {
-    DEFAULT(UXConstants()),
+    DEFAULT(UXLightConstants()),
     DARK(UXDarkConstants())
 
 }

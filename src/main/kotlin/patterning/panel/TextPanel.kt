@@ -84,7 +84,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         // we can't use the current UXBuffer as it causes flickering on init of the text
         // when beginDraw, endDraw are called
-        val sizingBuffer = drawingInformer.getPGraphics().parent.createGraphics(1, 1)
+        val sizingBuffer = canvas.getPGraphics(Theme.sizingBuffer, resizable = false)
         
         sizingBuffer.beginDraw()
         setFont(sizingBuffer, textSize)

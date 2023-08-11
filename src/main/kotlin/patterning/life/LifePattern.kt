@@ -496,8 +496,8 @@ class LifePattern(
     }
     
     private fun initBuffers() {
-        uxBuffer = canvas.getPGraphics()
-        patternBuffer = canvas.getPGraphics()
+        uxBuffer = canvas.getPGraphics(name = Theme.uxBuffer)
+        patternBuffer = canvas.getPGraphics(name = Theme.patternBuffer)
     }
     
     private fun fillSquare(

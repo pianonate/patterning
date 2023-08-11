@@ -26,6 +26,10 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         val canvasOffsetY: BigDecimal
     )
     
+    private data class NamedBuffers(val graphics: PGraphics, val resizable: Boolean)
+    
+    private val bufferCache = mutableMapOf<String, NamedBuffers>()
+    
     private val undoDeque = ArrayDeque<CanvasState>()
     
     private var prevWidth: Int = 0
@@ -55,11 +59,7 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     
     fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
     
-    
-    fun stopZooming() {
-        zoom.stopZooming()
-    }
-    
+    fun stopZooming() = zoom.stopZooming()
     
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     
@@ -102,8 +102,13 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         offsetsMovedObservers.add(observer)
     }
     
-    fun getPGraphics(): PGraphics {
-        return pApplet.createGraphics(pApplet.width, pApplet.height)
+    // Create or retrieve the PGraphics instance by its name.
+    fun getPGraphics(name: String, resizable: Boolean = true): PGraphics {
+        return bufferCache[name]?.graphics ?: run {
+            val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
+            bufferCache[name] = NamedBuffers(newGraphics, resizable)
+            newGraphics
+        }
     }
     
     fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
@@ -135,16 +140,36 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         }
     }
     
+    private fun handleResize() {
+        resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
+        
+        if (resized) {
+            invalidateResizableBuffers()
+            updateDimensions()
+        }
+        
+        if (resized || Theme.isTransitioning) {
+            mitigateFlicker()
+        }
+    }
+    
+    private fun invalidateResizableBuffers() {
+        bufferCache.entries.removeIf { (_, bufferInfo) ->
+            if (bufferInfo.resizable) {
+                bufferInfo.graphics.dispose() // Ensure you dispose of any resources held by the PGraphics instance
+                true // Remove this entry from the map
+            } else {
+                false
+            }
+        }
+    }
+    
     /**
      * internal for PatterningPApplet to delegate drawing background
      * in a more rigorous way :)
      */
     internal fun drawBackground() {
-        resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
-        if (resized || Theme.isTransitioning) {
-            updateDimensions()
-            mitigateFlicker()
-        }
+        handleResize()
         pApplet.background(Theme.backGroundColor)
     }
     

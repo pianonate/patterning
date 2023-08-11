@@ -2,7 +2,7 @@ package patterning
 
 import processing.core.PConstants
 
-class UXDarkConstants internal constructor() : UXConstants() {
+class UXDarkConstants internal constructor() : UXLightConstants() {
     
     override val blendMode:Int
         get() = PConstants.SCREEN

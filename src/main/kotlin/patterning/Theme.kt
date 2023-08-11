@@ -4,8 +4,26 @@ import processing.core.PApplet
 
 object Theme {
     
+    var currentThemeType: ThemeType = ThemeType.DARK
+        private set
     var blendMode = 0
         private set
+    
+    internal val isTransitioning: Boolean
+        get() = _backgroundColor.transitionInProgress
+    
+    fun init(pApplet: PApplet) {
+        _backgroundColor = ColorConstant(pApplet)
+        _cellColor = ColorConstant(pApplet)
+        _controlColor = ColorConstant(pApplet)
+        _controlHighlightColor = ColorConstant(pApplet)
+        _controlMousePressedColor = ColorConstant(pApplet)
+        _defaultPanelColor = ColorConstant(pApplet)
+        _textColor = ColorConstant(pApplet)
+        _textColorStart = ColorConstant(pApplet) // for lerping purposes
+        
+        setTheme(ThemeType.DARK)
+    }
     
     // colors
     private lateinit var _backgroundColor: ColorConstant
@@ -17,89 +35,51 @@ object Theme {
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
     
-    val backGroundColor: Int
-        get() = _backgroundColor.color
-    
-    val cellColor: Int
-        get() = _cellColor.color
-    
-    val controlColor: Int
-        get() = _controlColor.color
-    
-    val controlHighlightColor: Int
-        get() = _controlHighlightColor.color
-    
-    val controlMousePressedColor: Int
-        get() = _controlMousePressedColor.color
-    
-    val defaultPanelColor: Int
-        get() = _defaultPanelColor.color
-    
-    val textColor: Int
-        get() = _textColor.color
-    
-    val textColorStart: Int
-        get() = _textColorStart.color
+    val backGroundColor get() = _backgroundColor.color
+    val cellColor get() = _cellColor.color
+    val controlColor get() = _controlColor.color
+    val controlHighlightColor get() = _controlHighlightColor.color
+    val controlMousePressedColor get() = _controlMousePressedColor.color
+    val defaultPanelColor get() = _defaultPanelColor.color
+    val textColor get() = _textColor.color
+    val textColorStart get() = _textColorStart.color
     
     // durations
-    var controlHighlightDuration = 0
-        private set
-    var controlPanelTransitionDuration = 0
-        private set
-    var shortTransitionDuration = 0
-        private set
-    var startupTextDisplayDuration = 0
-        private set
-    var startupTextFadeInDuration = 0
-        private set
-    var startupTextFadeOutDuration = 0
-        private set
-    var themeTransitionDuration = 0
-        private set
+    const val controlHighlightDuration = 500
+    const val controlPanelTransitionDuration = 1500
+    const val shortTransitionDuration = 300
+    const val startupTextDisplayDuration = 2000
+    const val startupTextFadeInDuration = 3000
+    const val startupTextFadeOutDuration = 1000
+    const val themeTransitionDuration = 500
     
     // names
-    var countdownText: String = ""
-        private set
-    var fontName: String = ""
-        private set
-    var iconPath: String = ""
-        private set
-    var shortcutParenStart: String = "'"
-        private set
-    var shortcutParenEnd: String = ""
-        private set
-    var startupText: String = ""
-        private set
+    const val countdownText = "press space to begin immediately"
+    const val fontName = "Verdana"
+    const val iconPath = "icon/"
+    const val shortcutParenStart = " ("
+    const val shortcutParenEnd = ")"
+    const val startupText = "patterning"
+    
+    // PGraphics buffer names
+    const val uxBuffer = "ux"
+    const val patternBuffer = "pattern"
+    const val sizingBuffer = "sizing"
     
     // sizes
-    var controlSize = 0
-        private set
-    var controlHighlightCornerRadius = 0
-        private set
-    var dashedLineDashLength = 0f
-        private set
-    var dashedLineSpaceLength = 0f
-        private set
-    var defaultTextMargin = 0
-        private set
-    var defaultTextSize = 0f
-        private set
-    var hoverTextSize = 0
-        private set
-    var hoverTextWidth = 0
-        private set
-    var hoverTextMargin = 0
-        private set
-    var iconMargin = 0
-        private set
-    var startupTextSize = 0
-        private set
-    var strokeWeightBounds = 0f
-        private set
-    var strokeWeightDashedLine = 0f
-        private set
-    var currentThemeType: ThemeType = ThemeType.DARK
-        private set
+    const val controlSize = 35
+    const val controlHighlightCornerRadius = 10
+    const val dashedLineDashLength = 6f
+    const val dashedLineSpaceLength = 2f
+    const val defaultTextMargin = 5
+    const val defaultTextSize = 30f
+    const val hoverTextMargin = 5
+    const val hoverTextWidth = 225
+    const val hoverTextSize = 14
+    const val iconMargin = 5
+    const val startupTextSize = 50
+    const val strokeWeightBounds = 3f
+    const val strokeWeightDashedLine = 1f
     
     fun setTheme(newTheme: ThemeType) {
         currentThemeType = newTheme
@@ -117,53 +97,5 @@ object Theme {
         _textColor.setColor(themeConstants.textColor)
         _textColorStart.setColor(themeConstants.textColorStart)
         
-        //durations
-        controlHighlightDuration = themeConstants.controlHighlightDuration
-        controlPanelTransitionDuration = themeConstants.controlPanelTransitionDuration
-        shortTransitionDuration = themeConstants.shortTransitionDuration
-        startupTextDisplayDuration = themeConstants.startupTextDisplayDuration
-        startupTextFadeInDuration = themeConstants.startupTextFadeInDuration
-        startupTextFadeOutDuration = themeConstants.startupTextFadeOutDuration
-        themeTransitionDuration = themeConstants.themeTransitionDuration
-        
-        // sizes and radii
-        controlSize = themeConstants.controlSize
-        controlHighlightCornerRadius = themeConstants.controlHighlightCornerRadius
-        dashedLineDashLength = themeConstants.dashedLineDashLength
-        dashedLineSpaceLength = themeConstants.dashedLineSpaceLength
-        defaultTextMargin = themeConstants.defaultTextMargin
-        defaultTextSize = themeConstants.defaultTextSize
-        hoverTextSize = themeConstants.hoverTextSize
-        hoverTextWidth = themeConstants.hoverTextMaxWidth
-        hoverTextMargin = themeConstants.hoverTextMargin
-        iconMargin = themeConstants.iconMargin
-        startupTextSize = themeConstants.startupTextSize
-        strokeWeightBounds = themeConstants.strokeWeightBounds
-        strokeWeightDashedLine = themeConstants.strokeWeightDashedLine
-        
-        // strings
-        countdownText = themeConstants.countdownText
-        fontName = themeConstants.fontName
-        iconPath = themeConstants.iconPath
-        shortcutParenStart = themeConstants.shortcutParenStart
-        shortcutParenEnd = themeConstants.shortcutParenEnd
-        startupText = themeConstants.startupText
-        
     }
-    
-    internal val isTransitioning: Boolean
-        get() = _backgroundColor.transitionInProgress
-    
-    fun init(pApplet: PApplet) {
-        _backgroundColor = ColorConstant(pApplet)
-        _cellColor = ColorConstant(pApplet)
-        _controlColor = ColorConstant(pApplet)
-        _controlHighlightColor = ColorConstant(pApplet)
-        _controlMousePressedColor = ColorConstant(pApplet)
-        _defaultPanelColor = ColorConstant(pApplet)
-        _textColor = ColorConstant(pApplet)
-        _textColorStart = ColorConstant(pApplet) // for lerping purposes
-        setTheme(ThemeType.DARK) // Default theme
-    }
-    
 }
