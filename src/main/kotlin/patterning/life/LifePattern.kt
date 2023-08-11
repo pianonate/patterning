@@ -8,8 +8,8 @@ import java.math.BigDecimal
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Canvas
-import patterning.DrawBuffer
 import patterning.Drawer
+import patterning.GraphicsReference
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
@@ -64,14 +64,7 @@ class LifePattern(
     private val hudInfo: HUDStringBuilder
     private val movementHandler: MovementHandler
     
-    // lifeFormPosition is used because we now separate the drawing speed from the framerate
-    // we may not draw an image every frame
-    // if we haven't drawn an image, we still want to be able to move and drag
-    // the image around so this allows us to keep track of the current position
-    // for the lifeFormBuffer and move that buffer around regardless of whether we've drawn an image
-    // whenever an image is drawn, ths PVector is reset to 0,0 to match the current image state
-    // it's a nifty way to handle things - just follow lifeFormPosition through the code
-    // to see what i'm talking about
+    // used to move the pattern around the screen
     private var lifeFormPosition = PVector(0f, 0f)
     
     // DrawNodePath is just a helper class extracted into a separate class only for readability
@@ -86,8 +79,8 @@ class LifePattern(
     private var countdownText: TextPanel? = null
     private val hudText: TextPanel
     
-    private var pattern: DrawBuffer
-    private var ux: DrawBuffer
+    private var pattern: GraphicsReference
+    private var ux: GraphicsReference
     private var drawBounds: Boolean
     
     
@@ -96,8 +89,8 @@ class LifePattern(
         
         canvas.addOffsetsMovedObserver(nodePath)
         
-        ux = canvas.getDrawBuffer(Theme.uxBuffer)
-        pattern = canvas.getDrawBuffer(Theme.patternBuffer)
+        ux = canvas.getNamedGraphicsReference(Theme.uxGraphics)
+        pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics)
         
         movementHandler = MovementHandler(this)
         drawBounds = false
@@ -543,6 +536,7 @@ class LifePattern(
         drawBounds(life)
         
         graphics.endDraw()
+        
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
     }
@@ -631,14 +625,14 @@ class LifePattern(
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = BoundingBox(bounds, canvas.zoomLevel, canvas)
-        boundingBox.draw(pattern)
+        boundingBox.draw(pattern.graphics)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas.zoomLevel, canvas)
-            universeBox.draw(pattern, drawCrosshair = true)
+            universeBox.draw(pattern.graphics, drawCrosshair = true)
             currentLevel++
         }
     }

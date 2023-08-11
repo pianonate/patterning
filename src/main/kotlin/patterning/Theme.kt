@@ -28,10 +28,10 @@ object Theme {
     const val shortcutParenEnd = ")"
     const val startupText = "patterning"
     
-    // PGraphics buffer names
-    const val uxBuffer = "ux"
-    const val patternBuffer = "pattern"
-    const val sizingBuffer = "sizing"
+    // PGraphics names
+    const val uxGraphics = "ux"
+    const val patternGraphics = "pattern"
+    const val sizingGraphics = "sizing"
     
     // sizes
     const val controlSize = 35

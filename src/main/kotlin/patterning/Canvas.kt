@@ -25,10 +25,10 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         val canvasOffsetY: BigDecimal
     )
     
-    data class NamedBufferReference(val drawBuffer: DrawBuffer, val resizable: Boolean)
+    data class ReferenceInfo(val graphicsReference: GraphicsReference, val resizable: Boolean)
     
     private val zoom = Zoom()
-    private val bufferCache: MutableMap<String, NamedBufferReference> = mutableMapOf()
+    private val graphicsReferenceCache: MutableMap<String, ReferenceInfo> = mutableMapOf()
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     private val undoDeque = ArrayDeque<CanvasState>()
     
@@ -104,25 +104,14 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     }
     
     /**
-     * Initialize a buffer with the specified name.
-     * If the buffer with the given name already exists, it won't recreate it.
+     * Retrieve the PGraphics instance by its name. create if it doesn't exist
      */
-    private fun initBuffer(name: String, resizable: Boolean = true) {
-        if (!bufferCache.containsKey(name)) {
+    fun getNamedGraphicsReference(name: String, resizable: Boolean = true): GraphicsReference {
+        return graphicsReferenceCache.computeIfAbsent(name) {
             val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-            bufferCache[name] = NamedBufferReference(DrawBuffer(newGraphics), resizable)
-        }
-    }
-    
-    /**
-     * Retrieve the PGraphics instance by its name. Assumes the buffer has been initialized before.
-     */
-    fun getDrawBuffer(name: String, resizable: Boolean = true): DrawBuffer {
-        if (!bufferCache.containsKey(name)) {
-            val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-            bufferCache[name] = NamedBufferReference(DrawBuffer(newGraphics), resizable)
-        }
-        return bufferCache[name]!!.drawBuffer
+            ReferenceInfo(GraphicsReference(newGraphics), resizable)
+        }.graphicsReference
+        
     }
     
     fun getGraphics(width: Int, height: Int): PGraphics {
@@ -171,7 +160,7 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
         
         if (resized) {
-            updateResizableBuffers()
+            updateResizableGraphicsReferences()
             updateDimensions()
         }
         
@@ -180,11 +169,11 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         }
     }
     
-    private fun updateResizableBuffers() {
-        bufferCache.forEach { (_, bufferInfo) ->
-            if (bufferInfo.resizable) {
+    private fun updateResizableGraphicsReferences() {
+        graphicsReferenceCache.forEach { (_, referenceInfo) ->
+            if (referenceInfo.resizable) {
                 val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-                bufferInfo.drawBuffer.updateGraphics(newGraphics)
+                referenceInfo.graphicsReference.updateGraphics(newGraphics)
             }
         }
     }

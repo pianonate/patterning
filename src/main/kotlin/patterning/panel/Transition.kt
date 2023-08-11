@@ -16,17 +16,17 @@ class Transition(
     var isTransitioning = true
         private set
     
-    fun image(transitionBuffer: PGraphics, x: Float, y: Float) {
+    fun image(transitionGraphics: PGraphics, x: Float, y: Float) {
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val uxBuffer = canvas.getDrawBuffer(Theme.uxBuffer).graphics
+        val ux = canvas.getNamedGraphicsReference(Theme.uxGraphics).graphics
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {
-            TransitionType.EXPANDO -> drawExpandoTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
-            TransitionType.SLIDE -> drawSlideTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
-            TransitionType.DIAGONAL -> drawDiagonalTransition(uxBuffer, transitionBuffer, transitionProgress, x, y)
+            TransitionType.EXPANDO -> drawExpandoTransition(ux, transitionGraphics, transitionProgress, x, y)
+            TransitionType.SLIDE -> drawSlideTransition(ux, transitionGraphics, transitionProgress, x, y)
+            TransitionType.DIAGONAL -> drawDiagonalTransition(ux, transitionGraphics, transitionProgress, x, y)
         }
         
         // let it do its last transition above otherwise you get a little screen flicker on the transition

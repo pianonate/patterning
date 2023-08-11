@@ -4,8 +4,8 @@ import java.awt.Component
 import java.awt.MouseInfo
 import java.util.OptionalInt
 import patterning.Canvas
-import patterning.DrawBuffer
 import patterning.Drawable
+import patterning.GraphicsReference
 import patterning.PatterningPApplet
 import patterning.Theme
 import patterning.actions.MouseEventReceiver
@@ -67,10 +67,10 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     private var transitionAble: Boolean
     private var transition: Transition? = null
     
-    // image buffers and callbacks
-    internal var parentBuffer: DrawBuffer
+    // PGraphics and callbacks
+    internal var parentGraphicsReference: GraphicsReference
     private val parentGraphics: PGraphics
-        get() = parentBuffer.graphics
+        get() = parentGraphicsReference.graphics
     
     internal lateinit var panelGraphics: PGraphics
     
@@ -97,12 +97,12 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
         
-        parentBuffer = canvas.getDrawBuffer(Theme.uxBuffer) // drawingContext.getPGraphics()
+        parentGraphicsReference = canvas.getNamedGraphicsReference(Theme.uxGraphics) // drawingContext.getPGraphics()
         
-        // we don't say UXBuffer here because sometimes the parentBuffer is the uxBuffer
-        // and sometimes it's going to be the buffer from a container panel so we need to
+        // we don't say ux graphics here because sometimes the parentGraphics is the ux
+        // and sometimes it's going to be the graphics from a container panel so we need to
         // be using the correct one when we do invoke alignment
-        initPanelBuffer()
+        initPanelGraphics()
         
         if (transitionAble) {
             transition = Transition(canvas, transitionDirection!!, transitionType!!, transitionDuration)
@@ -114,7 +114,11 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         position.y = y.toFloat()
     }
     
-    fun initPanelBuffer() {
+    /**
+     * we need PGraphics to be created in relation to their parent so you can't
+     * create a new one from the canvas here
+     */
+    fun initPanelGraphics() {
         panelGraphics = parentGraphics.parent.createGraphics(width, height)
     }
     
@@ -143,16 +147,13 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         transitionAble = true
     }
     
-    open fun updatePanelBuffer() {}
+    open fun updatePanelGraphics() {}
     
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
         
-        val localParent = parentGraphics
-        val parentBuffer = parentGraphics // drawingContext.getPGraphics()
-        
         /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
-        updatePanelBuffer()
+        updatePanelGraphics()
         
         panelGraphics.beginDraw()
         panelGraphics.pushStyle()
@@ -162,7 +163,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         
         // handle alignment if requested
         if (alignAble) {
-            updateAlignment(parentBuffer)
+            updateAlignment()
         }
         
         // output the background Rect for this panel
@@ -176,27 +177,27 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         panelSubclassDraw()
         panelGraphics.endDraw()
         
-        if (this is TextPanel) parentBuffer.blendMode(Theme.blendMode)
+        if (this is TextPanel) parentGraphics.blendMode(Theme.blendMode)
         
         if (transitionAble && transition!!.isTransitioning) {
             transition!!.image(panelGraphics, position.x, position.y)
         } else {
-            parentBuffer.image(panelGraphics, position.x, position.y)
+            parentGraphics.image(panelGraphics, position.x, position.y)
         }
         
     }
     
-    private fun updateAlignment(buffer: PGraphics) {
+    private fun updateAlignment() {
         var posX = 0
         var posY = 0
         when (hAlign) {
-            AlignHorizontal.CENTER -> posX = (buffer.width - width) / 2
-            AlignHorizontal.RIGHT -> posX = buffer.width - width
+            AlignHorizontal.CENTER -> posX = (parentGraphics.width - width) / 2
+            AlignHorizontal.RIGHT -> posX = parentGraphics.width - width
             else -> {}
         }
         when (vAlign) {
-            AlignVertical.CENTER -> posY = (buffer.height - height) / 2
-            AlignVertical.BOTTOM -> posY = buffer.height - height
+            AlignVertical.CENTER -> posY = (parentGraphics.height - height) / 2
+            AlignVertical.BOTTOM -> posY = parentGraphics.height - height
             else -> {}
         }
         setPosition(posX, posY)

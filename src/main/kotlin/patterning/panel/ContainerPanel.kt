@@ -1,7 +1,7 @@
 package patterning.panel
 
 import patterning.Canvas
-import patterning.DrawBuffer
+import patterning.GraphicsReference
 
 abstract class ContainerPanel protected constructor(builder: Builder) : Panel(builder) {
     private val childPanels: List<Panel>
@@ -10,28 +10,22 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
     init {
         childPanels = ArrayList(builder.childPanels)
         check(childPanels.isNotEmpty()) { "ContainerPanel must have at least one child panel" }
-        
-        /*        // Set parent panel for each child
-                for (child in childPanels) {
-                    // child panels need special handling to orient themselves to this container Panel
-                    // rather than the UXBuffer, which is the more common case...
-                    child.parentPanel = this
-                }*/
         orientation = builder.orientation
         updatePanelSize()
         
-        // super(builder) causes Panel to create an initial panelBuffer
+        // super(builder) causes Panel to create an initial panelGraphics
         // to draw into.  However ContainerPanel's don't have a width and height until
         // we've run updatePanelSize as we don't know how
         // many children will get added to a ContainerPanel -
         // given we've already called super(builder), set
         // as the one created in Panel won't work
         // there's probably a better way but i think it can wait
-        initPanelBuffer()
+        // so, just re-initialize the already created panelGraphics
+        initPanelGraphics()
         for (child in childPanels) {
             // child panels need special handling to orient themselves to this container Panel
             child.parentPanel = this
-            child.parentBuffer = DrawBuffer(panelGraphics)
+            child.parentGraphicsReference = GraphicsReference(panelGraphics)
         }
     }
     

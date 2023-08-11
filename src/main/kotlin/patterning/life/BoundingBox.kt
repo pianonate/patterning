@@ -2,9 +2,9 @@ package patterning.life
 
 import java.math.BigDecimal
 import patterning.Canvas
-import patterning.DrawBuffer
 import patterning.Theme
 import processing.core.PApplet
+import processing.core.PGraphics
 
 class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canvas) {
     // we draw the box just a bit off screen so it won't be visible
@@ -68,21 +68,20 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
         }
     
     
-    private fun drawCrossHair(buffer: DrawBuffer, dashLength: Float, spaceLength: Float) {
-        horizontalLine.drawDashedLine(buffer, dashLength, spaceLength)
-        verticalLine.drawDashedLine(buffer, dashLength, spaceLength)
+    private fun drawCrossHair(graphics: PGraphics, dashLength: Float, spaceLength: Float) {
+        horizontalLine.drawDashedLine(graphics, dashLength, spaceLength)
+        verticalLine.drawDashedLine(graphics, dashLength, spaceLength)
     }
     
-    fun draw(buffer: DrawBuffer, drawCrosshair: Boolean = false) {
+    fun draw(graphics: PGraphics, drawCrosshair: Boolean = false) {
         
-        val graphics = buffer.graphics
         graphics.pushStyle()
         graphics.noFill()
         graphics.stroke(Theme.textColor)
         graphics.strokeWeight(Theme.strokeWeightBounds)
         graphics.rect(left, top, width, height)
         if (drawCrosshair) {
-            drawCrossHair(buffer, Theme.dashedLineDashLength, Theme.dashedLineSpaceLength)
+            drawCrossHair(graphics, Theme.dashedLineDashLength, Theme.dashedLineSpaceLength)
         }
         
         graphics.popStyle()
@@ -91,7 +90,7 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private data class Point(val x: Float, val y: Float)
     
     private data class Line(val start: Point, val end: Point) {
-        fun drawDashedLine(buffer: DrawBuffer, dashLength: Float, spaceLength: Float) {
+        fun drawDashedLine(graphics: PGraphics, dashLength: Float, spaceLength: Float) {
             val x1 = start.x
             val y1 = start.y
             val x2 = end.x
@@ -103,7 +102,6 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
             var draw = true
             var x = x1
             var y = y1
-            val graphics = buffer.graphics
             graphics.pushStyle()
             graphics.strokeWeight(Theme.strokeWeightDashedLine)
             for (i in 0 until (numDashes * 2).toInt()) {

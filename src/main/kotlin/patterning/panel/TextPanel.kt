@@ -3,9 +3,9 @@ package patterning.panel
 import java.util.OptionalInt
 import kotlin.math.ceil
 import patterning.Canvas
-import patterning.DrawBuffer
 import patterning.Drawable
 import patterning.Drawer
+import patterning.GraphicsReference
 import patterning.Theme
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -48,7 +48,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             field = value
         }
     
-    private val sizing: DrawBuffer = canvas.getDrawBuffer(Theme.sizingBuffer, resizable = false)
+    private val sizing: GraphicsReference = canvas.getNamedGraphicsReference(Theme.sizingGraphics, resizable = false)
     
     init {
         
@@ -72,7 +72,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         runMethod = builder.runMethod
         countdownFrom = builder.countdownFrom
         initialMessage = builder.message
-        setTextPanelBuffer()
+        setTextPanelGraphics()
         
         startDisplay()
     }
@@ -91,7 +91,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
      * we can't use the current UX.graphics as it causes flickering on it
      * when beginDraw, endDraw are called
      */
-    private fun setTextPanelBuffer() {
+    private fun setTextPanelGraphics() {
         
         with(sizing.graphics) {
             beginDraw()
@@ -205,9 +205,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
     
     /* called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on */
-    override fun updatePanelBuffer() {
+    override fun updatePanelGraphics() {
         if (lastMessage != message) {
-            setTextPanelBuffer()
+            setTextPanelGraphics()
         }
     }
     
