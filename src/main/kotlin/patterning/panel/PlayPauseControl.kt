@@ -1,6 +1,7 @@
 package patterning.panel
 
 import kotlinx.coroutines.delay
+import patterning.Canvas
 import patterning.DrawingInformer
 import patterning.RunningMode
 import patterning.RunningState
@@ -81,12 +82,13 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
     
     class Builder(
         drawingInformer: DrawingInformer,
+        canvas: Canvas,
         callback: KeyCallback,
         iconName: String,
         val pausedIconName: String,
         size: Int,
         
-        ) : Control.Builder(drawingInformer, callback, iconName, size) {
+        ) : Control.Builder(drawingInformer, canvas, callback, iconName, size) {
         
         override fun build() = PlayPauseControl(this)
     }

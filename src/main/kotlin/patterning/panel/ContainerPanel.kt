@@ -1,5 +1,6 @@
 package patterning.panel
 
+import patterning.Canvas
 import patterning.DrawingInformer
 import processing.core.PGraphics
 
@@ -64,9 +65,9 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
     // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
     abstract class Builder
-        (drawingInformer: DrawingInformer, hAlign: AlignHorizontal, vAlign: AlignVertical) :
+        (drawingInformer: DrawingInformer, canvas: Canvas, hAlign: AlignHorizontal, vAlign: AlignVertical) :
         Panel.Builder(
-            drawingInformer, hAlign, vAlign
+            drawingInformer, canvas, hAlign, vAlign
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
         

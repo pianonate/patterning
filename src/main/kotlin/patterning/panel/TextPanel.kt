@@ -2,6 +2,7 @@ package patterning.panel
 
 import java.util.OptionalInt
 import kotlin.math.ceil
+import patterning.Canvas
 import patterning.Drawable
 import patterning.Drawer
 import patterning.DrawingInformer
@@ -281,24 +282,26 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         constructor(
             informer: DrawingInformer,
+            canvas: Canvas,
             message: String = "",
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) : super(
-            informer, hAlign, vAlign
+            informer, canvas, hAlign, vAlign
         ) {
             this.message = message
         }
         
         constructor(
             informer: DrawingInformer,
+            canvas: Canvas,
             message: String,
             position: PVector?,
             offsetBottom: Boolean,
             hAlign: AlignHorizontal?,
             vAlign: AlignVertical?
         ) : super(
-            informer, position!!, hAlign!!, vAlign!!
+            informer, canvas, position!!, hAlign!!, vAlign!!
         ) {
             this.message = message
             this.offsetBottom = offsetBottom

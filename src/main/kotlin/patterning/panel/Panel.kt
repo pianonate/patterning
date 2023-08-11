@@ -3,6 +3,7 @@ package patterning.panel
 import java.awt.Component
 import java.awt.MouseInfo
 import java.util.OptionalInt
+import patterning.Canvas
 import patterning.Drawable
 import patterning.DrawingInformer
 import patterning.PatterningPApplet
@@ -45,12 +46,15 @@ import processing.core.PVector
  *   with methods from across the hierarchy.
  */
 abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEventReceiver {
+    
+    
+    internal var parentPanel: Panel? = null
+    internal var drawingInformer: DrawingInformer
+    internal val canvas: Canvas
+    
     // alignment
     private val alignAble: Boolean
     private val radius: OptionalInt
-    
-    var parentPanel: Panel? = null
-    var drawingInformer: DrawingInformer
     
     // size & positioning
     var position: PVector? = null
@@ -78,6 +82,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     init {
         setPosition(builder.x, builder.y)
         drawingInformer = builder.drawingInformer
+        canvas = builder.canvas
         width = builder.width
         height = builder.height
         radius = builder.radius
@@ -240,6 +245,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     
     abstract class Builder/*<T : Builder<T>> */ {
         val drawingInformer: DrawingInformer
+        val canvas: Canvas
         var x = 0
         var y = 0
         var width = 0
@@ -254,14 +260,16 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         var radius: OptionalInt = OptionalInt.empty()
         
         // used by Control
-        constructor(drawingInformer: DrawingInformer, width: Int, height: Int) {
+        constructor(drawingInformer: DrawingInformer, canvas: Canvas, width: Int, height: Int) {
             setRect(x = 0, y = 0, width = width, height = height) // parent positioned
             this.drawingInformer = drawingInformer
+            this.canvas = canvas
         }
         
         // used by TextPanel for explicitly positioned text
         constructor(
             drawingInformer: DrawingInformer,
+            canvas: Canvas,
             position: PVector,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
@@ -269,6 +277,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             setRect(position.x.toInt(), position.y.toInt(), 0, 0) // parent positioned
             setAlignment(hAlign, vAlign, false)
             this.drawingInformer = drawingInformer
+            this.canvas = canvas
         }
         
         private fun setRect(x: Int, y: Int, width: Int, height: Int) {
@@ -287,6 +296,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         // used by BasicPanel for demonstration purposes
         constructor(
             drawingInformer: DrawingInformer,
+            canvas: Canvas,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical,
             width: Int,
@@ -295,17 +305,20 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             setRect(0, 0, width, height) // we're only using BasicPanel to show that panels are useful...
             setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
+            this.canvas = canvas
         }
         
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
         constructor(
             drawingInformer: DrawingInformer,
+            canvas: Canvas,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) {
             setRect(0, 0, 0, 0) // Containers and text, so far, only need to be aligned around the screen
             setAlignment(hAlign, vAlign, true)
             this.drawingInformer = drawingInformer
+            this.canvas = canvas
         }
         
         fun fill(fill: Int) = apply { this.fill = fill }

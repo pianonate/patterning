@@ -1,6 +1,7 @@
 package patterning.panel
 
 import kotlinx.coroutines.delay
+import patterning.Canvas
 import patterning.Drawer
 import patterning.DrawingInformer
 import patterning.RunningMode
@@ -131,6 +132,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         
         return TextPanel.Builder(
             localParentPanel.drawingInformer,
+            canvas,
             hoverMessage,
             PVector(hoverX.toFloat(), hoverY.toFloat()),
             offsetBottom = offsetBottom,
@@ -212,11 +214,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     
     open class Builder(
         drawingInformer: DrawingInformer,
+        canvas: Canvas,
         val callback: KeyCallback,
         val iconName: String,
         val size: Int
     ) : Panel.Builder(
-        drawingInformer, size, size
+        drawingInformer, canvas, size, size
     ) {
         override fun build() = Control(this)
     }

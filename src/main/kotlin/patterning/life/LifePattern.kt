@@ -104,7 +104,7 @@ class LifePattern(
         hudInfo = HUDStringBuilder()
         
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
+            TextPanel.Builder(drawingInformer, canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
                 .textSize(Theme.startupTextSize)
                 .fadeInDuration(Theme.startupTextFadeInDuration)
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
@@ -125,6 +125,7 @@ class LifePattern(
         
         hudText = TextPanel.Builder(
             informer = drawingInformer,
+            canvas = canvas,
             hAlign = AlignHorizontal.RIGHT,
             vAlign = AlignVertical.BOTTOM
         )
@@ -147,7 +148,7 @@ class LifePattern(
         val panelTop: ControlPanel
         val panelRight: ControlPanel
         val transitionDuration = Theme.controlPanelTransitionDuration
-        panelLeft = ControlPanel.Builder(drawingInformer, AlignHorizontal.LEFT, AlignVertical.CENTER)
+        panelLeft = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
             .apply {
                 transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
                 setOrientation(Orientation.VERTICAL)
@@ -158,7 +159,7 @@ class LifePattern(
                 addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
             }.build()
         
-        panelTop = ControlPanel.Builder(drawingInformer, AlignHorizontal.CENTER, AlignVertical.TOP)
+        panelTop = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
             .apply {
                 transition(
                     Transition.TransitionDirection.DOWN,
@@ -179,7 +180,7 @@ class LifePattern(
                 addControl("rewind.png", keyCallbackFactory.callbackRewind)
             }.build()
         
-        panelRight = ControlPanel.Builder(drawingInformer, AlignHorizontal.RIGHT, AlignVertical.CENTER)
+        panelRight = ControlPanel.Builder(drawingInformer, canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
             .apply {
                 transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                 setOrientation(Orientation.VERTICAL)
@@ -411,7 +412,7 @@ class LifePattern(
         life = universe
         
         createTextPanel(null) {
-            TextPanel.Builder(drawingInformer, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
+            TextPanel.Builder(drawingInformer, canvas, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
                 .textSize(Theme.startupTextSize)
                 .fadeInDuration(Theme.startupTextFadeInDuration)
                 .fadeOutDuration(Theme.startupTextFadeOutDuration)
@@ -451,6 +452,7 @@ class LifePattern(
         if (!testing) countdownText = createTextPanel(countdownText) {
             TextPanel.Builder(
                 drawingInformer,
+                canvas,
                 Theme.countdownText,
                 AlignHorizontal.CENTER,
                 AlignVertical.CENTER
