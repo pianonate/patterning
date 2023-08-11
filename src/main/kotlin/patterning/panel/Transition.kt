@@ -1,13 +1,11 @@
 package patterning.panel
 
 import patterning.Canvas
-import patterning.DrawingContext
 import patterning.Theme
 import processing.core.PApplet
 import processing.core.PGraphics
 
 class Transition(
-    private val drawingContext: DrawingContext,
     private val canvas: Canvas,
     private val direction: TransitionDirection,
     private val type: TransitionType,

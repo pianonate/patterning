@@ -3,7 +3,6 @@ package patterning.panel
 import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
-import patterning.DrawingContext
 import patterning.RunningMode
 import patterning.RunningState
 import patterning.Theme
@@ -131,7 +130,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // would try to draw itself within the control at a microscopic size
         
         return TextPanel.Builder(
-            localParentPanel.drawingContext,
             canvas,
             hoverMessage,
             PVector(hoverX.toFloat(), hoverY.toFloat()),
@@ -213,13 +211,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
     
     open class Builder(
-        drawingContext: DrawingContext,
         canvas: Canvas,
         val callback: KeyCallback,
         val iconName: String,
         val size: Int
     ) : Panel.Builder(
-        drawingContext, canvas, size, size
+        canvas, size, size
     ) {
         override fun build() = Control(this)
     }

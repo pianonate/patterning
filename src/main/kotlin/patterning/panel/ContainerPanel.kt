@@ -2,7 +2,6 @@ package patterning.panel
 
 import patterning.Canvas
 import patterning.DrawBuffer
-import patterning.DrawingContext
 
 abstract class ContainerPanel protected constructor(builder: Builder) : Panel(builder) {
     private val childPanels: List<Panel>
@@ -12,13 +11,12 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
         childPanels = ArrayList(builder.childPanels)
         check(childPanels.isNotEmpty()) { "ContainerPanel must have at least one child panel" }
         
-        // Set parent panel for each child
-        for (child in childPanels) {
-            // child panels need special handling to orient themselves to this container Panel
-            // rather than the UXBuffer, which is the more common case...
-            child.parentPanel = this
-            child.drawingContext = DrawingContext { panelGraphics }
-        }
+        /*        // Set parent panel for each child
+                for (child in childPanels) {
+                    // child panels need special handling to orient themselves to this container Panel
+                    // rather than the UXBuffer, which is the more common case...
+                    child.parentPanel = this
+                }*/
         orientation = builder.orientation
         updatePanelSize()
         
@@ -31,6 +29,8 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
         // there's probably a better way but i think it can wait
         initPanelBuffer()
         for (child in childPanels) {
+            // child panels need special handling to orient themselves to this container Panel
+            child.parentPanel = this
             child.parentBuffer = DrawBuffer(panelGraphics)
         }
     }
@@ -65,9 +65,9 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
     // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
     abstract class Builder
-        (drawingContext: DrawingContext, canvas: Canvas, hAlign: AlignHorizontal, vAlign: AlignVertical) :
+        (canvas: Canvas, hAlign: AlignHorizontal, vAlign: AlignVertical) :
         Panel.Builder(
-            drawingContext, canvas, hAlign, vAlign
+            canvas, hAlign, vAlign
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
         

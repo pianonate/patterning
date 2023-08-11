@@ -6,7 +6,6 @@ import patterning.Canvas
 import patterning.DrawBuffer
 import patterning.Drawable
 import patterning.Drawer
-import patterning.DrawingContext
 import patterning.Theme
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -292,19 +291,17 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var keepShortCutTogether = false
         
         constructor(
-            informer: DrawingContext,
             canvas: Canvas,
             message: String = "",
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) : super(
-            informer, canvas, hAlign, vAlign
+            canvas, hAlign, vAlign
         ) {
             this.message = message
         }
         
         constructor(
-            informer: DrawingContext,
             canvas: Canvas,
             message: String,
             position: PVector,
@@ -312,7 +309,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) : super(
-            informer, canvas, position, hAlign, vAlign
+            canvas, position, hAlign, vAlign
         ) {
             this.message = message
             this.offsetBottom = offsetBottom
