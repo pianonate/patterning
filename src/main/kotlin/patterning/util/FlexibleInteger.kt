@@ -225,6 +225,15 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             }
         }
     
+    fun toFlexibleDecimal(): FlexibleDecimal {
+        return when (value) {
+            is Int -> FlexibleDecimal.create(value.toFloat())
+            is Long -> FlexibleDecimal.create(value.toDouble())
+            is BigInteger -> FlexibleDecimal.create(bigDecimal)
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
+    }
+    
     fun toDouble(): Double {
         return when (value) {
             is Int -> value.toDouble()

@@ -4,7 +4,6 @@ import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
-import java.math.BigDecimal
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Canvas
@@ -20,6 +19,7 @@ import patterning.pattern.PerformanceTestable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
 import patterning.util.AsyncJobRunner
+import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
 import processing.core.PApplet
@@ -113,7 +113,7 @@ class LifePattern(
     
     override fun move(dx: Float, dy: Float) {
         canvas.saveUndoState()
-        canvas.adjustCanvasOffsets(dx.toBigDecimal(), dy.toBigDecimal())
+        canvas.adjustCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
         lifeFormPosition.add(dx, dy)
     }
     
@@ -155,32 +155,32 @@ class LifePattern(
         if (saveState) canvas.saveUndoState()
         
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = bounds.width.bigDecimal
-        val patternHeight = bounds.height.bigDecimal
+        val patternWidth = bounds.width.toFlexibleDecimal()
+        val patternHeight = bounds.height.toFlexibleDecimal()
         
         if (fitBounds) {
             val widthRatio =
-                patternWidth.takeIf { it > BigDecimal.ZERO }?.let { canvas.width.divide(it, canvas.mc) }
-                    ?: BigDecimal.ONE
+                patternWidth.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.width.divide(it, canvas.mc) }
+                    ?: FlexibleDecimal.ONE
             val heightRatio =
-                patternHeight.takeIf { it > BigDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
-                    ?: BigDecimal.ONE
+                patternHeight.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
+                    ?: FlexibleDecimal.ONE
             
-            canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio).multiply(BigDecimal.valueOf(.9), canvas.mc)
+            canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio).multiply(FlexibleDecimal.create(.9), canvas.mc)
         }
         
         val level = canvas.zoomLevel
         
         val drawingWidth = patternWidth.multiply(level, canvas.mc)
         val drawingHeight = patternHeight.multiply(level, canvas.mc)
-        val halfCanvasWidth = canvas.width.divide(BigDecimal.TWO, canvas.mc)
-        val halfCanvasHeight = canvas.height.divide(BigDecimal.TWO, canvas.mc)
-        val halfDrawingWidth = drawingWidth.divide(BigDecimal.TWO, canvas.mc)
-        val halfDrawingHeight = drawingHeight.divide(BigDecimal.TWO, canvas.mc)
+        val halfCanvasWidth = canvas.width.divide(FlexibleDecimal.TWO, canvas.mc)
+        val halfCanvasHeight = canvas.height.divide(FlexibleDecimal.TWO, canvas.mc)
+        val halfDrawingWidth = drawingWidth.divide(FlexibleDecimal.TWO, canvas.mc)
+        val halfDrawingHeight = drawingHeight.divide(FlexibleDecimal.TWO, canvas.mc)
         
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.bigDecimal.multiply(-level, canvas.mc))
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.bigDecimal.multiply(-level, canvas.mc))
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toFlexibleDecimal().multiply(-level, canvas.mc))
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toFlexibleDecimal().multiply(-level, canvas.mc))
         
         canvas.updateCanvasOffsets(offsetX, offsetY)
         
@@ -328,7 +328,7 @@ class LifePattern(
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
-            hudInfo.addOrUpdate("cell", canvas.zoomLevel)
+            hudInfo.addOrUpdate("cell", canvas.zoomLevel.toNumber())
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
             
             hudInfo.addOrUpdate("running", RunningState.runMessage())
@@ -347,7 +347,7 @@ class LifePattern(
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size // - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
+        val width = size - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
         // unless you start doing something custom...
@@ -402,9 +402,9 @@ class LifePattern(
     
     private fun drawNodeRecurse(
         node: Node,
-        size: BigDecimal,
-        left: BigDecimal,
-        top: BigDecimal
+        size: FlexibleDecimal,
+        left: FlexibleDecimal,
+        top: FlexibleDecimal
     ) {
         ++actualRecursions
         
@@ -419,7 +419,7 @@ class LifePattern(
         
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
-        if (size <= BigDecimal.ONE && node.population.isNotZero()) {
+        if (size <= FlexibleDecimal.ONE && node.population.isNotZero()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
@@ -441,9 +441,9 @@ class LifePattern(
     // maintains no state so it can live here as a utility function
     private fun shouldContinue(
         node: Node,
-        size: BigDecimal,
-        nodeLeft: BigDecimal,
-        nodeTop: BigDecimal
+        size: FlexibleDecimal,
+        nodeLeft: FlexibleDecimal,
+        nodeTop: FlexibleDecimal
     ): Boolean {
         if (node.population.isZero()) {
             return false
@@ -472,7 +472,7 @@ class LifePattern(
         // if the bottom is less than zero it's above the canvas
         // if the left is larger than the width then we're to the right of the canvas
         // if the top is larger than the height we're below the canvas
-        return !(right < BigDecimal.ZERO || bottom < BigDecimal.ZERO ||
+        return !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
                 left >= canvas.width || top >= canvas.height)
     }
     

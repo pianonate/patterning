@@ -3,12 +3,12 @@ package patterning
 
 import java.awt.Color
 import java.awt.Component
-import java.math.BigDecimal
 import java.math.MathContext
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
+import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
@@ -19,9 +19,9 @@ import processing.core.PImage
 
 class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(
-        val level: BigDecimal,
-        val canvasOffsetX: BigDecimal,
-        val canvasOffsetY: BigDecimal
+        val level: FlexibleDecimal,
+        val canvasOffsetX: FlexibleDecimal,
+        val canvasOffsetY: FlexibleDecimal
     )
     
     data class ReferenceInfo(val graphicsReference: GraphicsReference, val resizable: Boolean)
@@ -36,13 +36,13 @@ class Canvas(private val pApplet: PApplet) {
     
     private var resized = false
     
-    var width: BigDecimal = BigDecimal.ZERO
+    var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
-    var height: BigDecimal = BigDecimal.ZERO
+    var height: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
-    var offsetX: BigDecimal = BigDecimal.ZERO
+    var offsetX: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
-    var offsetY: BigDecimal = BigDecimal.ZERO
+    var offsetY: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
     
     init {
@@ -53,7 +53,7 @@ class Canvas(private val pApplet: PApplet) {
     /**
      * zoom delegates
      */
-    var zoomLevel: BigDecimal
+    var zoomLevel: FlexibleDecimal
         get() = zoom.level
         set(value) {
             zoom.level = value
@@ -88,7 +88,7 @@ class Canvas(private val pApplet: PApplet) {
         }
         
         // update the minimum zoom level so we don't ask for zooms that can't happen
-        zoom.minZoomLevel = BigDecimal.ONE.divide(biggestDimension.bigDecimal, mc)
+        zoom.minZoomLevel = FlexibleDecimal.ONE.divide(biggestDimension.toFlexibleDecimal(), mc)
     }
     
     fun newPattern() {
@@ -130,11 +130,11 @@ class Canvas(private val pApplet: PApplet) {
     }
     
     
-    fun adjustCanvasOffsets(dx: BigDecimal, dy: BigDecimal) {
+    fun adjustCanvasOffsets(dx: FlexibleDecimal, dy: FlexibleDecimal) {
         updateCanvasOffsets(offsetX + dx, offsetY + dy)
     }
     
-    fun updateCanvasOffsets(offsetX: BigDecimal, offsetY: BigDecimal) {
+    fun updateCanvasOffsets(offsetX: FlexibleDecimal, offsetY: FlexibleDecimal) {
         this.offsetX = offsetX
         this.offsetY = offsetY
         for (observer in offsetsMovedObservers) {
@@ -199,8 +199,8 @@ class Canvas(private val pApplet: PApplet) {
         val centerXBefore = calcCenterOnResize(width, offsetX)
         val centerYBefore = calcCenterOnResize(height, offsetY)
         
-        width = BigDecimal(pApplet.width)
-        height = BigDecimal(pApplet.height)
+        width = FlexibleDecimal.create(pApplet.width)
+        height = FlexibleDecimal.create(pApplet.height)
         
         val centerXAfter = calcCenterOnResize(width, offsetX)
         val centerYAfter = calcCenterOnResize(height, offsetY)
@@ -209,8 +209,8 @@ class Canvas(private val pApplet: PApplet) {
         
     }
     
-    private fun calcCenterOnResize(dimension: BigDecimal, offset: BigDecimal): BigDecimal {
-        return dimension.divide(BigDecimal.TWO, mc) - offset
+    private fun calcCenterOnResize(dimension: FlexibleDecimal, offset: FlexibleDecimal): FlexibleDecimal {
+        return dimension.divide(FlexibleDecimal.TWO, mc) - offset
     }
     
     /**
@@ -242,16 +242,17 @@ class Canvas(private val pApplet: PApplet) {
     private inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
-        var minZoomLevel: BigDecimal = BigDecimal.ZERO
-        private var _level = initialLevel.toBigDecimal()
-        private var _targetSize = initialLevel.toBigDecimal() // backing property for targetSize
+        var minZoomLevel = FlexibleDecimal.ZERO
+        private var _level = FlexibleDecimal.create(initialLevel)// initialLevel.toBigDecimal()
+        private var _targetSize =
+            FlexibleDecimal.create(initialLevel) // initialLevel.toBigDecimal() // backing property for targetSize
         
         private var isZooming = false
-        private var zoomCenterX = BigDecimal.ZERO
-        private var zoomCenterY = BigDecimal.ZERO
+        private var zoomCenterX = FlexibleDecimal.ZERO
+        private var zoomCenterY = FlexibleDecimal.ZERO
         
         private var stepsTaken = 0
-        private var stepSize = BigDecimal.ZERO  // This is the amount to change the level by on each update
+        private var stepSize = FlexibleDecimal.ZERO  // This is the amount to change the level by on each update
         private val totalSteps = 20  // Say you want to reach the target in 10 updates
         
         // used to stop immediately if the user releases the zoom key while holding it down
@@ -259,12 +260,12 @@ class Canvas(private val pApplet: PApplet) {
         // and we should let the zoom play out
         private var zoomInvokeCount = 0
         
-        private var targetSize: BigDecimal
+        private var targetSize: FlexibleDecimal
             get() = _targetSize
             set(value) {
                 _targetSize = when {
-                    value > BigDecimal.ONE -> computeTargetSize(value)
-                    value in BigDecimal.ZERO..BigDecimal.ONE -> computeTargetSize(value)
+                    value > FlexibleDecimal.ONE -> computeTargetSize(value)
+                    value in FlexibleDecimal.ZERO..FlexibleDecimal.ONE -> computeTargetSize(value)
                     else -> minZoomLevel
                 }
             }
@@ -275,22 +276,22 @@ class Canvas(private val pApplet: PApplet) {
          * problematic so if casing toDouble() results in POSITIVE_INFINITY then we just return the
          * requested targetSize - truly an edge case for a very large universe
          */
-        private fun computeTargetSize(value: BigDecimal): BigDecimal {
-            val isGreaterThanOne = value > BigDecimal.ONE
+        private fun computeTargetSize(value: FlexibleDecimal): FlexibleDecimal {
+            val isGreaterThanOne = value > FlexibleDecimal.ONE
             
-            val adjustedValue = if (isGreaterThanOne) value else BigDecimal.ONE.divide(value, mc)
+            val adjustedValue = if (isGreaterThanOne) value else FlexibleDecimal.ONE.divide(value, mc)
             
             val logValueDouble = log2(adjustedValue.toDouble())
             if (logValueDouble == Double.POSITIVE_INFINITY) return value
             
             val logValue = logValueDouble.roundToInt()
-            val resultPower = BigDecimal(2).pow(logValue)
+            val resultPower = FlexibleDecimal.TWO.pow(logValue)
             
-            return if (isGreaterThanOne) resultPower else BigDecimal.ONE.divide(resultPower, mc)
+            return if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
         }
         
         
-        var level: BigDecimal
+        var level: FlexibleDecimal
             get() = _level
             set(value) {
                 _level = value
@@ -301,7 +302,7 @@ class Canvas(private val pApplet: PApplet) {
         
         fun levelAsFloat(): Float {
             return cachedFloatLevel ?: run {
-                require(_level > BigDecimal.ZERO) { "zoom levels can't be < 0 $_level" }
+                require(_level > FlexibleDecimal.ZERO) { "zoom levels can't be < 0 $_level" }
                 val floatValue = _level.toFloat()
                 cachedFloatLevel = floatValue
                 floatValue
@@ -316,7 +317,7 @@ class Canvas(private val pApplet: PApplet) {
         fun zoom(zoomIn: Boolean, x: Float, y: Float) {
             
             val factor = if (zoomIn) ZOOM_FACTOR_IN else ZOOM_FACTOR_OUT
-            targetSize = level * factor.toBigDecimal()
+            targetSize = level.multiply(factor, mc)
             
             if (targetSize <= minZoomLevel) {
                 return
@@ -324,10 +325,10 @@ class Canvas(private val pApplet: PApplet) {
             
             saveUndoState()
             
-            stepSize = (targetSize - level).divide(totalSteps.toBigDecimal(), mc)  // Compute the step size
+            stepSize = (targetSize - level).divide(FlexibleDecimal.create(totalSteps), mc)  // Compute the step size
             
-            this.zoomCenterX = x.toBigDecimal()
-            this.zoomCenterY = y.toBigDecimal()
+            this.zoomCenterX = FlexibleDecimal.create(x)
+            this.zoomCenterY = FlexibleDecimal.create(y)
             
             isZooming = true
             zoomInvokeCount++
@@ -363,8 +364,8 @@ class Canvas(private val pApplet: PApplet) {
                 val zoomFactor = level.divide(previousCellWidth, mc)
                 
                 // Calculate the difference in canvas offset-s before and after zoom
-                val offsetX = (BigDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), mc)
-                val offsetY = (BigDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), mc)
+                val offsetX = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), mc)
+                val offsetY = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), mc)
                 
                 // Update canvas offsets
                 adjustCanvasOffsets(offsetX, offsetY)
@@ -378,8 +379,8 @@ class Canvas(private val pApplet: PApplet) {
     
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f
-        private const val ZOOM_FACTOR_IN = 4f
-        private const val ZOOM_FACTOR_OUT = .25f
+        private val ZOOM_FACTOR_IN = FlexibleDecimal.create(4)
+        private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.25f)
         
     }
 }

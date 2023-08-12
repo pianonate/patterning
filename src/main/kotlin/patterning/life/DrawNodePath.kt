@@ -1,11 +1,11 @@
 package patterning.life
 
-import java.math.BigDecimal
 import patterning.Canvas
 import patterning.OffsetsMovedObserver
+import patterning.util.FlexibleDecimal
 
 class DrawNodePath(
-    private val shouldContinue: (Node, BigDecimal, BigDecimal, BigDecimal) -> Boolean,
+    private val shouldContinue: (Node, FlexibleDecimal, FlexibleDecimal, FlexibleDecimal) -> Boolean,
     private val universeSize: UniverseSize,
     private val canvas: Canvas
 ) : OffsetsMovedObserver {
@@ -15,7 +15,7 @@ class DrawNodePath(
     private val path: MutableList<DrawNodePathEntry> = mutableListOf()
     
     init {
-        path.add(DrawNodePathEntry(Node.deadNode, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, Direction.NW))
+        path.add(DrawNodePathEntry(Node.deadNode, FlexibleDecimal.ZERO, FlexibleDecimal.ZERO, FlexibleDecimal.ZERO, Direction.NW))
         canvas.addOffsetsMovedObserver(this)
     }
     
@@ -123,8 +123,8 @@ class DrawNodePath(
     
     private fun updateNodePath(
         node: Node,
-        left: BigDecimal,
-        top: BigDecimal
+        left: FlexibleDecimal,
+        top: FlexibleDecimal
     ) {
         if (node.population.isZero()) {
             return

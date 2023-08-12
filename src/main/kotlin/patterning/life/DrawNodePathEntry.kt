@@ -1,11 +1,11 @@
 package patterning.life
 
-import java.math.BigDecimal
+import patterning.util.FlexibleDecimal
 
 data class DrawNodePathEntry(
     val node: Node,
-    val size: BigDecimal,
-    val left: BigDecimal,
-    val top: BigDecimal,
+    val size: FlexibleDecimal,
+    val left: FlexibleDecimal,
+    val top: FlexibleDecimal,
     val direction: Direction
 )

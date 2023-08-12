@@ -200,7 +200,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return if (textWidth.isPresent) {
             textWidth.asInt
         } else {
-            canvas.width.toInt()
+            canvas.width.toFloat().toInt()
         }
     }
     

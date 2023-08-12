@@ -1,20 +1,20 @@
 package patterning.life
 
-import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import patterning.Canvas
+import patterning.util.FlexibleDecimal
 
 // the cell width times 2 ^ level will give you the size of the whole universe
 // you'll need it it to draw the viewport on screen
 class UniverseSize(private val canvas: Canvas) {
     
-    private val sizeMap = ConcurrentHashMap<Pair<Int, BigDecimal>, BigDecimal>()
+    private val sizeMap = ConcurrentHashMap<Pair<Int, FlexibleDecimal>, FlexibleDecimal>()
     
-    fun getSize(universeLevel: Int, zoomLevel: BigDecimal): BigDecimal {
+    fun getSize(universeLevel: Int, zoomLevel: FlexibleDecimal): FlexibleDecimal {
         return universeSizeImpl(universeLevel, zoomLevel)
     }
     
-    fun getHalf(universeLevel: Int, zoomLevel: BigDecimal): BigDecimal {
+    fun getHalf(universeLevel: Int, zoomLevel: FlexibleDecimal): FlexibleDecimal {
         return universeSizeImpl(universeLevel - 1, zoomLevel)
     }
     
@@ -25,16 +25,14 @@ class UniverseSize(private val canvas: Canvas) {
      * universeSizeImpl - the cache hit rate gets to 99.99999% pretty quickly
      * private val sizeMap: MutableMap<Int, BigDecimal> = HashMap()
      */
-    private fun universeSizeImpl(universeLevel: Int, zoomLevel: BigDecimal): BigDecimal {
-        if (universeLevel < 0) return BigDecimal.ZERO
+    private fun universeSizeImpl(universeLevel: Int, zoomLevel: FlexibleDecimal): FlexibleDecimal {
+        if (universeLevel < 0) return FlexibleDecimal.ZERO
         
         // Create a compound key using Pair
         val key = Pair(universeLevel, zoomLevel)
         
         return sizeMap.computeIfAbsent(key) {
-            zoomLevel.multiply(
-                LifeUniverse.pow2(universeLevel).bigDecimal, canvas.mc
-            )
+            zoomLevel.multiply(LifeUniverse.pow2(universeLevel).toFlexibleDecimal(), canvas.mc)
         }
     }
     

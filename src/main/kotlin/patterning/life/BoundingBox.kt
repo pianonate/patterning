@@ -1,33 +1,33 @@
 package patterning.life
 
-import java.math.BigDecimal
 import patterning.Canvas
 import patterning.Theme
+import patterning.util.FlexibleDecimal
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canvas) {
+class BoundingBox(bounds: Bounds, cellSize: FlexibleDecimal, private val canvas: Canvas) {
     // we draw the box just a bit off screen so it won't be visible
     // but if the box is more than a pixel, we need to push it further offscreen
     // since we're using a Theme constant we can change we have to account for it
     private val positiveOffScreen = Theme.strokeWeightBounds
     private val negativeOffScreen = -positiveOffScreen
     
-    private val leftBD = bounds.left.bigDecimal
-    private val topBD = bounds.top.bigDecimal
+    private val leftBD = bounds.left.toFlexibleDecimal()
+    private val topBD = bounds.top.toFlexibleDecimal()
     
-    private val leftWithOffset = leftBD.multiply(cellSize, canvas.mc).add(canvas.offsetX)
-    private val topWithOffset = topBD.multiply(cellSize, canvas.mc).add(canvas.offsetY)
+    private val leftWithOffset = leftBD.multiply(cellSize, canvas.mc).plus(canvas.offsetX)
+    private val topWithOffset = topBD.multiply(cellSize, canvas.mc).plus(canvas.offsetY)
     
-    private val widthDecimal = bounds.width.bigDecimal.multiply(cellSize, canvas.mc)
-    private val heightDecimal = bounds.height.bigDecimal.multiply(cellSize, canvas.mc)
+    private val widthDecimal = bounds.width.toFlexibleDecimal().multiply(cellSize, canvas.mc)
+    private val heightDecimal = bounds.height.toFlexibleDecimal().multiply(cellSize, canvas.mc)
     
     private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
     private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
     
     // coerce boundaries to be drawable with floats
-    val left = if (leftWithOffset < BigDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
-    val top = if (topWithOffset < BigDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
+    val left = if (leftWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
+    val top = if (topWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
     
     val right =
         if (leftWithOffset + widthDecimal > canvas.width) canvas.width.toFloat() + positiveOffScreen else rightFloat
@@ -41,9 +41,9 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private val horizontalLine: Line
         get() {
             val startX = left
-            val startYDecimal = topWithOffset + heightDecimal.divide(BigDecimal.TWO, canvas.mc)
+            val startYDecimal = topWithOffset + heightDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
             val startY = when {
-                startYDecimal < BigDecimal.ZERO -> -1f
+                startYDecimal < FlexibleDecimal.ZERO -> -1f
                 startYDecimal > canvas.height -> canvas.height.toFloat() + 1
                 else -> startYDecimal.toFloat()
             }
@@ -55,9 +55,9 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     
     private val verticalLine: Line
         get() {
-            val startXDecimal = leftWithOffset + widthDecimal.divide(BigDecimal.TWO, canvas.mc)
+            val startXDecimal = leftWithOffset + widthDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
             val startX = when {
-                startXDecimal < BigDecimal.ZERO -> -1f
+                startXDecimal < FlexibleDecimal.ZERO -> -1f
                 startXDecimal > canvas.width -> canvas.width.toFloat() + 1
                 else -> startXDecimal.toFloat()
             }
@@ -68,9 +68,9 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
         }
     
     
-    private fun drawCrossHair(graphics: PGraphics, dashLength: Float, spaceLength: Float) {
-        horizontalLine.drawDashedLine(graphics, dashLength, spaceLength)
-        verticalLine.drawDashedLine(graphics, dashLength, spaceLength)
+    private fun drawCrossHair(graphics: PGraphics) {
+        horizontalLine.drawDashedLine(graphics)
+        verticalLine.drawDashedLine(graphics)
     }
     
     fun draw(graphics: PGraphics, drawCrosshair: Boolean = false) {
@@ -81,7 +81,7 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
         graphics.strokeWeight(Theme.strokeWeightBounds)
         graphics.rect(left, top, width, height)
         if (drawCrosshair) {
-            drawCrossHair(graphics, Theme.dashedLineDashLength, Theme.dashedLineSpaceLength)
+            drawCrossHair(graphics)
         }
         
         graphics.popStyle()
@@ -90,14 +90,14 @@ class BoundingBox(bounds: Bounds, cellSize: BigDecimal, private val canvas: Canv
     private data class Point(val x: Float, val y: Float)
     
     private data class Line(val start: Point, val end: Point) {
-        fun drawDashedLine(graphics: PGraphics, dashLength: Float, spaceLength: Float) {
+        fun drawDashedLine(graphics: PGraphics) {
             val x1 = start.x
             val y1 = start.y
             val x2 = end.x
             val y2 = end.y
             
             val distance = PApplet.dist(x1, y1, x2, y2)
-            val numDashes = distance / (dashLength + spaceLength)
+            val numDashes = distance / (Theme.dashedLineDashLength + Theme.dashedLineSpaceLength)
             
             var draw = true
             var x = x1
