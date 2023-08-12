@@ -11,24 +11,30 @@ abstract class Pattern(
     val properties: Properties
 ) : ObservablePattern {
     
-    override val observers: MutableList<(FlexibleInteger) -> Unit> = mutableListOf()
-    
+    override val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
     
     // currently these are the only methods called by PatterningPApplet so we
     // require all Patterns to implement them
     abstract fun draw()
+    abstract fun getHUDMessage(): String
+    abstract fun handlePlay()
+    abstract fun loadPattern()
     abstract fun move(dx: Float, dy: Float)
     abstract fun updateProperties()
     
-    override fun registerObserver(observer: (FlexibleInteger) -> Unit) {
-        observers.add(observer)
+    override fun registerObserver(eventType: PatternEventType, observer: (PatternEvent) -> Unit) {
+        observers.getOrPut(eventType) { mutableListOf() }.add(observer)
     }
     
-    override fun notifyPatternObservers(biggestDimension: FlexibleInteger) {
-        observers.forEach { it(biggestDimension) }
+    override fun notifyPatternObservers(eventType: PatternEventType, event: PatternEvent) {
+        observers[eventType]?.forEach { it(event) }
     }
     
-    protected fun patternChanged() {
-        canvas.resetMathContext()
+    fun onBiggestDimensionChanged(biggestDimension: FlexibleInteger) {
+        notifyPatternObservers(PatternEventType.DimensionChanged, PatternEvent.DimensionChanged(biggestDimension))
+    }
+    
+    fun onNewPattern(patternName: String) {
+        notifyPatternObservers(PatternEventType.PatternSwapped, PatternEvent.PatternSwapped(patternName))
     }
 }

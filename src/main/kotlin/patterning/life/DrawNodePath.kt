@@ -16,6 +16,7 @@ class DrawNodePath(
     
     init {
         path.add(DrawNodePathEntry(Node.deadNode, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, Direction.NW))
+        canvas.addOffsetsMovedObserver(this)
     }
     
     override fun onOffsetsMoved() {

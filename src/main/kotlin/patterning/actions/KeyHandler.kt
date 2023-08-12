@@ -11,10 +11,16 @@ object KeyHandler {
     val pressedKeys: Set<Int> get() = _pressedKeys
     
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
+    private val keyObservers: MutableList<KeyObserver> = mutableListOf()
+    
     
     var latestKeyCode: Int = 0
         get() = pressedKeys.last()
         private set
+    
+    fun addKeyObserver(observer: KeyObserver) {
+        keyObservers.add(observer)
+    }
     
     fun registerKeyHandler(processing: PApplet) {
         processing.registerMethod("keyEvent", this)
@@ -38,6 +44,9 @@ object KeyHandler {
     fun keyEvent(event: KeyEvent) {
         val keyCode = event.keyCode
         
+        // plain old observers
+        keyObservers.forEach { it.onKeyEvent(event) }
+        
         // if not found, bail
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
         
@@ -47,15 +56,16 @@ object KeyHandler {
                 // disallow feature invoking during testing
                 matchingCallback.invokeFeature()
             }
-            // Check if matchingCallback is KeyObservable
+            // Check if matchingCallback is KeyObservable - for callbacks that notify other parts of the system
             if (matchingCallback is KeyObservable) {
-                matchingCallback.notifyKeyObservers()
+                matchingCallback.notifyKeyObservers(event)
             }
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)
             latestKeyCode = keyCode
         }
+        
     }
     
     val usageText: String

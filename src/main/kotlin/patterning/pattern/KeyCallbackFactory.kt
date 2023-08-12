@@ -34,9 +34,7 @@ class KeyCallbackFactory(
     val callbackPause = SimpleKeyCallback(
         key = SHORTCUT_PAUSE,
         invokeFeatureLambda = {
-            if (pattern is Playable) {
-                (pattern as Playable).handlePlay()
-            }
+            pattern.handlePlay()
         },
         usage = "play and pause"
     )
@@ -243,9 +241,7 @@ class KeyCallbackFactory(
     val callbackSingleStep = SimpleKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
         invokeFeatureLambda = {
-            if (pattern is Playable) {
-                RunningState.toggleSingleStep()
-            }
+            RunningState.toggleSingleStep()
         },
         usage = "toggle single step mode where which advances one generation at a time"
     )

@@ -2,7 +2,7 @@ package patterning.panel
 
 import patterning.Canvas
 import patterning.actions.KeyCallback
-import patterning.actions.KeyObservable
+import processing.event.KeyEvent
 
 class ToggleHighlightControl private constructor(builder: Builder) : Control(
     builder
@@ -12,7 +12,7 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(
         isHighlightFromKeypress = !isHighlightFromKeypress
     }
     
-    override fun notifyKeyPress(observer: KeyObservable) {
+    override fun onKeyEvent(event: KeyEvent) {
         isHighlightFromKeypress = !isHighlightFromKeypress
     }
     

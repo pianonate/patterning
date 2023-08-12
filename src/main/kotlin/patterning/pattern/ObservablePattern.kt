@@ -1,9 +1,8 @@
 package patterning.pattern
 
-import patterning.util.FlexibleInteger
-
 interface ObservablePattern {
-    val observers: MutableList<(FlexibleInteger) -> Unit>
-    fun registerObserver(observer: (FlexibleInteger) -> Unit)
-    fun notifyPatternObservers(biggestDimension: FlexibleInteger)
+    val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>>
+    
+    fun registerObserver(eventType: PatternEventType, observer: (PatternEvent) -> Unit)
+    fun notifyPatternObservers(eventType: PatternEventType, event: PatternEvent)
 }

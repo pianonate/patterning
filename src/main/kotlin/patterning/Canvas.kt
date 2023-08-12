@@ -9,7 +9,6 @@ import kotlin.math.log2
 import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
-import patterning.pattern.MathContextAware
 import patterning.util.FlexibleInteger
 import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
@@ -18,7 +17,7 @@ import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
 
-class Canvas(private val pApplet: PApplet) : MathContextAware {
+class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(
         val level: BigDecimal,
         val canvasOffsetX: BigDecimal,
@@ -28,7 +27,7 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     data class ReferenceInfo(val graphicsReference: GraphicsReference, val resizable: Boolean)
     
     private val zoom = Zoom()
-    private val graphicsReferenceCache: MutableMap<String, ReferenceInfo> = mutableMapOf()
+    private val graphicsReferenceCache = mutableMapOf<String, ReferenceInfo>()
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     private val undoDeque = ArrayDeque<CanvasState>()
     
@@ -67,8 +66,6 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     
     fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
     
-    fun stopZooming() = zoom.stopZooming()
-    
     // without this precision on the MathContext, small imprecision propagates at
     // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
     // off the screen.  don't skimp on precision!
@@ -94,7 +91,13 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         zoom.minZoomLevel = BigDecimal.ONE.divide(biggestDimension.bigDecimal, mc)
     }
     
-    override fun resetMathContext() {
+    fun newPattern() {
+        undoDeque.clear()
+        zoom.stopZooming()
+        resetMathContext()
+    }
+    
+    private fun resetMathContext() {
         previousPrecision = 0
         mc = MathContext(PRECISION_BUFFER)
     }
@@ -139,9 +142,6 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
         }
     }
     
-    fun clearHistory() {
-        undoDeque.clear()
-    }
     
     fun saveUndoState() {
         undoDeque.add(CanvasState(zoom.level, offsetX, offsetY))
@@ -378,7 +378,6 @@ class Canvas(private val pApplet: PApplet) : MathContextAware {
     
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f
-        private const val MINIMUM_ZOOM_LEVEL = Float.MIN_VALUE
         private const val ZOOM_FACTOR_IN = 4f
         private const val ZOOM_FACTOR_OUT = .25f
         

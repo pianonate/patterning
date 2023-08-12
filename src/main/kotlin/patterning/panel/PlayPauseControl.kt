@@ -7,9 +7,9 @@ import patterning.RunningState
 import patterning.SingleStepObserver
 import patterning.Theme
 import patterning.actions.KeyCallback
-import patterning.actions.KeyObservable
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
+import processing.event.KeyEvent
 
 class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver {
     
@@ -35,7 +35,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
         return currentIcon
     }
     
-    override fun notifyKeyPress(observer: KeyObservable) {
+    override fun onKeyEvent(event: KeyEvent) {
         highlightFromKeyPress()
         
         if (runningModeChanged) {

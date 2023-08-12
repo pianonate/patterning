@@ -8,26 +8,15 @@ import java.math.BigDecimal
 import java.net.URISyntaxException
 import kotlin.math.roundToInt
 import patterning.Canvas
-import patterning.Drawer
 import patterning.GraphicsReference
 import patterning.Properties
 import patterning.RunningState
 import patterning.Theme
-import patterning.actions.MouseEventManager
-import patterning.actions.MovementHandler
-import patterning.panel.AlignHorizontal
-import patterning.panel.AlignVertical
-import patterning.panel.ControlPanel
-import patterning.panel.Orientation
-import patterning.panel.TextPanel
-import patterning.panel.Transition
-import patterning.pattern.KeyCallbackFactory
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pasteable
 import patterning.pattern.Pattern
 import patterning.pattern.PerformanceTestable
-import patterning.pattern.Playable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
 import patterning.util.AsyncJobRunner
@@ -45,7 +34,6 @@ class LifePattern(
     NumberedPatternLoader,
     Pasteable,
     PerformanceTestable,
-    Playable,
     Rewindable,
     Steppable {
     
@@ -62,7 +50,6 @@ class LifePattern(
     private val asyncNextGeneration: AsyncJobRunner
     private var targetStep = 0
     private val hudInfo: HUDStringBuilder
-    private val movementHandler: MovementHandler
     
     // used to move the pattern around the screen
     private var lifeFormPosition = PVector(0f, 0f)
@@ -76,37 +63,13 @@ class LifePattern(
         canvas = canvas
     )
     
-    private var countdownText: TextPanel? = null
-    private val hudText: TextPanel
-    
     private var pattern: GraphicsReference
-    private var ux: GraphicsReference
-    private var drawBounds: Boolean
-    
+    private var drawBounds = false
     
     init {
         
-        
-        canvas.addOffsetsMovedObserver(nodePath)
-        
-        ux = canvas.getNamedGraphicsReference(Theme.uxGraphics)
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics)
-        
-        movementHandler = MovementHandler(this)
-        drawBounds = false
         hudInfo = HUDStringBuilder()
-        
-        createTextPanel(null) {
-            TextPanel.Builder(canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
-                .textSize(Theme.startupTextSize)
-                .fadeInDuration(Theme.startupTextFadeInDuration)
-                .fadeOutDuration(Theme.startupTextFadeOutDuration)
-                .displayDuration(Theme.startupTextDisplayDuration)
-        }
-        
-        val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = this, canvas = canvas)
-        keyCallbackFactory.setupSimpleKeyCallbacks() // the ones that don't need controls
-        setupControls(keyCallbackFactory)
         
         asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() }, threadName = "NextGeneration")
         
@@ -115,76 +78,10 @@ class LifePattern(
         if (storedLife.isEmpty()) {
             getRandomLifeform()
         }
-        
-        hudText = TextPanel.Builder(
-            canvas = canvas,
-            hAlign = AlignHorizontal.RIGHT,
-            vAlign = AlignVertical.BOTTOM
-        )
-            .textSize(14)
-            .wrap()
-            .build().also {
-                Drawer.add(it)
-            }
-        
-        instantiateLifeform()
     }
     
     val lastId: Int
         get() = life.lastId.get()
-    
-    
-    private fun setupControls(keyCallbackFactory: KeyCallbackFactory) {
-        
-        val panelLeft: ControlPanel
-        val panelTop: ControlPanel
-        val panelRight: ControlPanel
-        val transitionDuration = Theme.controlPanelTransitionDuration
-        panelLeft = ControlPanel.Builder(canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
-            .apply {
-                transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
-                setOrientation(Orientation.VERTICAL)
-                addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
-                addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
-                addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
-                addControl("center.png", keyCallbackFactory.callbackCenterView)
-                addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
-            }.build()
-        
-        panelTop = ControlPanel.Builder(canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
-            .apply {
-                transition(
-                    Transition.TransitionDirection.DOWN,
-                    Transition.TransitionType.SLIDE,
-                    transitionDuration
-                )
-                setOrientation(Orientation.HORIZONTAL)
-                addControl("random.png", keyCallbackFactory.callbackRandomPattern)
-                addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
-                // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-                addPlayPauseControl(
-                    "play.png",
-                    "pause.png",
-                    keyCallbackFactory.callbackPause,
-                )
-                //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-                addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
-                addControl("rewind.png", keyCallbackFactory.callbackRewind)
-            }.build()
-        
-        panelRight = ControlPanel.Builder(canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-            .apply {
-                transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
-                setOrientation(Orientation.VERTICAL)
-                addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
-                addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-                addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
-            }.build()
-        val panels = listOf(panelLeft, panelTop, panelRight)
-        
-        MouseEventManager.addAll(panels)
-        Drawer.addAll(panels)
-    }
     
     /**
      * Pattern overrides
@@ -193,17 +90,25 @@ class LifePattern(
         
         performanceTest.execute()
         
-        canvas.updateZoom()
-        
-        drawUX(life)
         drawPattern(life)
         
         pApplet.apply {
             image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
-            image(ux.graphics, 0f, 0f)
         }
         
         goForwardInTime()
+    }
+    
+    override fun getHUDMessage(): String {
+        return getHUDMessage(life)
+    }
+    
+    override fun handlePlay() {
+        RunningState.toggleRunning()
+    }
+    
+    override fun loadPattern() {
+        instantiateLifeform()
     }
     
     override fun move(dx: Float, dy: Float) {
@@ -223,7 +128,7 @@ class LifePattern(
         val dimension = bounds.width.max(bounds.height)
         if (dimension > biggestDimension) {
             biggestDimension = dimension
-            notifyPatternObservers(biggestDimension)
+            onBiggestDimensionChanged(biggestDimension)
         }
     }
     
@@ -369,89 +274,49 @@ class LifePattern(
     }
     
     private fun instantiateLifeform(testing: Boolean = false) {
+        
         if (!testing) RunningState.pause()
-        canvas.stopZooming()
         asyncNextGeneration.cancelAndWait()
+        targetStep = 0
         
         val universe = LifeUniverse()
-        targetStep = 0
         universe.step = 0
         
-        try {
-            
-            // instance variables - do they need to be?
-            val parser = FileFormat()
-            lifeForm = parser.parseRLE(storedLife)
-            universe.setupLife(lifeForm.fieldX, lifeForm.fieldY)
-            this.patternChanged()
-        } catch (e: NotLifeException) {
-            println(
-                """
-    get a life - here's what failed:
-    
-    ${e.message}
-    """.trimIndent()
-            )
-        }
-        // new instances only created in instantiateLife to keep things simple
-        // lifeForm not made local as it is intended to be used with display functions in the future
-        setupNewLife(universe, testing)
+        parseStoredLife()
+        
+        universe.setupLife(lifeForm.fieldX, lifeForm.fieldY)
+        
+        setupNewLife(universe)
         
         life = universe
         
-        createTextPanel(null) {
-            TextPanel.Builder(canvas, lifeForm.title, AlignHorizontal.LEFT, AlignVertical.TOP)
-                .textSize(Theme.startupTextSize)
-                .fadeInDuration(Theme.startupTextFadeInDuration)
-                .fadeOutDuration(Theme.startupTextFadeOutDuration)
-                .displayDuration(Theme.startupTextDisplayDuration)
-        }
+        onNewPattern(lifeForm.title)
         
         System.gc()
         
     }
     
-    private fun createTextPanel(
-        existingTextPanel: TextPanel?, // could be null
-        builderFunction: () -> TextPanel.Builder
-    ): TextPanel {
-        existingTextPanel?.let {
-            if (Drawer.isManaging(it)) {
-                Drawer.remove(it)
-            }
+    private fun parseStoredLife() {
+        try {
+            val parser = FileFormat()
+            lifeForm = parser.parseRLE(storedLife)
+        } catch (e: NotLifeException) {
+            println(
+                """
+                get a life - here's what failed:
+                
+                ${e.message}
+                """.trimIndent()
+            )
         }
-        
-        return builderFunction()
-            .build()
-            .also { newTextPanel ->
-                Drawer.add(newTextPanel)
-            }
     }
     
-    private fun setupNewLife(life: LifeUniverse, testing: Boolean = false) {
-        
-        canvas.clearHistory()
+    private fun setupNewLife(life: LifeUniverse) {
         
         val bounds = life.rootBounds
-        //updateBoundsChanged(bounds)
+        
         biggestDimension = FlexibleInteger.ZERO
         center(bounds, fitBounds = true, saveState = false)
-        
-        if (!testing) countdownText = createTextPanel(countdownText) {
-            TextPanel.Builder(
-                canvas,
-                Theme.countdownText,
-                AlignHorizontal.CENTER,
-                AlignVertical.CENTER
-            )
-                .runMethod {
-                    RunningState.run()
-                }
-                .fadeInDuration(2000)
-                .countdownFrom(3)
-                .wrap()
-                .textSize(24)
-        }
     }
     
     
@@ -476,23 +341,17 @@ class LifePattern(
         }
     }
     
-    override fun handlePlay() {
-        Drawer.takeIf { Drawer.isManaging(countdownText!!) }?.let {
-            countdownText?.interruptCountdown()
-        } ?: RunningState.toggleRunning()
-    }
-    
     private fun fillSquare(
         x: Float,
         y: Float,
         size: Float,
         color: Int = Theme.cellColor
     ) {
-        val width = size - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
+        val width = size // - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
         
         // we default the patternBuffer to the cell color so no need to change it
         // unless you start doing something custom...
-        if (color != Theme.cellColor) pattern.graphics.fill(color)
+        // if (color != Theme.cellColor) pattern.graphics.fill(color)
         
         pattern.graphics.rect(x, y, width, width)
     }
@@ -637,21 +496,6 @@ class LifePattern(
         }
     }
     
-    private fun drawUX(life: LifeUniverse) {
-        ux.graphics.apply {
-            beginDraw()
-            clear()
-        }
-        
-        movementHandler.handleRequestedMovement()
-        
-        val hudMessage = getHUDMessage(life)
-        hudText.message = hudMessage
-        Drawer.drawAll()
-        
-        ux.graphics.endDraw()
-    }
-    
     private suspend fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
@@ -659,8 +503,6 @@ class LifePattern(
     
     companion object {
         private const val BORDER_WIDTH_RATIO = .05f
-        
         private const val LIFE_FORM_PROPERTY = "lifeForm"
-        
     }
 }

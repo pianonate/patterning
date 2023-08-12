@@ -9,7 +9,6 @@ import patterning.Theme
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyHandler
-import patterning.actions.KeyObservable
 import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.actions.MouseEventReceiver
@@ -17,6 +16,7 @@ import patterning.panel.Transition.TransitionDirection
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
 import processing.core.PVector
+import processing.event.KeyEvent
 
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
     private val keyCallback: ControlKeyCallback
@@ -183,7 +183,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
     
-    override fun notifyKeyPress(observer: KeyObservable) {
+    override fun onKeyEvent(event: KeyEvent) {
         highlightFromKeyPress()
     }
     

@@ -15,9 +15,10 @@ object Theme {
     const val controlHighlightDuration = 500
     const val controlPanelTransitionDuration = 1500
     const val shortTransitionDuration = 300
-    const val startupTextDisplayDuration = 2000
-    const val startupTextFadeInDuration = 3000
+    const val startupTextDisplayDuration = 1000
+    const val startupTextFadeInDuration = 2000
     const val startupTextFadeOutDuration = 1000
+    const val startupTextTransitionDuration = 1500
     const val themeTransitionDuration = 500
     
     // names

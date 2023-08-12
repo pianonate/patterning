@@ -77,7 +77,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         startDisplay()
     }
     
-    private fun startDisplay() {
+    fun startDisplay() {
         state = FadeInState()
         transitionTime = System.currentTimeMillis() // start displaying immediately
     }
@@ -204,7 +204,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
     }
     
-    /* called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on */
+    /**
+     *  called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on
+     */
     override fun updatePanelGraphics() {
         if (lastMessage != message) {
             setTextPanelGraphics()
@@ -259,11 +261,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
         panelGraphics.popStyle()
         panelGraphics.endDraw()
-    }
-    
-    fun interruptCountdown() {
-        runMethod?.run()
-        removeFromDrawableList()
     }
     
     private fun removeFromDrawableList() {
@@ -407,7 +404,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
         
         override fun transition() {
-            interruptCountdown()
+            runMethod?.run() // natural transition
+            removeFromDrawableList()
             state = FadeOutState()
             transitionTime = System.currentTimeMillis()
         }

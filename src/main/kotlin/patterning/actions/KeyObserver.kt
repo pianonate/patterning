@@ -1,5 +1,7 @@
 package patterning.actions
 
+import processing.event.KeyEvent
+
 interface KeyObserver {
-    fun notifyKeyPress(observer: KeyObservable)
+    fun onKeyEvent(event: KeyEvent)
 }

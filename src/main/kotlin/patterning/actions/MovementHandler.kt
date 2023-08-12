@@ -1,11 +1,11 @@
 package patterning.actions
 
-import patterning.life.LifePattern
+import patterning.pattern.Pattern
 import processing.core.PApplet
 
 // this class exists merely to encapsulate movement handling as it is a bit complex
 // and i don't want to clutter the main class anymore than it already
-class MovementHandler(private val drawer: LifePattern) {
+class MovementHandler(private val pattern: Pattern) {
     
     private var lastDirection = 0
     private val initialMoveAmount = 5f
@@ -39,7 +39,7 @@ class MovementHandler(private val drawer: LifePattern) {
         }
         lastDirection = currentDirection
         
-        drawer.move(moveX, moveY)
+        pattern.move(moveX, moveY)
     }
     
     companion object {
