@@ -263,7 +263,13 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             val lineY = y + lineHeight * i
             
             // Draw the actual text in the calculated color
-            panelGraphics.fill(currentColor)
+            // stroke and strokeWeight are going to require the P2D or P3D renderer
+            with(panelGraphics) {
+                fill(currentColor)
+                stroke(Theme.backGroundColor)
+                strokeWeight(2F)
+                text(line, x, lineY)
+            }
             panelGraphics.text(line, x, lineY)
             
         }

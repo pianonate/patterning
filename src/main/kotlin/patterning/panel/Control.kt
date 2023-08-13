@@ -51,6 +51,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
     
     override fun panelSubclassDraw() {
+        panelGraphics.noStroke()
         mouseHover(isMouseOverMe)
         drawHover()
         drawPressed()

@@ -158,7 +158,6 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         panelGraphics.beginDraw()
         panelGraphics.pushStyle()
         panelGraphics.fill(fill)
-        panelGraphics.noStroke()
         panelGraphics.clear()
         
         // handle alignment if requested
@@ -166,12 +165,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             updateAlignment()
         }
         
-        // output the background Rect for this panel
-        if (radius.isPresent) {
-            panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat(), radius.asInt.toFloat())
-        } else {
-            panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
-        }
+        drawPanelRect()
         
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw()
@@ -185,6 +179,18 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             parentGraphics.image(panelGraphics, position.x, position.y)
         }
         
+    }
+    
+    private fun drawPanelRect() {
+        // output the background Rect for this panel
+        panelGraphics.pushStyle()
+        panelGraphics.noStroke()
+        if (radius.isPresent) {
+            panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat(), radius.asInt.toFloat())
+        } else {
+            panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
+        }
+        panelGraphics.popStyle()
     }
     
     private fun updateAlignment() {

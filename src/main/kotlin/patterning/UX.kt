@@ -10,7 +10,11 @@ import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
 import patterning.pattern.KeyCallbackFactory
+import patterning.pattern.Movable
+import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pattern
+import patterning.pattern.Rewindable
+import patterning.pattern.Steppable
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -36,7 +40,7 @@ class UX(
             hAlign = AlignHorizontal.RIGHT,
             vAlign = AlignVertical.BOTTOM
         )
-            .textSize(14)
+            .textSize(Theme.hudTextSize)
             .wrap()
             .build().also { Drawer.add(it) }
         
@@ -123,52 +127,73 @@ class UX(
     
     private fun setupControls() {
         
-        val panelLeft: ControlPanel
         val panelTop: ControlPanel
         val panelRight: ControlPanel
         val transitionDuration = Theme.controlPanelTransitionDuration
-        panelLeft = ControlPanel.Builder(canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
-            .apply {
-                transition(Transition.TransitionDirection.RIGHT, Transition.TransitionType.SLIDE, transitionDuration)
-                setOrientation(Orientation.VERTICAL)
-                addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
-                addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
-                addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
-                addControl("center.png", keyCallbackFactory.callbackCenterView)
-                addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
-            }.build()
+        val panels = mutableListOf<ControlPanel>()
         
-        panelTop = ControlPanel.Builder(canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
-            .apply {
-                transition(
-                    Transition.TransitionDirection.DOWN,
-                    Transition.TransitionType.SLIDE,
-                    transitionDuration
-                )
-                setOrientation(Orientation.HORIZONTAL)
-                addControl("random.png", keyCallbackFactory.callbackRandomPattern)
-                addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
-                // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-                addPlayPauseControl(
-                    "play.png",
-                    "pause.png",
-                    keyCallbackFactory.callbackPause,
-                )
-                //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-                addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
-                addControl("rewind.png", keyCallbackFactory.callbackRewind)
-            }.build()
+        if (pattern is Movable) {
+            panels.add(
+                ControlPanel.Builder(canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
+                    .apply {
+                        transition(
+                            Transition.TransitionDirection.RIGHT,
+                            Transition.TransitionType.SLIDE,
+                            transitionDuration
+                        )
+                        setOrientation(Orientation.VERTICAL)
+                        addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
+                        addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
+                        addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
+                        addControl("center.png", keyCallbackFactory.callbackCenterView)
+                        addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
+                        
+                    }.build()
+            )
+        }
         
-        panelRight = ControlPanel.Builder(canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
-            .apply {
-                transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
-                setOrientation(Orientation.VERTICAL)
-                addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
-                addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-                addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
-                addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
-            }.build()
-        val panels = listOf(panelLeft, panelTop, panelRight)
+        panels.add(
+            
+            ControlPanel.Builder(canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
+                .apply {
+                    transition(
+                        Transition.TransitionDirection.DOWN,
+                        Transition.TransitionType.SLIDE,
+                        transitionDuration
+                    )
+                    setOrientation(Orientation.HORIZONTAL)
+                    
+                    if (pattern is NumberedPatternLoader) addControl(
+                        "random.png",
+                        keyCallbackFactory.callbackRandomPattern
+                    )
+                    if (pattern is Steppable) addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
+                    
+                    // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+                    addPlayPauseControl(
+                        "play.png",
+                        "pause.png",
+                        keyCallbackFactory.callbackPause,
+                    )
+                    
+                    //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
+                    if (pattern is Steppable) addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
+                    if (pattern is Rewindable) addControl("rewind.png", keyCallbackFactory.callbackRewind)
+                    
+                }.build()
+        )
+        
+        panels.add(
+            ControlPanel.Builder(canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
+                .apply {
+                    transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
+                    setOrientation(Orientation.VERTICAL)
+                    if (pattern is Movable) addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
+                    addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
+                    addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
+                    addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
+                }.build()
+        )
         
         MouseEventManager.addAll(panels)
         Drawer.addAll(panels)

@@ -44,6 +44,7 @@ object Theme {
     const val hoverTextMargin = 5
     const val hoverTextWidth = 225
     const val hoverTextSize = 14
+    const val hudTextSize = 16
     const val iconMargin = 5
     const val startupTextSize = 50
     const val strokeWeightBounds = 3f
