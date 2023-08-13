@@ -39,6 +39,14 @@ class KeyCallbackFactory(
         usage = "play and pause"
     )
     
+    val callbackGhostMode = SimpleKeyCallback(
+        key = SHORTCUT_GHOST_MODE,
+        invokeFeatureLambda = {
+            pattern.handleGhost()
+        },
+        usage = "ghost mode - try me!"
+    )
+    
     private val callbackNumberedPattern = SimpleKeyCallback(
         keys = ('1'..'9').toSet(),
         invokeFeatureLambda = {
@@ -250,6 +258,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
+        private const val SHORTCUT_GHOST_MODE = 'e'
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PAUSE = ' '
         private const val SHORTCUT_PERFTEST = 't'

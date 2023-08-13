@@ -17,6 +17,7 @@ abstract class Pattern(
     // require all Patterns to implement them
     abstract fun draw()
     abstract fun getHUDMessage(): String
+    abstract fun handleGhost()
     abstract fun handlePlay()
     abstract fun loadPattern()
     abstract fun move(dx: Float, dy: Float)

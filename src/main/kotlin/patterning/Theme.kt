@@ -60,6 +60,7 @@ object Theme {
     private lateinit var _controlHighlightColor: ColorConstant
     private lateinit var _controlMousePressedColor: ColorConstant
     private lateinit var _defaultPanelColor: ColorConstant
+    private lateinit var _ghostColor: ColorConstant
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
     
@@ -69,6 +70,7 @@ object Theme {
     val controlHighlightColor get() = _controlHighlightColor.color
     val controlMousePressedColor get() = _controlMousePressedColor.color
     val defaultPanelColor get() = _defaultPanelColor.color
+    val ghostColor get() = _ghostColor.color
     val textColor get() = _textColor.color
     val textColorStart get() = _textColorStart.color
     
@@ -79,6 +81,7 @@ object Theme {
         _controlHighlightColor = ColorConstant(pApplet)
         _controlMousePressedColor = ColorConstant(pApplet)
         _defaultPanelColor = ColorConstant(pApplet)
+        _ghostColor = ColorConstant(pApplet)
         _textColor = ColorConstant(pApplet)
         _textColorStart = ColorConstant(pApplet) // for lerping purposes
         
@@ -98,6 +101,7 @@ object Theme {
         _controlHighlightColor.setColor(themeConstants.controlHighlightColor)
         _controlMousePressedColor.setColor(themeConstants.controlMousePressedColor)
         _defaultPanelColor.setColor(themeConstants.defaultPanelColor)
+        _ghostColor.setColor(themeConstants.ghostColor)
         _textColor.setColor(themeConstants.textColor)
         _textColorStart.setColor(themeConstants.textColorStart)
         

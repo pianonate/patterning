@@ -8,32 +8,34 @@ import kotlin.math.pow
 
 class FlexibleDecimal private constructor(initialValue: Number) : Comparable<FlexibleDecimal> {
     
-    private val transformedValue: Number = when (initialValue) {
-        is BigInteger -> BigDecimal(initialValue)
-        is Long -> initialValue.toDouble()
-        is Int -> initialValue.toFloat()
-        else -> initialValue
+    val value: Number = initialValue.transformed().let { transformed ->
+        when (transformed) {
+            is BigDecimal -> {
+                when (transformed) {
+                    in FLOAT_MIN_BIG_DECIMAL..FLOAT_MAX_BIG_DECIMAL -> transformed.toFloat()
+                    in DOUBLE_MIN_BIG_DECIMAL..DOUBLE_MAX_BIG_DECIMAL -> transformed.toDouble()
+                    else -> transformed
+                }
+            }
+            
+            is Double -> {
+                when (transformed) {
+                    in FLOAT_MIN..FLOAT_MAX -> transformed.toFloat()
+                    else -> transformed
+                }
+            }
+            
+            is Float, is Int, is Long, is BigInteger -> transformed
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
     }
     
-    val value: Number = when (transformedValue) {
-        is BigDecimal -> {
-            when (transformedValue) {
-                in FLOAT_MIN_BIG_DECIMAL..FLOAT_MAX_BIG_DECIMAL -> initialValue.toFloat()
-                in DOUBLE_MIN_BIG_DECIMAL..DOUBLE_MAX_BIG_DECIMAL -> initialValue.toDouble()
-                else -> initialValue
-            }
-        }
-        
-        is Double -> {
-            when (transformedValue) {
-                in FLOAT_MIN..FLOAT_MAX -> initialValue.toFloat()
-                else -> initialValue
-            }
-        }
-        
-        is Float -> transformedValue
-        
-        else -> throw IllegalArgumentException("Unsupported number type")
+    // Extension function to transform initial value
+    private fun Number.transformed(): Number = when (this) {
+        is BigInteger -> BigDecimal(this)
+        is Long -> this.toDouble()
+        is Int -> this.toFloat()
+        else -> this
     }
     
     

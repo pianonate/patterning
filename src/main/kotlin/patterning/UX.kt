@@ -92,7 +92,11 @@ class UX(
     }
     
     fun newPattern(patternName: String) {
-        
+        displayPatternName(patternName)
+        startCountdown()
+    }
+    
+    private fun startCountdown() {
         if (RunningState.runningMode != RunningMode.TESTING) {
             if (Drawer.isManaging(countdownText)) {
                 Drawer.remove(countdownText)
@@ -100,6 +104,9 @@ class UX(
             countdownText.startDisplay()
             Drawer.add(countdownText)
         }
+    }
+    
+    private fun displayPatternName(patternName: String) {
         
         TextPanel.Builder(canvas, patternName, AlignHorizontal.LEFT, AlignVertical.TOP)
             .textSize(Theme.startupTextSize)
@@ -112,7 +119,6 @@ class UX(
                 Theme.startupTextTransitionDuration
             )
             .build().also { Drawer.add(it) }
-        
     }
     
     private fun setupControls() {
@@ -159,6 +165,7 @@ class UX(
                 setOrientation(Orientation.VERTICAL)
                 addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
                 addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
+                addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
                 addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
             }.build()
         val panels = listOf(panelLeft, panelTop, panelRight)

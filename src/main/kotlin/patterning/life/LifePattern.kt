@@ -65,6 +65,7 @@ class LifePattern(
     
     private var pattern: GraphicsReference
     private var drawBounds = false
+    private var isGhosting = false
     
     init {
         
@@ -101,6 +102,10 @@ class LifePattern(
     
     override fun getHUDMessage(): String {
         return getHUDMessage(life)
+    }
+    
+    override fun handleGhost() {
+        isGhosting = !isGhosting
     }
     
     override fun handlePlay() {
@@ -180,7 +185,8 @@ class LifePattern(
         
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toFlexibleDecimal().multiply(-level, canvas.mc))
-        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top.toFlexibleDecimal().multiply(-level, canvas.mc))
+        val offsetY =
+            halfCanvasHeight - halfDrawingHeight + (bounds.top.toFlexibleDecimal().multiply(-level, canvas.mc))
         
         canvas.updateCanvasOffsets(offsetX, offsetY)
         
@@ -345,15 +351,18 @@ class LifePattern(
         x: Float,
         y: Float,
         size: Float,
-        color: Int = Theme.cellColor
     ) {
-        val width = size - (canvas.zoomLevelAsFloat * BORDER_WIDTH_RATIO)
         
-        // we default the patternBuffer to the cell color so no need to change it
-        // unless you start doing something custom...
-        // if (color != Theme.cellColor) pattern.graphics.fill(color)
+        fun roundMe(value: Float): Float {
+            return (if (size > 2)
+                (value.roundToInt() - 1).toFloat()
+            else
+                value)
+        }
         
-        pattern.graphics.rect(x, y, width, width)
+        val width = roundMe(size)
+        
+        pattern.graphics.rect(roundMe(x), roundMe(y), width, width)
     }
     
     private var actualRecursions = FlexibleInteger.ZERO
@@ -363,9 +372,13 @@ class LifePattern(
         
         val graphics = pattern.graphics
         graphics.beginDraw()
-        graphics.clear()
+        if (isGhosting) {
+            graphics.fill(Theme.ghostColor)
+        } else {
+            graphics.clear()
+            graphics.fill(Theme.cellColor)
+        }
         graphics.noStroke()
-        graphics.fill(Theme.cellColor)
         
         updateBoundsChanged(life.root.bounds)
         
@@ -496,13 +509,12 @@ class LifePattern(
         }
     }
     
-    private suspend fun asyncNextGeneration() {
+    private fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
     
     companion object {
-        private const val BORDER_WIDTH_RATIO = .05f
         private const val LIFE_FORM_PROPERTY = "lifeForm"
     }
 }

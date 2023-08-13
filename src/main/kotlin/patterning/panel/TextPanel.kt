@@ -69,12 +69,20 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         fadeOutDuration = builder.fadeOutDuration
         
         // text countdown variables
-        runMethod = builder.runMethod
         countdownFrom = builder.countdownFrom
         initialMessage = builder.message
         setTextPanelGraphics()
         
-        startDisplay()
+        // if there is no runMethod, then we'll start displaying immediately
+        // otherwise startDisplay will be invoked by the UX for countDown
+        // text as they will be continuously invoked
+        // it's not explicit - i.e., i could have created a boolean called
+        // reusableText that would be set to true if a runMethod is provided
+        // but right now there's only one instance in the whole app so i'm not
+        // going to sweat it
+        runMethod = builder.runMethod ?: startDisplay().let { null }
+        
+        
     }
     
     fun startDisplay() {
