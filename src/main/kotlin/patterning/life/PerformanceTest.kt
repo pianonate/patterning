@@ -1,14 +1,15 @@
 package patterning.life
 
 import patterning.Properties
-import patterning.RunningState
-import patterning.TestModeObserver
+import patterning.state.RunningModeController
+import patterning.state.RunningModeObserver
 import patterning.util.formatWithCommas
 import processing.data.JSONObject
 
-class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) : TestModeObserver {
+class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) :
+    RunningModeObserver {
     private val performanceResults = JSONObject()
-    private val patternCount = 9
+    private val patternCount = 3 // 9
     private val framesPerPattern = 400L
     
     // State for the ongoing test, if any
@@ -22,10 +23,16 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
     private val runtime = Runtime.getRuntime()
     
     init {
-        RunningState.addTestModeObserver(this)
+        RunningModeController.addModeChangeObserver(this)
     }
     
-    override fun onTestModeEnter() {
+    override fun onRunningModeChange() {
+        if (RunningModeController.isTesting) {
+            enterTestMode()
+        }
+    }
+    
+    private fun enterTestMode() {
         // Reset state for new test
         testing = true
         currentPatternIndex = 1
@@ -34,7 +41,6 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
         patternStartTime = testStartTime
         patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
         println("testing framesPerPattern:${framesPerPattern}")
-        
     }
     
     fun execute() {
@@ -51,7 +57,7 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
         
         if (frameCount % framesPerPattern == 1L) {
             // First frame of a new pattern
-            lifePattern.setNumberedPattern(number = currentPatternIndex, testing = true)
+            lifePattern.setNumberedPattern(number = currentPatternIndex)
             patternStartTime = System.currentTimeMillis()
             patternMemoryBefore = runtime.totalMemory() - runtime.freeMemory()
         } else if (frameCount % framesPerPattern == 0L) {
@@ -94,7 +100,7 @@ class PerformanceTest(private val lifePattern: LifePattern, private val properti
             performanceResults.setLong("totalDuration", totalDuration)
             properties.performanceTestResults = performanceResults
             testing = false
-            RunningState.endTest()
+            RunningModeController.endTest()
             
         }
     }

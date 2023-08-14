@@ -15,6 +15,7 @@ import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pattern
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
+import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -64,7 +65,7 @@ class UX(
             AlignVertical.CENTER
         )
             .runMethod {
-                RunningState.run()
+                RunningModeController.play()
             }
             .fadeInDuration(2000)
             .countdownFrom(3)
@@ -75,23 +76,19 @@ class UX(
     /**
      * only invoke handlePlay if it's not the key that already toggles play mode
      * it doesn't feel like good design to have to explicitly check for this key
-     * but right now i think it's the only case
-     * possibly the UX could also be a KeyObserver for the callback and
      */
     override fun onKeyEvent(event: KeyEvent) {
         // it doesn't feel great that we're both listening to all keys and also
         // have a special case for the one key that would also handle play/pause as it's actual function
         if (event.action == KeyEvent.PRESS) {
-            handleCountDown(event.key == KeyCallbackFactory.SHORTCUT_PAUSE)
+            handleCountDown(event.key == KeyCallbackFactory.SHORTCUT_PLAY_PAUSE)
         }
     }
     
     private fun handleCountDown(togglePlayModeKeyPress: Boolean = false) {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
-            if (!togglePlayModeKeyPress) {
-                pattern.handlePlay()
-            }
+            RunningModeController.play()
         }
     }
     
@@ -115,13 +112,11 @@ class UX(
     }
     
     private fun startCountdown() {
-        if (RunningState.runningMode != RunningMode.TESTING) {
-            if (Drawer.isManaging(countdownText)) {
-                Drawer.remove(countdownText)
-            }
-            countdownText.startDisplay()
-            Drawer.add(countdownText)
+        if (Drawer.isManaging(countdownText)) {
+            Drawer.remove(countdownText)
         }
+        countdownText.startDisplay()
+        Drawer.add(countdownText)
     }
     
     private fun displayPatternName(patternName: String) {

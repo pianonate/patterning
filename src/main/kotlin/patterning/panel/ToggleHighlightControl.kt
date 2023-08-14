@@ -9,11 +9,11 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(
 ) {
     override fun onMouseReleased() {
         super.onMouseReleased()
-        isHighlightFromKeypress = !isHighlightFromKeypress
+        toggleHighlightFromKeyPress()
     }
     
     override fun onKeyEvent(event: KeyEvent) {
-        isHighlightFromKeypress = !isHighlightFromKeypress
+        toggleHighlightFromKeyPress()
     }
     
     class Builder(

@@ -1,7 +1,6 @@
 package patterning.actions
 
-import patterning.RunningMode
-import patterning.RunningState
+import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -44,15 +43,12 @@ object KeyHandler {
     fun keyEvent(event: KeyEvent) {
         val keyCode = event.keyCode
         
-        // plain old observers
-        keyObservers.forEach { it.onKeyEvent(event) }
-        
         // if not found, bail
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
         
         if (event.action == KeyEvent.PRESS) {
             _pressedKeys.add(keyCode)
-            if (RunningState.runningMode != RunningMode.TESTING) {
+            if (RunningModeController.isUXAvailable) {
                 // disallow feature invoking during testing
                 matchingCallback.invokeFeature()
             }
@@ -66,6 +62,10 @@ object KeyHandler {
             latestKeyCode = keyCode
         }
         
+        // now let all the observers know - especially the UX which will handle
+        // playing things while the UX is disabled from key presses during LoadingState()
+        // while loading
+        keyObservers.forEach { it.onKeyEvent(event) }
     }
     
     val usageText: String

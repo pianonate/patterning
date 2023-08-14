@@ -3,8 +3,6 @@ package patterning.panel
 import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
-import patterning.RunningMode
-import patterning.RunningState
 import patterning.Theme
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
@@ -13,6 +11,7 @@ import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.actions.MouseEventReceiver
 import patterning.panel.Transition.TransitionDirection
+import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
 import processing.core.PVector
@@ -21,7 +20,7 @@ import processing.event.KeyEvent
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
     private val keyCallback: ControlKeyCallback
     private val size: Int
-    var isHighlightFromKeypress = false
+    private var isHighlightFromKeypress = false
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
@@ -42,6 +41,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         val keyCallback = ControlKeyCallback(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
+    }
+    
+    protected fun toggleHighlightFromKeyPress() {
+        if (RunningModeController.isUXAvailable)
+            isHighlightFromKeypress = !isHighlightFromKeypress
     }
     
     protected fun loadIcon(iconName: String): PImage {
@@ -189,7 +193,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
     
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
-    private val highlightAsyncToggle = AsyncJobRunner(
+    private val asyncSetHighlightJob = AsyncJobRunner(
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
             isHighlightFromKeypress = false
@@ -197,15 +201,17 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     )
     
     internal fun highlightFromKeyPress() {
-        if (!highlightAsyncToggle.isActive) { // Only start if not already running
+        if (!RunningModeController.isUXAvailable) return
+        
+        if (!asyncSetHighlightJob.isActive) { // Only start if not already running
             isHighlightFromKeypress = true
-            highlightAsyncToggle.startJob()
+            asyncSetHighlightJob.start()
         }
     }
     
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
-        if (isMouseOverMe && (RunningState.runningMode != RunningMode.TESTING)) {
+        if (isMouseOverMe && RunningModeController.isUXAvailable) {
             keyCallback.invokeFeature() // Specific to Control
         }
     }

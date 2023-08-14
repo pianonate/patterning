@@ -2,7 +2,6 @@ package patterning.pattern
 
 import kotlinx.coroutines.runBlocking
 import patterning.Canvas
-import patterning.RunningState
 import patterning.Theme
 import patterning.ThemeType
 import patterning.actions.KeyCombo
@@ -10,6 +9,7 @@ import patterning.actions.KeyHandler
 import patterning.actions.MovementHandler
 import patterning.actions.SimpleKeyCallback
 import patterning.actions.ValidOS
+import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -32,7 +32,7 @@ class KeyCallbackFactory(
     
     // callbacks all constructed with factory methods to make them easy to read and write
     val callbackPause = SimpleKeyCallback(
-        key = SHORTCUT_PAUSE,
+        key = SHORTCUT_PLAY_PAUSE,
         invokeFeatureLambda = {
             pattern.handlePlay()
         },
@@ -203,7 +203,7 @@ class KeyCallbackFactory(
         ),
         invokeFeatureLambda = {
             if (pattern is PerformanceTestable) {
-                RunningState.test()
+                RunningModeController.test()
             }
         },
         usage = "performance test"
@@ -249,7 +249,7 @@ class KeyCallbackFactory(
     val callbackSingleStep = SimpleKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
         invokeFeatureLambda = {
-            RunningState.toggleSingleStep()
+            RunningModeController.toggleSingleStep()
         },
         usage = "toggle single step mode where which advances one generation at a time"
     )
@@ -260,7 +260,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_GHOST_MODE = 'e'
         private const val SHORTCUT_PASTE = 'v'
-        const val SHORTCUT_PAUSE = ' '
+        const val SHORTCUT_PLAY_PAUSE = ' '
         private const val SHORTCUT_PERFTEST = 't'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'

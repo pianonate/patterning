@@ -1,5 +1,7 @@
 package patterning.actions
 
+import patterning.state.RunningModeController
+
 object MouseEventManager {
     private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
     
@@ -17,6 +19,9 @@ object MouseEventManager {
     private var pressedReceiver: MouseEventReceiver? = null
     
     fun onMousePressed() {
+        if (!RunningModeController.isUXAvailable) {
+            return
+        }
         isMousePressedOverAnyReceiver = false
         pressedReceiver = null
         for (receiver in mouseEventReceivers) {
@@ -29,6 +34,9 @@ object MouseEventManager {
     }
     
     fun onMouseReleased() {
+        if (!RunningModeController.isUXAvailable) {
+            return
+        }
         if (pressedReceiver != null) {
             pressedReceiver!!.onMouseReleased()
             pressedReceiver = null

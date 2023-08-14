@@ -9,7 +9,6 @@ import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
-import patterning.RunningState
 import patterning.Theme
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -18,6 +17,7 @@ import patterning.pattern.Pattern
 import patterning.pattern.PerformanceTestable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
+import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
@@ -47,7 +47,7 @@ class LifePattern(
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
     
-    private val asyncNextGeneration: AsyncJobRunner
+    private val asyncNextGenerationJob: AsyncJobRunner
     private var targetStep = 0
     private val hudInfo: HUDStringBuilder
     
@@ -72,7 +72,7 @@ class LifePattern(
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics)
         hudInfo = HUDStringBuilder()
         
-        asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() })
+        asyncNextGenerationJob = AsyncJobRunner(method = { asyncNextGeneration() })
         
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
@@ -109,7 +109,7 @@ class LifePattern(
     }
     
     override fun handlePlay() {
-        RunningState.toggleRunning()
+        RunningModeController.toggleRunning()
     }
     
     override fun loadPattern() {
@@ -200,11 +200,11 @@ class LifePattern(
         instantiateLifeform()
     }
     
-    override fun setNumberedPattern(number: Int, testing: Boolean) {
+    override fun setNumberedPattern(number: Int) {
         try {
             storedLife =
                 ResourceManager.getResourceAtFileIndexAsString(ResourceManager.RLE_DIRECTORY, number)
-            instantiateLifeform(testing)
+            instantiateLifeform()
         } catch (e: IOException) {
             throw RuntimeException(e)
         } catch (e: URISyntaxException) {
@@ -263,7 +263,7 @@ class LifePattern(
      */
     private fun goForwardInTime() {
         
-        if (asyncNextGeneration.isActive) {
+        if (asyncNextGenerationJob.isActive) {
             return
         }
         
@@ -275,14 +275,15 @@ class LifePattern(
             }
         }
         
-        if (RunningState.shouldAdvance())
-            asyncNextGeneration.startJob()
+        if (RunningModeController.shouldAdvance())
+            asyncNextGenerationJob.start()
     }
     
-    private fun instantiateLifeform(testing: Boolean = false) {
+    private fun instantiateLifeform() {
         
-        if (!testing) RunningState.pause()
-        asyncNextGeneration.cancelAndWait()
+        if (!RunningModeController.isTesting) RunningModeController.load()
+        
+        asyncNextGenerationJob.cancelAndWait()
         targetStep = 0
         
         val universe = LifeUniverse()
@@ -290,9 +291,11 @@ class LifePattern(
         
         parseStoredLife()
         
-        universe.setupLife(lifeForm.fieldX, lifeForm.fieldY)
+        universe.newLife(lifeForm.fieldX, lifeForm.fieldY)
         
-        setupNewLife(universe)
+        center(universe.rootBounds, fitBounds = true, saveState = false)
+        
+        biggestDimension = FlexibleInteger.ZERO
         
         life = universe
         
@@ -317,27 +320,18 @@ class LifePattern(
         }
     }
     
-    private fun setupNewLife(life: LifeUniverse) {
-        
-        val bounds = life.rootBounds
-        
-        biggestDimension = FlexibleInteger.ZERO
-        center(bounds, fitBounds = true, saveState = false)
-    }
-    
-    
     private fun getHUDMessage(life: LifeUniverse): String {
         
         return hudInfo.getFormattedString(
             pApplet.frameCount,
-            12
+            20
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
-            hudInfo.addOrUpdate("gps", asyncNextGeneration.getRate())
-            hudInfo.addOrUpdate("cell", canvas.zoomLevel.toNumber())
+            hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
+            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toNumber())
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
             
-            hudInfo.addOrUpdate("running", RunningState.runMessage())
+            hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
             //            hudInfo.addOrUpdate("actuals", actualRecursions)
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.lifeInfo.info

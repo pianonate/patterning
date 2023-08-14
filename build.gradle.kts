@@ -1,4 +1,7 @@
 val patterningMain: String = "patterning.Patterning"
+val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
+val platforms =
+    listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
 
 group = "org.patterning"
 version = "1.0-SNAPSHOT"
@@ -24,10 +27,6 @@ dependencies {
 
 application {
     mainClass.set(patterningMain)
-    
-    val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
-    val platforms =
-        listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
     
     applicationDefaultJvmArgs = listOf(
         "-Djava.library.path=${platforms.joinToString(separator = ":") { "$pathToJoglLibraries$it" }}",

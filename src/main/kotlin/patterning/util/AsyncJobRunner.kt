@@ -25,7 +25,7 @@ class AsyncJobRunner(
     val isActive: Boolean
         get() = job.isActive
     
-    fun startJob() {
+    fun start() {
         if (job.isActive) {
             return
         }

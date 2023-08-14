@@ -2,28 +2,27 @@ package patterning.panel
 
 import kotlinx.coroutines.delay
 import patterning.Canvas
-import patterning.RunningMode
-import patterning.RunningModeObserver
-import patterning.RunningState
 import patterning.Theme
 import patterning.actions.KeyCallback
+import patterning.state.RunningModeController
+import patterning.state.RunningModeObserver
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
 import processing.event.KeyEvent
 
 class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver {
     
-    private val pauseIcon: PImage
+    private val pausedIcon: PImage
     private val playIcon: PImage
     private var currentIcon: PImage
     private var runningModeChanged = false
     
     init {
-        pauseIcon = loadIcon(builder.pausedIconName)
+        pausedIcon = loadIcon(builder.pausedIconName)
         playIcon = super.icon
         currentIcon = playIcon
         // allows for highlighting play pause whenever the single step mode is changed
-        RunningState.addModeChangeObserver(this)
+        RunningModeController.addModeChangeObserver(this)
     }
     
     override fun onRunningModeChange() {
@@ -37,22 +36,14 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
     }
     
     private fun handleIcons() {
+        currentIcon = pausedIcon
+        asyncSetPlayIconJob.cancelAndWait()  // Cancel any running job when playing
         
-        when (RunningState.runningMode) {
-            
-            RunningMode.PLAYING, RunningMode.TESTING -> {
-                currentIcon = pauseIcon
-                iconAsyncJobRunner.cancelAndWait()  // Cancel any running job when playing
-            }
-            
-            RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
-                currentIcon = pauseIcon
-                if (!iconAsyncJobRunner.isActive) {  // Only start if not already running
-                    iconAsyncJobRunner.startJob()
-                }
+        if (!RunningModeController.isPlaying) {
+            if (!asyncSetPlayIconJob.isActive) {  // Only start if not already running
+                asyncSetPlayIconJob.start()
             }
         }
-        
     }
     
     override fun onKeyEvent(event: KeyEvent) {
@@ -65,28 +56,12 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
         handleIcons()
     }
     
-    private val iconAsyncJobRunner = AsyncJobRunner(
+    private val asyncSetPlayIconJob = AsyncJobRunner(
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
             currentIcon = playIcon
         }
     )
-    
-    private fun toggleIcon() {
-        when (RunningState.runningMode) {
-            RunningMode.PLAYING, RunningMode.TESTING -> {
-                currentIcon = pauseIcon
-                iconAsyncJobRunner.cancelAndWait()  // Cancel any running job when playing
-            }
-            
-            RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
-                currentIcon = pauseIcon
-                if (!iconAsyncJobRunner.isActive) {  // Only start if not already running
-                    iconAsyncJobRunner.startJob()
-                }
-            }
-        }
-    }
     
     class Builder(
         canvas: Canvas,
