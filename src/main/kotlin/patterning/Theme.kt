@@ -22,7 +22,7 @@ object Theme {
     const val themeTransitionDuration = 500
     
     // names
-    const val countdownText = "press space to begin immediately"
+    const val countdownText = "press a key to start immediately"
     const val fontName = "Verdana"
     const val iconPath = "icon/"
     const val shortcutParenStart = " ("

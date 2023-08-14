@@ -3,15 +3,15 @@ package patterning.panel
 import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.RunningMode
+import patterning.RunningModeObserver
 import patterning.RunningState
-import patterning.SingleStepObserver
 import patterning.Theme
 import patterning.actions.KeyCallback
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
 import processing.event.KeyEvent
 
-class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver {
+class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver {
     
     private val pauseIcon: PImage
     private val playIcon: PImage
@@ -26,41 +26,50 @@ class PlayPauseControl(builder: Builder) : Control(builder), SingleStepObserver 
         RunningState.addModeChangeObserver(this)
     }
     
-    override fun onSingleStepModeChange() {
+    override fun onRunningModeChange() {
         runningModeChanged = true
         highlightFromKeyPress()
+        handleIcons()
     }
     
     override fun getCurrentIcon(): PImage {
         return currentIcon
     }
     
+    private fun handleIcons() {
+        
+        when (RunningState.runningMode) {
+            
+            RunningMode.PLAYING, RunningMode.TESTING -> {
+                currentIcon = pauseIcon
+                iconAsyncJobRunner.cancelAndWait()  // Cancel any running job when playing
+            }
+            
+            RunningMode.PAUSED, RunningMode.SINGLE_STEP -> {
+                currentIcon = pauseIcon
+                if (!iconAsyncJobRunner.isActive) {  // Only start if not already running
+                    iconAsyncJobRunner.startJob()
+                }
+            }
+        }
+        
+    }
+    
     override fun onKeyEvent(event: KeyEvent) {
         highlightFromKeyPress()
-        
-        if (runningModeChanged) {
-            when (RunningState.runningMode) {
-                RunningMode.SINGLE_STEP -> {
-                    currentIcon = playIcon
-                }
-                
-                else -> toggleIcon()
-            }
-            runningModeChanged = false
-        } else toggleIcon()
+        handleIcons()
     }
     
     override fun onMouseReleased() {
         super.onMouseReleased() // this will change the play pause state
-        toggleIcon()
+        handleIcons()
     }
     
     private val iconAsyncJobRunner = AsyncJobRunner(
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
             currentIcon = playIcon
-        },
-        threadName = "Icon Toggle Thread"
+        }
     )
     
     private fun toggleIcon() {

@@ -1,14 +1,6 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "20"
-    }
-}
-
 val patterningMain: String = "patterning.Patterning"
 
-group = "com.example"
+group = "org.patterning"
 version = "1.0-SNAPSHOT"
 
 plugins {
@@ -23,17 +15,27 @@ repositories {
 }
 
 dependencies {
-    implementation("com.processing:processing:4.2")
+    implementation("com.processing:processing:4.3")
+    implementation("org.jogamp.gluegen:gluegen-rt:2.4.0")
+    implementation("org.jogamp.jogl:jogl-all:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     implementation(kotlin("stdlib-jdk8"))
 }
 
 application {
     mainClass.set(patterningMain)
-    // applicationDefaultJvmArgs = listOf("-XX:+UseZGC", "-Xmx16G", "-Dkotlinx.coroutines.debug")
-    // application/**/DefaultJvmArgs = listOf("-XX:+UseParallelGC", "-Xmx16G", "-Dkotlinx.coroutines.debug")
-    applicationDefaultJvmArgs = listOf("-Xmx16G", "-XX:ParallelGCThreads=8"/*, "-Dkotlinx.coroutines.debug"*/)
-
+    
+    val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
+    val platforms =
+        listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
+    
+    applicationDefaultJvmArgs = listOf(
+        "-Djava.library.path=${platforms.joinToString(separator = ":") { "$pathToJoglLibraries$it" }}",
+        "-Xmx16G",
+        "-XX:ParallelGCThreads=8",
+        // used to debug native library loading
+        "-Djogamp.debug.NativeLibrary=true"
+    )
 }
 
 tasks.register<JavaExec>("profile") {
@@ -43,10 +45,10 @@ tasks.register<JavaExec>("profile") {
 
 tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-
+    
     manifest {
         attributes["Main-Class"] = patterningMain
     }
-
+    
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }

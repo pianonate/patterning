@@ -72,7 +72,7 @@ class LifePattern(
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics)
         hudInfo = HUDStringBuilder()
         
-        asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() }, threadName = "NextGeneration")
+        asyncNextGeneration = AsyncJobRunner(method = { asyncNextGeneration() })
         
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one

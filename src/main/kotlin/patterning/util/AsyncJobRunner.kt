@@ -12,22 +12,19 @@ import kotlinx.coroutines.sync.withLock
 class AsyncJobRunner(
     private val rateWindowSeconds: Int = RATE_PER_SECOND_WINDOW,
     val method: suspend () -> Unit,
-    threadName: String
 ) {
-/*    private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, threadName) }
-    private val singleThreadContext = executor.asCoroutineDispatcher()*/
-
+    
+    
     private val mutex = Mutex()
-   // private val handlerScope = CoroutineScope(singleThreadContext)
     private val handlerScope = CoroutineScope(Job())
     private var job: Job = Job().apply { cancel() }
     private var timestamps = LinkedList<Long>()
     private var timestampsSnapshot = LinkedList<Long>()
     private val rateWindow = rateWindowSeconds * 1000 // milliseconds
-
+    
     val isActive: Boolean
         get() = job.isActive
-
+    
     fun startJob() {
         if (job.isActive) {
             return
@@ -36,7 +33,7 @@ class AsyncJobRunner(
             runJob(job)
         }
     }
-
+    
     private suspend fun runJob(job: Job) {
         if (job.isActive) {
             method()
@@ -46,8 +43,8 @@ class AsyncJobRunner(
             }
         }
     }
-
-
+    
+    
     fun cancelAndWait() {
         runBlocking {
             mutex.withLock {
@@ -59,7 +56,7 @@ class AsyncJobRunner(
             }
         }
     }
-
+    
     fun getRate(): Float {
         val currentTime = System.currentTimeMillis()
         val cutoffTime = currentTime - rateWindow
@@ -68,7 +65,7 @@ class AsyncJobRunner(
         }
         return timestampsSnapshot.size.toFloat() / rateWindowSeconds
     }
-
+    
     companion object {
         private const val RATE_PER_SECOND_WINDOW = 1 // how big is your window to calculate the rate?
     }

@@ -56,7 +56,7 @@ class Canvas(private val pApplet: PApplet) {
     var zoomLevel: FlexibleDecimal
         get() = zoom.level
         set(value) {
-            zoom.level = value
+            zoom.level = zoom.computeNearestPowerOf2TargetSize(value, findNextLowerPowerOf2 = true)
         }
     
     val zoomLevelAsFloat: Float
@@ -264,8 +264,7 @@ class Canvas(private val pApplet: PApplet) {
             get() = _targetSize
             set(value) {
                 _targetSize = when {
-                    value > FlexibleDecimal.ONE -> computeTargetSize(value)
-                    value in FlexibleDecimal.ZERO..FlexibleDecimal.ONE -> computeTargetSize(value)
+                    value > FlexibleDecimal.ZERO -> computeNearestPowerOf2TargetSize(value)
                     else -> minZoomLevel
                 }
             }
@@ -276,7 +275,7 @@ class Canvas(private val pApplet: PApplet) {
          * problematic so if casing toDouble() results in POSITIVE_INFINITY then we just return the
          * requested targetSize - truly an edge case for a very large universe
          */
-        private fun computeTargetSize(value: FlexibleDecimal): FlexibleDecimal {
+        /*fun computeNearestPowerOf2TargetSize(value: FlexibleDecimal): FlexibleDecimal {
             val isGreaterThanOne = value > FlexibleDecimal.ONE
             
             val adjustedValue = if (isGreaterThanOne) value else FlexibleDecimal.ONE.divide(value, mc)
@@ -288,6 +287,35 @@ class Canvas(private val pApplet: PApplet) {
             val resultPower = FlexibleDecimal.TWO.pow(logValue)
             
             return if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+        }*/
+        fun computeNearestPowerOf2TargetSize(
+            requestedZoomLevel: FlexibleDecimal,
+            findNextLowerPowerOf2: Boolean = false
+        ): FlexibleDecimal {
+            val isGreaterThanOne = requestedZoomLevel > FlexibleDecimal.ONE
+            val adjustedValue =
+                if (isGreaterThanOne) requestedZoomLevel else FlexibleDecimal.ONE.divide(requestedZoomLevel, mc)
+            
+            val logValueDouble = log2(adjustedValue.toDouble())
+            if (logValueDouble == Double.POSITIVE_INFINITY) return requestedZoomLevel
+            
+            var logValue = logValueDouble.roundToInt()
+            var resultPower = FlexibleDecimal.TWO.pow(logValue)
+            var result = if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+            
+            // If findLower is true and the result is greater than the original value, subtract 1 from the log value
+            if (findNextLowerPowerOf2 && result > requestedZoomLevel) {
+                
+                logValue = if (isGreaterThanOne)
+                    logValue - 1
+                else
+                    logValue + 1
+                
+                resultPower = FlexibleDecimal.TWO.pow(logValue)
+                result = if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+            }
+            
+            return result
         }
         
         
@@ -379,8 +407,8 @@ class Canvas(private val pApplet: PApplet) {
     
     companion object {
         private const val DEFAULT_ZOOM_LEVEL = 1f
-        private val ZOOM_FACTOR_IN = FlexibleDecimal.create(4)
-        private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.25f)
+        private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
+        private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)
         
     }
 }

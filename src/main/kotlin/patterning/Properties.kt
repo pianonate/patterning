@@ -1,8 +1,10 @@
 package patterning
 
+import com.jogamp.newt.opengl.GLWindow
 import java.awt.Component
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
+import java.awt.Point
 import java.io.File
 import processing.core.PApplet
 import processing.data.JSONObject
@@ -19,9 +21,10 @@ class Properties(private val pApplet: PApplet) {
         JSONObject()
     }
     
-    private val frame: Frame
+    private val awtFrame: Frame
         get() {
             var comp = pApplet.surface.native as Component
+            
             while (comp !is Frame) {
                 comp = comp.parent
             }
@@ -57,23 +60,32 @@ class Properties(private val pApplet: PApplet) {
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
         val screens = ge.screenDevices
         
-        // this took a lot of chatting with GPT 4.0 to finally land on something that
-        // would work
-        val frame = frame
+        var x: Int
+        var y: Int
+        
+        val window = pApplet.surface.native
+        if (window is GLWindow) {
+            x = window.getX()
+            y = window.getY()
+        } else {
+            x = awtFrame.x
+            y = awtFrame.y
+        }
+        val point = Point(x, y)
         
         // Find the screen where the window is located
         var screenIndex = 0
         for (i in screens.indices) {
             val screen = screens[i]
-            if (screen.defaultConfiguration.bounds.contains(frame.location)) {
+            if (screen.defaultConfiguration.bounds.contains(point)) {
                 screenIndex = i
                 break
             }
         }
         val screen = screens[screenIndex]
         val screenBounds = screen.defaultConfiguration.bounds
-        properties.setInt("x", frame.x - screenBounds.x)
-        properties.setInt("y", frame.y - screenBounds.y)
+        properties.setInt("x", x - screenBounds.x)
+        properties.setInt("y", y - screenBounds.y)
         properties.setInt("width", pApplet.width)
         properties.setInt("height", pApplet.height)
         properties.setInt("screen", screenIndex)
@@ -81,6 +93,7 @@ class Properties(private val pApplet: PApplet) {
     }
     
     fun setWindowPosition() {
+        
         var x = properties.getInt("x", 100)
         var y = properties.getInt("y", 100)
         var screenIndex = properties.getInt("screen", 0)
@@ -94,9 +107,10 @@ class Properties(private val pApplet: PApplet) {
         x += screenBounds.x
         y += screenBounds.y
         
-        val frame = frame
-        frame.setLocation(x, y)
+        pApplet.surface.setLocation(x, y)
+        
     }
+    
     
     companion object {
         private const val FILE_NAME = "patterning_properties.json"

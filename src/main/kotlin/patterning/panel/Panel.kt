@@ -243,7 +243,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                             false
                         } else {
                             val effectivePosition = effectivePosition
-                            mouseX >= effectivePosition!!.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                            mouseX >= effectivePosition.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
                         }
                     }
                 } ?: false

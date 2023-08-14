@@ -135,7 +135,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         }
         
         // Adjust the width and height according to the size of the wrapped text
-        height = ceil((totalHeight + textMargin).toDouble()).toInt()
+        height = ceil((totalHeight + doubleTextMargin).toDouble()).toInt()
         
         // take either the specified width - which has just been sized to fit
         // or the width of the longest line of text in case of word wrapping
@@ -169,7 +169,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         val words: MutableList<String> = message.split(" ").filter { it.isNotEmpty() }.toMutableList()
         
-        val evalWidth = getTextWidth()
+        val evalWidth = getTextWidth() - doubleTextMargin
+        
         while (words.isNotEmpty()) {
             val word = words[0]
             val prospectiveLineWidth = graphics.textWidth(line.toString() + word)
@@ -247,7 +248,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         val lineHeight = panelGraphics.textAscent() + panelGraphics.textDescent()
         val totalTextHeight = lineHeight * messageLines.size
         val y = when (vAlign) {
-            AlignVertical.TOP -> 0f
+            AlignVertical.TOP -> textMargin.toFloat()
             AlignVertical.CENTER -> panelGraphics.height / 2f - totalTextHeight / 2f + doubleTextMargin
             AlignVertical.BOTTOM -> (panelGraphics.height - textMargin).toFloat() - totalTextHeight + lineHeight
         }

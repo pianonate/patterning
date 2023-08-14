@@ -123,6 +123,8 @@ class PatterningPApplet : PApplet() {
         }
         lastMouseX = 0f
         lastMouseY = 0f
+        
+        ux.mouseReleased()
     }
     
     override fun mouseDragged() {

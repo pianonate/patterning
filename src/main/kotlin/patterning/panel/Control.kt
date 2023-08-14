@@ -193,8 +193,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         method = suspend {
             delay(Theme.controlHighlightDuration.toLong())
             isHighlightFromKeypress = false
-        },
-        threadName = "Highlight Thread"
+        }
     )
     
     internal fun highlightFromKeyPress() {

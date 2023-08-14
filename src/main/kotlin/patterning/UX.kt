@@ -72,10 +72,24 @@ class UX(
             .build()
     }
     
+    /**
+     * only invoke handlePlay if it's not the key that already toggles play mode
+     * it doesn't feel like good design to have to explicitly check for this key
+     * but right now i think it's the only case
+     * possibly the UX could also be a KeyObserver for the callback and
+     */
     override fun onKeyEvent(event: KeyEvent) {
+        // it doesn't feel great that we're both listening to all keys and also
+        // have a special case for the one key that would also handle play/pause as it's actual function
         if (event.action == KeyEvent.PRESS) {
-            if (Drawer.isManaging(countdownText)) {
-                Drawer.remove(countdownText)
+            handleCountDown(event.key == KeyCallbackFactory.SHORTCUT_PAUSE)
+        }
+    }
+    
+    private fun handleCountDown(togglePlayModeKeyPress: Boolean = false) {
+        if (Drawer.isManaging(countdownText)) {
+            Drawer.remove(countdownText)
+            if (!togglePlayModeKeyPress) {
                 pattern.handlePlay()
             }
         }
@@ -127,8 +141,6 @@ class UX(
     
     private fun setupControls() {
         
-        val panelTop: ControlPanel
-        val panelRight: ControlPanel
         val transitionDuration = Theme.controlPanelTransitionDuration
         val panels = mutableListOf<ControlPanel>()
         
@@ -188,7 +200,10 @@ class UX(
                 .apply {
                     transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                     setOrientation(Orientation.VERTICAL)
-                    if (pattern is Movable) addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
+                    if (pattern is Movable) addToggleHighlightControl(
+                        "boundary.png",
+                        keyCallbackFactory.callbackDrawBounds
+                    )
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
                     addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
@@ -197,5 +212,9 @@ class UX(
         
         MouseEventManager.addAll(panels)
         Drawer.addAll(panels)
+    }
+    
+    fun mouseReleased() {
+        handleCountDown()
     }
 }
