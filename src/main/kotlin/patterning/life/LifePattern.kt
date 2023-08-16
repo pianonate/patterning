@@ -5,9 +5,11 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
 import java.net.URISyntaxException
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.tan
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -19,6 +21,7 @@ import patterning.pattern.Pattern
 import patterning.pattern.PerformanceTestable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
+import patterning.pattern.ThreeDimensional
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
@@ -39,7 +42,8 @@ class LifePattern(
     Pasteable,
     PerformanceTestable,
     Rewindable,
-    Steppable {
+    Steppable,
+    ThreeDimensional {
     
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
@@ -70,6 +74,9 @@ class LifePattern(
     private var pattern: GraphicsReference
     private var drawBounds = false
     private var isGhosting = false
+    private var is3D = false
+    private var isYawing = false
+    private var yawCount = 0
     
     init {
         
@@ -279,6 +286,77 @@ class LifePattern(
     }
     
     /**
+     * ThreeDimensional overrides
+     */
+    override fun toggle3D() {
+        is3D = !is3D
+    }
+    
+    override fun toggleYaw() {
+        isYawing = !isYawing
+    }
+    
+    private fun reset3D() {
+        yawCount = 0
+        isYawing = false
+        pattern.graphics.camera()
+    }
+    
+    /**
+     * for yaw
+     *
+     * fov:  defines the extent of the observable world that can be seen from the camera's position. A common value is
+     * π / 3 or 60 degrees, which gives a good balance between a wide view and realistic perspective.
+     * You can think of the FOV as the "zoom level" of the camera.
+     *
+     * cameraZ: This calculates the Z position of the camera based on the height of the canvas and the FOV. It ensures that the objects maintain their apparent size as you move the camera.
+     *
+     * radius: The radius is the distance from the camera to the center of rotation. By setting it equal to the cameraZ, the objects maintain their apparent size.
+     *
+     * angle: This calculates the angle of rotation based on the current yawCount. It ranges from 0 to 2π, or 360 degrees. representing a full circle.  We want to start at 90 degrees, so we add 90 to the yawCount.
+     *
+     * eyeX and eyeZ: calculate the X and Z positions of the camera based on the angle and radius. By using sine and cosine, we ensure that the camera moves in a circle around the object.
+     *
+     * perspective: sets up the perspective projection with the defined FOV, aspect ratio, near and far clipping planes.
+     *
+     * camera: Here, the camera is set up with its position (eyeX, pApplet.height / 2f, eyeZ), the center of the scene that it's looking at (pApplet.width / 2f, pApplet.height / 2f, 0f), and the up vector (0f, 1f, 0f), which defines which direction is "up" from the camera's point of view.
+     *
+     */
+    private fun handle3D() {
+        if (isYawing) {
+            val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
+            val cameraZ = (pApplet.height / 2.0f) / tan(fov / 2.0f)
+            val radius = cameraZ // Setting the radius equal to cameraZ to keep the apparent size consistent
+            
+            val angle = TWO_PI * ((yawCount + 90) % 360) / 360f
+            val eyeX = cos(angle) * radius + pApplet.width / 2f
+            val eyeZ = sin(angle) * radius
+            
+            // Set the perspective
+            pApplet.perspective(
+                fov,
+                pApplet.width.toFloat() / pApplet.height.toFloat(),
+                cameraZ / 10.0f,
+                cameraZ * 10.0f
+            )
+            
+            // Set the camera parameters: eye position, center position (looking at the center of the screen), and up vector
+            pattern.graphics.camera(
+                eyeX,
+                pApplet.height / 2f,
+                eyeZ,
+                pApplet.width / 2f,
+                pApplet.height / 2f,
+                0f,
+                0f,
+                1f,
+                0f
+            )
+            yawCount++
+        }
+    }
+    
+    /**
      * private fun
      */
     private fun goForwardInTime() {
@@ -305,6 +383,8 @@ class LifePattern(
         
         asyncNextGenerationJob.cancelAndWait()
         targetStep = 0
+        
+        reset3D()
         
         val universe = LifeUniverse()
         universe.step = 0
@@ -355,7 +435,7 @@ class LifePattern(
         
         val width = roundMe(size)
         
-        if (width > 4) {
+        if (width > 4 && is3D) {
             pattern.graphics.push()
             pattern.graphics.translate(x, y)
             pattern.graphics.strokeWeight(3f)
@@ -396,25 +476,7 @@ class LifePattern(
         
         updateBoundsChanged(life.root.bounds)
         
-        val radius = 300f
-        val angle = TWO_PI * (pApplet.frameCount % 360) / 360f // Angle in radians, from 0 to TWO_PI
-        
-        val eyeX = cos(angle) * radius + pApplet.width / 2f
-        val eyeZ = sin(angle) * radius
-
-// Camera parameters: eye position, center position (looking at the center of the screen), and up vector
-        pattern.graphics.camera(
-            eyeX,
-            pApplet.height / 2f,
-            eyeZ,
-            pApplet.width / 2f,
-            pApplet.height / 2f,
-            0f,
-            0f,
-            1f,
-            0f
-        )
-        
+        handle3D()
         
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen

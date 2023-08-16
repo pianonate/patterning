@@ -30,6 +30,29 @@ class KeyCallbackFactory(
         }
     }
     
+    val callback3DYaw = SimpleKeyCallback(
+        key = SHORTCUT_3D_YAW,
+        invokeFeatureLambda =
+        {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).toggleYaw()
+            }
+        },
+        usage = "yaw the 3d view"
+    )
+    
+    
+    val callback3D = SimpleKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_3D, KeyEvent.SHIFT)),
+        invokeFeatureLambda = {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).toggle3D()
+            }
+        },
+        usage = "three dimensional mode - try me!"
+    )
+    
+    
     // callbacks all constructed with factory methods to make them easy to read and write
     val callbackPause = SimpleKeyCallback(
         key = SHORTCUT_PLAY_PAUSE,
@@ -249,12 +272,16 @@ class KeyCallbackFactory(
     val callbackSingleStep = SimpleKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
         invokeFeatureLambda = {
-            RunningModeController.toggleSingleStep()
+            if (pattern is Steppable) {
+                RunningModeController.toggleSingleStep()
+            }
         },
         usage = "toggle single step mode where which advances one generation at a time"
     )
     
     companion object {
+        private const val SHORTCUT_3D = '3'
+        private const val SHORTCUT_3D_YAW = 'y'
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'

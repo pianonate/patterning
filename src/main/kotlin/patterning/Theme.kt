@@ -15,7 +15,7 @@ object Theme {
     // durations
     const val controlHighlightDuration = 500
     const val controlPanelTransitionDuration = 300
-    const val countdownFrom = 5
+    const val countdownFrom = 2
     const val shortTransitionDuration = 300
     const val startupTextDisplayDuration = 2000
     const val startupTextFadeInDuration = 1000

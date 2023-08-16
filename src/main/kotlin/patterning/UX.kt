@@ -179,7 +179,10 @@ class UX(
                         "random.png",
                         keyCallbackFactory.callbackRandomPattern
                     )
-                    if (pattern is Steppable) addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
+                    if (pattern is Steppable) {
+                        addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
+                        addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
+                    }
                     
                     // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
                     addPlayPauseControl(
@@ -206,7 +209,9 @@ class UX(
                     )
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
-                    addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
+                    addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
+                    addToggleHighlightControl("yaw.png", keyCallbackFactory.callback3DYaw)
+                    
                 }.build()
         )
         

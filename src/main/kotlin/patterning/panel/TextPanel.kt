@@ -88,6 +88,9 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
     
     fun startDisplay() {
+        if (countdownFrom.isPresent)
+            message = initialMessage
+        
         state = FadeInState()
         transitionTime = System.currentTimeMillis() // start displaying immediately
     }
@@ -265,7 +268,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
                 val x = 1
             }
             
-
+            
             panelGraphics.noStroke()
             panelGraphics.text(line, x, lineY)
             
@@ -334,7 +337,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         fun textWidth(textWidth: Int) = apply { this.textWidth = OptionalInt.of(textWidth) }
         
-        fun textColor(textColor: Int) = apply {this.textColor = textColor}
+        fun textColor(textColor: Int) = apply { this.textColor = textColor }
         
         fun wrap() = apply { wrap = true }
         

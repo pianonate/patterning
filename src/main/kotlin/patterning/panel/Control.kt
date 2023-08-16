@@ -20,7 +20,7 @@ import processing.event.KeyEvent
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyEventObserver, MouseEventReceiver {
     private val keyCallback: ControlKeyCallbackEvent
     private val size: Int
-    private var isHighlightFromKeypress = false
+    internal var isHighlightFromKeypress = false
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
@@ -43,7 +43,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         return keyCallback
     }
     
-    protected fun toggleHighlightFromKeyPress() {
+    protected fun toggleHighlight() {
         if (RunningModeController.isUXAvailable)
             isHighlightFromKeypress = !isHighlightFromKeypress
     }
