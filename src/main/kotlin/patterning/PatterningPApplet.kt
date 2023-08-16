@@ -30,8 +30,13 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
     
     override fun settings() {
-        properties = Properties(this)
-        size(properties.width, properties.height)
+        properties = Properties(this, canvas)
+        if (Theme.useOpenGL) {
+            size(properties.width, properties.height, P3D)
+           // smooth(4)
+        } else {
+            size(properties.width, properties.height)
+        }
     }
     
     /**
@@ -44,15 +49,23 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
+        
+        windowTitle("patterning")
+        
+        windowResizable(true)
+        
         Theme.init(this)
         KeyHandler.registerKeyHandler(this)
-        
-        surface.setResizable(true)
         
         properties.setWindowPosition()
         
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
+        // can't do this until PApplet has been initialized
+        // necessary to ensure that in openGL we don't create PGraphics
+        // during a resize - which will cause the  application to crash
+        // the order of this call matters
+        canvas.listenToResize()
         
         pattern = patterning.life.LifePattern(
             pApplet = this,
@@ -87,7 +100,7 @@ class PatterningPApplet : PApplet() {
             canvas.newPattern()
         }
         
-        pattern.registerObserver(PatternEventType.PatternSwapped) {event ->
+        pattern.registerObserver(PatternEventType.PatternSwapped) { event ->
             ux.newPattern((event as PatternEvent.PatternSwapped).patternName)
         }
     }
@@ -102,6 +115,11 @@ class PatterningPApplet : PApplet() {
         
         pattern.draw()
         ux.draw()
+    }
+    
+    override fun windowResized() {
+        println("override fun windowResized")
+        
     }
     
     override fun mousePressed() {

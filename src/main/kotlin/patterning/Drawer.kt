@@ -23,6 +23,10 @@ object Drawer {
      */
     fun drawAll() {
         
+        for (drawable in drawables) {
+            drawable.draw()
+        }
+        
         // clean up drawables that need to be removed
         drawables.removeAll(toBeRemoved)
         toBeRemoved.clear()
@@ -31,10 +35,12 @@ object Drawer {
         drawables.addAll(toBeAdded)
         toBeAdded.clear()
         
+    }
+    
+    fun imageAll() {
         for (drawable in drawables) {
-            drawable.draw()
+            drawable.image()
         }
-        
     }
     
     fun isManaging(drawable: Drawable): Boolean {

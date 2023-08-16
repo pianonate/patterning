@@ -8,17 +8,19 @@ object Theme {
         private set
     var blendMode = 0 // used to provide text readability in dark and light mode
         private set
+    const val useOpenGL = true
     
     val isTransitioning get() = _backgroundColor.transitionInProgress
     
     // durations
     const val controlHighlightDuration = 500
-    const val controlPanelTransitionDuration = 1500
+    const val controlPanelTransitionDuration = 300
+    const val countdownFrom = 5
     const val shortTransitionDuration = 300
-    const val startupTextDisplayDuration = 1000
-    const val startupTextFadeInDuration = 2000
+    const val startupTextDisplayDuration = 2000
+    const val startupTextFadeInDuration = 1000
     const val startupTextFadeOutDuration = 1000
-    const val startupTextTransitionDuration = 1500
+    const val startupTextTransitionDuration = 2000
     const val themeTransitionDuration = 500
     
     // names
@@ -36,7 +38,7 @@ object Theme {
     
     // sizes
     const val controlSize = 35
-    const val controlHighlightCornerRadius = 10
+    const val controlHighlightCornerRadius = 14
     const val dashedLineDashLength = 6f
     const val dashedLineSpaceLength = 2f
     const val defaultTextMargin = 5
@@ -62,6 +64,7 @@ object Theme {
     private lateinit var _controlMousePressedColor: ColorConstant
     private lateinit var _defaultPanelColor: ColorConstant
     private lateinit var _ghostColor: ColorConstant
+    private lateinit var _hoverTextColor: ColorConstant
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
     
@@ -72,6 +75,7 @@ object Theme {
     val controlMousePressedColor get() = _controlMousePressedColor.color
     val defaultPanelColor get() = _defaultPanelColor.color
     val ghostColor get() = _ghostColor.color
+    val hoverTextColor get() = _hoverTextColor.color
     val textColor get() = _textColor.color
     val textColorStart get() = _textColorStart.color
     
@@ -81,6 +85,7 @@ object Theme {
         _controlColor = ColorConstant(pApplet)
         _controlHighlightColor = ColorConstant(pApplet)
         _controlMousePressedColor = ColorConstant(pApplet)
+        _hoverTextColor = ColorConstant(pApplet)
         _defaultPanelColor = ColorConstant(pApplet)
         _ghostColor = ColorConstant(pApplet)
         _textColor = ColorConstant(pApplet)
@@ -102,6 +107,7 @@ object Theme {
         _controlHighlightColor.setColor(themeConstants.controlHighlightColor)
         _controlMousePressedColor.setColor(themeConstants.controlMousePressedColor)
         _defaultPanelColor.setColor(themeConstants.defaultPanelColor)
+        _hoverTextColor.setColor(themeConstants.hoverTextColor)
         _ghostColor.setColor(themeConstants.ghostColor)
         _textColor.setColor(themeConstants.textColor)
         _textColorStart.setColor(themeConstants.textColorStart)

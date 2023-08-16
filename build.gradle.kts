@@ -9,6 +9,7 @@ version = "1.0-SNAPSHOT"
 plugins {
     application
     kotlin("jvm") version "1.9.0"
+    
 }
 
 repositories {
@@ -33,9 +34,17 @@ application {
         "-Xmx16G",
         "-XX:ParallelGCThreads=8",
         // used to debug native library loading
-        "-Djogamp.debug.NativeLibrary=true"
+        // "-Djogamp.debug.NativeLibrary=true"
     )
 }
+
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 
 tasks.register<JavaExec>("profile") {
     sourceSets["main"].runtimeClasspath.also { this.classpath = it }

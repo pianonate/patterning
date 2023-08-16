@@ -260,7 +260,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_GHOST_MODE = 'e'
         private const val SHORTCUT_PASTE = 'v'
-        const val SHORTCUT_PLAY_PAUSE = ' '
+        private const val SHORTCUT_PLAY_PAUSE = ' '
         private const val SHORTCUT_PERFTEST = 't'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'

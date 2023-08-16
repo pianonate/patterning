@@ -10,15 +10,15 @@ object KeyHandler {
     val pressedKeys: Set<Int> get() = _pressedKeys
     
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
-    private val keyObservers: MutableList<KeyObserver> = mutableListOf()
+    private val keyEventObservers: MutableList<KeyEventObserver> = mutableListOf()
     
     
     var latestKeyCode: Int = 0
         get() = pressedKeys.last()
         private set
     
-    fun addKeyObserver(observer: KeyObserver) {
-        keyObservers.add(observer)
+    fun addKeyObserver(observer: KeyEventObserver) {
+        keyEventObservers.add(observer)
     }
     
     fun registerKeyHandler(processing: PApplet) {
@@ -53,19 +53,26 @@ object KeyHandler {
                 matchingCallback.invokeFeature()
             }
             // Check if matchingCallback is KeyObservable - for callbacks that notify other parts of the system
-            if (matchingCallback is KeyObservable) {
-                matchingCallback.notifyKeyObservers(event)
+            if (matchingCallback is KeyEventObservable) {
+                matchingCallback.notifyKeyPressed(event)
             }
+            
+            // now let all the observers know - especially the UX which will handle
+            // given key events can be disabled when isUXAvailable is false
+            // we need to be sure to do this last as this is how the UX gets re-enabled
+            // in the UX class where it will invoke RunningModeController.play()
+            keyEventObservers.forEach { it.onKeyPress(event) }
         }
         if (event.action == KeyEvent.RELEASE) {
             _pressedKeys.remove(keyCode)
             latestKeyCode = keyCode
+            
+            if (matchingCallback is KeyEventObservable) {
+                matchingCallback.notifyKeyReleased(event)
+            }
+            
+            keyEventObservers.forEach { it.onKeyRelease(event) }
         }
-        
-        // now let all the observers know - especially the UX which will handle
-        // playing things while the UX is disabled from key presses during LoadingState()
-        // while loading
-        keyObservers.forEach { it.onKeyEvent(event) }
     }
     
     val usageText: String

@@ -46,9 +46,13 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
         }
     }
     
-    override fun onKeyEvent(event: KeyEvent) {
+    override fun onKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
         handleIcons()
+    }
+    
+    override fun onKeyRelease(event: KeyEvent) {
+        // do nothing
     }
     
     override fun onMouseReleased() {

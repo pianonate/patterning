@@ -1,6 +1,5 @@
 package patterning.panel
 
-import java.awt.Component
 import java.awt.MouseInfo
 import java.util.OptionalInt
 import patterning.Canvas
@@ -59,7 +58,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     var position: PVector = PVector()
     var width: Int
     var height: Int
-    protected var fill: Int
+    protected var fillColor: Int
     var hAlign: AlignHorizontal
     var vAlign: AlignVertical
     
@@ -69,6 +68,8 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     
     // PGraphics and callbacks
     internal var parentGraphicsReference: GraphicsReference
+    
+    // returns a reference to the ControlPanel container PGraphics for any Control
     private val parentGraphics: PGraphics
         get() = parentGraphicsReference.graphics
     
@@ -91,7 +92,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         hAlign = builder.hAlign
         vAlign = builder.vAlign
         alignAble = builder.alignable
-        fill = builder.fill
+        fillColor = builder.fill
         transitionDirection = builder.transitionDirection
         transitionType = builder.transitionType
         transitionDuration = builder.transitionDuration
@@ -119,7 +120,14 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
      * create a new one from the canvas here
      */
     fun initPanelGraphics() {
-        panelGraphics = parentGraphics.parent.createGraphics(width, height)
+        
+        if (canvas.openGLResizing) return
+        
+        panelGraphics = canvas.getGraphics(
+            width = width,
+            height = height,
+            creator = parentGraphics.parent
+        )
     }
     
     override fun onMousePressed() {
@@ -157,8 +165,9 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         
         panelGraphics.beginDraw()
         panelGraphics.pushStyle()
-        panelGraphics.fill(fill)
+        
         panelGraphics.clear()
+        panelGraphics.fill(fillColor)
         
         // handle alignment if requested
         if (alignAble) {
@@ -169,8 +178,14 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw()
+        panelGraphics.popStyle()
         panelGraphics.endDraw()
+        image()
         
+        
+    }
+    
+    override fun image() {
         if (this is TextPanel) parentGraphics.blendMode(Theme.blendMode)
         
         if (transitionAble && transition!!.isTransitioning) {
@@ -178,19 +193,16 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         } else {
             parentGraphics.image(panelGraphics, position.x, position.y)
         }
-        
     }
     
     private fun drawPanelRect() {
         // output the background Rect for this panel
-        panelGraphics.pushStyle()
         panelGraphics.noStroke()
         if (radius.isPresent) {
             panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat(), radius.asInt.toFloat())
         } else {
             panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
         }
-        panelGraphics.popStyle()
     }
     
     private fun updateAlignment() {
@@ -211,9 +223,10 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     
     protected abstract fun panelSubclassDraw()
     
+    // used in isMouseOverMe when a Panel contains other Panels
+    // can walk up the hierarchy if you have nested panels
     private val effectivePosition: PVector
-        get() =// used in isMouseOverMe when a Panel contains other Panels
-            // can walk up the hierarchy if you have nested panels
+        get() =
             if (parentPanel != null) {
                 PVector(
                     position.x + parentPanel!!.effectivePosition.x,
@@ -223,6 +236,10 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                 position
             }
     
+    /**
+     * a problem for another day is why the magic value of -1 works for mouseX and mouseY
+     * currently i just eyeballed it and it works but it needs a deterministic explanation
+     */
     protected val isMouseOverMe: Boolean
         get() {
             return try {
@@ -236,14 +253,23 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                         false
                     } else {
                         val mousePosition = MouseInfo.getPointerInfo().location
-                        val windowPosition = (pApplet.getSurface().native as Component).locationOnScreen
-                        val mouseX = mousePosition.x - windowPosition.x
-                        val mouseY = mousePosition.y - windowPosition.y
+                        val canvasPosition = canvas.canvasPosition
+                        val mouseX = mousePosition.x - canvasPosition.x - 1
+                        val mouseY = mousePosition.y - canvasPosition.y - 1
                         if (mouseX < 0 || mouseX > pApplet.width || mouseY < 0 || mouseY > pApplet.height) {
                             false
                         } else {
                             val effectivePosition = effectivePosition
-                            mouseX >= effectivePosition.x && mouseX < effectivePosition.x + width && mouseY >= effectivePosition.y && mouseY < effectivePosition.y + height
+                            val overMe =
+                                mouseX >= effectivePosition.x
+                                        && mouseX < effectivePosition.x + width
+                                        && mouseY >= effectivePosition.y
+                                        && mouseY < effectivePosition.y + height
+                            /*               if (overMe)
+                                               println("m.x:$mouseX m.y:$mouseY: c.x:${canvasPosition.x} e.x:${effectivePosition.x} pp.x:${parentPanel!!.effectivePosition.x} p.x:${position.x} c.y:${canvasPosition.y} e.y:${effectivePosition.y} pp.y:${parentPanel!!.effectivePosition.y} p.y:${position.y} wxh:${width}x$height overMe: $overMe")
+                                           else
+                                               println("m.x:$mouseX m.y:$mouseY:")*/
+                            overMe
                         }
                     }
                 } ?: false

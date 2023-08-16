@@ -9,7 +9,7 @@ import processing.data.JSONObject
 class PerformanceTest(private val lifePattern: LifePattern, private val properties: Properties) :
     RunningModeObserver {
     private val performanceResults = JSONObject()
-    private val patternCount = 3 // 9
+    private val patternCount = 9
     private val framesPerPattern = 400L
     
     // State for the ongoing test, if any

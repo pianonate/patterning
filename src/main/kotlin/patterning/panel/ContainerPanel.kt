@@ -25,7 +25,7 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
         for (child in childPanels) {
             // child panels need special handling to orient themselves to this container Panel
             child.parentPanel = this
-            child.parentGraphicsReference = GraphicsReference(panelGraphics)
+            child.parentGraphicsReference = GraphicsReference(panelGraphics, "ContainerPanel")
         }
     }
     

@@ -1,7 +1,7 @@
 package patterning
 
+import patterning.actions.KeyEventObserver
 import patterning.actions.KeyHandler
-import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
@@ -23,7 +23,7 @@ class UX(
     private val pApplet: PApplet,
     private val canvas: Canvas,
     private val pattern: Pattern
-) : KeyObserver {
+) : KeyEventObserver {
     
     private val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
     private val ux = canvas.getNamedGraphicsReference(Theme.uxGraphics)
@@ -68,7 +68,7 @@ class UX(
                 RunningModeController.play()
             }
             .fadeInDuration(2000)
-            .countdownFrom(3)
+            .countdownFrom(Theme.countdownFrom)
             .wrap()
             .build()
     }
@@ -77,15 +77,17 @@ class UX(
      * only invoke handlePlay if it's not the key that already toggles play mode
      * it doesn't feel like good design to have to explicitly check for this key
      */
-    override fun onKeyEvent(event: KeyEvent) {
+    override fun onKeyPress(event: KeyEvent) {
         // it doesn't feel great that we're both listening to all keys and also
         // have a special case for the one key that would also handle play/pause as it's actual function
-        if (event.action == KeyEvent.PRESS) {
-            handleCountDown(event.key == KeyCallbackFactory.SHORTCUT_PLAY_PAUSE)
-        }
+        handleCountdownInterrupt()
     }
     
-    private fun handleCountDown(togglePlayModeKeyPress: Boolean = false) {
+    override fun onKeyRelease(event: KeyEvent) {
+        // do nothing
+    }
+    
+    private fun handleCountdownInterrupt() {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
             RunningModeController.play()
@@ -93,17 +95,14 @@ class UX(
     }
     
     fun draw() {
-        ux.graphics.apply {
-            beginDraw()
-            clear()
-        }
         
         hudText.message = pattern.getHUDMessage()
-        Drawer.drawAll()
         
+        ux.graphics.beginDraw()
+        ux.graphics.clear()
+        Drawer.drawAll()
         ux.graphics.endDraw()
         pApplet.image(ux.graphics, 0f, 0f)
-        
     }
     
     fun newPattern(patternName: String) {
@@ -115,6 +114,12 @@ class UX(
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
         }
+        
+        // don't need countdowns for testing
+        if (RunningModeController.isTesting) {
+            return
+        }
+        
         countdownText.startDisplay()
         Drawer.add(countdownText)
     }
@@ -210,6 +215,6 @@ class UX(
     }
     
     fun mouseReleased() {
-        handleCountDown()
+        handleCountdownInterrupt()
     }
 }

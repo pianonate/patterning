@@ -5,7 +5,9 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
 import java.net.URISyntaxException
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -23,7 +25,9 @@ import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
 import processing.core.PApplet
+import processing.core.PConstants.TWO_PI
 import processing.core.PVector
+
 
 class LifePattern(
     pApplet: PApplet,
@@ -69,7 +73,7 @@ class LifePattern(
     
     init {
         
-        pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics)
+        pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics, useOpenGL = true)
         hudInfo = HUDStringBuilder()
         
         asyncNextGenerationJob = AsyncJobRunner(method = { asyncNextGeneration() })
@@ -101,7 +105,23 @@ class LifePattern(
     }
     
     override fun getHUDMessage(): String {
-        return getHUDMessage(life)
+        return hudInfo.getFormattedString(
+            pApplet.frameCount,
+            80
+        ) {
+            hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
+            hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
+            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toNumber())
+            hudInfo.addOrUpdate("mc", canvas.mc.precision)
+            
+            hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
+            //            hudInfo.addOrUpdate("actuals", actualRecursions)
+            hudInfo.addOrUpdate("stack saves", startDelta)
+            val patternInfo = life.lifeInfo.info
+            patternInfo.forEach { (key, value) ->
+                hudInfo.addOrUpdate(key, value)
+            }
+        }
     }
     
     override fun handleGhost() {
@@ -171,7 +191,7 @@ class LifePattern(
                 patternHeight.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
                     ?: FlexibleDecimal.ONE
             
-            canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio).multiply(FlexibleDecimal.create(.9), canvas.mc)
+            canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
         }
         
         val level = canvas.zoomLevel
@@ -320,27 +340,6 @@ class LifePattern(
         }
     }
     
-    private fun getHUDMessage(life: LifeUniverse): String {
-        
-        return hudInfo.getFormattedString(
-            pApplet.frameCount,
-            20
-        ) {
-            hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
-            hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
-            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toNumber())
-            hudInfo.addOrUpdate("mc", canvas.mc.precision)
-            
-            hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
-            //            hudInfo.addOrUpdate("actuals", actualRecursions)
-            hudInfo.addOrUpdate("stack saves", startDelta)
-            val patternInfo = life.lifeInfo.info
-            patternInfo.forEach { (key, value) ->
-                hudInfo.addOrUpdate(key, value)
-            }
-        }
-    }
-    
     private fun fillSquare(
         x: Float,
         y: Float,
@@ -356,12 +355,33 @@ class LifePattern(
         
         val width = roundMe(size)
         
-        pattern.graphics.rect(roundMe(x), roundMe(y), width, width)
+        if (width > 4) {
+            pattern.graphics.push()
+            pattern.graphics.translate(x, y)
+            pattern.graphics.strokeWeight(3f)
+            pattern.graphics.stroke(0xDD000044u.toInt())
+            pattern.graphics.rotateX(lerpRotate(960))
+            pattern.graphics.box(width)
+            pattern.graphics.pop()
+        } else {
+            pattern.graphics.rect(roundMe(x), roundMe(y), width, width)
+        }
+    }
+    
+    private fun lerpRotate(increment: Int): Float {
+        
+        val counter = pApplet.frameCount % increment
+        
+        // Calculate the lerp value
+        val t = counter.toFloat() / increment.toFloat()
+        
+        return PApplet.lerp(0f, PApplet.TWO_PI, t)
     }
     
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
     
+    private var angle = 0f
     private fun drawPattern(life: LifeUniverse) {
         
         val graphics = pattern.graphics
@@ -375,6 +395,26 @@ class LifePattern(
         graphics.noStroke()
         
         updateBoundsChanged(life.root.bounds)
+        
+        val radius = 300f
+        val angle = TWO_PI * (pApplet.frameCount % 360) / 360f // Angle in radians, from 0 to TWO_PI
+        
+        val eyeX = cos(angle) * radius + pApplet.width / 2f
+        val eyeZ = sin(angle) * radius
+
+// Camera parameters: eye position, center position (looking at the center of the screen), and up vector
+        pattern.graphics.camera(
+            eyeX,
+            pApplet.height / 2f,
+            eyeZ,
+            pApplet.width / 2f,
+            pApplet.height / 2f,
+            0f,
+            0f,
+            1f,
+            0f
+        )
+        
         
         // getStartingEntry returns a DrawNodePathEntry - which is precalculated
         // to traverse to the first node that has children visible on screen

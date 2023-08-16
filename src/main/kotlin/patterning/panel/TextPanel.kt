@@ -16,6 +16,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // sizes
     private val textMargin = Theme.defaultTextMargin
     private val doubleTextMargin = textMargin * 2
+    private var textColor = Theme.textColor
     private val textSize: Float
     private val textWidth: OptionalInt
     private val wrap: Boolean
@@ -58,6 +59,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         // just for keyboard shortcuts for now
         keepShortCutTogether = builder.keepShortCutTogether
+        textColor = builder.textColor
         textSize = builder.textSize
         textWidth = builder.textWidth
         wrap = builder.wrap
@@ -91,31 +93,24 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
     
     /**
-     * we go through the above to get the actual
-     * height and width of the text so that we can
-     * create a PGraphics of that size
-     * and _then_ we have to also set font on it!
-     *
-     * we can't use the current UX.graphics as it causes flickering on it
-     * when beginDraw, endDraw are called
+     * we use sizing.graphics as we can't use the current
+     * UX.graphics as it causes flickering when beginDraw, endDraw are called on it
      */
     private fun setTextPanelGraphics() {
+        val sizingGraphics = sizing.graphics
+        sizingGraphics.beginDraw()
+        setFont(graphics = sizingGraphics)
+        wrapText(graphics = sizingGraphics)
+        sizingGraphics.endDraw()
+        setPanelSize(graphics = sizingGraphics)
         
-        with(sizing.graphics) {
-            beginDraw()
-            setFont(graphics = this)
-            wrapText(graphics = this)
-            endDraw()
-            setPanelSize(graphics = this)
-        }
+        // val graphics = canvas.getNamedGraphicsReference(message, width, height, resizable = false).graphics
         
-        with(canvas.getGraphics(width, height)) {
-            beginDraw()
-            setFont(graphics = this)
-            endDraw()
-            panelGraphics = this
-        }
-        
+        val newGraphics = canvas.getGraphics(width, height)
+        newGraphics.beginDraw()
+        setFont(newGraphics)
+        newGraphics.endDraw()
+        panelGraphics = newGraphics
     }
     
     /**
@@ -145,7 +140,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     /**
      * for sizes to be correctly calculated, the font must be the same
      * on both the parent and the newly created text PGraphics
-     * necessary because createGraphics doesn't inherit the font from the parent
+     * necessary because new PGraphics don't inherit the font from the parent
      */
     private fun setFont(graphics: PGraphics) {
         graphics.textFont(canvas.createFont(Theme.fontName, textSize))
@@ -217,7 +212,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
      *  called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on
      */
     override fun updatePanelGraphics() {
-        if (lastMessage != message) {
+        if (lastMessage != message && !canvas.openGLResizing) {
             setTextPanelGraphics()
         }
     }
@@ -256,7 +251,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // Interpolate between start and end colors
         // fade value goes from 0 to 255 to make this happen
         val startColor = Theme.textColorStart
-        val endColor = Theme.textColor
+        val endColor = textColor
         val currentColor = panelGraphics.lerpColor(startColor, endColor, fadeValue / 255.0f)
         
         for (i in messageLines.indices) {
@@ -265,12 +260,13 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             
             // Draw the actual text in the calculated color
             // stroke and strokeWeight are going to require the P2D or P3D renderer
-            with(panelGraphics) {
-                fill(currentColor)
-                stroke(Theme.backGroundColor)
-                strokeWeight(2F)
-                text(line, x, lineY)
+            panelGraphics.fill(currentColor)
+            if (message.startsWith("fps")) {
+                val x = 1
             }
+            
+
+            panelGraphics.noStroke()
             panelGraphics.text(line, x, lineY)
             
         }
@@ -301,6 +297,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var textWidth = OptionalInt.empty()
         internal var runMethod: Runnable? = null
         internal var keepShortCutTogether = false
+        internal var textColor = Theme.textColor
         
         constructor(
             canvas: Canvas,
@@ -336,6 +333,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         fun countdownFrom(countdownFrom: Int) = apply { this.countdownFrom = OptionalInt.of(countdownFrom) }
         
         fun textWidth(textWidth: Int) = apply { this.textWidth = OptionalInt.of(textWidth) }
+        
+        fun textColor(textColor: Int) = apply {this.textColor = textColor}
         
         fun wrap() = apply { wrap = true }
         
@@ -420,7 +419,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         
         override fun transition() {
             runMethod?.run() // natural transition
-            removeFromDrawableList()
+            //removeFromDrawableList()
             state = FadeOutState()
             transitionTime = System.currentTimeMillis()
         }
@@ -430,11 +429,18 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         override fun update() {
             val elapsedTime = System.currentTimeMillis() - transitionTime
             
-            // can't be in FadeOutState unless we have a fadeOutDuration - need for the IDE warning
-            fadeValue = PApplet.constrain(
-                PApplet.map(elapsedTime.toFloat(), 0f, fadeOutDuration.asInt.toFloat(), 255f, 0f).toInt(), 0, 255
-            )
-            if (elapsedTime >= fadeOutDuration.asInt) {
+            fadeValue = if (fadeOutDuration.isPresent) {
+                PApplet.constrain(
+                    PApplet.map(elapsedTime.toFloat(), 0f, fadeOutDuration.asInt.toFloat(), 0f, 255f).toInt(),
+                    0,
+                    255
+                )
+            } else {
+                // fade values range from 0 to 255 so the lerpColor will generate a value from 0 to 1
+                255
+            }
+            
+            if (fadeOutDuration.isEmpty || elapsedTime >= fadeOutDuration.asInt) {
                 transition()
             }
         }

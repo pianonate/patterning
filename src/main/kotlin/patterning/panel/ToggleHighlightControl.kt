@@ -12,8 +12,12 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(
         toggleHighlightFromKeyPress()
     }
     
-    override fun onKeyEvent(event: KeyEvent) {
+    override fun onKeyPress(event: KeyEvent) {
         toggleHighlightFromKeyPress()
+    }
+    
+    override fun onKeyRelease(event: KeyEvent) {
+        // do nothing
     }
     
     class Builder(

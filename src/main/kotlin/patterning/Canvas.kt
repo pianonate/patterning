@@ -1,18 +1,25 @@
 package patterning
 
 
+import com.jogamp.newt.opengl.GLWindow
+import com.jogamp.opengl.GLAutoDrawable
+import com.jogamp.opengl.GLEventListener
 import java.awt.Color
 import java.awt.Component
+import java.awt.Frame
+import java.awt.Point
 import java.math.MathContext
 import kotlin.math.log2
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import patterning.actions.KeyHandler
 import patterning.pattern.KeyCallbackFactory
+import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
-import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
+import processing.core.PConstants.P3D
 import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
@@ -24,17 +31,19 @@ class Canvas(private val pApplet: PApplet) {
         val canvasOffsetY: FlexibleDecimal
     )
     
-    data class ReferenceInfo(val graphicsReference: GraphicsReference, val resizable: Boolean)
-    
     private val zoom = Zoom()
-    private val graphicsReferenceCache = mutableMapOf<String, ReferenceInfo>()
+    private val graphicsReferenceCache = mutableMapOf<String, GraphicsReference>()
     private val offsetsMovedObservers = mutableListOf<OffsetsMovedObserver>()
     private val undoDeque = ArrayDeque<CanvasState>()
     
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
     
-    private var resized = false
+    var openGLResizing = false
+        private set
+    
+    // if we're not using P2D then shoudlUpdate should always be true
+    private var shouldUpdatePGraphics = !Theme.useOpenGL
     
     var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
@@ -48,6 +57,41 @@ class Canvas(private val pApplet: PApplet) {
     init {
         resetMathContext()
         updateDimensions()
+    }
+    
+    val resizeJob = AsyncJobRunner(
+        method = suspend {
+            delay(RESIZE_FINISHED_DELAY_MS)
+            openGLResizing = false
+            shouldUpdatePGraphics = true
+            println("resized finished!")
+        })
+    
+    fun listenToResize() {
+        if (Theme.useOpenGL) {
+            val glWindow = pApplet.surface.native as GLWindow
+            glWindow.addGLEventListener(object : GLEventListener {
+                //have to implement the whole interface regardless...
+                override fun init(drawable: GLAutoDrawable) {}
+                override fun display(drawable: GLAutoDrawable) {}
+                override fun dispose(drawable: GLAutoDrawable) {}
+                override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
+                    // This method is called when the window is resized
+                    // give it a a few ms to be really true before you allwo resizing to be set to false
+                    // otherwise we crash
+                    //
+                    // hard
+                    //
+                    // because shit is happening on other threads in the JOGL code that processing uses
+                    // and we can't do a goddamn thing about it
+                    PApplet.println("resize:$width, $height")
+                    openGLResizing = true
+                    shouldUpdatePGraphics = false
+                    resizeJob.cancelAndWait()
+                    resizeJob.start()
+                }
+            })
+        }
     }
     
     /**
@@ -65,6 +109,37 @@ class Canvas(private val pApplet: PApplet) {
     fun updateZoom() = zoom.update()
     
     fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
+    
+    val windowPosition: Point
+        get() {
+            return if (Theme.useOpenGL) {
+                val window = pApplet.surface.native as GLWindow
+                Point(window.x, window.y - window.insets.topHeight)
+            } else {
+                Point(windowFrame.x, windowFrame.y)
+            }
+        }
+    
+    val canvasPosition: Point
+        get() {
+            return if (Theme.useOpenGL) {
+                val window = pApplet.surface.native as GLWindow
+                Point(window.x, window.y)
+            } else {
+                val locationOnScreen = (pApplet.surface.native as Component).locationOnScreen
+                Point(locationOnScreen.x, locationOnScreen.y)
+            }
+        }
+    
+    private val windowFrame: Frame
+        get() {
+            var comp = pApplet.surface.native as Component
+            
+            while (comp !is Frame) {
+                comp = comp.parent
+            }
+            return comp
+        }
     
     // without this precision on the MathContext, small imprecision propagates at
     // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
@@ -99,7 +174,7 @@ class Canvas(private val pApplet: PApplet) {
     
     private fun resetMathContext() {
         previousPrecision = 0
-        mc = MathContext(PRECISION_BUFFER)
+        mc = MathContext(FlexibleInteger.ZERO.minPrecisionForDrawing())
     }
     
     fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {
@@ -109,16 +184,26 @@ class Canvas(private val pApplet: PApplet) {
     /**
      * Retrieve the PGraphics instance by its name. create if it doesn't exist
      */
-    fun getNamedGraphicsReference(name: String, resizable: Boolean = true): GraphicsReference {
+    fun getNamedGraphicsReference(
+        name: String,
+        width: Int = pApplet.width,
+        height: Int = pApplet.height,
+        resizable: Boolean = true,
+        useOpenGL: Boolean = false
+    ): GraphicsReference {
         return graphicsReferenceCache.computeIfAbsent(name) {
-            val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-            ReferenceInfo(GraphicsReference(newGraphics), resizable)
-        }.graphicsReference
-        
+            val newGraphics = getGraphics(width = width, height = height, useOpenGL = useOpenGL)
+            GraphicsReference(newGraphics, name, resizable, useOpenGL)
+        }
     }
     
-    fun getGraphics(width: Int, height: Int): PGraphics {
-        return pApplet.createGraphics(width, height)
+    fun getGraphics(width: Int, height: Int, creator: PApplet = pApplet, useOpenGL: Boolean = false): PGraphics {
+        
+        return if (Theme.useOpenGL && useOpenGL) {
+            creator.createGraphics(width, height, P3D).also { it.smooth(4) }
+        } else {
+            return creator.createGraphics(width, height)
+        }
     }
     
     fun createFont(name: String, size: Float): PFont {
@@ -128,7 +213,6 @@ class Canvas(private val pApplet: PApplet) {
     fun loadImage(fileSpec: String): PImage {
         return pApplet.loadImage(fileSpec)
     }
-    
     
     fun adjustCanvasOffsets(dx: FlexibleDecimal, dy: FlexibleDecimal) {
         updateCanvasOffsets(offsetX + dx, offsetY + dy)
@@ -141,7 +225,6 @@ class Canvas(private val pApplet: PApplet) {
             observer.onOffsetsMoved()
         }
     }
-    
     
     fun saveUndoState() {
         undoDeque.add(CanvasState(zoom.level, offsetX, offsetY))
@@ -157,11 +240,21 @@ class Canvas(private val pApplet: PApplet) {
     }
     
     private fun handleResize() {
-        resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
+        val resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
+        
         
         if (resized) {
-            updateResizableGraphicsReferences()
             updateDimensions()
+        }
+        
+        // if we're not using opeNGl we should always do this directly on resize
+        // if we are using openGL we need to make sure resizing is finished which is what shouldUpdateGraphics tells us
+        if ((resized && !Theme.useOpenGL)
+            || (shouldUpdatePGraphics && Theme.useOpenGL)
+        ) {
+            println("resized:$resized use:${Theme.useOpenGL} shouldUpdate:$shouldUpdatePGraphics resizing:$openGLResizing")
+            updateResizableGraphicsReferences()
+            shouldUpdatePGraphics = false
         }
         
         if (resized || Theme.isTransitioning) {
@@ -170,10 +263,10 @@ class Canvas(private val pApplet: PApplet) {
     }
     
     private fun updateResizableGraphicsReferences() {
-        graphicsReferenceCache.forEach { (_, referenceInfo) ->
-            if (referenceInfo.resizable) {
-                val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-                referenceInfo.graphicsReference.updateGraphics(newGraphics)
+        graphicsReferenceCache.forEach { (_, reference) ->
+            if (reference.isResizable) {
+                val newGraphics = getGraphics(pApplet.width, pApplet.height, useOpenGL = reference.useOpenGL)
+                reference.updateGraphics(newGraphics)
             }
         }
     }
@@ -183,8 +276,8 @@ class Canvas(private val pApplet: PApplet) {
      * in a more rigorous way :)
      */
     internal fun drawBackground() {
-        handleResize()
         pApplet.background(Theme.backGroundColor)
+        handleResize()
     }
     
     /**
@@ -235,8 +328,14 @@ class Canvas(private val pApplet: PApplet) {
      * then resize the window
      */
     private fun mitigateFlicker() {
-        val nativeSurface = pApplet.surface.native as Component
-        nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
+        val native = pApplet.surface.native
+        if (native is GLWindow) {
+            // doesn't happen with openGL
+            return
+        } else {
+            val nativeSurface = pApplet.surface.native as Component
+            nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
+        }
     }
     
     private inner class Zoom(
@@ -406,9 +505,9 @@ class Canvas(private val pApplet: PApplet) {
     }
     
     companion object {
+        private const val RESIZE_FINISHED_DELAY_MS = 300L
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
         private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)
-        
     }
 }

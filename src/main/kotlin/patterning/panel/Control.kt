@@ -4,10 +4,10 @@ import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
 import patterning.Theme
-import patterning.actions.ControlKeyCallback
+import patterning.actions.ControlKeyCallbackEvent
 import patterning.actions.KeyCallback
+import patterning.actions.KeyEventObserver
 import patterning.actions.KeyHandler
-import patterning.actions.KeyObserver
 import patterning.actions.MouseEventManager
 import patterning.actions.MouseEventReceiver
 import patterning.panel.Transition.TransitionDirection
@@ -17,8 +17,8 @@ import processing.core.PImage
 import processing.core.PVector
 import processing.event.KeyEvent
 
-open class Control protected constructor(builder: Builder) : Panel(builder), KeyObserver, MouseEventReceiver {
-    private val keyCallback: ControlKeyCallback
+open class Control protected constructor(builder: Builder) : Panel(builder), KeyEventObserver, MouseEventReceiver {
+    private val keyCallback: ControlKeyCallbackEvent
     private val size: Int
     private var isHighlightFromKeypress = false
     protected var icon: PImage
@@ -27,7 +27,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     
     init {
         size = builder.size
-        fill = Theme.controlColor
+        fillColor = Theme.controlColor
         keyCallback = registerCallback(builder.callback)
         MouseEventManager.addReceiver(this)
         icon = loadIcon(builder.iconName)
@@ -37,8 +37,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 Theme.shortcutParenEnd
     }
     
-    private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
-        val keyCallback = ControlKeyCallback(callback, this)
+    private fun registerCallback(callback: KeyCallback): ControlKeyCallbackEvent {
+        val keyCallback = ControlKeyCallbackEvent(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
     }
@@ -142,8 +142,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             AlignHorizontal.LEFT,
             AlignVertical.TOP
         ).apply {
-            fill(Theme.controlHighlightColor)
+            fill(Theme.controlColor)
             radius(Theme.controlHighlightCornerRadius)
+            textColor(Theme.hoverTextColor)
             textSize(Theme.hoverTextSize)
             textWidth(hoverTextWidth)
             wrap()
@@ -188,8 +189,12 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
     
-    override fun onKeyEvent(event: KeyEvent) {
+    override fun onKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
+    }
+    
+    override fun onKeyRelease(event: KeyEvent) {
+        // do nothing
     }
     
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
