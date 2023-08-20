@@ -16,7 +16,8 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // sizes
     private val textMargin = Theme.defaultTextMargin
     private val doubleTextMargin = textMargin * 2
-    private var textColor = Theme.textColor
+    private var textColor
+        get() = Theme.textColor
     private val textSize: Float
     private val textWidth: OptionalInt
     private val wrap: Boolean

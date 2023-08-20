@@ -297,9 +297,13 @@ class LifePattern(
     }
     
     private fun reset3D() {
-        yawCount = 0
-        isYawing = false
-        pattern.graphics.camera()
+        if (Theme.useOpenGL) {
+            is3D = false
+            yawCount = 0
+            isYawing = false
+            pattern.graphics.camera()
+        }
+        
     }
     
     /**
@@ -438,9 +442,9 @@ class LifePattern(
         if (width > 4 && is3D) {
             pattern.graphics.push()
             pattern.graphics.translate(x, y)
-            pattern.graphics.strokeWeight(3f)
-            pattern.graphics.stroke(0xDD000044u.toInt())
-            pattern.graphics.rotateX(lerpRotate(960))
+            pattern.graphics.strokeWeight(1f)
+            pattern.graphics.stroke(Theme.boxOutlineColor)
+            pattern.graphics.rotateX(lerpRotate(720))
             pattern.graphics.box(width)
             pattern.graphics.pop()
         } else {
@@ -461,7 +465,6 @@ class LifePattern(
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
     
-    private var angle = 0f
     private fun drawPattern(life: LifeUniverse) {
         
         val graphics = pattern.graphics

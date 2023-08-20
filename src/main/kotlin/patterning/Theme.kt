@@ -3,12 +3,12 @@ package patterning
 import processing.core.PApplet
 
 object Theme {
+    const val useOpenGL = true
     
     var currentThemeType = ThemeType.DARK
         private set
     var blendMode = 0 // used to provide text readability in dark and light mode
         private set
-    const val useOpenGL = true
     
     val isTransitioning get() = _backgroundColor.transitionInProgress
     
@@ -24,7 +24,7 @@ object Theme {
     const val themeTransitionDuration = 500
     
     // names
-    const val countdownText = "press a key to start immediately"
+    const val countdownText = "press a key to start"
     const val fontName = "Verdana"
     const val iconPath = "icon/"
     const val shortcutParenStart = " ("
@@ -58,6 +58,7 @@ object Theme {
      * at the top of the file
      */
     private lateinit var _backgroundColor: ColorConstant
+    private lateinit var _boxOutlineColor: ColorConstant
     private lateinit var _cellColor: ColorConstant
     private lateinit var _controlColor: ColorConstant
     private lateinit var _controlHighlightColor: ColorConstant
@@ -69,6 +70,7 @@ object Theme {
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
     
     val backGroundColor get() = _backgroundColor.color
+    val boxOutlineColor get() = _boxOutlineColor.color
     val cellColor get() = _cellColor.color
     val controlColor get() = _controlColor.color
     val controlHighlightColor get() = _controlHighlightColor.color
@@ -81,6 +83,7 @@ object Theme {
     
     fun init(pApplet: PApplet) {
         _backgroundColor = ColorConstant(pApplet)
+        _boxOutlineColor = ColorConstant(pApplet)
         _cellColor = ColorConstant(pApplet)
         _controlColor = ColorConstant(pApplet)
         _controlHighlightColor = ColorConstant(pApplet)
@@ -102,6 +105,7 @@ object Theme {
         
         // colors
         _backgroundColor.setColor(themeConstants.backgroundColor)
+        _boxOutlineColor.setColor(themeConstants.boxOutlineColor)
         _cellColor.setColor(themeConstants.cellColor)
         _controlColor.setColor(themeConstants.controlColor)
         _controlHighlightColor.setColor(themeConstants.controlHighlightColor)

@@ -2,7 +2,7 @@ package patterning.state
 
 class LoadingState() : RunningState(RunningMode.LOADING) {
     
-    override fun toggleRunning() {
+    override fun togglePlaying() {
         throw IllegalStateException("Cannot toggle running during loading")
     }
     
@@ -10,8 +10,10 @@ class LoadingState() : RunningState(RunningMode.LOADING) {
         throw IllegalStateException("Cannot toggle single step during loading")
     }
     
-    override fun play() {
-        controller.changeState(PlayingState())
+    // we say "start" instead of "play" because we just continue from whatever mode was last invoked
+    // this way we can stay in single step between patterns - or stay paused between patterns
+    override fun start() {
+        controller.changeState(controller.previousRunningState)
     }
     
     override fun load() {

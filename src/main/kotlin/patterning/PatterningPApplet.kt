@@ -30,10 +30,11 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
     
     override fun settings() {
+        
         properties = Properties(this, canvas)
         if (Theme.useOpenGL) {
             size(properties.width, properties.height, P3D)
-           // smooth(4)
+            // smooth(4)
         } else {
             size(properties.width, properties.height)
         }
@@ -49,13 +50,11 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
-        
         windowTitle("patterning")
         
         windowResizable(true)
         
         Theme.init(this)
-        KeyHandler.registerKeyHandler(this)
         
         properties.setWindowPosition()
         
@@ -88,6 +87,9 @@ class PatterningPApplet : PApplet() {
         // ux sets up key callbacks and we can now print them out
         println(KeyHandler.usageText)
         
+        KeyHandler.registerKeyHandler(this)
+        
+        
     }
     
     private fun registerPatternObservers(pattern: Pattern) {
@@ -106,6 +108,7 @@ class PatterningPApplet : PApplet() {
     }
     
     override fun draw() {
+        
         canvas.drawBackground()
         
         if (pattern is Movable) {

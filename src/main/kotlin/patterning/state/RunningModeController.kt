@@ -3,7 +3,7 @@ package patterning.state
 object RunningModeController {
     
     private var currentRunningState: RunningState = PausedState()
-    private var previousRunningState: RunningState = PausedState()
+    internal var previousRunningState: RunningState = PausedState()
     
     val runningMode: RunningMode
         get() = currentRunningState.runningMode
@@ -18,7 +18,7 @@ object RunningModeController {
         get() = currentRunningState.isTesting
     
     fun toggleRunning() {
-        currentRunningState.toggleRunning()
+        currentRunningState.togglePlaying()
     }
     
     fun toggleSingleStep() {
@@ -29,8 +29,8 @@ object RunningModeController {
         runningModeObservers.add(observer)
     }
     
-    fun play() {
-        currentRunningState.play()
+    fun start() {
+        currentRunningState.start()
     }
     
     fun load() {
@@ -51,6 +51,7 @@ object RunningModeController {
     }
     
     internal fun changeState(newState: RunningState) {
+        previousRunningState = currentRunningState
         currentRunningState = newState
         notifyRunningModeChangedObservers()
     }
@@ -64,7 +65,6 @@ object RunningModeController {
     }
     
     private fun enterTestMode() {
-        previousRunningState = currentRunningState
         changeState(TestingState())
     }
     

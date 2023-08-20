@@ -285,7 +285,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
-        private const val SHORTCUT_GHOST_MODE = 'e'
+        private const val SHORTCUT_GHOST_MODE = 'g'
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PLAY_PAUSE = ' '
         private const val SHORTCUT_PERFTEST = 't'

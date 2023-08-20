@@ -15,6 +15,7 @@ import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pattern
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
+import patterning.pattern.ThreeDimensional
 import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
@@ -65,7 +66,7 @@ class UX(
             AlignVertical.CENTER
         )
             .runMethod {
-                RunningModeController.play()
+                RunningModeController.start()
             }
             .fadeInDuration(2000)
             .countdownFrom(Theme.countdownFrom)
@@ -90,7 +91,7 @@ class UX(
     private fun handleCountdownInterrupt() {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
-            RunningModeController.play()
+            RunningModeController.start()
         }
     }
     
@@ -180,7 +181,10 @@ class UX(
                         keyCallbackFactory.callbackRandomPattern
                     )
                     if (pattern is Steppable) {
-                        addToggleHighlightControl("singleStep.png", keyCallbackFactory.callbackSingleStep)
+                        addToggleHighlightControl(
+                            iconName ="singleStep.png",
+                            callback = keyCallbackFactory.callbackSingleStep
+                        )
                         addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
                     }
                     
@@ -209,9 +213,12 @@ class UX(
                     )
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
-                    addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
-                    addToggleHighlightControl("yaw.png", keyCallbackFactory.callback3DYaw)
-                    
+                    if (Theme.useOpenGL && pattern is ThreeDimensional) {
+                        addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
+                        addToggleHighlightControl(
+                            "yaw.png", keyCallbackFactory.callback3DYaw, resetOnNew = this@UX.pattern
+                        )
+                    }
                 }.build()
         )
         

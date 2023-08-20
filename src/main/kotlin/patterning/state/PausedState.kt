@@ -2,7 +2,7 @@ package patterning.state
 
 class PausedState() : RunningState(RunningMode.PAUSED) {
     
-    override fun toggleRunning() {
+    override fun togglePlaying() {
         controller.changeState(PlayingState())
     }
     
@@ -10,7 +10,7 @@ class PausedState() : RunningState(RunningMode.PAUSED) {
         controller.changeState(SingleStepState())
     }
     
-    override fun play() {
+    override fun start() {
         throw IllegalStateException("Pause is only toggled from play, not set directly")
     }
     

@@ -2,9 +2,9 @@ package patterning.state
 
 abstract class RunningState(val runningMode: RunningMode) {
     internal val controller = RunningModeController
-    abstract fun toggleRunning()
+    abstract fun togglePlaying()
     abstract fun toggleSingleStep()
-    abstract fun play()
+    abstract fun start()
     abstract fun load()
     abstract fun shouldAdvance(): Boolean
     abstract val isTesting: Boolean

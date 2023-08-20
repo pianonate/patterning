@@ -2,18 +2,17 @@ package patterning.panel
 
 import patterning.Canvas
 import patterning.actions.KeyCallback
-import patterning.state.RunningModeController
-import patterning.state.RunningModeObserver
+import patterning.pattern.Pattern
+import patterning.pattern.PatternEventType
 import processing.event.KeyEvent
 
-class ToggleHighlightControl private constructor(builder: Builder) : Control(builder), RunningModeObserver {
+class ToggleHighlightControl private constructor(builder: Builder) : Control(builder) {
     
     init {
-        RunningModeController.addModeChangeObserver(this)
-    }
-    
-    override fun onRunningModeChange() {
-        isHighlightFromKeypress = false
+        builder.resetOnNew?.registerObserver(PatternEventType.PatternSwapped) {
+            // if a new pattern is loaded we stop 'yaw-ing' as it's too confusing from a ux perspective
+            isHighlightFromKeypress = false
+        }
     }
     
     override fun onMouseReleased() {
@@ -34,10 +33,10 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
         callback: KeyCallback,
         iconName: String,
         size: Int,
-        val resetOnNewPattern: Boolean = false,
+        val resetOnNew: Pattern? = null,
     ) :
         Control.Builder(canvas, callback, iconName, size) {
         override fun build() = ToggleHighlightControl(this)
     }
-
+    
 }
