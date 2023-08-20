@@ -104,9 +104,7 @@ class LifePattern(
         
         drawPattern(life)
         
-        pApplet.apply {
-            image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
-        }
+        pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
         
         goForwardInTime()
     }
@@ -131,11 +129,7 @@ class LifePattern(
         }
     }
     
-    override fun handleGhost() {
-        isGhosting = !isGhosting
-    }
-    
-    override fun handlePlay() {
+    override fun handlePlayPause() {
         RunningModeController.toggleRunning()
     }
     
@@ -356,6 +350,9 @@ class LifePattern(
                 1f,
                 0f
             )
+            
+            //pattern.graphics.directionalLight(255f, 255f, 255f, eyeX - pApplet.width / 2f, pApplet.height / 2f, -eyeZ)
+            
             yawCount++
         }
     }
@@ -389,6 +386,7 @@ class LifePattern(
         targetStep = 0
         
         reset3D()
+        isGhosting = false
         
         val universe = LifeUniverse()
         universe.step = 0
@@ -469,20 +467,22 @@ class LifePattern(
         
         val graphics = pattern.graphics
         graphics.beginDraw()
-        if (isGhosting) {
+        updateGhost(pattern.graphics)
+        
+        /* if (isGhosting) {
             graphics.fill(Theme.ghostColor)
         } else {
             graphics.clear()
             graphics.fill(Theme.cellColor)
-        }
+        } */
         graphics.noStroke()
         
         updateBoundsChanged(life.root.bounds)
         
         handle3D()
         
-        // getStartingEntry returns a DrawNodePathEntry - which is precalculated
-        // to traverse to the first node that has children visible on screen
+        // getStartingEntry returns a DrawNodePathEntry - which contains the node
+        // found by traversing to the first node that has children visible on screen
         // for very large drawing this can save hundreds of stack calls
         // making debugging (at least) easier
         //

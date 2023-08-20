@@ -21,6 +21,7 @@ class KeyCallbackFactory(
     
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
+            addKeyCallback(callbackGhostModeKeyFrame)
             addKeyCallback(callbackPerfTest)
             addKeyCallback(callbackPaste)
             addKeyCallback(callbackNumberedPattern)
@@ -57,7 +58,7 @@ class KeyCallbackFactory(
     val callbackPause = SimpleKeyCallback(
         key = SHORTCUT_PLAY_PAUSE,
         invokeFeatureLambda = {
-            pattern.handlePlay()
+            pattern.handlePlayPause()
         },
         usage = "play and pause"
     )
@@ -65,9 +66,17 @@ class KeyCallbackFactory(
     val callbackGhostMode = SimpleKeyCallback(
         key = SHORTCUT_GHOST_MODE,
         invokeFeatureLambda = {
-            pattern.handleGhost()
+            pattern.toggleGhost()
         },
         usage = "ghost mode - try me!"
+    )
+    
+    val callbackGhostModeKeyFrame = SimpleKeyCallback(
+        keyCombos = setOf(KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.META)),
+        invokeFeatureLambda = {
+            pattern.stampGhostModeKeyFrame()
+        },
+        usage = "ghost mode emit a key frame - while ghosting - try me!"
     )
     
     private val callbackNumberedPattern = SimpleKeyCallback(

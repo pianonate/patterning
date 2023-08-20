@@ -182,7 +182,7 @@ class UX(
                     )
                     if (pattern is Steppable) {
                         addToggleHighlightControl(
-                            iconName ="singleStep.png",
+                            iconName = "singleStep.png",
                             callback = keyCallbackFactory.callbackSingleStep
                         )
                         addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
@@ -212,7 +212,11 @@ class UX(
                         keyCallbackFactory.callbackDrawBounds
                     )
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-                    addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode)
+                    addToggleHighlightControl(
+                        "ghost.png",
+                        keyCallbackFactory.callbackGhostMode,
+                        resetOnNew = this@UX.pattern
+                    )
                     if (Theme.useOpenGL && pattern is ThreeDimensional) {
                         addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
                         addToggleHighlightControl(

@@ -53,7 +53,7 @@ object Theme {
     const val strokeWeightDashedLine = 1f
     
     /**
-     * everything related to theme colors inluding the init
+     * everything related to theme colors including the init
      * is below here - just to allow for easy access to constants
      * at the top of the file
      */
