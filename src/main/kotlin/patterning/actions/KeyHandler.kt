@@ -1,6 +1,5 @@
 package patterning.actions
 
-import patterning.Theme
 import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
@@ -26,15 +25,15 @@ object KeyHandler {
         keyEventObservers.add(observer)
     }
     
-    fun registerKeyHandler(processing: PApplet) {
-        pApplet = processing
-        if (Theme.useOpenGL) {
-            processing.registerMethod("pre", this)
-            processing.registerMethod("keyEvent", this)
-            
+    fun registerKeyHandler(pApplet: PApplet) {
+        this.pApplet = pApplet
+        //if (Theme.useOpenGL) {
+            pApplet.registerMethod("pre", this)
+            pApplet.registerMethod("keyEvent", this)
+ /*
         } else {
             processing.registerMethod("keyEvent", this)
-        }
+        }*/
     }
     
     fun addKeyCallback(callback: KeyCallback) {
@@ -54,13 +53,13 @@ object KeyHandler {
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
         
-        val keyState = when (event.action) {
+/*        val keyState = when (event.action) {
             KeyEvent.PRESS -> KeyState.PRESSED
             KeyEvent.RELEASE -> KeyState.RELEASED
             else -> KeyState.TYPED
-        }
+        }*/
         
-        if (Theme.useOpenGL) {
+       // if (Theme.useOpenGL) {
             
             when (event.action) {
                 KeyEvent.PRESS -> {
@@ -74,9 +73,9 @@ object KeyHandler {
                     println("in keyEvent RELEASED - nulled out keyEvent")
                 }
             }
-        } else {
+    /*    } else {
             handleKeyEvent(event, keyState)
-        }
+        }*/
         
         
     }

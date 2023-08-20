@@ -36,7 +36,7 @@ class KeyCombo(
         val keyTextBuilder = StringBuilder()
         
         when {
-            modifiers and KeyEvent.META != 0 -> keyTextBuilder.append("⌘")
+            modifiers and KeyEvent.META != 0 -> keyTextBuilder.append(META_KEY)
             modifiers and KeyEvent.CTRL != 0 -> keyTextBuilder.append("^")
             modifiers and KeyEvent.SHIFT != 0 -> keyTextBuilder.append("⇧")
             modifiers and KeyEvent.ALT != 0 -> keyTextBuilder.append("⌥")
@@ -62,5 +62,7 @@ class KeyCombo(
             return if (osName.contains("mac")) ValidOS.MAC else ValidOS.NON_MAC
             
         }
+        
+        const val META_KEY = "⌘"
     }
 }

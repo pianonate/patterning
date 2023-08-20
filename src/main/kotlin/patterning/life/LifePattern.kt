@@ -73,7 +73,6 @@ class LifePattern(
     
     private var pattern: GraphicsReference
     private var drawBounds = false
-    private var isGhosting = false
     private var is3D = false
     private var isYawing = false
     private var yawCount = 0
@@ -291,13 +290,12 @@ class LifePattern(
     }
     
     private fun reset3D() {
-        if (Theme.useOpenGL) {
+      //  if (Theme.useOpenGL) {
             is3D = false
             yawCount = 0
             isYawing = false
             pattern.graphics.camera()
-        }
-        
+      //  }
     }
     
     /**
@@ -386,7 +384,6 @@ class LifePattern(
         targetStep = 0
         
         reset3D()
-        isGhosting = false
         
         val universe = LifeUniverse()
         universe.step = 0
@@ -469,12 +466,6 @@ class LifePattern(
         graphics.beginDraw()
         updateGhost(pattern.graphics)
         
-        /* if (isGhosting) {
-            graphics.fill(Theme.ghostColor)
-        } else {
-            graphics.clear()
-            graphics.fill(Theme.cellColor)
-        } */
         graphics.noStroke()
         
         updateBoundsChanged(life.root.bounds)

@@ -68,7 +68,7 @@ class KeyCallbackFactory(
         invokeFeatureLambda = {
             pattern.toggleGhost()
         },
-        usage = "ghost mode - try me!"
+        usage = "ghost mode. Also try ${KeyCombo.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
     )
     
     val callbackGhostModeKeyFrame = SimpleKeyCallback(

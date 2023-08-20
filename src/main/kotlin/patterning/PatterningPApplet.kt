@@ -32,12 +32,12 @@ class PatterningPApplet : PApplet() {
     override fun settings() {
         
         properties = Properties(this, canvas)
-        if (Theme.useOpenGL) {
+       // if (Theme.useOpenGL) {
             size(properties.width, properties.height, P3D)
             // smooth(4)
-        } else {
+    /*    } else {
             size(properties.width, properties.height)
-        }
+        }*/
     }
     
     /**

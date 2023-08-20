@@ -217,7 +217,7 @@ class UX(
                         keyCallbackFactory.callbackGhostMode,
                         resetOnNew = this@UX.pattern
                     )
-                    if (Theme.useOpenGL && pattern is ThreeDimensional) {
+                    if (/*Theme.useOpenGL && */pattern is ThreeDimensional) {
                         addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
                         addToggleHighlightControl(
                             "yaw.png", keyCallbackFactory.callback3DYaw, resetOnNew = this@UX.pattern
