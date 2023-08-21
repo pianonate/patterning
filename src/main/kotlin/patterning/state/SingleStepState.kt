@@ -3,7 +3,7 @@ package patterning.state
 class SingleStepState() : RunningState(RunningMode.SINGLE_STEP) {
     private var wasSingleStepActivated = false
     
-    override fun togglePlaying() {
+    override fun togglePlayPause() {
         wasSingleStepActivated = true
     }
     
@@ -12,12 +12,20 @@ class SingleStepState() : RunningState(RunningMode.SINGLE_STEP) {
         controller.changeState(PausedState())
     }
     
-    override fun start() {
+    override fun play() {
         throw IllegalStateException("Cannot toggle run during single step mode")
+    }
+    
+    override fun pause() {
+        throw IllegalStateException("Cannot toggle pause during single step mode")
     }
     
     override fun load() {
         controller.changeState(LoadingState())
+    }
+    
+    override fun test() {
+        controller.changeState(TestingState())
     }
     
     override fun shouldAdvance(): Boolean {

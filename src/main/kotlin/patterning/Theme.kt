@@ -3,8 +3,6 @@ package patterning
 import processing.core.PApplet
 
 object Theme {
-    const val useOpenGL = true
-    
     var currentThemeType = ThemeType.DARK
         private set
     var blendMode = 0 // used to provide text readability in dark and light mode

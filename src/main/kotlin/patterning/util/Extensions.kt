@@ -15,6 +15,16 @@ import kotlin.math.roundToInt
 fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
 
 /**
+ *  FLoat extension functions
+ */
+fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
+    return (if (referenceValue > 2)
+        (this.roundToInt() - 1).toFloat()
+    else
+        this)
+}
+
+/**
  * Double extension functions
  */
 // Extension function to count decimal places in a Double
@@ -28,10 +38,6 @@ fun Double.countDecimalPlaces(): Int {
     }
 }
 
-
-/**
- * FlexibleInteger extension functions
- */
 
 
 // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision

@@ -2,7 +2,7 @@ package patterning.state
 
 object RunningModeController {
     
-    private var currentRunningState: RunningState = PausedState()
+    private var currentRunningState: RunningState = PlayingState()
     internal var previousRunningState: RunningState = PausedState()
     
     val runningMode: RunningMode
@@ -17,8 +17,12 @@ object RunningModeController {
     val isTesting: Boolean
         get() = currentRunningState.isTesting
     
-    fun toggleRunning() {
-        currentRunningState.togglePlaying()
+    fun shouldAdvance(): Boolean {
+        return currentRunningState.shouldAdvance()
+    }
+    
+    fun togglePlayPause() {
+        currentRunningState.togglePlayPause()
     }
     
     fun toggleSingleStep() {
@@ -29,25 +33,27 @@ object RunningModeController {
         runningModeObservers.add(observer)
     }
     
-    fun start() {
-        currentRunningState.start()
+    fun play() {
+        currentRunningState.play()
+    }
+    
+    fun pause() {
+        currentRunningState.pause()
     }
     
     fun load() {
         currentRunningState.load()
     }
     
-    
-    fun shouldAdvance(): Boolean {
-        return currentRunningState.shouldAdvance()
-    }
-    
     fun test() {
-        enterTestMode()
+        currentRunningState.test()
     }
     
     fun endTest() {
-        exitTestMode()
+        if (currentRunningState is TestingState)
+            changeState(previousRunningState)
+        else
+            throw IllegalStateException("can only end test from within TestState")
     }
     
     internal fun changeState(newState: RunningState) {
@@ -63,13 +69,4 @@ object RunningModeController {
             observer.onRunningModeChange()
         }
     }
-    
-    private fun enterTestMode() {
-        changeState(TestingState())
-    }
-    
-    private fun exitTestMode() {
-        changeState(previousRunningState)
-    }
-    
 }

@@ -27,6 +27,7 @@ import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
+import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants.TWO_PI
 import processing.core.PVector
@@ -120,6 +121,7 @@ class LifePattern(
             
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
             //            hudInfo.addOrUpdate("actuals", actualRecursions)
+            
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.lifeInfo.info
             patternInfo.forEach { (key, value) ->
@@ -129,7 +131,7 @@ class LifePattern(
     }
     
     override fun handlePlayPause() {
-        RunningModeController.toggleRunning()
+        RunningModeController.togglePlayPause()
     }
     
     override fun loadPattern() {
@@ -290,12 +292,10 @@ class LifePattern(
     }
     
     private fun reset3D() {
-      //  if (Theme.useOpenGL) {
-            is3D = false
-            yawCount = 0
-            isYawing = false
-            pattern.graphics.camera()
-      //  }
+        is3D = false
+        yawCount = 0
+        isYawing = false
+        pattern.graphics.camera()
     }
     
     /**
@@ -322,6 +322,8 @@ class LifePattern(
         if (isYawing) {
             val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
             val cameraZ = (pApplet.height / 2.0f) / tan(fov / 2.0f)
+            
+            @Suppress("UnnecessaryVariable")
             val radius = cameraZ // Setting the radius equal to cameraZ to keep the apparent size consistent
             
             val angle = TWO_PI * ((yawCount + 90) % 360) / 360f
@@ -425,14 +427,7 @@ class LifePattern(
         size: Float,
     ) {
         
-        fun roundMe(value: Float): Float {
-            return (if (size > 2)
-                (value.roundToInt() - 1).toFloat()
-            else
-                value)
-        }
-        
-        val width = roundMe(size)
+        val width = size.roundToIntIfGreaterThanReference(size)
         
         if (width > 4 && is3D) {
             pattern.graphics.push()
@@ -443,7 +438,11 @@ class LifePattern(
             pattern.graphics.box(width)
             pattern.graphics.pop()
         } else {
-            pattern.graphics.rect(roundMe(x), roundMe(y), width, width)
+            pattern.graphics.rect(
+                x.roundToIntIfGreaterThanReference(size),
+                y.roundToIntIfGreaterThanReference(size),
+                width, width
+            )
         }
     }
     
@@ -466,6 +465,7 @@ class LifePattern(
         graphics.beginDraw()
         updateGhost(pattern.graphics)
         
+        // necessary for low zoom size
         graphics.noStroke()
         
         updateBoundsChanged(life.root.bounds)
@@ -490,6 +490,10 @@ class LifePattern(
             val offsetY = top
             
             startDelta = life.root.level - startingNode.level
+            
+            if (startDelta == 0) {
+                val x = 1
+            }
             
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
             

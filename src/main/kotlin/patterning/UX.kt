@@ -66,7 +66,7 @@ class UX(
             AlignVertical.CENTER
         )
             .runMethod {
-                RunningModeController.start()
+                RunningModeController.play()
             }
             .fadeInDuration(2000)
             .countdownFrom(Theme.countdownFrom)
@@ -91,7 +91,7 @@ class UX(
     private fun handleCountdownInterrupt() {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
-            RunningModeController.start()
+            RunningModeController.pause()
         }
     }
     
@@ -217,7 +217,7 @@ class UX(
                         keyCallbackFactory.callbackGhostMode,
                         resetOnNew = this@UX.pattern
                     )
-                    if (/*Theme.useOpenGL && */pattern is ThreeDimensional) {
+                    if (pattern is ThreeDimensional) {
                         addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
                         addToggleHighlightControl(
                             "yaw.png", keyCallbackFactory.callback3DYaw, resetOnNew = this@UX.pattern

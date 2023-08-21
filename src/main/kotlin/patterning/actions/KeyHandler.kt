@@ -27,13 +27,8 @@ object KeyHandler {
     
     fun registerKeyHandler(pApplet: PApplet) {
         this.pApplet = pApplet
-        //if (Theme.useOpenGL) {
-            pApplet.registerMethod("pre", this)
-            pApplet.registerMethod("keyEvent", this)
- /*
-        } else {
-            processing.registerMethod("keyEvent", this)
-        }*/
+        pApplet.registerMethod("pre", this)
+        pApplet.registerMethod("keyEvent", this)
     }
     
     fun addKeyCallback(callback: KeyCallback) {
@@ -53,31 +48,18 @@ object KeyHandler {
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
         
-/*        val keyState = when (event.action) {
-            KeyEvent.PRESS -> KeyState.PRESSED
-            KeyEvent.RELEASE -> KeyState.RELEASED
-            else -> KeyState.TYPED
-        }*/
-        
-       // if (Theme.useOpenGL) {
-            
-            when (event.action) {
-                KeyEvent.PRESS -> {
-                    println("\nin keyEvent PRESSED key:${event.key} instantiated keyEvent")
-                    keyEvent = event
-                }
-                
-                KeyEvent.RELEASE -> {
-                    handleKeyEvent(event, KeyState.RELEASED)
-                    keyEvent = null
-                    println("in keyEvent RELEASED - nulled out keyEvent")
-                }
+        when (event.action) {
+            KeyEvent.PRESS -> {
+                println("\nin keyEvent PRESSED key:${event.key} instantiated keyEvent")
+                keyEvent = event
             }
-    /*    } else {
-            handleKeyEvent(event, keyState)
-        }*/
-        
-        
+            
+            KeyEvent.RELEASE -> {
+                handleKeyEvent(event, KeyState.RELEASED)
+                keyEvent = null
+                println("in keyEvent RELEASED - nulled out keyEvent")
+            }
+        }
     }
     
     @Suppress("unused")

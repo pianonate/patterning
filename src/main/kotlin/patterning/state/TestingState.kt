@@ -2,7 +2,7 @@ package patterning.state
 
 class TestingState() : RunningState(RunningMode.TESTING) {
     
-    override fun togglePlaying() {
+    override fun togglePlayPause() {
         throw IllegalStateException("Cannot toggle running mode during test mode")
     }
     
@@ -10,13 +10,22 @@ class TestingState() : RunningState(RunningMode.TESTING) {
         throw IllegalStateException("Cannot toggle single step mode during test mode")
     }
     
-    override fun start() {
+    override fun play() {
         throw IllegalStateException("Cannot play when in test mode")
+    }
+    
+    override fun pause() {
+        throw IllegalStateException("Cannot pause when in test mode")
     }
     
     override fun load() {
         throw IllegalStateException("Cannot load when in test mode")
     }
+    
+    override fun test() {
+        throw IllegalStateException("Already testing")
+    }
+    
     
     override fun shouldAdvance(): Boolean {
         return true

@@ -6,7 +6,6 @@ import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
 import java.awt.Color
 import java.awt.Component
-import java.awt.Frame
 import java.awt.Point
 import java.math.MathContext
 import kotlin.math.log2
@@ -42,8 +41,8 @@ class Canvas(private val pApplet: PApplet) {
     var openGLResizing = false
         private set
     
-    // if we're not using P2D then shoudlUpdate should always be true
-    private var shouldUpdatePGraphics = !Theme.useOpenGL
+    // disallow during resize or you hit a heinous bug
+    private var shouldUpdatePGraphics = false
     
     var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
@@ -68,30 +67,29 @@ class Canvas(private val pApplet: PApplet) {
         })
     
     fun listenToResize() {
-        if (Theme.useOpenGL) {
-            val glWindow = pApplet.surface.native as GLWindow
-            glWindow.addGLEventListener(object : GLEventListener {
-                //have to implement the whole interface regardless...
-                override fun init(drawable: GLAutoDrawable) {}
-                override fun display(drawable: GLAutoDrawable) {}
-                override fun dispose(drawable: GLAutoDrawable) {}
-                override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
-                    // This method is called when the window is resized
-                    // give it a a few ms to be really true before you allwo resizing to be set to false
-                    // otherwise we crash
-                    //
-                    // hard
-                    //
-                    // because shit is happening on other threads in the JOGL code that processing uses
-                    // and we can't do a goddamn thing about it
-                    PApplet.println("resize:$width, $height")
-                    openGLResizing = true
-                    shouldUpdatePGraphics = false
-                    resizeJob.cancelAndWait()
-                    resizeJob.start()
-                }
-            })
-        }
+        val glWindow = pApplet.surface.native as GLWindow
+        glWindow.addGLEventListener(object : GLEventListener {
+            //have to implement the whole interface regardless...
+            override fun init(drawable: GLAutoDrawable) {}
+            override fun display(drawable: GLAutoDrawable) {}
+            override fun dispose(drawable: GLAutoDrawable) {}
+            override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
+                // This method is called when the window is resized
+                // give it a a few ms to be really true before you allow resizing to be set to false
+                // otherwise we crash
+                //
+                // hard
+                //
+                // because shit is happening on other threads in the JOGL code that processing uses
+                // and we can't do a goddamn thing about it
+                PApplet.println("resize:$width, $height")
+                openGLResizing = true
+                shouldUpdatePGraphics = false
+                resizeJob.cancelAndWait()
+                println("resizing so telling shouldUpdateGraphics to wait")
+                resizeJob.start()
+            }
+        })
     }
     
     /**
@@ -112,33 +110,14 @@ class Canvas(private val pApplet: PApplet) {
     
     val windowPosition: Point
         get() {
-            return if (Theme.useOpenGL) {
-                val window = pApplet.surface.native as GLWindow
-                Point(window.x, window.y - window.insets.topHeight)
-            } else {
-                Point(windowFrame.x, windowFrame.y)
-            }
+            val window = pApplet.surface.native as GLWindow
+            return Point(window.x, window.y - window.insets.topHeight)
         }
     
     val canvasPosition: Point
         get() {
-            return if (Theme.useOpenGL) {
-                val window = pApplet.surface.native as GLWindow
-                Point(window.x, window.y)
-            } else {
-                val locationOnScreen = (pApplet.surface.native as Component).locationOnScreen
-                Point(locationOnScreen.x, locationOnScreen.y)
-            }
-        }
-    
-    private val windowFrame: Frame
-        get() {
-            var comp = pApplet.surface.native as Component
-            
-            while (comp !is Frame) {
-                comp = comp.parent
-            }
-            return comp
+            val window = pApplet.surface.native as GLWindow
+            return Point(window.x, window.y)
         }
     
     // without this precision on the MathContext, small imprecision propagates at
@@ -199,9 +178,10 @@ class Canvas(private val pApplet: PApplet) {
     
     fun getGraphics(width: Int, height: Int, creator: PApplet = pApplet, useOpenGL: Boolean = false): PGraphics {
         
-        return if (Theme.useOpenGL && useOpenGL) {
-            creator.createGraphics(width, height, P3D).also { it.smooth(4) }
+        return if (useOpenGL) {
+            creator.createGraphics(width, height, P3D).also { it.smooth(OPENGL_PGRAPHICS_SMOOTH) }
         } else {
+            // we use plain ol' renderer for the UX
             return creator.createGraphics(width, height)
         }
     }
@@ -247,12 +227,8 @@ class Canvas(private val pApplet: PApplet) {
             updateDimensions()
         }
         
-        // if we're not using opeNGl we should always do this directly on resize
-        // if we are using openGL we need to make sure resizing is finished which is what shouldUpdateGraphics tells us
-        if ((resized && !Theme.useOpenGL)
-            || (shouldUpdatePGraphics && Theme.useOpenGL)
-        ) {
-            println("resized:$resized use:${Theme.useOpenGL} shouldUpdate:$shouldUpdatePGraphics resizing:$openGLResizing")
+        if (shouldUpdatePGraphics) {
+            println("resized:$resized shouldUpdate:$shouldUpdatePGraphics resizing:$openGLResizing")
             updateResizableGraphicsReferences()
             shouldUpdatePGraphics = false
         }
@@ -506,6 +482,8 @@ class Canvas(private val pApplet: PApplet) {
     
     companion object {
         private const val RESIZE_FINISHED_DELAY_MS = 300L
+        private const val OPENGL_PGRAPHICS_SMOOTH = 4
+        
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
         private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)

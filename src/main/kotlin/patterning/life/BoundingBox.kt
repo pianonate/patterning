@@ -3,10 +3,11 @@ package patterning.life
 import patterning.Canvas
 import patterning.Theme
 import patterning.util.FlexibleDecimal
+import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class BoundingBox(bounds: Bounds, cellSize: FlexibleDecimal, private val canvas: Canvas) {
+class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val canvas: Canvas) {
     // we draw the box just a bit off screen so it won't be visible
     // but if the box is more than a pixel, we need to push it further offscreen
     // since we're using a Theme constant we can change we have to account for it
@@ -41,32 +42,48 @@ class BoundingBox(bounds: Bounds, cellSize: FlexibleDecimal, private val canvas:
     private val horizontalLine: Line
         get() {
             val startX = left
-            val startYDecimal = topWithOffset + heightDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
+            
+            // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
+            val startYDecimal = topWithOffset + heightDecimal.divide(
+                FlexibleDecimal.TWO,
+                canvas.mc
+            ) - cellSize.divide(FlexibleDecimal.TWO, canvas.mc)
+            
             val startY = when {
                 startYDecimal < FlexibleDecimal.ZERO -> -1f
                 startYDecimal > canvas.height -> canvas.height.toFloat() + 1
                 else -> startYDecimal.toFloat()
             }
+            
             val endXDecimal = leftWithOffset + widthDecimal
+            
             val endX =
                 if (endXDecimal > canvas.width) canvas.width.toFloat() + 1 else endXDecimal.toFloat()
+            
             return Line(Point(startX, startY), Point(endX, startY))
         }
     
     private val verticalLine: Line
         get() {
-            val startXDecimal = leftWithOffset + widthDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
+            // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
+            val startXDecimal = leftWithOffset + widthDecimal.divide(
+                FlexibleDecimal.TWO,
+                canvas.mc
+            ) - cellSize.divide(FlexibleDecimal.TWO, canvas.mc)
+            
             val startX = when {
                 startXDecimal < FlexibleDecimal.ZERO -> -1f
                 startXDecimal > canvas.width -> canvas.width.toFloat() + 1
                 else -> startXDecimal.toFloat()
             }
+            
             val endYDecimal = topWithOffset + heightDecimal
+            
             val endY =
                 if (endYDecimal > canvas.height) canvas.height.toFloat() + 1 else endYDecimal.toFloat()
+            
             return Line(Point(startX, top), Point(startX, endY))
         }
-    
     
     private fun drawCrossHair(graphics: PGraphics) {
         horizontalLine.drawDashedLine(graphics)
@@ -80,6 +97,7 @@ class BoundingBox(bounds: Bounds, cellSize: FlexibleDecimal, private val canvas:
         graphics.stroke(Theme.textColor)
         graphics.strokeWeight(Theme.strokeWeightBounds)
         graphics.rect(left, top, width, height)
+        
         if (drawCrosshair) {
             drawCrossHair(graphics)
         }
@@ -87,10 +105,17 @@ class BoundingBox(bounds: Bounds, cellSize: FlexibleDecimal, private val canvas:
         graphics.popStyle()
     }
     
-    private data class Point(val x: Float, val y: Float)
+    private inner class Point(var x: Float, var y: Float) {
+        init {
+            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.cellSize.toFloat())
+            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.cellSize.toFloat())
+        }
+    }
     
     private data class Line(val start: Point, val end: Point) {
+        
         fun drawDashedLine(graphics: PGraphics) {
+            
             val x1 = start.x
             val y1 = start.y
             val x2 = end.x

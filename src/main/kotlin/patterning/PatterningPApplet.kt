@@ -30,14 +30,8 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
     
     override fun settings() {
-        
         properties = Properties(this, canvas)
-       // if (Theme.useOpenGL) {
-            size(properties.width, properties.height, P3D)
-            // smooth(4)
-    /*    } else {
-            size(properties.width, properties.height)
-        }*/
+        size(properties.width, properties.height, P3D)
     }
     
     /**

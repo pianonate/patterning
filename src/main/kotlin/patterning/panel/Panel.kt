@@ -120,9 +120,6 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
      * create a new one from the canvas here
      */
     fun initPanelGraphics() {
-        
-        if (canvas.openGLResizing) return
-        
         panelGraphics = canvas.getGraphics(
             width = width,
             height = height,
