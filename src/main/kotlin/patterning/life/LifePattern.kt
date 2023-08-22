@@ -527,9 +527,19 @@ class LifePattern(
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= FlexibleDecimal.ONE && node.population.isNotZero()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
+            try {
+                fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
+            } catch (e: Exception) {
+                println("size:$size leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset")
+                throw e
+            }
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
+            try {
+                fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
+            } catch (e: Exception) {
+                println("size:$size leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset")
+                throw e
+            }
         } else if (node is TreeNode) {
             
             val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
@@ -590,14 +600,14 @@ class LifePattern(
         
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, canvas.zoomLevel, canvas)
+        val boundingBox = BoundingBox(bounds, canvas)
         boundingBox.draw(pattern.graphics)
         
         var currentLevel = life.root.level - 2
         
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas.zoomLevel, canvas)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
             universeBox.draw(pattern.graphics, drawCrosshair = true)
             currentLevel++
         }

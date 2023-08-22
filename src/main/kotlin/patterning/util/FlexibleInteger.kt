@@ -227,8 +227,8 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
     
     fun toFlexibleDecimal(): FlexibleDecimal {
         return when (value) {
-            is Int -> FlexibleDecimal.create(value.toFloat())
-            is Long -> FlexibleDecimal.create(value.toDouble())
+            is Int -> FlexibleDecimal.create(value)
+            is Long -> FlexibleDecimal.create(value)
             is BigInteger -> FlexibleDecimal.create(bigDecimal)
             else -> throw IllegalArgumentException("Unsupported number type")
         }
@@ -303,7 +303,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
     }
     
     override fun toString(): String {
-        return ("${value}:${value.toString().length}")
+        return ("${value}")
     }
     
     companion object {

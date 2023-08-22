@@ -23,6 +23,7 @@ dependencies {
     implementation("org.jogamp.jogl:jogl-all:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     implementation(kotlin("stdlib-jdk8"))
+    testImplementation(kotlin("test"))
 }
 
 application {
@@ -58,4 +59,8 @@ tasks.jar {
     }
     
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

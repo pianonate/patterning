@@ -8,6 +8,7 @@ import java.awt.Color
 import java.awt.Component
 import java.awt.Point
 import java.math.MathContext
+import java.math.RoundingMode
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -16,6 +17,7 @@ import patterning.pattern.KeyCallbackFactory
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
+import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
 import processing.core.PConstants.P3D
@@ -42,7 +44,7 @@ class Canvas(private val pApplet: PApplet) {
         private set
     
     // disallow during resize or you hit a heinous bug
-    private var shouldUpdatePGraphics = false
+    var shouldUpdatePGraphics = false
     
     var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
@@ -201,6 +203,7 @@ class Canvas(private val pApplet: PApplet) {
     fun updateCanvasOffsets(offsetX: FlexibleDecimal, offsetY: FlexibleDecimal) {
         this.offsetX = offsetX
         this.offsetY = offsetY
+        
         for (observer in offsetsMovedObservers) {
             observer.onOffsetsMoved()
         }
@@ -464,11 +467,11 @@ class Canvas(private val pApplet: PApplet) {
                 }
                 
                 // Calculate zoom factor
-                val zoomFactor = level.divide(previousCellWidth, mc)
+                val zoomFactor = level.divide(previousCellWidth, ZOOM_MATH_CONTEXT)
                 
                 // Calculate the difference in canvas offset-s before and after zoom
-                val offsetX = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), mc)
-                val offsetY = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), mc)
+                val offsetX = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), ZOOM_MATH_CONTEXT)
+                val offsetY = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), ZOOM_MATH_CONTEXT)
                 
                 // Update canvas offsets
                 adjustCanvasOffsets(offsetX, offsetY)
@@ -487,5 +490,6 @@ class Canvas(private val pApplet: PApplet) {
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
         private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)
+        private val ZOOM_MATH_CONTEXT = MathContext(PRECISION_BUFFER, RoundingMode.HALF_UP)
     }
 }

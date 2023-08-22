@@ -44,6 +44,7 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
+        
         windowTitle("patterning")
         
         windowResizable(true)
@@ -116,7 +117,7 @@ class PatterningPApplet : PApplet() {
     
     override fun windowResized() {
         println("override fun windowResized")
-        
+        canvas.shouldUpdatePGraphics = false
     }
     
     override fun mousePressed() {

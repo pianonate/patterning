@@ -7,36 +7,38 @@ import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val canvas: Canvas) {
-    // we draw the box just a bit off screen so it won't be visible
-    // but if the box is more than a pixel, we need to push it further offscreen
-    // since we're using a Theme constant we can change we have to account for it
-    private val positiveOffScreen = Theme.strokeWeightBounds
-    private val negativeOffScreen = -positiveOffScreen
+class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     
     private val leftBD = bounds.left.toFlexibleDecimal()
     private val topBD = bounds.top.toFlexibleDecimal()
     
-    private val leftWithOffset = leftBD.multiply(cellSize, canvas.mc).plus(canvas.offsetX)
-    private val topWithOffset = topBD.multiply(cellSize, canvas.mc).plus(canvas.offsetY)
+    private val leftWithOffset = leftBD.multiply(canvas.zoomLevel, canvas.mc).plus(canvas.offsetX)
+    private val topWithOffset = topBD.multiply(canvas.zoomLevel, canvas.mc).plus(canvas.offsetY)
     
-    private val widthDecimal = bounds.width.toFlexibleDecimal().multiply(cellSize, canvas.mc)
-    private val heightDecimal = bounds.height.toFlexibleDecimal().multiply(cellSize, canvas.mc)
+    private val widthDecimal = bounds.width.toFlexibleDecimal().multiply(canvas.zoomLevel, canvas.mc)
+    private val heightDecimal = bounds.height.toFlexibleDecimal().multiply(canvas.zoomLevel, canvas.mc)
     
-    private val rightFloat = (leftWithOffset + widthDecimal).toFloat()
-    private val bottomFloat = (topWithOffset + heightDecimal).toFloat()
     
     // coerce boundaries to be drawable with floats
     val left = if (leftWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
     val top = if (topWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
     
-    val right =
-        if (leftWithOffset + widthDecimal > canvas.width) canvas.width.toFloat() + positiveOffScreen else rightFloat
-    val bottom =
-        if (topWithOffset + heightDecimal > canvas.height) canvas.height.toFloat() + positiveOffScreen else bottomFloat
+    val right = if (leftWithOffset + widthDecimal > canvas.width)
+        canvas.width.toFloat() + positiveOffScreen
+    else
+        (leftWithOffset + widthDecimal).toFloat()
+    
+    val bottom = if (topWithOffset + heightDecimal > canvas.height)
+        canvas.height.toFloat() + positiveOffScreen
+    else
+        (topWithOffset + heightDecimal).toFloat()
     
     val width = if (left == negativeOffScreen) (right + positiveOffScreen) else (right - left)
     val height = if (top == negativeOffScreen) (bottom + positiveOffScreen) else (bottom - top)
+    
+    init {
+        println("zoom:${canvas.zoomLevel} offsetX:${canvas.offsetX} offsetY:${canvas.offsetY} left:${bounds.left} top:${bounds.top} width:${bounds.width} height:${bounds.height} leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset widthDecimal:$widthDecimal heightDecimal:$heightDecimal")
+    }
     
     // Calculate Lines
     private val horizontalLine: Line
@@ -47,18 +49,18 @@ class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val can
             val startYDecimal = topWithOffset + heightDecimal.divide(
                 FlexibleDecimal.TWO,
                 canvas.mc
-            ) - cellSize.divide(FlexibleDecimal.TWO, canvas.mc)
+            ) - canvas.zoomLevel.divide(FlexibleDecimal.TWO, canvas.mc)
             
             val startY = when {
-                startYDecimal < FlexibleDecimal.ZERO -> -1f
-                startYDecimal > canvas.height -> canvas.height.toFloat() + 1
+                startYDecimal < FlexibleDecimal.ZERO -> negativeOffScreen
+                startYDecimal > canvas.height -> canvas.height.toFloat() + positiveOffScreen
                 else -> startYDecimal.toFloat()
             }
             
             val endXDecimal = leftWithOffset + widthDecimal
             
             val endX =
-                if (endXDecimal > canvas.width) canvas.width.toFloat() + 1 else endXDecimal.toFloat()
+                if (endXDecimal > canvas.width) canvas.width.toFloat() + positiveOffScreen else endXDecimal.toFloat()
             
             return Line(Point(startX, startY), Point(endX, startY))
         }
@@ -69,18 +71,18 @@ class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val can
             val startXDecimal = leftWithOffset + widthDecimal.divide(
                 FlexibleDecimal.TWO,
                 canvas.mc
-            ) - cellSize.divide(FlexibleDecimal.TWO, canvas.mc)
+            ) - canvas.zoomLevel.divide(FlexibleDecimal.TWO, canvas.mc)
             
             val startX = when {
-                startXDecimal < FlexibleDecimal.ZERO -> -1f
-                startXDecimal > canvas.width -> canvas.width.toFloat() + 1
+                startXDecimal < FlexibleDecimal.ZERO -> negativeOffScreen
+                startXDecimal > canvas.width -> canvas.width.toFloat() + positiveOffScreen
                 else -> startXDecimal.toFloat()
             }
             
             val endYDecimal = topWithOffset + heightDecimal
             
             val endY =
-                if (endYDecimal > canvas.height) canvas.height.toFloat() + 1 else endYDecimal.toFloat()
+                if (endYDecimal > canvas.height) canvas.height.toFloat() + positiveOffScreen else endYDecimal.toFloat()
             
             return Line(Point(startX, top), Point(startX, endY))
         }
@@ -107,8 +109,8 @@ class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val can
     
     private inner class Point(var x: Float, var y: Float) {
         init {
-            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.cellSize.toFloat())
-            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.cellSize.toFloat())
+            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
+            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
         }
     }
     
@@ -149,5 +151,14 @@ class BoundingBox(bounds: Bounds, val cellSize: FlexibleDecimal, private val can
             }
             graphics.popStyle()
         }
+    }
+    
+    companion object {
+        
+        // we draw the box just a bit off screen so it won't be visible
+        // but if the box is more than a pixel, we need to push it further offscreen
+        // since we're using a Theme constant we can change we have to account for it
+        private val positiveOffScreen = Theme.strokeWeightBounds
+        private val negativeOffScreen = -positiveOffScreen
     }
 }
