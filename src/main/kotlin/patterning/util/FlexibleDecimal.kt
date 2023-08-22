@@ -109,11 +109,12 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
     fun get(): Number = value
     
     fun toFloat(): Float {
-        //if (value is Float) {
+        val doubleValue = value.toDouble()
+        if (doubleValue < FLOAT_MIN || doubleValue > FLOAT_MAX) {
+            throw IllegalArgumentException("Value out of range for Float.")
+        } else {
             return value.toFloat()
-/*        } else {
-            throw IllegalArgumentException("Operation only supported for Float values.")
-        }*/
+        }
     }
     
     operator fun unaryMinus(): FlexibleDecimal {
@@ -160,18 +161,17 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-  /*  private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
-        return create(a.toDouble() - b.toDouble())
-    }*/
-  private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
-      val result = a - b
-      return if (result.isInfinite() || result.isNaN()) {
-          create(a.toDouble() - b.toDouble())
-      } else {
-          create(result)
-      }
-  }
-    
+    /*  private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
+          return create(a.toDouble() - b.toDouble())
+      }*/
+    private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
+        val result = a - b
+        return if (result.isInfinite() || result.isNaN()) {
+            create(a.toDouble() - b.toDouble())
+        } else {
+            create(result)
+        }
+    }
     
     
     private fun handleDoubleSubtraction(a: Double, b: Double): FlexibleDecimal {
@@ -327,7 +327,7 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
     private fun Number.toBigDecimalSafe(): BigDecimal {
         return when (this) {
             is BigDecimal -> this
-            is BigInteger-> this.toBigDecimal()
+            is BigInteger -> this.toBigDecimal()
             is Float, is Long, is Int -> BigDecimal.valueOf(toDouble())
             is Double -> BigDecimal.valueOf(this)
             else -> throw IllegalArgumentException("Unsupported number type")

@@ -116,7 +116,7 @@ class LifePattern(
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
-            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toNumber())
+            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toFloat())
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
             
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())

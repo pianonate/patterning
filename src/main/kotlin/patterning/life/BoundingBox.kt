@@ -36,9 +36,9 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     val width = if (left == negativeOffScreen) (right + positiveOffScreen) else (right - left)
     val height = if (top == negativeOffScreen) (bottom + positiveOffScreen) else (bottom - top)
     
-    init {
+/*    init {
         println("zoom:${canvas.zoomLevel} offsetX:${canvas.offsetX} offsetY:${canvas.offsetY} left:${bounds.left} top:${bounds.top} width:${bounds.width} height:${bounds.height} leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset widthDecimal:$widthDecimal heightDecimal:$heightDecimal")
-    }
+    }*/
     
     // Calculate Lines
     private val horizontalLine: Line
