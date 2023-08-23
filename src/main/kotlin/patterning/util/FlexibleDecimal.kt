@@ -6,62 +6,37 @@ import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.pow
 
-class FlexibleDecimal private constructor(initialValue: Number) : Comparable<FlexibleDecimal> {
+class FlexibleDecimal private constructor(initialValue: Number) :
+    Comparable<FlexibleDecimal> {
     
-    fun canRepresentAsDouble(value: BigDecimal): Boolean {
+    private fun canRepresentAsDouble(value: BigDecimal): Boolean {
         val doubleValue = value.toDouble()
-        return value == doubleValue.toBigDecimal()
+        if (doubleValue.isInfinite() || doubleValue.isNaN()) {
+            return false
+        }
+        
+        return doubleValue.toBigDecimal() == value
     }
     
-    fun canRepresentAsFloat(value: BigDecimal): Boolean {
+    
+    private fun canRepresentAsFloat(value: BigDecimal): Boolean {
         val floatValue = value.toFloat()
-        return value == floatValue.toBigDecimal()
-    }
-    //val value:Number = initialValue.toBigDecimalSafe()
-    
-    val value: Number = initialValue.transformed().let { transformed ->
-        when (transformed) {
-            is BigDecimal -> {
-                when {
-                    canRepresentAsFloat(transformed) -> transformed.toFloat()
-                    canRepresentAsDouble(transformed) -> transformed.toDouble()
-                    else -> transformed
-                }
-            }
-            
-            is Double -> {
-                when {
-                    transformed.toFloat().toDouble() == transformed -> transformed.toFloat()
-                    else -> transformed
-                }
-            }
-            
-            is Float, is Int, is Long, is BigInteger -> transformed
-            else -> throw IllegalArgumentException("Unsupported number type")
-        }
-    }
-    
-    
-    // Extension function to transform initial value
-    private fun Number.transformed(): Number = when (this) {
-        is BigInteger -> BigDecimal(this)
-        is Long -> {
-            if (this in -Float.MAX_VALUE.toLong()..Float.MAX_VALUE.toLong() && this.toFloat()
-                    .toLong() == this
-            ) this.toFloat()
-            else this.toDouble()
+        if (floatValue.isInfinite() || floatValue.isNaN()) {
+            return false
         }
         
-        is Int -> {
-            if (this in -Float.MAX_VALUE.toInt()..Float.MAX_VALUE.toInt() && this.toFloat()
-                    .toInt() == this
-            ) this.toFloat()
-            else this.toDouble()
-        }
-        
-        else -> this
+        return floatValue.toBigDecimal() == value
     }
     
+    val value: Number = initialValue.toBigDecimalSafe().let { transformed ->
+        when {
+            initialValue is Int -> initialValue.toFloat()
+            initialValue is Long -> initialValue.toDouble()
+            canRepresentAsFloat(transformed) -> transformed.toFloat()
+            canRepresentAsDouble(transformed) -> transformed.toDouble()
+            else -> transformed
+        }
+    }
     
     operator fun plus(other: FlexibleDecimal): FlexibleDecimal {
         return when {
@@ -86,21 +61,32 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    /*    private fun handleFloatAddition(a: Float, b: Float): FlexibleDecimal {
-            return create(a.toDouble() + b.toDouble())
-        }*/
     private fun handleFloatAddition(a: Float, b: Float): FlexibleDecimal {
-        val result = a + b
-        return if (result.isInfinite() || result.isNaN()) {
-            create(a.toDouble() + b.toDouble())
+        val floatResult = a + b
+        
+        return if (floatResult.isInfinite() || floatResult.isNaN()) {
+            handleDoubleAddition(a.toDouble(), b.toDouble())// Use Double if precision is lost
         } else {
-            create(result)
+            val result = create(floatResult)
+            result
         }
     }
     
+    
     private fun handleDoubleAddition(a: Double, b: Double): FlexibleDecimal {
-        return create(BigDecimal.valueOf(a) + BigDecimal.valueOf(b))
+        val doubleResult = a + b
+        
+        return if (doubleResult.isInfinite() || doubleResult.isNaN()) {
+            handleBigDecimalAddition(
+                a.toBigDecimal(),
+                b.toBigDecimal()
+            )
+        } else {
+            val result = create(doubleResult)
+            result
+        }
     }
+    
     
     private fun handleBigDecimalAddition(a: BigDecimal, b: BigDecimal): FlexibleDecimal {
         return create(a + b)
@@ -115,6 +101,26 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         } else {
             return value.toFloat()
         }
+    }
+    
+    /**
+     * scale is primarily used by BoundingBox and it helps to align the precision for all the calculations
+     * for debugging it is easier to have everything line up so we take a minor performance hit - to just
+     * simply scale all the 'major players' to the same precision
+     */
+    fun scale(mc: MathContext): FlexibleDecimal {
+        
+        val working = when (value) {
+            is BigDecimal -> value
+            is Double -> value.toBigDecimal()
+            is Float -> BigDecimal(value.toDouble())
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
+        
+        val newPrecision = working.precision()
+        val toTruncate = newPrecision - mc.precision
+        val newScale = working.scale() - toTruncate
+        return create(working.setScale(newScale, mc.roundingMode))
     }
     
     operator fun unaryMinus(): FlexibleDecimal {
@@ -161,31 +167,45 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    /*  private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
-          return create(a.toDouble() - b.toDouble())
-      }*/
     private fun handleFloatSubtraction(a: Float, b: Float): FlexibleDecimal {
-        val result = a - b
-        return if (result.isInfinite() || result.isNaN()) {
-            create(a.toDouble() - b.toDouble())
+        
+        val floatResult = a - b
+        
+        return if (floatResult.isInfinite() || floatResult.isNaN()) {
+            handleDoubleSubtraction(a.toDouble(), b.toDouble())
         } else {
-            create(result)
+            
+            val result = create(floatResult)
+            result
+            
+        }
+    }
+    
+    private fun handleDoubleSubtraction(a: Double, b: Double): FlexibleDecimal {
+        // val bigDecimalResult = a.toBigDecimal() - b.toBigDecimal()
+        val doubleResult = a - b
+        
+        return if (/*doubleResult.toBigDecimal() != bigDecimalResult ||*/ doubleResult.isInfinite() || doubleResult.isNaN()) {
+            handleBigDecimalSubtraction(
+                a.toBigDecimal(),
+                b.toBigDecimal()
+            ) // create(bigDecimalResult) // Use BigDecimal if precision is lost or result is outside of the range
+        } else {
+            val result = create(doubleResult)
+            
+            result
         }
     }
     
     
-    private fun handleDoubleSubtraction(a: Double, b: Double): FlexibleDecimal {
-        return create(BigDecimal.valueOf(a) - BigDecimal.valueOf(b))
-    }
-    
-    
     private fun handleBigDecimalSubtraction(a: BigDecimal, b: BigDecimal): FlexibleDecimal {
+        
         return create(a - b)
     }
     
     fun divide(other: FlexibleDecimal, context: MathContext): FlexibleDecimal {
         return when {
-            value is Float && other.value is Float -> handleFloatDivision(value, other.value)
+            value is Float && other.value is Float -> handleFloatDivision(value, other.value, context)
             value is Float && other.value is Double -> handleDoubleDivision(value.toDouble(), other.value, context)
             value is Float && other.value is BigDecimal -> handleBigDecimalDivision(
                 value.toBigDecimalSafe(),
@@ -207,12 +227,31 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    private fun handleFloatDivision(a: Float, b: Float): FlexibleDecimal {
-        return create(a.toDouble() / b.toDouble())
+    private fun handleFloatDivision(a: Float, b: Float, context: MathContext): FlexibleDecimal {
+        val floatResult = a / b
+        
+        return if (floatResult.isInfinite() || floatResult.isNaN()) {
+            handleDoubleDivision(
+                a.toDouble(),
+                b.toDouble(),
+                context
+            ) // Use Double if precision is lost or result is outside of the range for Float
+        } else {
+            
+            val result = create(floatResult)
+            result
+        }
     }
     
     private fun handleDoubleDivision(a: Double, b: Double, context: MathContext): FlexibleDecimal {
-        return handleBigDecimalDivision(BigDecimal.valueOf(a), BigDecimal.valueOf(b), context)
+        
+        val doubleResult = a / b
+        
+        return if (doubleResult.isInfinite() || doubleResult.isNaN()) {
+            handleBigDecimalDivision(a.toBigDecimal(), b.toBigDecimal(), context)
+        } else {
+            create(doubleResult)
+        }
     }
     
     private fun handleBigDecimalDivision(a: BigDecimal, b: BigDecimal, context: MathContext): FlexibleDecimal {
@@ -225,7 +264,7 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
     
     fun multiply(other: FlexibleDecimal, context: MathContext): FlexibleDecimal {
         return when {
-            value is Float && other.value is Float -> handleFloatMultiplication(value, other.value)
+            value is Float && other.value is Float -> handleFloatMultiplication(value, other.value, context)
             value is Float && other.value is Double -> handleDoubleMultiplication(
                 value.toDouble(),
                 other.value,
@@ -261,15 +300,30 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
         }
     }
     
-    private fun handleFloatMultiplication(a: Float, b: Float): FlexibleDecimal {
-        return create(a.toDouble() * b.toDouble())
+    private fun handleFloatMultiplication(a: Float, b: Float, context: MathContext): FlexibleDecimal {
+        
+        val floatResult = a * b
+        
+        return if (floatResult.isInfinite() || floatResult.isNaN()) {
+            handleDoubleMultiplication(a.toDouble(), b.toDouble(), context)
+        } else {
+            create(floatResult)
+        }
     }
     
+    
     private fun handleDoubleMultiplication(a: Double, b: Double, context: MathContext): FlexibleDecimal {
-        return handleBigDecimalMultiplication(BigDecimal.valueOf(a), BigDecimal.valueOf(b), context)
+        val doubleResult = a * b
+        
+        return if (doubleResult.isInfinite() || doubleResult.isNaN()) {
+            handleBigDecimalMultiplication(a.toBigDecimal(), b.toBigDecimal(), context)
+        } else {
+            create(doubleResult)
+        }
     }
     
     private fun handleBigDecimalMultiplication(a: BigDecimal, b: BigDecimal, context: MathContext): FlexibleDecimal {
+        
         return create(a.multiply(b, context))
     }
     
@@ -317,31 +371,20 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
     
     fun toDouble(): Double {
         return value.toDouble()
-        /*        return when (value) {
-                    is Float -> value.toDouble()
-                    is Double -> value.toDouble()
-                    else -> throw NumberFormatException("Value cannot be safely converted to Double.")
-                }*/
     }
     
     private fun Number.toBigDecimalSafe(): BigDecimal {
         return when (this) {
             is BigDecimal -> this
             is BigInteger -> this.toBigDecimal()
-            is Float, is Long, is Int -> BigDecimal.valueOf(toDouble())
-            is Double -> BigDecimal.valueOf(this)
+            is Float -> this.toBigDecimal()
+            is Long -> this.toBigDecimal()
+            is Int -> this.toBigDecimal()
+            is Double -> this.toBigDecimal()
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
     
-    fun toNumber(): Number {
-        return when (value) {
-            is Float -> value
-            is Double -> value
-            is BigDecimal -> value
-            else -> throw IllegalArgumentException("Unsupported number type")
-        }
-    }
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -355,15 +398,24 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
     
     override fun toString(): String {
         return when (value) {
-            is BigDecimal -> "${value.toPlainString()}:BD"
-            is Double -> "${value}:D"
-            is Float -> "${value}:F"
+            is BigDecimal -> "${value}:$precision:BD"
+            is Double -> "${value}:$precision:D"
+            is Float -> "${value}:$precision:F"
             else -> {
                 throw IllegalArgumentException("Unsupported number type")
             }
         }
-        
     }
+    
+    private val precision: Int
+        get() {
+            return when (value) {
+                is Float -> value.toBigDecimal().toPlainString().filter { it.isDigit() }.length
+                is Double -> value.toBigDecimal().toPlainString().filter { it.isDigit() }.length
+                is BigDecimal -> value.toPlainString().filter { it.isDigit() }.length
+                else -> throw IllegalArgumentException("Unsupported number type")
+            }
+        }
     
     companion object {
         
@@ -386,11 +438,13 @@ class FlexibleDecimal private constructor(initialValue: Number) : Comparable<Fle
             hits++
             // Check if an instance with this value already exists
             return if (instances.containsKey(initialValue)) {
+                val instance = instances[initialValue]!!
                 // If yes, return that instance
-                instances[initialValue]!!
+                instance
             } else {
                 // If not, create a new instance, store it in the map, and return it
                 val newInstance = FlexibleDecimal(initialValue)
+                
                 instances[initialValue] = newInstance
                 newInstance
             }

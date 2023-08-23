@@ -84,7 +84,6 @@ class PatterningPApplet : PApplet() {
         
         KeyHandler.registerKeyHandler(this)
         
-        
     }
     
     private fun registerPatternObservers(pattern: Pattern) {

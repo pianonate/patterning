@@ -12,21 +12,31 @@ class FlexibleDecimalTest {
      */
     
     @Test
-    fun `test creation with int - expect float`() {
+    fun `test creation with int - expect BigDecimal`() {
         val flexibleDecimal = FlexibleDecimal.create(5)
-        assertEquals(5f, flexibleDecimal.get())
+        assertEquals(5.toBigDecimal(), flexibleDecimal.get())
     }
     
     @Test
-    fun `test creation with long - expect float`() {
-        val flexibleDecimal = FlexibleDecimal.create(5L)
-        assertEquals(5F, flexibleDecimal.get())
+    fun `test creation with long - expect BigDecimal`() {
+        val flexibleDecimal = FlexibleDecimal.create(Long.MAX_VALUE)
+        assertEquals(Long.MAX_VALUE.toBigDecimal(), flexibleDecimal.get())
     }
     
     @Test
-    fun `test creation with BigInteger - expect float`() {
+    fun `test creation with small BigInteger - expect BigDecimal`() {
         val flexibleDecimal = FlexibleDecimal.create(BigInteger.valueOf(5))
-        assertEquals(5f, flexibleDecimal.get())
+        assertEquals(5.toBigDecimal(), flexibleDecimal.get())
+    }
+    
+    
+    @Test
+    fun `test creation with large BigInteger - expect BigDecimal`() {
+        val bigInt = BigInteger.valueOf(Long.MAX_VALUE)
+        val biggerInt = bigInt.add(bigInt)
+        
+        val flexibleDecimal = FlexibleDecimal.create(biggerInt)
+        assertEquals(biggerInt.toBigDecimal(), flexibleDecimal.get())
     }
     
     @Test
@@ -42,7 +52,7 @@ class FlexibleDecimalTest {
     }
     
     @Test
-    fun `test creation with BigDecimal - expect float`() {
+    fun `test creation with small BigDecimal - expect float`() {
         val flexibleDecimal = FlexibleDecimal.create(BigDecimal.valueOf(5.0))
         assertEquals(5f, flexibleDecimal.get())
     }
