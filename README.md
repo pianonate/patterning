@@ -5,13 +5,13 @@ There are many, many enhancements to make for this to be truly interesting. And 
 
 https://copy.sh/life/examples/
 
-Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the white canvas of this app, and then it will be off to the races.
+Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the canvas of this app, and then it will be off to the races.
 
-If you find something that you want to change, then make a pull request - i'd love to see what you do to improve this thing.
+If you find something that you want to change, then make a pull request - i'd love to see what you do to improve this. If you want to know what I want to do next, create an issue and I'll try to respond.
 
 ## try out the code in your own environment
 
-I use homebrew so this gets you maven:
+I use homebrew so this gets you maven which you will need as a local repo for the processing core.jar (see below)
 
 <pre><code>brew install maven
 </code></pre>
@@ -23,13 +23,14 @@ This project is currently using 8.1.1
 </code></pre>
 
 ### install java for the jvm - i'm using jdk20
+java 20 seems to work fine. i'm also using the kotlin k2 compiler, which is experimental but works and seems speedy. it's specified gradle.properties so you don't have to worry about it. yay!
 <pre><code>brew install java
 </code></pre>
 
 ### this project uses kotlin
 the build.gradle.kts file should just pull in the latest version but i haven't tried a clean build in a while so you may have to mess around to get it all working right
 
-### install Processing
+### install Processing for its core.jar and openGL jars    
 
 This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
@@ -54,7 +55,18 @@ After running that command you should see "BUILD SUCCESS" and you can check that
 <pre><code>ls ~/.m2/repository/com/processing/processing
 </code></pre>
 
-At which point it will be set up to work with this gradle project
+
+### we need to reference the openGL native libraries
+THese libraries are installed with processing - i didn't go through the trouble (yet) of putting them all into the local maven- i know, inconsistent. You'll be able to see at the top of the build.gradle.kts that it references a variable that points to where they are located within your processing install.  On my machine that would be:
+
+<pre><code>val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
+</code></pre>
+
+you'll need to change that to match your environment.  I'm not sure if this is the best way to do this, but it works for me.  If you have a better way, please let me know.
+
 
 ### update gradle properties
-because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i had installed with brew. You're probably an expert, so you know all about this sort of thing
+because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i had installed with brew. You're probably an expert, so you know all about this sort of thing.  i've switched to using intelliJ because of it's amazing support for Kotlin - and I'm not sure if intellij just knows how to do that that sort of thing.
+
+### that's it for the setup
+good luck - and let me know if any of this is wrong, or can be improved - I'd like it to be fully automated but that's for another day.
