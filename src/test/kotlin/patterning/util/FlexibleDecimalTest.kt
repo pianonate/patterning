@@ -12,15 +12,15 @@ class FlexibleDecimalTest {
      */
     
     @Test
-    fun `test creation with int - expect BigDecimal`() {
+    fun `test creation with int - expect float`() {
         val flexibleDecimal = FlexibleDecimal.create(5)
-        assertEquals(5.toBigDecimal(), flexibleDecimal.get())
+        assertEquals(5f, flexibleDecimal.get())
     }
     
     @Test
-    fun `test creation with long - expect BigDecimal`() {
+    fun `test creation with long - expect double`() {
         val flexibleDecimal = FlexibleDecimal.create(Long.MAX_VALUE)
-        assertEquals(Long.MAX_VALUE.toBigDecimal(), flexibleDecimal.get())
+        assertEquals(Long.MAX_VALUE.toDouble(), flexibleDecimal.get())
     }
     
     @Test

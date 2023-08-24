@@ -265,11 +265,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             // Draw the actual text in the calculated color
             // stroke and strokeWeight are going to require the P2D or P3D renderer
             panelGraphics.fill(currentColor)
-            if (message.startsWith("fps")) {
-                val x = 1
-            }
-            
-            
             panelGraphics.noStroke()
             panelGraphics.text(line, x, lineY)
             

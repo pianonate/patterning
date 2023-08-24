@@ -3,12 +3,14 @@ val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/libra
 val platforms =
     listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
 
+
 group = "org.patterning"
 version = "1.0-SNAPSHOT"
 
 plugins {
     application
     kotlin("jvm") version "1.9.0"
+    
 }
 
 repositories {
@@ -41,7 +43,7 @@ application {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(20))
     }
 }
 

@@ -491,10 +491,6 @@ class LifePattern(
             
             startDelta = life.root.level - startingNode.level
             
-            if (startDelta == 0) {
-                val x = 1
-            }
-            
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
             
         }

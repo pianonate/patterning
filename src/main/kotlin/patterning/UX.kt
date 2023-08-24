@@ -68,7 +68,7 @@ class UX(
             .runMethod {
                 RunningModeController.play()
             }
-            .fadeInDuration(2000)
+            .fadeInDuration(Theme.startupTextFadeInDuration)
             .countdownFrom(Theme.countdownFrom)
             .wrap()
             .build()
@@ -218,9 +218,15 @@ class UX(
                         resetOnNew = this@UX.pattern
                     )
                     if (pattern is ThreeDimensional) {
-                        addToggleHighlightControl("cube.png", keyCallbackFactory.callback3D)
                         addToggleHighlightControl(
-                            "yaw.png", keyCallbackFactory.callback3DYaw, resetOnNew = this@UX.pattern
+                            "cube.png",
+                            keyCallbackFactory.callback3D,
+                            resetOnNew = this@UX.pattern
+                        )
+                        addToggleHighlightControl(
+                            "yaw.png",
+                            keyCallbackFactory.callback3DYaw,
+                            resetOnNew = this@UX.pattern
                         )
                     }
                 }.build()
