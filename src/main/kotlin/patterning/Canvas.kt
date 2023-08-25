@@ -40,8 +40,8 @@ class Canvas(private val pApplet: PApplet) {
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
     
-    var openGLResizing = false
-        private set
+    val openGLResizing: Boolean
+        get() = !shouldUpdatePGraphics
     
     // disallow during resize or you hit a heinous bug
     var shouldUpdatePGraphics = false
@@ -63,9 +63,9 @@ class Canvas(private val pApplet: PApplet) {
     val resizeJob = AsyncJobRunner(
         method = suspend {
             delay(RESIZE_FINISHED_DELAY_MS)
-            openGLResizing = false
+           // openGLResizing = false
             shouldUpdatePGraphics = true
-            println("resized finished!")
+            println("resize finished!")
         })
     
     fun listenToResize() {
@@ -84,11 +84,10 @@ class Canvas(private val pApplet: PApplet) {
                 //
                 // because shit is happening on other threads in the JOGL code that processing uses
                 // and we can't do a goddamn thing about it
-                PApplet.println("resize:$width, $height")
-                openGLResizing = true
+                println("resized:$width, $height - telling shouldUpdateGraphics to wait")
+               // openGLResizing = true
                 shouldUpdatePGraphics = false
                 resizeJob.cancelAndWait()
-                println("resizing so telling shouldUpdateGraphics to wait")
                 resizeJob.start()
             }
         })
@@ -231,7 +230,7 @@ class Canvas(private val pApplet: PApplet) {
         }
         
         if (shouldUpdatePGraphics) {
-            println("resized:$resized shouldUpdate:$shouldUpdatePGraphics resizing:$openGLResizing")
+            println("resized:$resized shouldUpdate:true resizing:$openGLResizing")
             updateResizableGraphicsReferences()
             shouldUpdatePGraphics = false
         }

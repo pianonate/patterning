@@ -1,8 +1,9 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 val patterningMain: String = "patterning.Patterning"
 val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
 val platforms =
     listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
-
 
 group = "org.patterning"
 version = "1.0-SNAPSHOT"
@@ -10,7 +11,6 @@ version = "1.0-SNAPSHOT"
 plugins {
     application
     kotlin("jvm") version "1.9.0"
-    
 }
 
 repositories {
@@ -40,13 +40,12 @@ application {
     )
 }
 
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(20))
+kotlin {
+    compilerOptions {
+        progressiveMode.set(true)
+        jvmTarget.set(JvmTarget.JVM_20)
     }
 }
-
 
 tasks.register<JavaExec>("profile") {
     sourceSets["main"].runtimeClasspath.also { this.classpath = it }
@@ -54,6 +53,7 @@ tasks.register<JavaExec>("profile") {
 }
 
 tasks.jar {
+    // handles duplicate files in META-INF - not sure what this is or why i have to do it, but i have to do it
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     
     manifest {
@@ -61,8 +61,4 @@ tasks.jar {
     }
     
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
