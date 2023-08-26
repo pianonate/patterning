@@ -11,30 +11,26 @@ If you find something that you want to change, then make a pull request - i'd lo
 
 ## try out the code in your own environment
 
-I use homebrew so this gets you maven which you will need as a local repo for the processing core.jar (see below)
-
-<pre><code>brew install maven
-</code></pre>
+I use homebrew - if you want to follow my path go to https://brew.sh/ and get it
 
 ### install gradle
-This project is currently using 8.1.1
+This project is currently using 8.3
 
 <pre><code>brew install gradle
 </code></pre>
 
-### install java for the jvm - i'm using jdk20
-java 20 seems to work fine. i'm also using the kotlin k2 compiler, which is experimental but works and seems speedy. it's specified gradle.properties so you don't have to worry about it. yay!
-<pre><code>brew install java
-</code></pre>
+
+### install java - i'm using jdk20
+do what you need to do to make your IDE be able to find jdk20. in intellij i opened module settings and selected Project and in the SDK drop down I chose to add SDK and then chose 20.  There are a lot of ways to get java. If you're this far you probably already know what to do.
 
 ### this project uses kotlin
-the build.gradle.kts file should just pull in the latest version but i haven't tried a clean build in a while so you may have to mess around to get it all working right
+the build.gradle.kts file should pull in the latest version - at least it does for me
 
 ### install Processing for its core.jar and openGL jars    
 
 This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
-### make gradle aware of a local maven repo for the processing core.jar
+### make gradle aware of the path to your core.jar
 I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is reference able in my build.gradle
 
 First, locate the core.jar that you downloaded from processing.org, so you can install into the local repo.  I copied my Processing.app to **/Applications** on my Mac so my core.jar is located here:

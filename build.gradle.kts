@@ -1,9 +1,9 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 val patterningMain: String = "patterning.Patterning"
-val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
+val pathToCore = "/Applications/Processing.app/Contents/Java/"
+val pathToJoglLibraries = "${pathToCore}core/library/"
 val platforms =
     listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
+
 
 group = "org.patterning"
 version = "1.0-SNAPSHOT"
@@ -16,13 +16,12 @@ plugins {
 repositories {
     mavenCentral()
     maven(url = "https://jitpack.io")
-    mavenLocal()
 }
 
 dependencies {
-    implementation("com.processing:processing:4.3")
-    implementation("org.jogamp.gluegen:gluegen-rt:2.4.0")
-    implementation("org.jogamp.jogl:jogl-all:2.4.0")
+    implementation(files("${pathToCore}core.jar"))
+    implementation(files("${pathToJoglLibraries}gluegen-rt.jar"))
+    implementation(files("${pathToJoglLibraries}jogl-all.jar"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     implementation(kotlin("stdlib-jdk8"))
     testImplementation(kotlin("test"))
@@ -40,10 +39,9 @@ application {
     )
 }
 
-kotlin {
-    compilerOptions {
-        progressiveMode.set(true)
-        jvmTarget.set(JvmTarget.JVM_20)
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(20))
     }
 }
 
@@ -53,7 +51,6 @@ tasks.register<JavaExec>("profile") {
 }
 
 tasks.jar {
-    // handles duplicate files in META-INF - not sure what this is or why i have to do it, but i have to do it
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     
     manifest {
@@ -61,4 +58,8 @@ tasks.jar {
     }
     
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
