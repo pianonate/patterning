@@ -19,7 +19,6 @@ This project is currently using 8.3
 <pre><code>brew install gradle
 </code></pre>
 
-
 ### install java - i'm using jdk20
 do what you need to do to make your IDE be able to find jdk20. in intellij i opened module settings and selected Project and in the SDK drop down I chose to add SDK and then chose 20.  There are a lot of ways to get java. If you're this far you probably already know what to do.
 
@@ -31,38 +30,16 @@ the build.gradle.kts file should pull in the latest version - at least it does f
 This project uses processing for animation.  You can download it here: [processing.org/download](https://processing.org/download)
 
 ### make gradle aware of the path to your core.jar
-I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.  So a friend helped me figure out how i could install it as a local maven repo that is reference able in my build.gradle
+I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out. So you need to update build.gradle.kts with the path to your Processing jars and libraries.
 
-First, locate the core.jar that you downloaded from processing.org, so you can install into the local repo.  I copied my Processing.app to **/Applications** on my Mac so my core.jar is located here:
+Find where you installed processing and the core.jar that you downloaded from processing.org.  I copied my Processing.app to **/Applications** on my Mac so my core.jar is located here:
 
-/Applications/Processing.app/Contents/Java/core/library/core.jar
+/Applications/Processing.app/Contents/Java/core.jar
 
-You'll have to figure it out the location for your own environment. You'll also need the gluegen-rt.jar and the jogl-all.jar from the same folder as they are packaged to work specifically with processing. i haven't figured out a way to get them from any public repo either.
+You'll have to figure it out the location for your own environment and update the pathToCore val in your build.gradle.kts - don't commit this change back as it will break me. I'll need to find a way to have gradle load that variable from a different file but for now this is how I'm getting processing...
 
-To set it up to work as a local maven repo, run these commands - **be sure to replace the path to your core.jar in the -Dfile argument** 
-
-<pre><code>mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=/Applications/Processing.app/Contents/Java/core/library/core.jar -DgroupId=com.processing -DartifactId=processing -Dversion=4.3 -Dpackaging=jar
-mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=/Applications/Processing.app/Contents/Java/core/library/jogl-all.jar -DgroupId=org.jogamp.jogl -DartifactId=jogl-all -Dversion=2.4.0 -Dpackaging=jar
-mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=/Applications/Processing.app/Contents/Java/core/library/gluegen-rt.jar -DgroupId=org.jogamp.gluegen -DartifactId=gluegen-rt -Dversion=2.4.0 -Dpackaging=jar
-</code></pre>
-
-After running that command you should see "BUILD SUCCESS" and you can check that your stuff is in the right place with: 
-
-<pre><code>ls ~/.m2/repository/com/processing/processing
-</code></pre>
-
-
-### we need to reference the openGL native libraries
-THese libraries are installed with processing - i didn't go through the trouble (yet) of putting them all into the local maven- i know, inconsistent. You'll be able to see at the top of the build.gradle.kts that it references a variable that points to where they are located within your processing install.  On my machine that would be:
-
-<pre><code>val pathToJoglLibraries = "/Applications/Processing.app/Contents/Java/core/library/"
-</code></pre>
-
-you'll need to change that to match your environment.  I'm not sure if this is the best way to do this, but it works for me.  If you have a better way, please let me know.
-
-
-### update gradle properties
-because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscode, using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i had installed with brew. You're probably an expert, so you know all about this sort of thing.  i've switched to using intelliJ because of it's amazing support for Kotlin - and I'm not sure if intellij just knows how to do that that sort of thing.
+### update gradle properties if you're using vscode
+because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscod , using its gradle extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i had installed with brew. You're probably an expert, so you know all about this sort of thing.  i've switched to using intelliJ because of it's amazing support for Kotlin - and I'm not sure if intellij just knows how to do that that sort of thing.
 
 ### that's it for the setup
 good luck - and let me know if any of this is wrong, or can be improved - I'd like it to be fully automated but that's for another day.
