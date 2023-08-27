@@ -5,11 +5,7 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
 import java.net.URISyntaxException
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlin.math.tan
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -45,24 +41,24 @@ class LifePattern(
     Rewindable,
     Steppable,
     ThreeDimensional {
-    
+
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
-    
+
     private val universeSize = UniverseSize(canvas)
     private var biggestDimension: FlexibleInteger = FlexibleInteger.ZERO
-    
-    
+
+
     private val performanceTest = PerformanceTest(this, properties)
     private var storedLife = properties.getProperty(LIFE_FORM_PROPERTY)
-    
+
     private val asyncNextGenerationJob: AsyncJobRunner
     private var targetStep = 0
     private val hudInfo: HUDStringBuilder
-    
+
     // used to move the pattern around the screen
     private var lifeFormPosition = PVector(0f, 0f)
-    
+
     // DrawNodePath is just a helper class extracted into a separate class only for readability
     // it has shared methods so accepting them here
     // lambdas are cool
@@ -71,44 +67,52 @@ class LifePattern(
         universeSize = universeSize,
         canvas = canvas
     )
-    
+
     private var pattern: GraphicsReference
     private var drawBounds = false
     private var is3D = false
     private var isYawing = false
+    private var isPitching = false
+    private var isRolling = false
     private var yawCount = 0
-    
+    private var pitchCount = 0
+    private var rollCount = 0
+    private var currentYawAngle = 0f
+    private var currentPitchAngle = 0f
+    private var currentRollAngle = 0f
+
+
     init {
-        
+
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics, useOpenGL = true)
         hudInfo = HUDStringBuilder()
-        
+
         asyncNextGenerationJob = AsyncJobRunner(method = { asyncNextGeneration() })
-        
+
         // on startup, storedLife may be loaded from the properties file but if it's not
         // just get a random one
         if (storedLife.isEmpty()) {
             getRandomLifeform()
         }
     }
-    
+
     val lastId: Int
         get() = life.lastId.get()
-    
+
     /**
      * Pattern overrides
      */
     override fun draw() {
-        
+
         performanceTest.execute()
-        
+
         drawPattern(life)
-        
+
         pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
-        
+
         goForwardInTime()
     }
-    
+
     override fun getHUDMessage(): String {
         return hudInfo.getFormattedString(
             pApplet.frameCount,
@@ -118,10 +122,10 @@ class LifePattern(
             hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
             hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toFloat())
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
-            
+
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
             //            hudInfo.addOrUpdate("actuals", actualRecursions)
-            
+
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.lifeInfo.info
             patternInfo.forEach { (key, value) ->
@@ -129,25 +133,25 @@ class LifePattern(
             }
         }
     }
-    
+
     override fun handlePlayPause() {
         RunningModeController.togglePlayPause()
     }
-    
+
     override fun loadPattern() {
         instantiateLifeform()
     }
-    
+
     override fun move(dx: Float, dy: Float) {
         canvas.saveUndoState()
         canvas.adjustCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
         lifeFormPosition.add(dx, dy)
     }
-    
+
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
-    
+
     // as nodes are created their bounds are calculated
     // when the bounds get larger, we need a math context to draw with that
     // allows the pattern to be drawn with the necessary precision
@@ -158,33 +162,33 @@ class LifePattern(
             onBiggestDimensionChanged(biggestDimension)
         }
     }
-    
+
     /**
      * Movable overrides
      */
     override fun center() {
         center(life.rootBounds, fitBounds = false, saveState = true)
     }
-    
+
     override fun fitToScreen() {
         center(life.rootBounds, fitBounds = true, saveState = true)
     }
-    
+
     override fun toggleDrawBounds() {
         drawBounds = !drawBounds
     }
-    
+
     override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
         canvas.zoom(zoomIn, x, y)
     }
-    
+
     private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) canvas.saveUndoState()
-        
+
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
         val patternWidth = bounds.width.toFlexibleDecimal()
         val patternHeight = bounds.height.toFlexibleDecimal()
-        
+
         if (fitBounds) {
             val widthRatio =
                 patternWidth.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.width.divide(it, canvas.mc) }
@@ -192,28 +196,28 @@ class LifePattern(
             val heightRatio =
                 patternHeight.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
                     ?: FlexibleDecimal.ONE
-            
+
             canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
         }
-        
+
         val level = canvas.zoomLevel
-        
+
         val drawingWidth = patternWidth.multiply(level, canvas.mc)
         val drawingHeight = patternHeight.multiply(level, canvas.mc)
         val halfCanvasWidth = canvas.width.divide(FlexibleDecimal.TWO, canvas.mc)
         val halfCanvasHeight = canvas.height.divide(FlexibleDecimal.TWO, canvas.mc)
         val halfDrawingWidth = drawingWidth.divide(FlexibleDecimal.TWO, canvas.mc)
         val halfDrawingHeight = drawingHeight.divide(FlexibleDecimal.TWO, canvas.mc)
-        
+
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toFlexibleDecimal().multiply(-level, canvas.mc))
         val offsetY =
             halfCanvasHeight - halfDrawingHeight + (bounds.top.toFlexibleDecimal().multiply(-level, canvas.mc))
-        
+
         canvas.updateCanvasOffsets(offsetX, offsetY)
-        
+
     }
-    
+
     /**
      * NumberedPatternLoader overrides
      */
@@ -221,7 +225,7 @@ class LifePattern(
         getRandomLifeform()
         instantiateLifeform()
     }
-    
+
     override fun setNumberedPattern(number: Int) {
         try {
             storedLife =
@@ -233,7 +237,7 @@ class LifePattern(
             throw RuntimeException(e)
         }
     }
-    
+
     private fun getRandomLifeform() {
         try {
             storedLife = ResourceManager.getRandomResourceAsString(ResourceManager.RLE_DIRECTORY)
@@ -243,7 +247,7 @@ class LifePattern(
             throw RuntimeException(e)
         }
     }
-    
+
     /**
      * Pasteable overrides
      */
@@ -251,7 +255,7 @@ class LifePattern(
         try {
             // Get the system clipboard
             val clipboard = Toolkit.getDefaultToolkit().systemClipboard
-            
+
             // Check if the clipboard contains text data and then get it
             if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
                 storedLife = clipboard.getData(DataFlavor.stringFlavor) as String
@@ -263,14 +267,14 @@ class LifePattern(
             e.printStackTrace()
         }
     }
-    
+
     /**
      * Rewindable overrides
      */
     override fun rewind() {
         instantiateLifeform()
     }
-    
+
     /**
      * Steppable overrides
      */
@@ -279,25 +283,40 @@ class LifePattern(
         if (targetStep + increment < 0) increment = 0
         targetStep += increment
     }
-    
+
     /**
      * ThreeDimensional overrides
      */
     override fun toggle3D() {
         is3D = !is3D
     }
-    
+
     override fun toggleYaw() {
         isYawing = !isYawing
     }
-    
+
+    override fun togglePitch() {
+        isPitching = !isPitching
+    }
+
+    override fun toggleRoll() {
+        isRolling = !isRolling
+    }
+
     private fun reset3D() {
         is3D = false
         yawCount = 0
+        pitchCount = 0
+        rollCount = 0
+        currentYawAngle = 0f
+        currentPitchAngle = 0f
+        currentRollAngle = 0f
         isYawing = false
+        isPitching = false
+        isRolling = false
         pattern.graphics.camera()
     }
-    
+
     /**
      * for yaw
      *
@@ -317,55 +336,55 @@ class LifePattern(
      *
      * camera: Here, the camera is set up with its position (eyeX, pApplet.height / 2f, eyeZ), the center of the scene that it's looking at (pApplet.width / 2f, pApplet.height / 2f, 0f), and the up vector (0f, 1f, 0f), which defines which direction is "up" from the camera's point of view.
      *
+     * this code is not currently in use - but it may be the basis for being able to draw an infinite screen by controlling perspective...
+     * so that while rotating the drawing can disappear into the distance
      */
-    private fun handle3D() {
-        if (isYawing) {
-            val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
-            val cameraZ = (pApplet.height / 2.0f) / tan(fov / 2.0f)
-            
-            @Suppress("UnnecessaryVariable")
-            val radius = cameraZ // Setting the radius equal to cameraZ to keep the apparent size consistent
-            
-            val angle = TWO_PI * ((yawCount + 90) % 360) / 360f
-            val eyeX = cos(angle) * radius + pApplet.width / 2f
-            val eyeZ = sin(angle) * radius
-            
-            // Set the perspective
-            pApplet.perspective(
-                fov,
-                pApplet.width.toFloat() / pApplet.height.toFloat(),
-                cameraZ / 10.0f,
-                cameraZ * 10.0f
-            )
-            
-            // Set the camera parameters: eye position, center position (looking at the center of the screen), and up vector
-            pattern.graphics.camera(
-                eyeX,
-                pApplet.height / 2f,
-                eyeZ,
-                pApplet.width / 2f,
-                pApplet.height / 2f,
-                0f,
-                0f,
-                1f,
-                0f
-            )
-            
-            //pattern.graphics.directionalLight(255f, 255f, 255f, eyeX - pApplet.width / 2f, pApplet.height / 2f, -eyeZ)
-            
-            yawCount++
-        }
-    }
-    
+    /* private fun handle3D() {
+
+         if (isYawing) {
+             val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
+             val cameraZ = (pApplet.height / 2.0f) / tan(fov / 2.0f)
+
+             val radius = cameraZ // Setting the radius equal to cameraZ to keep the apparent size consistent
+
+             val angle = TWO_PI * ((yawCount + 90) % 360) / 360f
+             val eyeX = cos(angle) * radius + pApplet.width / 2f
+             val eyeZ = sin(angle) * radius
+
+             // Set the perspective
+             pApplet.perspective(
+                 fov,
+                 pApplet.width.toFloat() / pApplet.height.toFloat(),
+                 cameraZ / 10.0f,
+                 cameraZ * 10.0f
+             )
+
+             // Set the camera parameters: eye position, center position (looking at the center of the screen), and up vector
+             pattern.graphics.camera(
+                 eyeX,
+                 pApplet.height / 2f,
+                 eyeZ,
+                 pApplet.width / 2f,
+                 pApplet.height / 2f,
+                 0f,
+                 0f,
+                 1f,
+                 0f
+             )
+
+             yawCount++
+         }
+     }*/
+
     /**
      * private fun
      */
     private fun goForwardInTime() {
-        
+
         if (asyncNextGenerationJob.isActive) {
             return
         }
-        
+
         with(life) {
             step = when {
                 step < targetStep -> step + 1
@@ -373,39 +392,39 @@ class LifePattern(
                 else -> step
             }
         }
-        
+
         if (RunningModeController.shouldAdvance())
             asyncNextGenerationJob.start()
     }
-    
+
     private fun instantiateLifeform() {
-        
+
         if (!RunningModeController.isTesting) RunningModeController.load()
-        
+
         asyncNextGenerationJob.cancelAndWait()
         targetStep = 0
-        
+
         reset3D()
-        
+
         val universe = LifeUniverse()
         universe.step = 0
-        
+
         parseStoredLife()
-        
+
         universe.newLife(lifeForm.fieldX, lifeForm.fieldY)
-        
+
         center(universe.rootBounds, fitBounds = true, saveState = false)
-        
+
         biggestDimension = FlexibleInteger.ZERO
-        
+
         life = universe
-        
+
         onNewPattern(lifeForm.title)
-        
+
         System.gc()
-        
+
     }
-    
+
     private fun parseStoredLife() {
         try {
             val parser = FileFormat()
@@ -420,21 +439,21 @@ class LifePattern(
             )
         }
     }
-    
+
     private fun fillSquare(
         x: Float,
         y: Float,
         size: Float,
     ) {
-        
+
         val width = size.roundToIntIfGreaterThanReference(size)
-        
+
         if (width > 4 && is3D) {
             pattern.graphics.push()
             pattern.graphics.translate(x, y)
             pattern.graphics.strokeWeight(1f)
             pattern.graphics.stroke(Theme.boxOutlineColor)
-            pattern.graphics.rotateX(lerpRotate(720))
+            pattern.graphics.rotateX(lerpRotate())
             pattern.graphics.box(width)
             pattern.graphics.pop()
         } else {
@@ -445,33 +464,67 @@ class LifePattern(
             )
         }
     }
-    
-    private fun lerpRotate(increment: Int): Float {
-        
-        val counter = pApplet.frameCount % increment
-        
+
+    private fun lerpRotate(): Float {
+
+        val counter = pApplet.frameCount % Theme.threeDBoxRotationCount
+
         // Calculate the lerp value
-        val t = counter.toFloat() / increment.toFloat()
-        
+        val t = counter.toFloat() / Theme.threeDBoxRotationCount.toFloat()
+
         return PApplet.lerp(0f, PApplet.TWO_PI, t)
     }
-    
+
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
-    
+
     private fun drawPattern(life: LifeUniverse) {
-        
+
         val graphics = pattern.graphics
         graphics.beginDraw()
         updateGhost(pattern.graphics)
-        
+
         // necessary for low zoom size
         graphics.noStroke()
-        
+
         updateBoundsChanged(life.root.bounds)
-        
-        handle3D()
-        
+
+        // handle3D()
+
+        // Save the current transformation matrix
+        pattern.graphics.pushMatrix()
+
+        // Move to the center of the object
+        pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
+
+        if (isYawing) {
+            // Rotate the object around the Y-axis
+            currentYawAngle = TWO_PI * (yawCount % 360) / 360f
+            yawCount++
+        }
+
+        if (isPitching) {
+            // Rotate the object around the X-axis
+            currentPitchAngle = TWO_PI * (pitchCount % 360) / 360f
+            pitchCount++
+        }
+
+        if (isRolling) {
+            // Rotate the object around the Z-axis
+            currentRollAngle = TWO_PI * (rollCount % 360) / 360f
+            rollCount++
+        }
+
+        // Apply the current rotation angles
+        pattern.graphics.rotateY(currentYawAngle)
+        pattern.graphics.rotateX(currentPitchAngle)
+        pattern.graphics.rotateZ(currentRollAngle)
+
+
+        // Move back by half the object's size
+        pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
+
+
         // getStartingEntry returns a DrawNodePathEntry - which contains the node
         // found by traversing to the first node that has children visible on screen
         // for very large drawing this can save hundreds of stack calls
@@ -482,27 +535,29 @@ class LifePattern(
         // no small thing that stack traces become much smaller
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = FlexibleInteger.ZERO
-            
-            
+
+
             val startingNode = node
             val size = size
             val offsetX = left
             val offsetY = top
-            
+
             startDelta = life.root.level - startingNode.level
-            
+
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
-            
+
         }
-        
+
         drawBounds(life)
-        
+
+        pattern.graphics.popMatrix()
+
         graphics.endDraw()
-        
+
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
     }
-    
+
     private fun drawNodeRecurse(
         node: Node,
         size: FlexibleDecimal,
@@ -510,16 +565,16 @@ class LifePattern(
         top: FlexibleDecimal
     ) {
         ++actualRecursions
-        
+
         // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
             return
         }
-        
+
         val leftWithOffset = left + canvas.offsetX
         val topWithOffset = top + canvas.offsetY
-        
-        
+
+
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= FlexibleDecimal.ONE && node.population.isNotZero()) {
@@ -537,19 +592,19 @@ class LifePattern(
                 throw e
             }
         } else if (node is TreeNode) {
-            
+
             val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
-            
+
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
-            
+
             drawNodeRecurse(node.nw, halfSize, left, top)
             drawNodeRecurse(node.ne, halfSize, leftHalfSize, top)
             drawNodeRecurse(node.sw, halfSize, left, topHalfSize)
             drawNodeRecurse(node.se, halfSize, leftHalfSize, topHalfSize)
         }
     }
-    
+
     // used by PatternDrawer a well as DrawNodePath
     // maintains no state so it can live here as a utility function
     private fun shouldContinue(
@@ -561,16 +616,16 @@ class LifePattern(
         if (node.population.isZero()) {
             return false
         }
-        
+
         val left = nodeLeft + canvas.offsetX
         val top = nodeTop + canvas.offsetY
-        
-        
+
+
         // No need to draw anything not visible on screen
         val right = left + size
         val bottom = top + size
-        
-        
+
+
         // left and top are defined by the zoom level (cell size) multiplied
         // by half the universe size which we start out with at the nw corner which is half the size negated
         // each level in we add half of the size at that to the  create the new size for left and top
@@ -588,19 +643,19 @@ class LifePattern(
         return !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
                 left >= canvas.width || top >= canvas.height)
     }
-    
+
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
-        
+
         val bounds = life.rootBounds
-        
+
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
         val boundingBox = BoundingBox(bounds, canvas)
         boundingBox.draw(pattern.graphics)
-        
+
         var currentLevel = life.root.level - 2
-        
+
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
@@ -608,12 +663,12 @@ class LifePattern(
             currentLevel++
         }
     }
-    
+
     private fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
     }
-    
+
     companion object {
         private const val LIFE_FORM_PROPERTY = "lifeForm"
     }

@@ -39,9 +39,30 @@ class KeyCallbackFactory(
                 (pattern as ThreeDimensional).toggleYaw()
             }
         },
-        usage = "yaw the 3d view"
+        usage = "rotate on the y axis"
     )
-    
+
+    val callback3DPitch = SimpleKeyCallback(
+        key = SHORTCUT_3D_PITCH,
+        invokeFeatureLambda =
+        {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).togglePitch()
+            }
+        },
+        usage = "rotate on the x axis"
+    )
+
+    val callback3DRoll = SimpleKeyCallback(
+        key = SHORTCUT_3D_ROLL,
+        invokeFeatureLambda =
+        {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).toggleRoll()
+            }
+        },
+        usage = "rotate on the z axis"
+    )
     
     val callback3D = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_3D, KeyEvent.SHIFT)),
@@ -290,7 +311,10 @@ class KeyCallbackFactory(
     
     companion object {
         private const val SHORTCUT_3D = '3'
+        private const val SHORTCUT_3D_PITCH = 'p'
         private const val SHORTCUT_3D_YAW = 'y'
+        private const val SHORTCUT_3D_ROLL = 'l'
+
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
