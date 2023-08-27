@@ -40,8 +40,8 @@ class Canvas(private val pApplet: PApplet) {
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
     
-    val openGLResizing: Boolean
-        get() = !shouldUpdatePGraphics
+    var openGLResizing = false
+        private set
     
     // disallow during resize or you hit a heinous bug
     var shouldUpdatePGraphics = false
@@ -63,7 +63,7 @@ class Canvas(private val pApplet: PApplet) {
     val resizeJob = AsyncJobRunner(
         method = suspend {
             delay(RESIZE_FINISHED_DELAY_MS)
-           // openGLResizing = false
+            openGLResizing = false
             shouldUpdatePGraphics = true
             println("resize finished!")
         })
@@ -84,8 +84,8 @@ class Canvas(private val pApplet: PApplet) {
                 //
                 // because shit is happening on other threads in the JOGL code that processing uses
                 // and we can't do a goddamn thing about it
-                println("resized:$width, $height - telling shouldUpdateGraphics to wait")
-               // openGLResizing = true
+                PApplet.println("resize:$width, $height")
+                openGLResizing = true
                 shouldUpdatePGraphics = false
                 resizeJob.cancelAndWait()
                 resizeJob.start()

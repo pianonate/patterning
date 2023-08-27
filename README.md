@@ -1,13 +1,18 @@
 # patterning
 This project is a java based visualizer of (to begin with) John Conway's, game of life that he created in 1970. There's a way better visualize out there called golly, which goes beyond just the game of life, but this one is mine and I'm trying to learn things by working on it. Right now, I'm learning, exploring and optimizing the hashlife algorithm, as well as kotlin idioms.
 
-There are many, many enhancements to make for this to be truly interesting. And a lot of debugging to do still. There are some built in starting patterns - hooked up to the number keys (press 1 through 9). You can also paste a valid RLE of a lifeform into it.  Many can be found here:
+If you want to change something, make a pull request - i'd love to see what you do to improve this. 
+
+If you want to know what I want to do next, create an issue and I'll try to respond.
+
+### patterns on copy.sh
+
+You can also paste a valid RLE of a lifeform into it.  Many can be found here:
 
 https://copy.sh/life/examples/
 
 Under the patterns column, pick one, drill into the screen, copy everything and paste it onto the canvas of this app, and then it will be off to the races.
 
-If you find something that you want to change, then make a pull request - i'd love to see what you do to improve this. If you want to know what I want to do next, create an issue and I'll try to respond.
 
 ## try out the code in your own environment
 
@@ -43,3 +48,6 @@ because i'm not a gradle wonk, the hard lesson to learn when getting up and runn
 
 ### that's it for the setup
 good luck - and let me know if any of this is wrong, or can be improved - I'd like it to be fully automated but that's for another day.
+
+### trying it out
+There are some built in starting patterns - hooked up to the number keys (press 1 through 9).
