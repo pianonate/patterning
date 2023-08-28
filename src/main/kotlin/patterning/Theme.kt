@@ -11,6 +11,7 @@ object Theme {
     val isTransitioning get() = _backgroundColor.transitionInProgress
     
     // durations
+    const val threeDBoxRotationCount = 720
     const val controlHighlightDuration = 500
     const val controlPanelTransitionDuration = 300
     const val countdownFrom = 2
