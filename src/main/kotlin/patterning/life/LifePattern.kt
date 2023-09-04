@@ -144,7 +144,7 @@ class LifePattern(
 
     override fun move(dx: Float, dy: Float) {
         canvas.saveUndoState()
-        canvas.adjustCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
+        canvas.moveCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
         lifeFormPosition.add(dx, dy)
     }
 
