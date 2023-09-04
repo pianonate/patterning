@@ -4,16 +4,12 @@ package patterning
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
-import java.awt.Color
-import java.awt.Component
 import java.awt.Point
 import java.math.MathContext
 import java.math.RoundingMode
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
-import patterning.actions.KeyHandler
-import patterning.pattern.KeyCallbackFactory
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
@@ -77,12 +73,12 @@ class Canvas(private val pApplet: PApplet) {
             override fun dispose(drawable: GLAutoDrawable) {}
             override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
                 // This method is called when the window is resized
-                // give it a a few ms to be really true before you allow resizing to be set to false
+                // give it a few ms to be really true before you allow resizing to be set to false
                 // otherwise we crash
                 //
                 // hard
                 //
-                // because shit is happening on other threads in the JOGL code that processing uses
+                // because shit is happening on other threads in the JOGL code that processing uses,
                 // and we can't do a goddamn thing about it
                 PApplet.println("resize:$width, $height")
                 openGLResizing = true
@@ -130,8 +126,8 @@ class Canvas(private val pApplet: PApplet) {
 
     // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
     // now that i'm thinking about it, this is probably the required precision for a float
-    // which is what the cell.cellSize is - especially for really small numbers
-    // without it we'd be off by only looking at the integer part of the largest dimension
+    // which is what the cell.cellSize is - especially for minuscule numbers
+    // without it, we'd be off by only looking at the integer part of the largest dimension
     private var previousPrecision: Int = 0
 
     fun updateBiggestDimension(biggestDimension: FlexibleInteger) {
@@ -142,7 +138,7 @@ class Canvas(private val pApplet: PApplet) {
             previousPrecision = precision
         }
 
-        // update the minimum zoom level so we don't ask for zooms that can't happen
+        // update the minimum zoom level, so we don't ask for zooms that can't happen
         zoom.minZoomLevel = FlexibleDecimal.ONE.divide(biggestDimension.toFlexibleDecimal(), mc)
     }
 
@@ -234,10 +230,6 @@ class Canvas(private val pApplet: PApplet) {
             updateResizableGraphicsReferences()
             shouldUpdatePGraphics = false
         }
-
-        if (resized || Theme.isTransitioning) {
-            mitigateFlicker()
-        }
     }
 
     private fun updateResizableGraphicsReferences() {
@@ -287,38 +279,6 @@ class Canvas(private val pApplet: PApplet) {
         return dimension.divide(FlexibleDecimal.TWO, mc) - offset
     }
 
-    /**
-     * what is going on here? why is this necessary?
-     * using background() in the draw loop draws on top of the default grey color for a
-     * processing sketch. when you resize a window, for a split second it shows that grey
-     * background. which makes the screen flicker massively
-     *
-     * this is a hacky way to get around that.
-     *
-     * first off - we have to get the theme's background color. we use this because when
-     * the theme is transitioning, this color changes for the duration of the transition.
-     * to mitigateFlicker we get the surface.native AWT component and
-     * set it's background Color. The AWT Color can't just be given an int so we need
-     * Processing's PApplet.color fun to convert it to something Color can use and then
-     * be applied to the native AWT background
-     *
-     * the discovery on how to fix this flickering took awhile so the documentation is way
-     * longer than the code itself :)
-     *
-     * see for yourself what it looks ike if you change the color to red .color(255,0,0) and
-     * then resize the window
-     */
-    private fun mitigateFlicker() {
-        val native = pApplet.surface.native
-        if (native is GLWindow) {
-            // doesn't happen with openGL
-            return
-        } else {
-            val nativeSurface = pApplet.surface.native as Component
-            nativeSurface.background = Color(pApplet.color(Theme.backGroundColor))
-        }
-    }
-
     private inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
@@ -334,11 +294,6 @@ class Canvas(private val pApplet: PApplet) {
         private var stepsTaken = 0
         private var stepSize = FlexibleDecimal.ZERO  // This is the amount to change the level by on each update
         private val totalSteps = 20  // Say you want to reach the target in 10 updates
-
-        // used to stop immediately if the user releases the zoom key while holding it down
-        // if the user only presses it once then the invoke count will only be 1
-        // and we should let the zoom play out
-        private var zoomInvokeCount = 0
 
         private var targetSize: FlexibleDecimal
             get() = _targetSize
@@ -419,7 +374,6 @@ class Canvas(private val pApplet: PApplet) {
 
         fun stopZooming() {
             isZooming = false
-            if (zoomInvokeCount > 0) zoomInvokeCount = 0
         }
 
         fun zoom(zoomIn: Boolean, x: Float, y: Float) {
@@ -439,23 +393,12 @@ class Canvas(private val pApplet: PApplet) {
             this.zoomCenterY = FlexibleDecimal.create(y)
 
             isZooming = true
-            zoomInvokeCount++
             stepsTaken = 0
 
         }
 
         fun update() {
             if (isZooming) {
-
-                if (!KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_IN.code) &&
-                    !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_OUT.code) &&
-                    !KeyHandler.pressedKeys.contains(KeyCallbackFactory.SHORTCUT_ZOOM_CENTERED.code)
-                ) {
-                    if (zoomInvokeCount > 1) {
-                        stopZooming()
-                        return
-                    }
-                }
 
                 val previousCellWidth = level
 

@@ -55,6 +55,8 @@ object KeyHandler {
             _pressedKeys.clear() // clear movement keys
         }
 
+        println("in keyEvent with action:${event.action} key:${event.key} keyCode:${event.keyCode}")
+
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
 
         when (event.action) {

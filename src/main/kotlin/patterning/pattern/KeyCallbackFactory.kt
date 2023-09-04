@@ -162,7 +162,16 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom in centered on the mouse",
-        invokeEveryDraw = true,
+    )
+
+    private val callbackZoomOut = SimpleKeyCallback(
+        key = SHORTCUT_ZOOM_OUT,
+        invokeFeatureLambda = {
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
+            }
+        },
+        usage = "zoom out centered on the mouse",
     )
     
     val callbackZoomInCenter = SimpleKeyCallback(
@@ -173,7 +182,6 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom in centered on the middle of the screen",
-        invokeEveryDraw = true,
     )
     
     val callbackZoomOutCenter = SimpleKeyCallback(
@@ -184,18 +192,6 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom out centered on the middle of the screen",
-        invokeEveryDraw = true,
-    )
-    
-    private val callbackZoomOut = SimpleKeyCallback(
-        key = SHORTCUT_ZOOM_OUT,
-        invokeFeatureLambda = {
-            if (pattern is Movable) {
-                (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
-            }
-        },
-        usage = "zoom out centered on the mouse",
-        invokeEveryDraw = true,
     )
     
     val callbackDrawBounds = SimpleKeyCallback(
