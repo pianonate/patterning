@@ -161,7 +161,8 @@ class KeyCallbackFactory(
                 (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
             }
         },
-        usage = "zoom in centered on the mouse"
+        usage = "zoom in centered on the mouse",
+        invokeEveryDraw = true,
     )
     
     val callbackZoomInCenter = SimpleKeyCallback(
@@ -171,7 +172,8 @@ class KeyCallbackFactory(
                 (pattern as Movable).zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
             }
         },
-        usage = "zoom in centered on the middle of the screen"
+        usage = "zoom in centered on the middle of the screen",
+        invokeEveryDraw = true,
     )
     
     val callbackZoomOutCenter = SimpleKeyCallback(
@@ -181,7 +183,8 @@ class KeyCallbackFactory(
                 (pattern as Movable).zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
             }
         },
-        usage = "zoom out centered on the middle of the screen"
+        usage = "zoom out centered on the middle of the screen",
+        invokeEveryDraw = true,
     )
     
     private val callbackZoomOut = SimpleKeyCallback(
@@ -191,7 +194,8 @@ class KeyCallbackFactory(
                 (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
             }
         },
-        usage = "zoom out centered on the mouse"
+        usage = "zoom out centered on the mouse",
+        invokeEveryDraw = true,
     )
     
     val callbackDrawBounds = SimpleKeyCallback(
@@ -296,7 +300,8 @@ class KeyCallbackFactory(
                 }
             }
         },
-        usage = "move pattern with arrow. hold down two keys to move diagonally"
+        usage = "move pattern with arrow. hold down two keys to move diagonally",
+        invokeEveryDraw = true,
     )
     
     val callbackSingleStep = SimpleKeyCallback(

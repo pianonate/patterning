@@ -9,37 +9,41 @@ class MovementHandler(private val pattern: Pattern) {
 
     data class Direction(val key: Int, val moveY: Float, val moveX: Float)
 
-    private var lastDirection = 0
+    private var lastDirectionKeys = setOf<Int>()
     private val initialMoveAmount = 5f
     private var moveAmount = initialMoveAmount
-    
+
     fun handleRequestedMovement() {
-        for (key in pressedKeys) {
-            when (key) {
-                WEST, EAST, NORTH, SOUTH -> handleMovementKeys()
-                else ->  // Ignore other keys and set lastDirection to 0
-                    lastDirection = 0
-            }
+        val movementKeys = pressedKeys.intersect(setOf(WEST, EAST, NORTH, SOUTH))
+
+        if (movementKeys.isNotEmpty()) {
+            handleMovementKeys(movementKeys)
+            println("$movementKeys $pressedKeys")
+
+
+        } else {
+            lastDirectionKeys = setOf()
         }
     }
-    
-    private fun handleMovementKeys() {
+
+
+    private fun handleMovementKeys(movementKeys: Set<Int>) {
         var moveX = 0f
         var moveY = 0f
 
         directions.forEach { direction ->
-            if (pressedKeys.contains(direction.key)) {
-                moveX += direction.moveX * moveAmount / pressedKeys.size
-                moveY += direction.moveY * moveAmount / pressedKeys.size
+            if (movementKeys.contains(direction.key)) {
+                moveX += direction.moveX * moveAmount / movementKeys.size
+                moveY += direction.moveY * moveAmount / movementKeys.size
             }
         }
 
-        val currentDirection = directions.filter { pressedKeys.contains(it.key) }.sumOf { it.key }
+        val currentDirectionKeys = directions.filter { movementKeys.contains(it.key) }.map { it.key }.toSet()
         
-        if (currentDirection != lastDirection) {
+        if (currentDirectionKeys != lastDirectionKeys) {
             moveAmount = initialMoveAmount
         }
-        lastDirection = currentDirection
+        lastDirectionKeys = currentDirectionKeys
         
         pattern.move(moveX, moveY)
     }

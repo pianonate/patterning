@@ -198,6 +198,8 @@ class LifePattern(
                     ?: FlexibleDecimal.ONE
 
             canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
+
+            reset3DParams()
         }
 
         val level = canvas.zoomLevel
@@ -303,14 +305,20 @@ class LifePattern(
         isRolling = !isRolling
     }
 
-    private fun reset3D() {
-        is3D = false
+    private fun reset3DParams() {
         yawCount = 0
         pitchCount = 0
         rollCount = 0
         currentYawAngle = 0f
         currentPitchAngle = 0f
         currentRollAngle = 0f
+    }
+
+    private fun reset3DAndStopRotations() {
+
+        reset3DParams()
+
+        is3D = false
         isYawing = false
         isPitching = false
         isRolling = false
@@ -404,7 +412,7 @@ class LifePattern(
         asyncNextGenerationJob.cancelAndWait()
         targetStep = 0
 
-        reset3D()
+        reset3DAndStopRotations()
 
         val universe = LifeUniverse()
         universe.step = 0

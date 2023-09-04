@@ -6,36 +6,43 @@ class SimpleKeyCallback(
     keyCombos: LinkedHashSet<KeyCombo>,
     private val invokeFeatureLambda: (() -> Unit),
     override val usage: String,
-) : KeyCallback {
+    override val invokeEveryDraw:Boolean,
+    ) : KeyCallback {
     
     constructor(
         key: Char,
         invokeFeatureLambda: () -> Unit,
         usage: String,
+        invokeEveryDraw: Boolean = false
     ) : this(
         linkedSetOf(KeyCombo(key.code)),
         invokeFeatureLambda,
-        usage
+        usage,
+        invokeEveryDraw
     )
     
     constructor(
         keys: Set<Char>,
         invokeFeatureLambda: () -> Unit,
         usage: String,
+        invokeEveryDraw:Boolean = false
     ) : this(
         keys.mapTo(LinkedHashSet()) { KeyCombo(keyCode = it.code) },
         invokeFeatureLambda,
-        usage
+        usage,
+        invokeEveryDraw,
     )
     
     constructor(
         keyCombos: Collection<KeyCombo>,
         invokeFeatureLambda: () -> Unit,
         usage: String,
+        invokeEveryDraw:Boolean = false
     ) : this(
         LinkedHashSet(keyCombos),
         invokeFeatureLambda,
-        usage
+        usage,
+        invokeEveryDraw,
     )
     
     private val _keyCombos = keyCombos

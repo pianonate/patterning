@@ -4,7 +4,7 @@ import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
 import patterning.Theme
-import patterning.actions.ControlKeyCallbackEvent
+import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyEventObserver
 import patterning.actions.KeyHandler
@@ -18,7 +18,7 @@ import processing.core.PVector
 import processing.event.KeyEvent
 
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyEventObserver, MouseEventReceiver {
-    private val keyCallback: ControlKeyCallbackEvent
+    private val keyCallback: ControlKeyCallback
     private val size: Int
     internal var isHighlightFromKeypress = false
     protected var icon: PImage
@@ -37,8 +37,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 Theme.shortcutParenEnd
     }
     
-    private fun registerCallback(callback: KeyCallback): ControlKeyCallbackEvent {
-        val keyCallback = ControlKeyCallbackEvent(callback, this)
+    private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
+        val keyCallback = ControlKeyCallback(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
     }
@@ -189,11 +189,11 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
     
-    override fun onKeyPress(event: KeyEvent) {
+    override fun notifyGlobalKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
     }
     
-    override fun onKeyRelease(event: KeyEvent) {
+    override fun notifyGlobalKeyRelease(event: KeyEvent) {
         // do nothing
     }
     

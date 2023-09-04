@@ -32,6 +32,6 @@ class TestingState() : RunningState(RunningMode.TESTING) {
     }
     
     override val isTesting = true
-    override val isUXAvailable = true
+    override val isUXAvailable = false
     override val isPlaying = false
 }

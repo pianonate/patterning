@@ -20,12 +20,8 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
         toggleHighlight()
     }
     
-    override fun onKeyPress(event: KeyEvent) {
+    override fun notifyGlobalKeyPress(event: KeyEvent) {
         toggleHighlight()
-    }
-    
-    fun reset() {
-        isHighlightFromKeypress = false
     }
     
     class Builder(

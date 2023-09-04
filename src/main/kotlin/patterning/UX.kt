@@ -78,13 +78,13 @@ class UX(
      * only invoke handlePlay if it's not the key that already toggles play mode
      * it doesn't feel like good design to have to explicitly check for this key
      */
-    override fun onKeyPress(event: KeyEvent) {
+    override fun notifyGlobalKeyPress(event: KeyEvent) {
         // it doesn't feel great that we're both listening to all keys and also
         // have a special case for the one key that would also handle play/pause as it's actual function
         handleCountdownInterrupt()
     }
     
-    override fun onKeyRelease(event: KeyEvent) {
+    override fun notifyGlobalKeyRelease(event: KeyEvent) {
         // do nothing
     }
     

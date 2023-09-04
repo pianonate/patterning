@@ -46,12 +46,12 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
         }
     }
     
-    override fun onKeyPress(event: KeyEvent) {
+    override fun notifyGlobalKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
         handleIcons()
     }
     
-    override fun onKeyRelease(event: KeyEvent) {
+    override fun notifyGlobalKeyRelease(event: KeyEvent) {
         // do nothing
     }
     
