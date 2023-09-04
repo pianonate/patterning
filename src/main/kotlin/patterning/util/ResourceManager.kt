@@ -21,7 +21,7 @@ object ResourceManager {
         val randomFile = files[Random().nextInt(files.size)]
         return getResourceAsString(randomFile)
     }
-    
+
     private fun getResourceFilePaths(directoryName: String): List<String> {
         val url = classLoader.getResource(directoryName) ?: throw IOException("Directory not found: $directoryName")
         return when (url.protocol) {
@@ -30,7 +30,7 @@ object ResourceManager {
             else -> throw IOException("Cannot list files for URL $url")
         }
     }
-    
+
     private fun getResourceFilePathsFromJar(url: URL, directoryName: String): List<String> {
         val dirPath = url.path
         val jarPath = dirPath.substring(5, dirPath.indexOf("!")) // strip out only the JAR file
@@ -50,7 +50,7 @@ object ResourceManager {
         }
         return filenames
     }
-    
+
     private fun getResourceFilePathsFromFileSystem(url: URL, directoryName: String): List<String> {
         val dirPath = Paths.get(url.toURI())
         val filenames: MutableList<String> = ArrayList()
@@ -63,7 +63,7 @@ object ResourceManager {
         }
         return filenames
     }
-    
+
     private fun getResourceAsString(resourceName: String): String {
         classLoader.getResourceAsStream(resourceName).use { `is` ->
             if (`is` == null) {
@@ -74,10 +74,10 @@ object ResourceManager {
             }
         }
     }
-    
+
     private val classLoader: ClassLoader
         get() = ResourceManager::class.java.classLoader
-    
+
     fun getResourceAtFileIndexAsString(directoryName: String, fileIndex: Int): String {
         var number = fileIndex
         val files = getResourceFilePaths(directoryName)
@@ -89,7 +89,7 @@ object ResourceManager {
         }
         return getResourceAsString(files[number - 1])
     }
-    
+
     val RLE_DIRECTORY = "rle"
-    
+
 }

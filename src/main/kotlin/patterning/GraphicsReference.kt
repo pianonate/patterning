@@ -10,7 +10,7 @@ class GraphicsReference(
 ) {
     var graphics: PGraphics = initialGraphics
         private set
-    
+
     internal fun updateGraphics(newGraphics: PGraphics) {
         graphics = newGraphics
     }

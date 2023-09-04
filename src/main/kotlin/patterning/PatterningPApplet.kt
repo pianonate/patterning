@@ -1,6 +1,5 @@
 package patterning
 
-import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
 import patterning.actions.MovementHandler
@@ -9,31 +8,32 @@ import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
 import patterning.pattern.PatternEventType
 import processing.core.PApplet
+import kotlin.math.roundToInt
 
 
 class PatterningPApplet : PApplet() {
-    
+
     private val canvas = Canvas(this)
     private lateinit var ux: UX
     private lateinit var pattern: Pattern
     private lateinit var properties: Properties
     private lateinit var movementHandler: MovementHandler
-    
-    
+
+
     // used to control dragging the image around the screen with the mouse
     private var lastMouseX = 0f
     private var lastMouseY = 0f
     var draggingDrawing = false
-    
+
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
     private var mousePressedOverReceiver = false
-    
+
     override fun settings() {
         properties = Properties(this, canvas)
         size(properties.width, properties.height, P3D)
     }
-    
+
     /**
      * we can't load properties until setup because of idiosyncrasies of processing
      * and i don't want to find a different way right now to load a properties file
@@ -44,15 +44,15 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
-        
+
         windowTitle("patterning")
-        
+
         windowResizable(true)
-        
+
         Theme.init(this)
-        
+
         properties.setWindowPosition()
-        
+
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
         // can't do this until PApplet has been initialized
@@ -60,75 +60,75 @@ class PatterningPApplet : PApplet() {
         // during a resize - which will cause the  application to crash
         // the order of this call matters
         canvas.listenToResize()
-        
+
         pattern = patterning.life.LifePattern(
             pApplet = this,
             canvas = canvas,
             properties
         )
-        
+
         ux = UX(this, canvas, pattern)
-        
+
         // ux has to be created before observers are registered
         registerPatternObservers(pattern)
-        
+
         // order matters here - dont' load the pattern until
         // observers have been registered!
         pattern.loadPattern()
-        
+
         // the coupling is weird here - we'll see...
         movementHandler = MovementHandler(pattern)
-        
+
         // ux sets up key callbacks and we can now print them out
         println(KeyHandler.usageText)
-        
+
         KeyHandler.registerKeyHandler(this)
-        
+
     }
-    
+
     private fun registerPatternObservers(pattern: Pattern) {
-        
+
         pattern.registerObserver(PatternEventType.DimensionChanged) { event ->
             canvas.updateBiggestDimension((event as PatternEvent.DimensionChanged).biggestDimension)
         }
-        
+
         pattern.registerObserver(PatternEventType.PatternSwapped) { _ ->
             canvas.newPattern()
         }
-        
+
         pattern.registerObserver(PatternEventType.PatternSwapped) { event ->
             ux.newPattern((event as PatternEvent.PatternSwapped).patternName)
         }
     }
-    
+
     override fun draw() {
-        
+
         canvas.drawBackground()
-        
+
         if (pattern is Movable) {
             canvas.updateZoom()
             movementHandler.handleRequestedMovement()
         }
-        
+
         pattern.draw()
         ux.draw()
     }
-    
+
     override fun windowResized() {
         println("override fun windowResized")
         canvas.shouldUpdatePGraphics = false
     }
-    
+
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()
         lastMouseY += mouseY.toFloat()
         MouseEventManager.onMousePressed()
         mousePressedOverReceiver = MouseEventManager.isMousePressedOverAnyReceiver
-        
+
         // If the mouse press is not over any MouseEventReceiver, we consider it as over the drawing.
         draggingDrawing = !mousePressedOverReceiver
     }
-    
+
     override fun mouseReleased() {
         if (draggingDrawing) {
             draggingDrawing = false
@@ -138,10 +138,10 @@ class PatterningPApplet : PApplet() {
         }
         lastMouseX = 0f
         lastMouseY = 0f
-        
+
         ux.mouseReleased()
     }
-    
+
     override fun mouseDragged() {
         if (draggingDrawing) {
             val dx = (mouseX - lastMouseX).roundToInt().toFloat()
@@ -151,7 +151,7 @@ class PatterningPApplet : PApplet() {
             lastMouseY += dy
         }
     }
-    
+
     // Override the exit() method to save window properties before closing
     override fun exit() {
         pattern.updateProperties()

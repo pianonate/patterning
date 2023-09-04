@@ -6,7 +6,7 @@ enum class RunningMode(val value: String) {
     PAUSED("paused"),
     SINGLE_STEP("single step"),
     TESTING("testing");
-    
+
     override fun toString(): String {
         return value
     }

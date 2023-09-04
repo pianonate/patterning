@@ -6,10 +6,10 @@ import patterning.actions.KeyCallback
 import patterning.pattern.Pattern
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
-    
+
     class Builder(canvas: Canvas, hAlign: AlignHorizontal, vAlign: AlignVertical) :
         ContainerPanel.Builder(canvas, hAlign, vAlign) {
-        
+
         fun addControl(iconName: String, callback: KeyCallback) = apply {
             val c = Control.Builder(
                 canvas,
@@ -19,7 +19,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             ).build()
             addPanel(c)
         }
-        
+
         fun addToggleHighlightControl(iconName: String, callback: KeyCallback, resetOnNew: Pattern? = null) =
             apply {
                 val c: Control = ToggleHighlightControl.Builder(
@@ -31,7 +31,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 ).build()
                 addPanel(c)
             }
-        
+
         fun addPlayPauseControl(
             playIconName: String,
             pauseIconName: String,
@@ -46,7 +46,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             ).build()
             addPanel(c)
         }
-        
+
         override fun build() = ControlPanel(this)
     }
 }

@@ -24,7 +24,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
-    
+
     init {
         size = builder.size
         fillColor = Theme.controlColor
@@ -36,24 +36,24 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 keyCallback.toString() +
                 Theme.shortcutParenEnd
     }
-    
+
     private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
         val keyCallback = ControlKeyCallback(callback, this)
         KeyHandler.addKeyCallback(keyCallback)
         return keyCallback
     }
-    
+
     protected fun toggleHighlight() {
         if (RunningModeController.isUXAvailable)
             isHighlightFromKeypress = !isHighlightFromKeypress
     }
-    
+
     protected fun loadIcon(iconName: String): PImage {
         val icon = canvas.loadImage(Theme.iconPath + iconName)
         icon.resize(width - Theme.iconMargin, height - Theme.iconMargin)
         return icon
     }
-    
+
     override fun panelSubclassDraw() {
         panelGraphics.noStroke()
         mouseHover(isMouseOverMe)
@@ -61,7 +61,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         drawPressed()
         drawIcon()
     }
-    
+
     private fun drawHover() {
         if (isHovering) {
             drawControlHighlight(Theme.controlHighlightColor)
@@ -76,19 +76,19 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             }
         }
     }
-    
-    
+
+
     private fun getHoverTextPanel(): TextPanel {
         val margin = Theme.hoverTextMargin
         val hoverTextWidth = Theme.hoverTextWidth
         var hoverX = parentPanel!!.position.x.toInt()
         var hoverY = parentPanel!!.position.y.toInt()
         var transitionDirection: TransitionDirection? = null
-        
+
         val localParentPanel = parentPanel as ControlPanel
-        
+
         val orientation = localParentPanel.orientation
-        
+
         when (orientation) {
             Orientation.VERTICAL -> {
                 when (localParentPanel.hAlign) {
@@ -97,16 +97,16 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverY = (hoverY + position.y).toInt()
                         transitionDirection = TransitionDirection.RIGHT
                     }
-                    
+
                     AlignHorizontal.RIGHT -> {
                         hoverX = hoverX - margin - hoverTextWidth
                         hoverY = (hoverY + position.y).toInt()
                         transitionDirection = TransitionDirection.LEFT
                     }
-                    
+
                 }
             }
-            
+
             Orientation.HORIZONTAL -> {
                 hoverX = (hoverX + position.x).toInt()
                 when (localParentPanel.vAlign) {
@@ -114,7 +114,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverY = localParentPanel.position.y.toInt() + size + margin
                         transitionDirection = TransitionDirection.DOWN
                     }
-                    
+
                     AlignVertical.BOTTOM -> {
                         hoverY = localParentPanel.position.y.toInt() - margin
                         transitionDirection = TransitionDirection.UP
@@ -122,9 +122,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 }
             }
         }
-        
+
         val offsetBottom = (orientation === Orientation.HORIZONTAL && localParentPanel.vAlign === AlignVertical.BOTTOM)
-        
+
         // the Control parentPanel is a ContainerPanel that has a DrawingInfoSupplier
         // which has a PGraphicsSupplier of the current UXBuffer
         // we can't use the parent Control PGraphicsSupplier as it is provided by the ContainerPanel so that the
@@ -133,7 +133,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // instead we pass the hover text the parent ContainerPanel's DrawingInfoSupplier which comes from
         // PatternDrawer, i.e., and has a PGraphicsSupplier of the UXBuffer itself - otherwise the hover text
         // would try to draw itself within the control at a microscopic size
-        
+
         return TextPanel.Builder(
             canvas,
             hoverMessage,
@@ -152,7 +152,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
         }.build()
     }
-    
+
     private fun mouseHover(isHovering: Boolean) {
         if (isPressed && !isHovering) {
             // If pressed and not hovering, reset the pressed state
@@ -163,24 +163,24 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             isHoveringPrevious = isHovering
         }
     }
-    
+
     private fun drawPressed() {
         if (isPressed || isHighlightFromKeypress) {
             drawControlHighlight(Theme.controlMousePressedColor)
         }
     }
-    
+
     protected open fun getCurrentIcon(): PImage {
         return icon
     }
-    
+
     private fun drawIcon() {
         val thisIcon = getCurrentIcon()
         val x = (width - thisIcon.width).toFloat() / 2
         val y = (height - thisIcon.height).toFloat() / 2
         panelGraphics.image(thisIcon, x, y)
     }
-    
+
     private fun drawControlHighlight(color: Int) {
         // highlight the control with a semi-transparent rect
         panelGraphics.fill(color) // Semi-transparent gray
@@ -188,15 +188,15 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         // Rounded rectangle with radius
         panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
     }
-    
+
     override fun notifyGlobalKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
     }
-    
+
     override fun notifyGlobalKeyRelease(event: KeyEvent) {
         // do nothing
     }
-    
+
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
     private val asyncSetHighlightJob = AsyncJobRunner(
         method = suspend {
@@ -204,23 +204,23 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             isHighlightFromKeypress = false
         }
     )
-    
+
     internal fun highlightFromKeyPress() {
         if (!RunningModeController.isUXAvailable) return
-        
+
         if (!asyncSetHighlightJob.isActive) { // Only start if not already running
             isHighlightFromKeypress = true
             asyncSetHighlightJob.start()
         }
     }
-    
+
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
         if (isMouseOverMe && RunningModeController.isUXAvailable) {
             keyCallback.invokeFeature() // Specific to Control
         }
     }
-    
+
     open class Builder(
         canvas: Canvas,
         val callback: KeyCallback,
@@ -231,5 +231,5 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     ) {
         override fun build() = Control(this)
     }
-    
+
 }

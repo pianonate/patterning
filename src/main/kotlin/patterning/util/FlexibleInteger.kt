@@ -7,7 +7,7 @@ import kotlin.math.ceil
 import kotlin.math.ln
 
 class FlexibleInteger private constructor(initialValue: Number) : Comparable<FlexibleInteger> {
-    
+
     val value: Number = when (initialValue) {
         is BigInteger -> {
             when (initialValue) {
@@ -16,40 +16,40 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
                 else -> initialValue
             }
         }
-        
+
         is Long -> {
             when (initialValue) {
                 in INT_MIN..INT_MAX -> initialValue.toInt()
                 else -> initialValue
             }
         }
-        
+
         is Int -> initialValue
-        
+
         else -> throw IllegalArgumentException("Unsupported number type")
     }
-    
-    
+
+
     operator fun plus(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> handleIntAddition(value, other.value)
             value is Int && other.value is Long -> handleLongAddition(value.toLong(), other.value)
             value is Int && other.value is BigInteger -> handleBigIntegerAddition(value.toBigIntegerSafe(), other.value)
-            
+
             value is Long && other.value is Int -> handleLongAddition(value, other.value.toLong())
             value is Long && other.value is Long -> handleLongAddition(value, other.value)
             value is Long && other.value is BigInteger -> handleBigIntegerAddition(
                 value.toBigIntegerSafe(),
                 other.value
             )
-            
+
             value is BigInteger && other.value is BigInteger -> handleBigIntegerAddition(value, other.value)
-            
+
             // the possible choice for else is going to be either an int or a long
             else -> handleBigIntegerAddition(value.toBigIntegerSafe(), other.value.toBigIntegerSafe())
         }
     }
-    
+
     private fun handleIntAddition(a: Int, b: Int): FlexibleInteger {
         return try {
             create(Math.addExact(a, b))
@@ -57,7 +57,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             create(a.toLong() + b.toLong())
         }
     }
-    
+
     private fun handleLongAddition(a: Long, b: Long): FlexibleInteger {
         return try {
             create(Math.addExact(a, b))
@@ -65,34 +65,34 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             create(BigInteger.valueOf(a) + BigInteger.valueOf(b))
         }
     }
-    
+
     private fun handleBigIntegerAddition(a: BigInteger, b: BigInteger): FlexibleInteger {
         return create(a + b)
     }
-    
+
     fun get(): Number = value
-    
+
     fun isOne(): Boolean = when (value) {
         is Int -> value == 1
         is Long -> value == 1L
         is BigInteger -> value == BigInteger.ONE
         else -> throw IllegalArgumentException("Unexpected type")
     }
-    
+
     fun isNotZero(): Boolean = when (value) {
         is Int -> value != 0
         is Long -> value != 0L
         is BigInteger -> value != BigInteger.ZERO
         else -> throw IllegalArgumentException("Unexpected type")
     }
-    
+
     fun isZero(): Boolean = when (value) {
         is Int -> value == 0
         is Long -> value == 0L
         is BigInteger -> value == BigInteger.ZERO
         else -> throw IllegalArgumentException("Unexpected type")
     }
-    
+
     fun shiftLeft(n: Int): Int {
         if (value is Int) {
             return (value) shl n
@@ -100,7 +100,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             throw IllegalArgumentException("Operation only supported for Int values.")
         }
     }
-    
+
     fun or(other: FlexibleInteger): Int {
         if (value is Int && other.value is Int) {
             return (value) or (other.value)
@@ -108,7 +108,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             throw IllegalArgumentException("Operation only supported for Int values.")
         }
     }
-    
+
     fun toInt(): Int {
         if (value is Int) {
             return value
@@ -116,7 +116,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             throw IllegalArgumentException("Operation only supported for Int values.")
         }
     }
-    
+
     operator fun unaryMinus(): FlexibleInteger {
         return when (value) {
             is Int -> create(-value)
@@ -125,19 +125,19 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
-    
+
     fun addOne(): FlexibleInteger {
         return this + ONE
     }
-    
+
     operator fun inc(): FlexibleInteger {
         return addOne()
     }
-    
+
     operator fun dec(): FlexibleInteger {
         return this - ONE
     }
-    
+
     operator fun minus(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> handleIntSubtraction(value, other.value)
@@ -146,21 +146,21 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
                 value.toBigIntegerSafe(),
                 other.value
             )
-            
+
             value is Long && other.value is Int -> handleLongSubtraction(value, other.value.toLong())
             value is Long && other.value is Long -> handleLongSubtraction(value, other.value)
             value is Long && other.value is BigInteger -> handleBigIntegerSubtraction(
                 value.toBigIntegerSafe(),
                 other.value
             )
-            
+
             value is BigInteger && other.value is BigInteger -> handleBigIntegerSubtraction(value, other.value)
-            
+
             // the possible choice for else is going to be either an int or a long
             else -> handleBigIntegerSubtraction(value.toBigIntegerSafe(), other.value.toBigIntegerSafe())
         }
     }
-    
+
     private fun handleIntSubtraction(a: Int, b: Int): FlexibleInteger {
         return try {
             create(Math.subtractExact(a, b))
@@ -168,7 +168,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             create(a.toLong() - b.toLong())
         }
     }
-    
+
     private fun handleLongSubtraction(a: Long, b: Long): FlexibleInteger {
         return try {
             create(Math.subtractExact(a, b))
@@ -176,12 +176,12 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             create(BigInteger.valueOf(a) - BigInteger.valueOf(b))
         }
     }
-    
+
     private fun handleBigIntegerSubtraction(a: BigInteger, b: BigInteger): FlexibleInteger {
         return create(a - b)
     }
-    
-    
+
+
     fun min(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> if (value <= other.value) this else other
@@ -192,7 +192,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> if (value.toBigIntegerSafe() <= other.value.toBigIntegerSafe()) this else other
         }
     }
-    
+
     fun max(other: FlexibleInteger): FlexibleInteger {
         return when {
             value is Int && other.value is Int -> if (value >= other.value) this else other
@@ -203,7 +203,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> if (value.toBigIntegerSafe() >= other.value.toBigIntegerSafe()) this else other
         }
     }
-    
+
     override fun compareTo(other: FlexibleInteger): Int {
         return when {
             value is Int && other.value is Int -> value.compareTo(other.value)
@@ -214,7 +214,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> value.toBigIntegerSafe().compareTo(other.value.toBigIntegerSafe())
         }
     }
-    
+
     val bigDecimal: BigDecimal
         get() {
             return when (value) {
@@ -224,7 +224,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
                 else -> BigDecimal(value.toBigIntegerSafe())
             }
         }
-    
+
     fun toFlexibleDecimal(): FlexibleDecimal {
         return when (value) {
             is Int -> FlexibleDecimal.create(value)
@@ -233,15 +233,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
-    
-    fun toDouble(): Double {
-        return when (value) {
-            is Int -> value.toDouble()
-            is Long -> value.toDouble()
-            else -> throw NumberFormatException("Value cannot be safely converted to Double.")
-        }
-    }
-    
+
     private fun Number.toBigIntegerSafe(): BigInteger {
         return when (this) {
             is BigInteger -> this
@@ -250,7 +242,7 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
-    
+
     fun getLevel(): Int {
         return when (value) {
             0 -> 1
@@ -259,11 +251,11 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
                 val bitLength = value.bitLength()
                 return if (value.shiftRight(bitLength).bitCount() == 1) bitLength else bitLength + 1
             }
-            
+
             else -> throw IllegalArgumentException("Unsupported number type")
         }
     }
-    
+
     /*    fun hudFormatted(): String {
             if (value == 0) return "0"
             return if (value is Int) {
@@ -290,26 +282,26 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
                 else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
             }
         }*/
-    
-    
+
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is FlexibleInteger) return false
         return value == other.value
     }
-    
+
     override fun hashCode(): Int {
         return value.hashCode()
     }
-    
+
     override fun toString(): String {
         return ("${value}")
     }
-    
+
     companion object {
         // New static map to hold previously created instances
         private val instances: ConcurrentHashMap<Number, FlexibleInteger> = ConcurrentHashMap<Number, FlexibleInteger>()
-        
+
         val NEGATIVE_ONE = create(-1)
         val ZERO = create(0)
         val ONE = create(1)
@@ -320,9 +312,9 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         private val INT_MAX_BIG_INTEGER = Int.MAX_VALUE.toBigInteger()
         private val LONG_MIN_BIG_INTEGER = Long.MIN_VALUE.toBigInteger()
         private val LONG_MAX_BIG_INTEGER = Long.MAX_VALUE.toBigInteger()
-        
+
         private var hits = 0L
-        
+
         // Static factory method to create new FlexibleInteger instances
         fun create(initialValue: Number): FlexibleInteger {
             hits++

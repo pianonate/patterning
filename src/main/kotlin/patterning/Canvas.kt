@@ -4,11 +4,6 @@ package patterning
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
-import java.awt.Point
-import java.math.MathContext
-import java.math.RoundingMode
-import kotlin.math.log2
-import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
@@ -20,6 +15,11 @@ import processing.core.PConstants.P3D
 import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
+import java.awt.Point
+import java.math.MathContext
+import java.math.RoundingMode
+import kotlin.math.log2
+import kotlin.math.roundToInt
 
 class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(

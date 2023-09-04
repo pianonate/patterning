@@ -39,21 +39,21 @@ class MovementHandler(private val pattern: Pattern) {
         }
 
         val currentDirectionKeys = directions.filter { movementKeys.contains(it.key) }.map { it.key }.toSet()
-        
+
         if (currentDirectionKeys != lastDirectionKeys) {
             moveAmount = initialMoveAmount
         }
         lastDirectionKeys = currentDirectionKeys
-        
+
         pattern.move(moveX, moveY)
     }
-    
+
     companion object {
         const val WEST = PApplet.LEFT
         const val EAST = PApplet.RIGHT
         const val NORTH = PApplet.UP
         const val SOUTH = PApplet.DOWN
-        
+
         private val pressedKeys = KeyHandler.pressedKeys
 
         private val directions = arrayOf(

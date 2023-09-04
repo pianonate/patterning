@@ -23,23 +23,6 @@ fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
     else
         this)
 }
-
-/**
- * Double extension functions
- */
-// Extension function to count decimal places in a Double
-fun Double.countDecimalPlaces(): Int {
-    val str = this.toString()
-    val index = str.indexOf(".")
-    return if (index < 0) {
-        0
-    } else {
-        str.length - index - 1
-    }
-}
-
-
-
 // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
 // now that i'm thinking about it, this is probably the required precision for a float
 // which is what the cell.cellSize is - especially for really small numbers
@@ -73,7 +56,7 @@ private val largeNumberNames = arrayOf(
 )
 
 private fun FlexibleInteger.formatLargeNumber(): String {
-    
+
     val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
     val exponent = bigIntegerValue.toString().length - 1
     val index = (exponent - 3) / 3
@@ -83,7 +66,7 @@ private fun FlexibleInteger.formatLargeNumber(): String {
             val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
             "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
         }
-        
+
         else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
     }
 }

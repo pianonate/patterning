@@ -7,9 +7,8 @@ package patterning.actions
  */
 enum class KeyState(val value: String) {
     PRESSED("pressed"),
-    RELEASED("released"),
-    TYPED("typed");
-    
+    RELEASED("released");
+
     override fun toString(): String {
         return value
     }

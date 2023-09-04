@@ -7,23 +7,23 @@ import patterning.pattern.PatternEventType
 import processing.event.KeyEvent
 
 class ToggleHighlightControl private constructor(builder: Builder) : Control(builder) {
-    
+
     init {
         builder.resetOnNew?.registerObserver(PatternEventType.PatternSwapped) {
             // if a new pattern is loaded we stop 'yaw-ing' as it's too confusing from a ux perspective
             isHighlightFromKeypress = false
         }
     }
-    
+
     override fun onMouseReleased() {
         super.onMouseReleased()
         toggleHighlight()
     }
-    
+
     override fun notifyGlobalKeyPress(event: KeyEvent) {
         toggleHighlight()
     }
-    
+
     class Builder(
         canvas: Canvas,
         callback: KeyCallback,
@@ -34,5 +34,5 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
         Control.Builder(canvas, callback, iconName, size) {
         override fun build() = ToggleHighlightControl(this)
     }
-    
+
 }

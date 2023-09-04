@@ -1,11 +1,5 @@
 package patterning.life
 
-import java.awt.Toolkit
-import java.awt.datatransfer.DataFlavor
-import java.awt.datatransfer.UnsupportedFlavorException
-import java.io.IOException
-import java.net.URISyntaxException
-import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -28,6 +22,12 @@ import processing.core.PApplet
 import processing.core.PConstants.TWO_PI
 import processing.core.PGraphics
 import processing.core.PVector
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.io.IOException
+import java.net.URISyntaxException
+import kotlin.math.roundToInt
 
 
 class LifePattern(

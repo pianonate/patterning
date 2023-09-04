@@ -25,18 +25,18 @@ class UX(
     private val canvas: Canvas,
     private val pattern: Pattern
 ) : KeyEventObserver {
-    
+
     private val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
     private val ux = canvas.getNamedGraphicsReference(Theme.uxGraphics)
     private val hudText: TextPanel
     private val countdownText: TextPanel
-    
+
     init {
         KeyHandler.addKeyObserver(this)
-        
+
         keyCallbackFactory.setupSimpleKeyCallbacks()
         setupControls()
-        
+
         hudText = TextPanel.Builder(
             canvas = canvas,
             hAlign = AlignHorizontal.RIGHT,
@@ -45,7 +45,7 @@ class UX(
             .textSize(Theme.hudTextSize)
             .wrap()
             .build().also { Drawer.add(it) }
-        
+
         // startup text
         TextPanel.Builder(canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
             .textSize(Theme.startupTextSize)
@@ -58,7 +58,7 @@ class UX(
                 Theme.startupTextTransitionDuration
             )
             .build().also { Drawer.add(it) }
-        
+
         countdownText = TextPanel.Builder(
             canvas,
             Theme.countdownText,
@@ -73,7 +73,7 @@ class UX(
             .wrap()
             .build()
     }
-    
+
     /**
      * only invoke handlePlay if it's not the key that already toggles play mode
      * it doesn't feel like good design to have to explicitly check for this key
@@ -83,50 +83,50 @@ class UX(
         // have a special case for the one key that would also handle play/pause as it's actual function
         handleCountdownInterrupt()
     }
-    
+
     override fun notifyGlobalKeyRelease(event: KeyEvent) {
         // do nothing
     }
-    
+
     private fun handleCountdownInterrupt() {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
             RunningModeController.pause()
         }
     }
-    
+
     fun draw() {
-        
+
         hudText.message = pattern.getHUDMessage()
-        
+
         ux.graphics.beginDraw()
         ux.graphics.clear()
         Drawer.drawAll()
         ux.graphics.endDraw()
         pApplet.image(ux.graphics, 0f, 0f)
     }
-    
+
     fun newPattern(patternName: String) {
         displayPatternName(patternName)
         startCountdown()
     }
-    
+
     private fun startCountdown() {
         if (Drawer.isManaging(countdownText)) {
             Drawer.remove(countdownText)
         }
-        
+
         // don't need countdowns for testing
         if (RunningModeController.isTesting) {
             return
         }
-        
+
         countdownText.startDisplay()
         Drawer.add(countdownText)
     }
-    
+
     private fun displayPatternName(patternName: String) {
-        
+
         TextPanel.Builder(canvas, patternName, AlignHorizontal.LEFT, AlignVertical.TOP)
             .textSize(Theme.startupTextSize)
             .fadeInDuration(Theme.startupTextFadeInDuration)
@@ -139,12 +139,12 @@ class UX(
             )
             .build().also { Drawer.add(it) }
     }
-    
+
     private fun setupControls() {
-        
+
         val transitionDuration = Theme.controlPanelTransitionDuration
         val panels = mutableListOf<ControlPanel>()
-        
+
         if (pattern is Movable) {
             panels.add(
                 ControlPanel.Builder(canvas, AlignHorizontal.LEFT, AlignVertical.CENTER)
@@ -160,13 +160,13 @@ class UX(
                         addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
                         addControl("center.png", keyCallbackFactory.callbackCenterView)
                         addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
-                        
+
                     }.build()
             )
         }
-        
+
         panels.add(
-            
+
             ControlPanel.Builder(canvas, AlignHorizontal.CENTER, AlignVertical.TOP)
                 .apply {
                     transition(
@@ -175,7 +175,7 @@ class UX(
                         transitionDuration
                     )
                     setOrientation(Orientation.HORIZONTAL)
-                    
+
                     if (pattern is NumberedPatternLoader) addControl(
                         "random.png",
                         keyCallbackFactory.callbackRandomPattern
@@ -187,21 +187,21 @@ class UX(
                         )
                         addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
                     }
-                    
+
                     // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
                     addPlayPauseControl(
                         "play.png",
                         "pause.png",
                         keyCallbackFactory.callbackPause,
                     )
-                    
+
                     //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
                     if (pattern is Steppable) addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
                     if (pattern is Rewindable) addControl("rewind.png", keyCallbackFactory.callbackRewind)
-                    
+
                 }.build()
         )
-        
+
         panels.add(
             ControlPanel.Builder(canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
                 .apply {
@@ -241,11 +241,11 @@ class UX(
                     }
                 }.build()
         )
-        
+
         MouseEventManager.addAll(panels)
         Drawer.addAll(panels)
     }
-    
+
     fun mouseReleased() {
         handleCountdownInterrupt()
     }

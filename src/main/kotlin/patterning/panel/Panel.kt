@@ -1,7 +1,5 @@
 package patterning.panel
 
-import java.awt.MouseInfo
-import java.util.OptionalInt
 import patterning.Canvas
 import patterning.Drawable
 import patterning.GraphicsReference
@@ -12,6 +10,8 @@ import patterning.panel.Transition.TransitionDirection
 import patterning.panel.Transition.TransitionType
 import processing.core.PGraphics
 import processing.core.PVector
+import java.awt.MouseInfo
+import java.util.OptionalInt
 
 /**
  * Panel is the base of all UI elements in Patterning
@@ -45,15 +45,15 @@ import processing.core.PVector
  *   with methods from across the hierarchy.
  */
 abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEventReceiver {
-    
-    
+
+
     internal var parentPanel: Panel? = null
     internal val canvas: Canvas
-    
+
     // alignment
     private val alignAble: Boolean
     private val radius: OptionalInt
-    
+
     // size & positioning
     var position: PVector = PVector()
     var width: Int
@@ -61,20 +61,20 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     protected var fillColor: Int
     var hAlign: AlignHorizontal
     var vAlign: AlignVertical
-    
+
     // transition
     private var transitionAble: Boolean
     private var transition: Transition? = null
-    
+
     // PGraphics and callbacks
     internal var parentGraphicsReference: GraphicsReference
-    
+
     // returns a reference to the ControlPanel container PGraphics for any Control
     private val parentGraphics: PGraphics
         get() = parentGraphicsReference.graphics
-    
+
     internal lateinit var panelGraphics: PGraphics
-    
+
     // mouse stuff
     var isPressed = false
     var isHovering = false
@@ -82,7 +82,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     private var transitionDirection: TransitionDirection?
     private var transitionType: TransitionType?
     private var transitionDuration: Int
-    
+
     init {
         setPosition(builder.x, builder.y)
         canvas = builder.canvas
@@ -97,24 +97,24 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         transitionType = builder.transitionType
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
-        
+
         parentGraphicsReference = canvas.getNamedGraphicsReference(Theme.uxGraphics) // drawingContext.getPGraphics()
-        
+
         // we don't say ux graphics here because sometimes the parentGraphics is the ux
         // and sometimes it's going to be the graphics from a container panel so we need to
         // be using the correct one when we do invoke alignment
         initPanelGraphics()
-        
+
         if (transitionAble) {
             transition = Transition(canvas, transitionDirection!!, transitionType!!, transitionDuration)
         }
     }
-    
+
     fun setPosition(x: Int, y: Int) {
         position.x = x.toFloat()
         position.y = y.toFloat()
     }
-    
+
     /**
      * we need PGraphics to be created in relation to their parent so you can't
      * create a new one from the canvas here
@@ -126,7 +126,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             creator = parentGraphics.parent
         )
     }
-    
+
     override fun onMousePressed() {
         isPressed = isMouseOverMe
         if (isPressed) {
@@ -134,64 +134,64 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             isHoveringPrevious = true
         }
     }
-    
+
     override fun onMouseReleased() {
         if (isMouseOverMe) {
             isPressed = false
         }
     }
-    
+
     override fun mousePressedOverMe(): Boolean {
         return isMouseOverMe
     }
-    
+
     fun setTransition(direction: TransitionDirection?, type: TransitionType?, duration: Int) {
         transitionDirection = direction
         transitionType = type
         transitionDuration = duration
         transitionAble = true
     }
-    
+
     open fun updatePanelGraphics() {}
-    
+
     //public void draw(PGraphics parentBuffer) {
     override fun draw() {
-        
+
         /* some subclasses (e.g. TextPanel) need to adjust the panelBuffer before drawing */
         updatePanelGraphics()
-        
+
         panelGraphics.beginDraw()
         panelGraphics.pushStyle()
-        
+
         panelGraphics.clear()
         panelGraphics.fill(fillColor)
-        
+
         // handle alignment if requested
         if (alignAble) {
             updateAlignment()
         }
-        
+
         drawPanelRect()
-        
+
         // subclass of Panels (such as a Control) can provide an implementation to be called at this point
         panelSubclassDraw()
         panelGraphics.popStyle()
         panelGraphics.endDraw()
         image()
-        
-        
+
+
     }
-    
+
     override fun image() {
         if (this is TextPanel) parentGraphics.blendMode(Theme.blendMode)
-        
+
         if (transitionAble && transition!!.isTransitioning) {
             transition!!.image(panelGraphics, position.x, position.y)
         } else {
             parentGraphics.image(panelGraphics, position.x, position.y)
         }
     }
-    
+
     private fun drawPanelRect() {
         // output the background Rect for this panel
         panelGraphics.noStroke()
@@ -201,7 +201,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             panelGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
         }
     }
-    
+
     private fun updateAlignment() {
         var posX = 0
         var posY = 0
@@ -217,9 +217,9 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         }
         setPosition(posX, posY)
     }
-    
+
     protected abstract fun panelSubclassDraw()
-    
+
     // used in isMouseOverMe when a Panel contains other Panels
     // can walk up the hierarchy if you have nested panels
     private val effectivePosition: PVector
@@ -232,7 +232,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             } else {
                 position
             }
-    
+
     /**
      * a problem for another day is why the magic value of -1 works for mouseX and mouseY
      * currently i just eyeballed it and it works but it needs a deterministic explanation
@@ -243,7 +243,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                 parentPanel?.let {
                     // the parent is a Panel, which has a PGraphics panelBuffer which has its PApplet
                     val pApplet = it.panelGraphics.parent
-                    
+
                     // our Patterning class extends Processing so we can use it here also
                     val patterningPApplet = pApplet as PatterningPApplet
                     if (patterningPApplet.draggingDrawing) {
@@ -274,7 +274,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                 false
             }
         }
-    
+
     abstract class Builder {
         val canvas: Canvas
         var x = 0
@@ -289,13 +289,13 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         var transitionType: TransitionType? = null
         var transitionDuration = 0
         var radius: OptionalInt = OptionalInt.empty()
-        
+
         // used by Control
         constructor(canvas: Canvas, width: Int, height: Int) {
             setRect(x = 0, y = 0, width = width, height = height) // parent positioned
             this.canvas = canvas
         }
-        
+
         // used by TextPanel for explicitly positioned text
         constructor(
             canvas: Canvas,
@@ -307,20 +307,20 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             setAlignment(hAlign, vAlign, false)
             this.canvas = canvas
         }
-        
+
         private fun setRect(x: Int, y: Int, width: Int, height: Int) {
             this.x = x
             this.y = y
             this.width = width
             this.height = height
         }
-        
+
         private fun setAlignment(hAlign: AlignHorizontal, vAlign: AlignVertical, alignAble: Boolean) {
             alignable = alignAble
             this.hAlign = hAlign
             this.vAlign = vAlign
         }
-        
+
         // used by BasicPanel for demonstration purposes
         constructor(
             canvas: Canvas,
@@ -333,7 +333,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             setAlignment(hAlign, vAlign, true)
             this.canvas = canvas
         }
-        
+
         //  ContainerPanel(s) and TextPanel are often alignHorizontal / vAlign able
         constructor(
             canvas: Canvas,
@@ -344,17 +344,17 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             setAlignment(hAlign, vAlign, true)
             this.canvas = canvas
         }
-        
+
         fun fill(fill: Int) = apply { this.fill = fill }
-        
+
         fun transition(direction: TransitionDirection?, type: TransitionType?, duration: Int) = apply {
             transitionDirection = direction
             transitionType = type
             transitionDuration = duration
         }
-        
+
         fun radius(radius: Int) = apply { this.radius = OptionalInt.of(radius) }
-        
+
         abstract fun build(): Panel
     }
 }

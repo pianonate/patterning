@@ -93,7 +93,7 @@ object KeyHandler {
         }
     }
 
-    private fun invokeFeature(callback:KeyCallback, event:KeyEvent) {
+    private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
         if (RunningModeController.isUXAvailable) {
             // disallow feature invoking during testing
             callback.invokeFeature()
@@ -105,7 +105,7 @@ object KeyHandler {
         }
     }
 
-    private fun handleKeyEvent(callback:KeyCallback, event: KeyEvent, keyState: KeyState) {
+    private fun handleKeyEvent(callback: KeyCallback, event: KeyEvent, keyState: KeyState) {
         val keyCode = event.keyCode
 
         if (keyState == KeyState.PRESSED) {

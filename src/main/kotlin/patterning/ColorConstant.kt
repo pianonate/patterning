@@ -9,7 +9,7 @@ class ColorConstant(private val p: PApplet) {
     private var previousColor = 0u
     private var transitionStartTime: Long = 0
     private var isInitialized = false
-    
+
     fun setColor(newColor: UInt) {
         if (isInitialized) {
             previousColor = currentColor
@@ -21,7 +21,7 @@ class ColorConstant(private val p: PApplet) {
         }
         currentColor = newColor
     }
-    
+
     val color: Int
         get() {
             if (!transitionInProgress) {

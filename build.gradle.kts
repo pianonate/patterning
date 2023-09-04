@@ -29,7 +29,7 @@ dependencies {
 
 application {
     mainClass.set(patterningMain)
-    
+
     applicationDefaultJvmArgs = listOf(
         "-Djava.library.path=${platforms.joinToString(separator = ":") { "$pathToJoglLibraries$it" }}",
         "-Xmx16G",
@@ -53,11 +53,11 @@ tasks.register<JavaExec>("profile") {
 
 tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    
+
     manifest {
         attributes["Main-Class"] = patterningMain
     }
-    
+
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
 

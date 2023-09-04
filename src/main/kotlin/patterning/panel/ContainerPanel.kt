@@ -6,13 +6,13 @@ import patterning.GraphicsReference
 abstract class ContainerPanel protected constructor(builder: Builder) : Panel(builder) {
     private val childPanels: List<Panel>
     val orientation: Orientation
-    
+
     init {
         childPanels = ArrayList(builder.childPanels)
         check(childPanels.isNotEmpty()) { "ContainerPanel must have at least one child panel" }
         orientation = builder.orientation
         updatePanelSize()
-        
+
         // super(builder) causes Panel to create an initial panelGraphics
         // to draw into.  However ContainerPanel's don't have a width and height until
         // we've run updatePanelSize as we don't know how
@@ -28,7 +28,7 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
             child.parentGraphicsReference = GraphicsReference(panelGraphics, "ContainerPanel")
         }
     }
-    
+
     private fun updatePanelSize() {
         var totalWidth = 0
         var totalHeight = 0
@@ -43,19 +43,19 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
                 totalWidth = totalWidth.coerceAtLeast(child.width)
             }
         }
-        
+
         // Update parent size
         width = totalWidth
         height = totalHeight
     }
-    
+
     override fun panelSubclassDraw() {
         // Draw child panels
         for (child in childPanels) {
             child.draw()
         }
     }
-    
+
     // Constructor for aligned Panel with default dimensions (0, 0)
     // addPanel will update the actual dimensions
     abstract class Builder
@@ -64,13 +64,13 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
             canvas, hAlign, vAlign
         ) {
         val childPanels: MutableList<Panel> = ArrayList()
-        
+
         var orientation = Orientation.HORIZONTAL
-        
+
         fun setOrientation(orientation: Orientation) = apply { this.orientation = orientation }
-        
+
         fun addPanel(child: Panel) = apply { childPanels.add(child) }
-        
+
         abstract override fun build(): ContainerPanel
     }
 }
