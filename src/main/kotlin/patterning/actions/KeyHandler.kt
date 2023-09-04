@@ -55,7 +55,7 @@ object KeyHandler {
             _pressedKeys.clear() // clear movement keys
         }
 
-        println("in keyEvent with action:${event.action} key:${event.key} keyCode:${event.keyCode}")
+     //   println("in keyEvent with action:${event.action} key:${event.key} keyCode:${event.keyCode}")
 
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
 
@@ -84,7 +84,7 @@ object KeyHandler {
         val matchingCallback = keyCallbacks.values.find { it.matches(localKeyEvent) } ?: return
 
         if (pApplet.keyPressed) {
-            println("in pre with action:${localKeyEvent.action} key:${localKeyEvent.key} keyCode:${localKeyEvent.keyCode} now call handleKeyEvent with KeyState.PRESSED")
+           // println("in pre with action:${localKeyEvent.action} key:${localKeyEvent.key} keyCode:${localKeyEvent.keyCode} now call handleKeyEvent with KeyState.PRESSED")
 
             // Handle repeated invocation here
             if (matchingCallback.invokeEveryDraw) {

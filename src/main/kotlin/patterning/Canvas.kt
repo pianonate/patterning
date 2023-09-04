@@ -176,7 +176,13 @@ class Canvas(private val pApplet: PApplet) {
     fun getGraphics(width: Int, height: Int, creator: PApplet = pApplet, useOpenGL: Boolean = false): PGraphics {
 
         return if (useOpenGL) {
-            creator.createGraphics(width, height, P3D).also { it.smooth(OPENGL_PGRAPHICS_SMOOTH) }
+            creator.createGraphics(width, height, P3D).also {
+                it.smooth(OPENGL_PGRAPHICS_SMOOTH)
+                it.beginDraw()
+                // necessary so ghost mode looks correct for alpha values when rotating in 3 dimensions
+                it.hint(PGraphics.DISABLE_DEPTH_TEST)
+                it.endDraw()
+            }
         } else {
             // we use plain ol' renderer for the UX
             return creator.createGraphics(width, height)

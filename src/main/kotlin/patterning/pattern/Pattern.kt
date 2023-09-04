@@ -70,7 +70,6 @@ abstract class Pattern(
     private inner class GhostOff : GhostState {
         override fun update(graphics: PGraphics) {
             graphics.clear()
-            graphics.hint(PGraphics.DISABLE_DEPTH_TEST)
             graphics.fill(Theme.cellColor)
         }
 
@@ -79,13 +78,12 @@ abstract class Pattern(
 
     private inner class GhostKeyFrame : GhostState {
         private var emitted = false
+
         override fun update(graphics: PGraphics) {
             if (emitted) {
                 transition()
                 return
             }
-
-            graphics.hint(PGraphics.DISABLE_DEPTH_TEST)
             graphics.fill(Theme.cellColor)
             emitted = true
         }
@@ -96,7 +94,6 @@ abstract class Pattern(
 
     private inner class Ghosting : GhostState {
         override fun update(graphics: PGraphics) {
-            graphics.hint(PGraphics.DISABLE_DEPTH_TEST)
             graphics.fill(Theme.ghostColor)
         }
 
