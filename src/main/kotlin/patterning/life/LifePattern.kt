@@ -26,6 +26,7 @@ import patterning.util.ResourceManager
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants.TWO_PI
+import processing.core.PGraphics
 import processing.core.PVector
 
 
@@ -347,7 +348,7 @@ class LifePattern(
      * this code is not currently in use - but it may be the basis for being able to draw an infinite screen by controlling perspective...
      * so that while rotating the drawing can disappear into the distance
      */
-    /* private fun handle3D() {
+    /* private fun handlePerspective3D() {
 
          if (isYawing) {
              val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
@@ -455,21 +456,26 @@ class LifePattern(
     ) {
 
         val width = size.roundToIntIfGreaterThanReference(size)
+        val posX = x.roundToIntIfGreaterThanReference(size)
+        val posY = y.roundToIntIfGreaterThanReference(size)
 
         if (width > 4 && is3D) {
             pattern.graphics.push()
-            pattern.graphics.translate(x, y)
+            pattern.graphics.translate(posX, posY)
             pattern.graphics.strokeWeight(1f)
             pattern.graphics.stroke(Theme.boxOutlineColor)
             pattern.graphics.rotateX(lerpRotate())
             pattern.graphics.box(width)
             pattern.graphics.pop()
         } else {
+
             pattern.graphics.rect(
-                x.roundToIntIfGreaterThanReference(size),
-                y.roundToIntIfGreaterThanReference(size),
+                posX,
+                posY,
                 width, width
             )
+            //println("($posX,$posY) - $size")
+
         }
     }
 
@@ -490,18 +496,56 @@ class LifePattern(
 
         val graphics = pattern.graphics
         graphics.beginDraw()
+
+        // Save the current transformation matrix
+        pattern.graphics.push()
+
         updateGhost(pattern.graphics)
 
-        // necessary for low zoom size
-        graphics.noStroke()
+        updateStroke(graphics)
 
         updateBoundsChanged(life.root.bounds)
 
-        // handle3D()
+        handle3D()
 
-        // Save the current transformation matrix
-        pattern.graphics.pushMatrix()
+        drawVisibleNodes(life)
 
+        drawBounds(life)
+
+        pattern.graphics.pop()
+
+        graphics.endDraw()
+
+        // reset the position in case you've had mouse moves
+        lifeFormPosition[0f] = 0f
+    }
+
+    // getLowestEntryFromRoot returns a DrawNodePathEntry - which contains the node
+    // found by traversing to the first node that has children visible on screen
+    // for very large drawing this can save hundreds of stack calls
+    // making debugging (at least) easier
+    //
+    // there may be some performance gain to this although i doubt it's a lot
+    // this is more for the thrill of solving a complicated problem and it's
+    // no small thing that stack traces become much smaller
+    private fun drawVisibleNodes(life: LifeUniverse) {
+        with(nodePath.getLowestEntryFromRoot(life.root)) {
+            actualRecursions = FlexibleInteger.ZERO
+
+
+            val startingNode = node
+            val size = size
+            val offsetX = left
+            val offsetY = top
+
+            startDelta = life.root.level - startingNode.level
+
+            drawNodeRecurse(startingNode, size, offsetX, offsetY)
+
+        }
+    }
+
+    private fun handle3D() {
         // Move to the center of the object
         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
 
@@ -531,39 +575,16 @@ class LifePattern(
 
         // Move back by half the object's size
         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
+    }
 
+    private fun updateStroke(graphics: PGraphics) {
+        if (canvas.zoomLevelAsFloat > 4f) {
+            graphics.stroke(Theme.boxOutlineColor)
+            graphics.strokeWeight((canvas.zoomLevelAsFloat / 64f).roundToInt().toFloat())
 
-        // getStartingEntry returns a DrawNodePathEntry - which contains the node
-        // found by traversing to the first node that has children visible on screen
-        // for very large drawing this can save hundreds of stack calls
-        // making debugging (at least) easier
-        //
-        // there may be some performance gain to this although i doubt it's a lot
-        // this is more for the thrill of solving a complicated problem and it's
-        // no small thing that stack traces become much smaller
-        with(nodePath.getLowestEntryFromRoot(life.root)) {
-            actualRecursions = FlexibleInteger.ZERO
-
-
-            val startingNode = node
-            val size = size
-            val offsetX = left
-            val offsetY = top
-
-            startDelta = life.root.level - startingNode.level
-
-            drawNodeRecurse(startingNode, size, offsetX, offsetY)
-
+        } else {
+            graphics.noStroke()
         }
-
-        drawBounds(life)
-
-        pattern.graphics.popMatrix()
-
-        graphics.endDraw()
-
-        // reset the position in case you've had mouse moves
-        lifeFormPosition[0f] = 0f
     }
 
     private fun drawNodeRecurse(

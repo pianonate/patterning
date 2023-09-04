@@ -8,7 +8,7 @@ open class UXLightConstants internal constructor() {
     
     // colors
     open val backgroundColor = 0xFFu
-    open val boxOutlineColor = 0x88FFFFFFu
+    open val boxOutlineColor = 0xDDFFFFFFu
     open val cellColor = 0xFF000000u
     open val ghostColor = 0x44000000u
     open val controlColor = 0xDD404040u

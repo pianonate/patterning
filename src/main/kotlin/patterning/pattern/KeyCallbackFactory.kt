@@ -18,7 +18,7 @@ class KeyCallbackFactory(
     private val pattern: Pattern,
     private val canvas: Canvas
 ) {
-    
+
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
             addKeyCallback(callbackGhostModeKeyFrame)
@@ -30,7 +30,7 @@ class KeyCallbackFactory(
             addKeyCallback(callbackZoomOut)
         }
     }
-    
+
     val callback3DYaw = SimpleKeyCallback(
         key = SHORTCUT_3D_YAW,
         invokeFeatureLambda =
@@ -63,7 +63,7 @@ class KeyCallbackFactory(
         },
         usage = "rotate on the z axis"
     )
-    
+
     val callback3D = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_3D, KeyEvent.SHIFT)),
         invokeFeatureLambda = {
@@ -73,8 +73,8 @@ class KeyCallbackFactory(
         },
         usage = "three dimensional mode - try me!"
     )
-    
-    
+
+
     // callbacks all constructed with factory methods to make them easy to read and write
     val callbackPause = SimpleKeyCallback(
         key = SHORTCUT_PLAY_PAUSE,
@@ -83,7 +83,7 @@ class KeyCallbackFactory(
         },
         usage = "play and pause"
     )
-    
+
     val callbackGhostMode = SimpleKeyCallback(
         key = SHORTCUT_GHOST_MODE,
         invokeFeatureLambda = {
@@ -91,7 +91,7 @@ class KeyCallbackFactory(
         },
         usage = "ghost mode. Also try ${KeyCombo.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
     )
-    
+
     val callbackGhostModeKeyFrame = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.META)),
         invokeFeatureLambda = {
@@ -99,7 +99,7 @@ class KeyCallbackFactory(
         },
         usage = "ghost mode emit a key frame - while ghosting - try me!"
     )
-    
+
     private val callbackNumberedPattern = SimpleKeyCallback(
         keys = ('1'..'9').toSet(),
         invokeFeatureLambda = {
@@ -110,7 +110,7 @@ class KeyCallbackFactory(
         },
         usage = "load one of the first 9 patterns by pressing one of the # keys"
     )
-    
+
     val callbackStepFaster = SimpleKeyCallback(
         key = SHORTCUT_STEP_FASTER,
         invokeFeatureLambda = {
@@ -120,7 +120,7 @@ class KeyCallbackFactory(
         },
         usage = "step faster - double the generations each step"
     )
-    
+
     val callbackStepSlower = SimpleKeyCallback(
         key = SHORTCUT_STEP_SLOWER,
         invokeFeatureLambda = {
@@ -130,7 +130,7 @@ class KeyCallbackFactory(
         },
         usage = "step slower - halve the generations per step"
     )
-    
+
     val callbackRewind = SimpleKeyCallback(
         key = SHORTCUT_REWIND,
         invokeFeatureLambda = {
@@ -140,7 +140,7 @@ class KeyCallbackFactory(
         },
         usage = "rewind the current life form back to generation 0"
     )
-    
+
     val callbackRandomPattern = SimpleKeyCallback(
         key = SHORTCUT_RANDOM_FILE,
         invokeFeatureLambda = {
@@ -152,7 +152,7 @@ class KeyCallbackFactory(
         },
         usage = "random pattern from from the built-in library"
     )
-    
+
     private val callbackZoomIn = SimpleKeyCallback(
         // we want it to handle both = and shift= (+) the same way
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)),
@@ -162,6 +162,7 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom in centered on the mouse",
+        invokeEveryDraw = true,
     )
 
     private val callbackZoomOut = SimpleKeyCallback(
@@ -172,8 +173,9 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom out centered on the mouse",
+        invokeEveryDraw = true,
     )
-    
+
     val callbackZoomInCenter = SimpleKeyCallback(
         key = SHORTCUT_ZOOM_CENTERED,
         invokeFeatureLambda = {
@@ -182,8 +184,9 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom in centered on the middle of the screen",
+        invokeEveryDraw = true,
     )
-    
+
     val callbackZoomOutCenter = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT)),
         invokeFeatureLambda = {
@@ -192,8 +195,9 @@ class KeyCallbackFactory(
             }
         },
         usage = "zoom out centered on the middle of the screen",
+        invokeEveryDraw = true,
     )
-    
+
     val callbackDrawBounds = SimpleKeyCallback(
         key = SHORTCUT_DISPLAY_BOUNDS,
         invokeFeatureLambda = {
@@ -201,9 +205,9 @@ class KeyCallbackFactory(
                 (pattern as Movable).toggleDrawBounds()
             }
         },
-        usage = "border drawn around the part of the universe containing living cells"
+        usage = "border drawn around the part of the universe containing living cells",
     )
-    
+
     val callbackCenterView = SimpleKeyCallback(
         key = SHORTCUT_CENTER,
         invokeFeatureLambda = {
@@ -213,7 +217,7 @@ class KeyCallbackFactory(
         },
         usage = "center the view"
     )
-    
+
     val callbackUndoMovement = SimpleKeyCallback(
         keyCombos = setOf(
             KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
@@ -226,7 +230,7 @@ class KeyCallbackFactory(
         },
         usage = "undo  movements / actions such as centering or fitting to screen"
     )
-    
+
     val callbackFitUniverseOnScreen = SimpleKeyCallback(
         key = SHORTCUT_FIT_UNIVERSE,
         invokeFeatureLambda = {
@@ -236,7 +240,7 @@ class KeyCallbackFactory(
         },
         usage = "fit the pattern to the screen"
     )
-    
+
     val callbackThemeToggle = SimpleKeyCallback(
         key = SHORTCUT_THEME_TOGGLE,
         invokeFeatureLambda = {
@@ -261,7 +265,7 @@ class KeyCallbackFactory(
         },
         usage = "performance test"
     )
-    
+
     private val callbackPaste = SimpleKeyCallback(
         keyCombos = setOf(
             KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
@@ -274,7 +278,7 @@ class KeyCallbackFactory(
         },
         usage = "paste a new pattern into the app - currently only supports RLE encoded lifeforms"
     )
-    
+
     private val callbackMovement = SimpleKeyCallback(
         keyCombos = setOf(
             MovementHandler.WEST,
@@ -299,7 +303,7 @@ class KeyCallbackFactory(
         usage = "move pattern with arrow. hold down two keys to move diagonally",
         invokeEveryDraw = true,
     )
-    
+
     val callbackSingleStep = SimpleKeyCallback(
         key = SHORTCUT_SINGLE_STEP,
         invokeFeatureLambda = {
@@ -309,7 +313,7 @@ class KeyCallbackFactory(
         },
         usage = "toggle single step mode where which advances one generation at a time"
     )
-    
+
     companion object {
         private const val SHORTCUT_3D = '3'
         private const val SHORTCUT_3D_PITCH = 'p'
@@ -328,11 +332,11 @@ class KeyCallbackFactory(
         private const val SHORTCUT_STEP_FASTER = ']'
         private const val SHORTCUT_STEP_SLOWER = '['
         private const val SHORTCUT_UNDO = 'z'
-        
+
         // private const val SHORTCUT_DRAW_SPEED = 's'
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
-        
+
         const val SHORTCUT_ZOOM_IN = '='
         const val SHORTCUT_ZOOM_CENTERED = 'z'
         const val SHORTCUT_ZOOM_OUT = '-'
