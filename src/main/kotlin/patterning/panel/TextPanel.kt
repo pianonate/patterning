@@ -1,5 +1,6 @@
 package patterning.panel
 
+import kotlin.math.ceil
 import patterning.Canvas
 import patterning.Drawable
 import patterning.Drawer
@@ -9,7 +10,6 @@ import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
 import java.util.*
-import kotlin.math.ceil
 
 class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable {
 
@@ -118,7 +118,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     /**
-     * the passed in graphics could be any graphics that has had the the correct
+     * the passed in graphics could be any graphics that has had the correct
      * font set on it
      */
     private fun setPanelSize(graphics: PGraphics) {
@@ -349,16 +349,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     private inner class FadeInState : State {
         override fun update() {
             val elapsedTime = System.currentTimeMillis() - transitionTime
-            fadeValue = if (fadeInDuration.isPresent) {
-                PApplet.constrain(
-                    PApplet.map(elapsedTime.toFloat(), 0f, fadeInDuration.asInt.toFloat(), 0f, 255f).toInt(),
-                    0,
-                    255
-                )
-            } else {
-                // fade values range from 0 to 255 so the lerpColor will generate a value from 0 to 1
-                255
-            }
+            fadeValue = getFadeValue(elapsedTime.toFloat(), fadeInDuration, 0, 255)
             if (fadeInDuration.isEmpty || elapsedTime >= fadeInDuration.asInt) {
                 transition()
             }
@@ -378,6 +369,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
     private inner class DisplayState : State {
         override fun update() {
+
             val elapsedTime = System.currentTimeMillis() - transitionTime
             if (displayDuration.isPresent && elapsedTime > displayDuration.asInt.toLong()) {
                 transition()
@@ -418,7 +410,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
         override fun transition() {
             runMethod?.run() // natural transition
-            //removeFromDrawableList()
             state = FadeOutState()
             transitionTime = System.currentTimeMillis()
         }
@@ -426,20 +417,11 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
 
     private inner class FadeOutState : State {
         override fun update() {
+
             val elapsedTime = System.currentTimeMillis() - transitionTime
 
-            fadeValue = if (fadeOutDuration.isPresent) {
-                PApplet.constrain(
-                    PApplet.map(elapsedTime.toFloat(), 0f, fadeOutDuration.asInt.toFloat(), 0f, 255f).toInt(),
-                    0,
-                    255
-                )
-            } else {
-                // fade values range from 0 to 255 so the lerpColor will generate a value from 0 to 1
-                255
-            }
-
-            if (fadeOutDuration.isEmpty || elapsedTime >= fadeOutDuration.asInt) {
+            fadeValue = getFadeValue(elapsedTime.toFloat(),fadeOutDuration,255, 0)
+           if (fadeOutDuration.isEmpty || elapsedTime >= fadeOutDuration.asInt) {
                 transition()
             }
         }
@@ -447,5 +429,19 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         override fun transition() {
             removeFromDrawableList()
         }
+    }
+
+    private fun getFadeValue(elapsedTime:Float,duration:OptionalInt, startVal:Int, endVal:Int):Int {
+       return if (duration.isPresent) {
+            PApplet.constrain(
+                PApplet.map(elapsedTime, 0f, duration.asInt.toFloat(), startVal.toFloat(), endVal.toFloat()).toInt(),
+                0,
+                255
+            )
+        } else {
+            // fade values range from 0 to 255 so the lerpColor will generate a value from 0 to 1
+            255
+        }
+
     }
 }

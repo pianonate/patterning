@@ -16,7 +16,7 @@ object Theme {
     const val shortTransitionDuration = 300
     const val startupTextDisplayDuration = 2000
     const val startupTextFadeInDuration = 1000
-    const val startupTextFadeOutDuration = 1000
+    const val startupTextFadeOutDuration = 2000
     const val startupTextTransitionDuration = 2000
     const val themeTransitionDuration = 500
 
