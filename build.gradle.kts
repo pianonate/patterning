@@ -46,6 +46,16 @@ java {
     }
 }
 
+sourceSets {
+    getByName("main") {
+        kotlin.srcDirs("src/main/kotlin")
+        resources.srcDirs("src/main/resources")
+    }
+    getByName("test") {
+        kotlin.srcDirs("src/test/kotlin")
+    }
+}
+
 tasks.register<JavaExec>("profile") {
     sourceSets["main"].runtimeClasspath.also { this.classpath = it }
     jvmArgs("-agentpath:/Applications/YourKit-Java-Profiler-2022.9.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000")

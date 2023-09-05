@@ -580,8 +580,6 @@ class LifePattern(
     private fun updateStroke(graphics: PGraphics) {
         if (canvas.zoomLevelAsFloat > 4f) {
             graphics.stroke(Theme.boxOutlineColor)
-            graphics.strokeWeight((canvas.zoomLevelAsFloat / 64f).roundToInt().toFloat())
-
         } else {
             graphics.noStroke()
         }
