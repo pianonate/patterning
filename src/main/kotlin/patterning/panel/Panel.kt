@@ -296,7 +296,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
             this.canvas = canvas
         }
 
-        // used by TextPanel for explicitly positioned text
+        // used by TextPanel for explicitly positioned text, such as hoverText
         constructor(
             canvas: Canvas,
             position: PVector,

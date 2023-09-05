@@ -32,6 +32,7 @@ class PatterningPApplet : PApplet() {
     override fun settings() {
         properties = Properties(this, canvas)
         size(properties.width, properties.height, P3D)
+        // fullScreen()
     }
 
     /**
@@ -114,10 +115,10 @@ class PatterningPApplet : PApplet() {
         ux.draw()
     }
 
-    override fun windowResized() {
+/*    override fun windowResized() {
         println("override fun windowResized")
         canvas.shouldUpdatePGraphics = false
-    }
+    }*/
 
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()

@@ -4,6 +4,8 @@ package patterning
 import com.jogamp.newt.opengl.GLWindow
 import com.jogamp.opengl.GLAutoDrawable
 import com.jogamp.opengl.GLEventListener
+import kotlin.math.log2
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
@@ -18,8 +20,6 @@ import processing.core.PImage
 import java.awt.Point
 import java.math.MathContext
 import java.math.RoundingMode
-import kotlin.math.log2
-import kotlin.math.roundToInt
 
 class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(
@@ -38,9 +38,9 @@ class Canvas(private val pApplet: PApplet) {
 
     var openGLResizing = false
         private set
+    var shouldUpdateOpenGLPGraphics = false
+        private set
 
-    // disallow during resize or you hit a heinous bug
-    var shouldUpdatePGraphics = false
 
     var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
@@ -60,8 +60,18 @@ class Canvas(private val pApplet: PApplet) {
         method = suspend {
             delay(RESIZE_FINISHED_DELAY_MS)
             openGLResizing = false
-            shouldUpdatePGraphics = true
+            shouldUpdateOpenGLPGraphics = true
+
+            // apparently it is safe to update the UX PGraphics but
+            // for some reason we can't update the openGL without crashing
+            // so do what you can because when the user is holding down the resize handle
+            // if they move the screen then a draw is allowed through and then the UX will update to
+            // be in near the correct position
+            // it's a hack but i don't know how to make this better
+            updateResizableGraphicsReferences(updateOpenGL = false)
+
             println("resize finished!")
+
         })
 
     fun listenToResize() {
@@ -80,9 +90,9 @@ class Canvas(private val pApplet: PApplet) {
                 //
                 // because shit is happening on other threads in the JOGL code that processing uses,
                 // and we can't do a goddamn thing about it
-                PApplet.println("resize:$width, $height")
+                PApplet.println("listenToResize:$width, $height")
                 openGLResizing = true
-                shouldUpdatePGraphics = false
+                shouldUpdateOpenGLPGraphics = false
                 resizeJob.cancelAndWait()
                 resizeJob.start()
             }
@@ -226,26 +236,30 @@ class Canvas(private val pApplet: PApplet) {
     private fun handleResize() {
         val resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
 
-
         if (resized) {
             updateDimensions()
         }
 
-        if (shouldUpdatePGraphics) {
-            println("resized:$resized shouldUpdate:true resizing:$openGLResizing")
-            updateResizableGraphicsReferences()
-            shouldUpdatePGraphics = false
+        if (shouldUpdateOpenGLPGraphics && !resized) {
+            // all of this trickery just because we can't create an openGL PGraphics
+            // while the window is resizing - unfortunately we have to wait as long as possible
+            updateResizableGraphicsReferences(updateOpenGL = true)
+            shouldUpdateOpenGLPGraphics = false
         }
     }
 
-    private fun updateResizableGraphicsReferences() {
-        graphicsReferenceCache.forEach { (_, reference) ->
-            if (reference.isResizable) {
-                val newGraphics = getGraphics(pApplet.width, pApplet.height, useOpenGL = reference.useOpenGL)
-                reference.updateGraphics(newGraphics)
+    private fun updateResizableGraphicsReferences(updateOpenGL: Boolean = false) {
+        // filter for whether they are openGL or not as we create them at different times
+        graphicsReferenceCache.filter { (_, reference) -> reference.useOpenGL == updateOpenGL }
+            .forEach { (_, reference) ->
+                if (reference.isResizable) {
+                    val newGraphics = getGraphics(pApplet.width, pApplet.height, useOpenGL = reference.useOpenGL)
+                    reference.updateGraphics(newGraphics)
+                }
             }
-        }
+
     }
+
 
     /**
      * internal for PatterningPApplet to delegate drawing background
@@ -435,7 +449,7 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val RESIZE_FINISHED_DELAY_MS = 300L
+        private const val RESIZE_FINISHED_DELAY_MS = 30L
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
 
         private const val DEFAULT_ZOOM_LEVEL = 1f

@@ -16,12 +16,13 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     // sizes
     private val textMargin = Theme.defaultTextMargin
     private val doubleTextMargin = textMargin * 2
-    private var textColor
-        get() = Theme.textColor
+    private var textColor = Theme.textColor
     private val textSize: Float
     private val textWidth: OptionalInt
     private val wrap: Boolean
     private val offsetBottom: Boolean
+    private val offsetAlignRightWidth: Boolean
+
 
     // optional capabilities
     private val fadeInDuration: OptionalInt
@@ -57,6 +58,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // construct the TextPanel with the default Panel constructor
         // after that we'll figure out the variations we need to support
         message = builder.message
+        lastMessage = builder.message
 
         // just for keyboard shortcuts for now
         keepShortCutTogether = builder.keepShortCutTogether
@@ -66,6 +68,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         wrap = builder.wrap
 
         offsetBottom = builder.offsetBottom
+        offsetAlignRightWidth = builder.offsetAlignRightWidth
 
         displayDuration = builder.displayDuration
         fadeInDuration = builder.fadeInDuration
@@ -84,8 +87,6 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         // but right now there's only one instance in the whole app so i'm not
         // going to sweat it
         runMethod = builder.runMethod ?: startDisplay().let { null }
-
-
     }
 
     fun startDisplay() {
@@ -101,12 +102,15 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
      * UX.graphics as it causes flickering when beginDraw, endDraw are called on it
      */
     private fun setTextPanelGraphics() {
+
         val sizingGraphics = sizing.graphics
         sizingGraphics.beginDraw()
         setFont(graphics = sizingGraphics)
         wrapText(graphics = sizingGraphics)
         sizingGraphics.endDraw()
         setPanelSize(graphics = sizingGraphics)
+
+        handleAlignRightOffset()
 
         // val graphics = canvas.getNamedGraphicsReference(message, width, height, resizable = false).graphics
 
@@ -115,6 +119,19 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         setFont(newGraphics)
         newGraphics.endDraw()
         panelGraphics = newGraphics
+    }
+
+    /**
+     * hovertext defaults to 255 and even if the width changes
+     * the position works for left, top and bottom
+     * but it doesn't work for alignRight so we have to offset it
+     * we can't know in advance so we pass in a parameter to deal with it
+     */
+    private fun handleAlignRightOffset() {
+        if (offsetAlignRightWidth) {
+            val offset = getTextWidth() - width
+            position.x += offset
+        }
     }
 
     /**
@@ -224,7 +241,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     override fun panelSubclassDraw() {
 
         // used for fading in the text and the various states
-        // a patterning.ux.panel.TextPanel can advance through
+        // a patterning.ux.panel.TextPanel can s through
         state.update()
         drawMultiLineText()
     }
@@ -290,6 +307,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         internal var fadeOutDuration = OptionalInt.empty()
         internal var displayDuration = OptionalInt.empty()
         internal var offsetBottom = false
+        internal var offsetAlignRightWidth = false
 
         // Countdown variables
         internal var countdownFrom = OptionalInt.empty()
@@ -314,6 +332,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             message: String,
             position: PVector,
             offsetBottom: Boolean,
+            offsetAlignRightWidth: Boolean,
             hAlign: AlignHorizontal,
             vAlign: AlignVertical
         ) : super(
@@ -321,6 +340,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         ) {
             this.message = message
             this.offsetBottom = offsetBottom
+            this.offsetAlignRightWidth = offsetAlignRightWidth
         }
 
         fun textSize(textSize: Int) = apply { this.textSize = textSize.toFloat() }

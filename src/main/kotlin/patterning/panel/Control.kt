@@ -89,6 +89,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
         val orientation = localParentPanel.orientation
 
+        var offsetAlignRightWidth = false
+
         when (orientation) {
             Orientation.VERTICAL -> {
                 when (localParentPanel.hAlign) {
@@ -102,6 +104,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                         hoverX = hoverX - margin - hoverTextWidth
                         hoverY = (hoverY + position.y).toInt()
                         transitionDirection = TransitionDirection.LEFT
+                        offsetAlignRightWidth = true
                     }
 
                 }
@@ -139,6 +142,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             hoverMessage,
             PVector(hoverX.toFloat(), hoverY.toFloat()),
             offsetBottom = offsetBottom,
+            offsetAlignRightWidth = offsetAlignRightWidth,
             AlignHorizontal.LEFT,
             AlignVertical.TOP
         ).apply {
