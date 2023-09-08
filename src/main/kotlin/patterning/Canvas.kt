@@ -69,9 +69,7 @@ class Canvas(private val pApplet: PApplet) {
             // be in near the correct position
             // it's a hack but i don't know how to make this better
             updateResizableGraphicsReferences(updateOpenGL = false)
-
             println("resize finished!")
-
         })
 
     fun listenToResize() {
@@ -449,7 +447,7 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val RESIZE_FINISHED_DELAY_MS = 30L
+        private const val RESIZE_FINISHED_DELAY_MS = 100L
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
 
         private const val DEFAULT_ZOOM_LEVEL = 1f

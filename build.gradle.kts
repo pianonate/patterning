@@ -62,7 +62,7 @@ tasks.register<JavaExec>("profile") {
 }
 
 tasks.jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.WARN
 
     manifest {
         attributes["Main-Class"] = patterningMain

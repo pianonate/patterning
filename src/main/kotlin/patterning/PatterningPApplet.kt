@@ -31,8 +31,10 @@ class PatterningPApplet : PApplet() {
 
     override fun settings() {
         properties = Properties(this, canvas)
-        size(properties.width, properties.height, P3D)
-        // fullScreen()
+       // size(properties.width, properties.height, P3D)
+        fullScreen(P3D)
+
+
     }
 
     /**
@@ -48,7 +50,7 @@ class PatterningPApplet : PApplet() {
 
         windowTitle("patterning")
 
-        windowResizable(true)
+     //   windowResizable(true)
 
         Theme.init(this)
 
@@ -117,7 +119,6 @@ class PatterningPApplet : PApplet() {
 
 /*    override fun windowResized() {
         println("override fun windowResized")
-        canvas.shouldUpdatePGraphics = false
     }*/
 
     override fun mousePressed() {

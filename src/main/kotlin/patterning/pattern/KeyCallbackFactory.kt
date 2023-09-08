@@ -142,7 +142,7 @@ class KeyCallbackFactory(
     )
 
     val callbackRandomPattern = SimpleKeyCallback(
-        key = SHORTCUT_RANDOM_FILE,
+        keyCombos = setOf(KeyCombo(SHORTCUT_RANDOM_FILE, KeyEvent.META)),
         invokeFeatureLambda = {
             runBlocking {
                 if (pattern is NumberedPatternLoader) {
@@ -318,7 +318,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_3D = '3'
         private const val SHORTCUT_3D_PITCH = 'p'
         private const val SHORTCUT_3D_YAW = 'y'
-        private const val SHORTCUT_3D_ROLL = 'l'
+        private const val SHORTCUT_3D_ROLL = 'r'
 
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'

@@ -17,12 +17,12 @@ class Properties(private val pApplet: PApplet, private val canvas: Canvas) {
         JSONObject()
     }
 
-    val width: Int
+  /*  val width: Int
         get() = properties.getInt("width", 800)
 
     val height: Int
         get() = properties.getInt("height", 800)
-
+*/
     fun getProperty(propertyName: String, defaultValue: String = ""): String {
         return properties.getString(propertyName, defaultValue)
     }
@@ -85,7 +85,6 @@ class Properties(private val pApplet: PApplet, private val canvas: Canvas) {
         pApplet.surface.setLocation(x, y)
 
     }
-
 
     companion object {
         private const val FILE_NAME = "patterning_properties.json"

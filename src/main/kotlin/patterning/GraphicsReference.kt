@@ -2,6 +2,7 @@ package patterning
 
 import processing.core.PGraphics
 
+@Suppress("unused")
 class GraphicsReference(
     initialGraphics: PGraphics,
     val name: String,

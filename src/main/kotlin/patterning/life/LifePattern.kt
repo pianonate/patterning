@@ -85,6 +85,7 @@ class LifePattern(
 
     init {
 
+       // pattern = GraphicsReference(pApplet.graphics, Theme.patternGraphics, isResizable = true, useOpenGL = true)
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics, useOpenGL = true)
         hudInfo = HUDStringBuilder()
 
