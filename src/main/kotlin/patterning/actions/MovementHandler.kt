@@ -9,23 +9,13 @@ class MovementHandler(private val pattern: Pattern) {
 
     data class Direction(val key: Int, val moveY: Float, val moveX: Float)
 
-    private var lastDirectionKeys = setOf<Int>()
-    private val initialMoveAmount = 5f
-    private var moveAmount = initialMoveAmount
-
     fun handleRequestedMovement() {
-        val movementKeys = pressedKeys.intersect(setOf(WEST, EAST, NORTH, SOUTH))
+        val movementKeys = KeyHandler.pressedKeys.intersect(setOf(WEST, EAST, NORTH, SOUTH))
 
         if (movementKeys.isNotEmpty()) {
             handleMovementKeys(movementKeys)
-            println("$movementKeys $pressedKeys")
-
-
-        } else {
-            lastDirectionKeys = setOf()
         }
     }
-
 
     private fun handleMovementKeys(movementKeys: Set<Int>) {
         var moveX = 0f
@@ -33,17 +23,10 @@ class MovementHandler(private val pattern: Pattern) {
 
         directions.forEach { direction ->
             if (movementKeys.contains(direction.key)) {
-                moveX += direction.moveX * moveAmount / movementKeys.size
-                moveY += direction.moveY * moveAmount / movementKeys.size
+                moveX += direction.moveX * MOVE_AMOUNT / movementKeys.size
+                moveY += direction.moveY * MOVE_AMOUNT / movementKeys.size
             }
         }
-
-        val currentDirectionKeys = directions.filter { movementKeys.contains(it.key) }.map { it.key }.toSet()
-
-        if (currentDirectionKeys != lastDirectionKeys) {
-            moveAmount = initialMoveAmount
-        }
-        lastDirectionKeys = currentDirectionKeys
 
         pattern.move(moveX, moveY)
     }
@@ -54,7 +37,7 @@ class MovementHandler(private val pattern: Pattern) {
         const val NORTH = PApplet.UP
         const val SOUTH = PApplet.DOWN
 
-        private val pressedKeys = KeyHandler.pressedKeys
+        private const val MOVE_AMOUNT = 5f
 
         private val directions = arrayOf(
             Direction(WEST, 0f, -1f),

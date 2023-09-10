@@ -15,7 +15,8 @@ class PausedState() : RunningState(RunningMode.PAUSED) {
     }
 
     override fun pause() {
-        throw IllegalStateException("Pause is only toggled from play, not set directly")
+        // pause can be set by countdownInterrupted, not just from toggle - so it can be a no-op if pause
+        // is invoked during pause or play - so do nothing
     }
 
     override fun load() {

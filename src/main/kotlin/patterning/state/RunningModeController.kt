@@ -2,8 +2,8 @@ package patterning.state
 
 object RunningModeController {
 
-    private var currentRunningState: RunningState = PlayingState()
-    internal var previousRunningState: RunningState = PausedState()
+    private var currentRunningState: RunningState = PausedState()
+    internal var previousRunningState: RunningState = LoadingState()
 
     val runningMode: RunningMode
         get() = currentRunningState.runningMode
@@ -57,6 +57,7 @@ object RunningModeController {
     }
 
     internal fun changeState(newState: RunningState) {
+
         previousRunningState = currentRunningState
         currentRunningState = newState
         notifyRunningModeChangedObservers()

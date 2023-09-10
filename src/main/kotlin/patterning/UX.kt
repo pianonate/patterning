@@ -32,6 +32,7 @@ class UX(
     private val countdownText: TextPanel
 
     init {
+
         KeyHandler.addKeyObserver(this)
 
         keyCallbackFactory.setupSimpleKeyCallbacks()

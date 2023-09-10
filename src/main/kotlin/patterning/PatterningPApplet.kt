@@ -33,8 +33,6 @@ class PatterningPApplet : PApplet() {
         properties = Properties(this, canvas)
        // size(properties.width, properties.height, P3D)
         fullScreen(P3D)
-
-
     }
 
     /**
@@ -79,13 +77,13 @@ class PatterningPApplet : PApplet() {
         // observers have been registered!
         pattern.loadPattern()
 
-        // the coupling is weird here - we'll see...
-        movementHandler = MovementHandler(pattern)
-
         // ux sets up key callbacks and we can now print them out
         println(KeyHandler.usageText)
 
         KeyHandler.registerKeyHandler(this)
+
+        // the coupling is weird here - we'll see...
+        movementHandler = MovementHandler(pattern)
 
     }
 
@@ -116,10 +114,6 @@ class PatterningPApplet : PApplet() {
         pattern.draw()
         ux.draw()
     }
-
-/*    override fun windowResized() {
-        println("override fun windowResized")
-    }*/
 
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()

@@ -56,7 +56,7 @@ class FlexibleDecimal private constructor(initialValue: Number) :
 
             value is BigDecimal && other.value is BigDecimal -> handleBigDecimalAddition(value, other.value)
 
-            // the possible choice for else is going to be either an Float or a Double
+            // the possible choice for else is going to be either a Float or a Double
             else -> handleBigDecimalAddition(value.toBigDecimalSafe(), other.value.toBigDecimalSafe())
         }
     }
@@ -104,8 +104,8 @@ class FlexibleDecimal private constructor(initialValue: Number) :
     }
 
     /**
-     * scale is primarily used by BoundingBox and it helps to align the precision for all the calculations
-     * for debugging it is easier to have everything line up so we take a minor performance hit - to just
+     * scale is primarily used by BoundingBox, and it helps to align the precision for all the calculations
+     * for debugging it is easier to have everything line up, so we take a minor performance hit - to just
      * simply scale all the 'major players' to the same precision
      */
     fun scale(mc: MathContext): FlexibleDecimal {
@@ -189,7 +189,7 @@ class FlexibleDecimal private constructor(initialValue: Number) :
             handleBigDecimalSubtraction(
                 a.toBigDecimal(),
                 b.toBigDecimal()
-            ) // create(bigDecimalResult) // Use BigDecimal if precision is lost or result is outside of the range
+            )
         } else {
             val result = create(doubleResult)
 
@@ -230,12 +230,13 @@ class FlexibleDecimal private constructor(initialValue: Number) :
     private fun handleFloatDivision(a: Float, b: Float, context: MathContext): FlexibleDecimal {
         val floatResult = a / b
 
+        // Use Double if precision is lost or result is outside the range for Float
         return if (floatResult.isInfinite() || floatResult.isNaN()) {
             handleDoubleDivision(
                 a.toDouble(),
                 b.toDouble(),
                 context
-            ) // Use Double if precision is lost or result is outside of the range for Float
+            )
         } else {
 
             val result = create(floatResult)

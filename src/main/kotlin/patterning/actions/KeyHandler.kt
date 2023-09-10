@@ -7,7 +7,8 @@ import processing.event.KeyEvent
 object KeyHandler {
 
     private val _pressedKeys: MutableSet<Int> = mutableSetOf()
-    val pressedKeys: Set<Int> get() = _pressedKeys
+    val pressedKeys: Set<Int>
+        get() = _pressedKeys
 
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
     private val keyEventObservers: MutableList<KeyEventObserver> = mutableListOf()
@@ -55,7 +56,7 @@ object KeyHandler {
             _pressedKeys.clear() // clear movement keys
         }
 
-     //   println("in keyEvent with action:${event.action} key:${event.key} keyCode:${event.keyCode}")
+        // println("in keyEvent with action:${event.action} key:${event.key} keyCode:${event.keyCode}")
 
         val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
 
@@ -95,7 +96,9 @@ object KeyHandler {
 
     private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
         if (RunningModeController.isUXAvailable) {
+
             // disallow feature invoking during testing
+            // println("invoking feature - state:${RunningModeController.runningMode}")
             callback.invokeFeature()
 
             // Check if matchingCallback is KeyObservable - for callbacks that notify other parts of the system
