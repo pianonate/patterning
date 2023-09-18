@@ -45,18 +45,16 @@ class SimpleKeyCallback(
         invokeEveryDraw,
     )
 
-    private val _keyCombos = keyCombos
-
     // the interface of KeyCallback
-    override fun invokeFeature() = invokeFeatureLambda.invoke()
+    override fun invokeFeature() = invokeFeatureLambda()
 
     // properties
-    override val keyCombos: Set<KeyCombo> = _keyCombos.toSet()
-    override val validKeyCombosForCurrentOS: Set<KeyCombo> = _keyCombos.filter { it.isValidForCurrentOS }.toSet()
-    override val isValidForCurrentOS: Boolean = _keyCombos.any { it.isValidForCurrentOS }
+    override val keyCombos: Set<KeyCombo> = keyCombos.toSet()
+    override val validKeyCombosForCurrentOS: Set<KeyCombo> = keyCombos.filter { it.isValidForCurrentOS }.toSet()
+    override val isValidForCurrentOS: Boolean = keyCombos.any { it.isValidForCurrentOS }
 
     // methods
-    override fun matches(event: KeyEvent): Boolean = _keyCombos.any { it.matches(event) }
+    override fun matches(event: KeyEvent): Boolean = keyCombos.any { it.matches(event) }
 
     override fun toString(): String {
         val keysStrings = validKeyCombosForCurrentOS.map { it.toString() }

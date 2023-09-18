@@ -2,19 +2,14 @@ package patterning.actions
 
 import patterning.state.RunningModeController
 
-object MouseEventManager {
-    private val mouseEventReceivers: MutableList<MouseEventReceiver> = ArrayList()
+object MouseEventNotifier {
+    private val mouseEventReceivers: MutableSet<MouseEventReceiver> = HashSet()
 
-    fun addReceiver(receiver: MouseEventReceiver) {
-        mouseEventReceivers.add(receiver)
-    }
+    fun addReceiver(receiver: MouseEventReceiver) = mouseEventReceivers.add(receiver)
+    fun addAll(receivers: Collection<MouseEventReceiver>) = mouseEventReceivers.addAll(receivers)
 
-    fun addAll(receivers: Collection<MouseEventReceiver>) {
-        mouseEventReceivers.addAll(receivers)
-    }
-
-    var isMousePressedOverAnyReceiver = false
-        private set
+    val isMousePressedOverAnyReceiver: Boolean
+        get() = pressedReceiver != null
 
     private var pressedReceiver: MouseEventReceiver? = null
 
@@ -22,14 +17,13 @@ object MouseEventManager {
         if (!RunningModeController.isUXAvailable) {
             return
         }
-        isMousePressedOverAnyReceiver = false
         pressedReceiver = null
-        for (receiver in mouseEventReceivers) {
+        mouseEventReceivers.forEach { receiver ->
             if (!isMousePressedOverAnyReceiver && receiver.mousePressedOverMe()) {
-                isMousePressedOverAnyReceiver = true
                 pressedReceiver = receiver
+                receiver.onMousePressed()
+                return@forEach  // Early exit
             }
-            receiver.onMousePressed()
         }
     }
 
@@ -38,7 +32,7 @@ object MouseEventManager {
             return
         }
         if (pressedReceiver != null) {
-            pressedReceiver!!.onMouseReleased()
+            pressedReceiver?.onMouseReleased()
             pressedReceiver = null
         }
     }

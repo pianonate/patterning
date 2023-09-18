@@ -447,7 +447,7 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val RESIZE_FINISHED_DELAY_MS = 100L
+        private const val RESIZE_FINISHED_DELAY_MS = 200L
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
 
         private const val DEFAULT_ZOOM_LEVEL = 1f

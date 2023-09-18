@@ -8,7 +8,7 @@ import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyEventObserver
 import patterning.actions.KeyHandler
-import patterning.actions.MouseEventManager
+import patterning.actions.MouseEventNotifier
 import patterning.actions.MouseEventReceiver
 import patterning.panel.Transition.TransitionDirection
 import patterning.state.RunningModeController
@@ -29,7 +29,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         size = builder.size
         fillColor = Theme.controlColor
         keyCallback = registerCallback(builder.callback)
-        MouseEventManager.addReceiver(this)
+        MouseEventNotifier.addReceiver(this)
         icon = loadIcon(builder.iconName)
         hoverMessage = keyCallback.usage +
                 Theme.shortcutParenStart +

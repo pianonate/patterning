@@ -1,7 +1,7 @@
 package patterning
 
 import patterning.actions.KeyHandler
-import patterning.actions.MouseEventManager
+import patterning.actions.MouseEventNotifier
 import patterning.pattern.Movable
 import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
@@ -110,8 +110,8 @@ class PatterningPApplet : PApplet() {
     override fun mousePressed() {
         lastMouseX += mouseX.toFloat()
         lastMouseY += mouseY.toFloat()
-        MouseEventManager.onMousePressed()
-        mousePressedOverReceiver = MouseEventManager.isMousePressedOverAnyReceiver
+        MouseEventNotifier.onMousePressed()
+        mousePressedOverReceiver = MouseEventNotifier.isMousePressedOverAnyReceiver
 
         // If the mouse press is not over any MouseEventReceiver, we consider it as over the drawing.
         draggingDrawing = !mousePressedOverReceiver
@@ -122,7 +122,7 @@ class PatterningPApplet : PApplet() {
             draggingDrawing = false
         } else {
             mousePressedOverReceiver = false
-            MouseEventManager.onMouseReleased()
+            MouseEventNotifier.onMouseReleased()
         }
         lastMouseX = 0f
         lastMouseY = 0f

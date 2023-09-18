@@ -2,7 +2,7 @@ package patterning
 
 import patterning.actions.KeyEventObserver
 import patterning.actions.KeyHandler
-import patterning.actions.MouseEventManager
+import patterning.actions.MouseEventNotifier
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
 import patterning.panel.ControlPanel
@@ -266,7 +266,7 @@ class UX(
                 }.build()
         )
 
-        MouseEventManager.addAll(panels)
+        MouseEventNotifier.addAll(panels)
         Drawer.addAll(panels)
     }
 
