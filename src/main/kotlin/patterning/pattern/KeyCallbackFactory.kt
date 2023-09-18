@@ -18,7 +18,7 @@ class KeyCallbackFactory(
     private val canvas: Canvas
 ) {
 
-   // private val movementHandler = MovementHandler(pattern)
+    // private val movementHandler = MovementHandler(pattern)
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -255,7 +255,7 @@ class KeyCallbackFactory(
         },
         usage = "toggle between dark and light themes"
     )
-   private val callbackPerfTest = SimpleKeyCallback(
+    private val callbackPerfTest = SimpleKeyCallback(
         keyCombos = setOf(
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
@@ -303,16 +303,20 @@ class KeyCallbackFactory(
             SOUTH
         ).map { KeyCombo(it) }.toSet(),
         invokeFeatureLambda = {
-                val movementKeys = KeyHandler.pressedKeys.intersect(setOf(
-                    WEST,
-                    EAST,
-                    NORTH,
-                    SOUTH
-                ))
+            if (pattern is Movable) {
+                val movementKeys = KeyHandler.pressedKeys.intersect(
+                    setOf(
+                        WEST,
+                        EAST,
+                        NORTH,
+                        SOUTH
+                    )
+                )
 
                 if (movementKeys.isNotEmpty()) {
                     handleMovementKeys(movementKeys)
                 }
+            }
         },
         usage = "move pattern with arrow. hold down two keys to move diagonally",
         invokeEveryDraw = true,
