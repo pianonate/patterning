@@ -6,7 +6,6 @@ import patterning.Theme
 import patterning.ThemeType
 import patterning.actions.KeyCombo
 import patterning.actions.KeyHandler
-import patterning.actions.MovementHandler
 import patterning.actions.SimpleKeyCallback
 import patterning.actions.ValidOS
 import patterning.state.RunningModeController
@@ -18,6 +17,8 @@ class KeyCallbackFactory(
     private val pattern: Pattern,
     private val canvas: Canvas
 ) {
+
+   // private val movementHandler = MovementHandler(pattern)
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -92,7 +93,7 @@ class KeyCallbackFactory(
         usage = "ghost mode. Also try ${KeyCombo.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
     )
 
-    val callbackGhostModeKeyFrame = SimpleKeyCallback(
+    private val callbackGhostModeKeyFrame = SimpleKeyCallback(
         keyCombos = setOf(KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.META)),
         invokeFeatureLambda = {
             pattern.stampGhostModeKeyFrame()
@@ -228,7 +229,8 @@ class KeyCallbackFactory(
                 canvas.undoMovement()
             }
         },
-        usage = "undo  movements / actions such as centering or fitting to screen"
+        usage = "undo  movements / actions such as centering or fitting to screen",
+        invokeEveryDraw = true
     )
 
     val callbackFitUniverseOnScreen = SimpleKeyCallback(
@@ -253,7 +255,7 @@ class KeyCallbackFactory(
         },
         usage = "toggle between dark and light themes"
     )
-    val callbackPerfTest = SimpleKeyCallback(
+   private val callbackPerfTest = SimpleKeyCallback(
         keyCombos = setOf(
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
@@ -279,26 +281,38 @@ class KeyCallbackFactory(
         usage = "paste a new pattern into the app - currently only supports RLE encoded lifeforms"
     )
 
+    private fun handleMovementKeys(movementKeys: Set<Int>) {
+        var moveX = 0f
+        var moveY = 0f
+
+        directions.forEach { direction ->
+            if (movementKeys.contains(direction.key)) {
+                moveX += direction.moveX * MOVE_AMOUNT / movementKeys.size
+                moveY += direction.moveY * MOVE_AMOUNT / movementKeys.size
+            }
+        }
+
+        pattern.move(moveX, moveY)
+    }
+
     private val callbackMovement = SimpleKeyCallback(
         keyCombos = setOf(
-            MovementHandler.WEST,
-            MovementHandler.EAST,
-            MovementHandler.NORTH,
-            MovementHandler.SOUTH
+            WEST,
+            EAST,
+            NORTH,
+            SOUTH
         ).map { KeyCombo(it) }.toSet(),
         invokeFeatureLambda = {
-            if (pattern is Movable) {
-                if (!KeyHandler.pressedKeys.any {
-                        it in listOf(
-                            MovementHandler.WEST,
-                            MovementHandler.EAST,
-                            MovementHandler.NORTH,
-                            MovementHandler.SOUTH
-                        )
-                    }) {
-                    canvas.saveUndoState()
+                val movementKeys = KeyHandler.pressedKeys.intersect(setOf(
+                    WEST,
+                    EAST,
+                    NORTH,
+                    SOUTH
+                ))
+
+                if (movementKeys.isNotEmpty()) {
+                    handleMovementKeys(movementKeys)
                 }
-            }
         },
         usage = "move pattern with arrow. hold down two keys to move diagonally",
         invokeEveryDraw = true,
@@ -337,8 +351,28 @@ class KeyCallbackFactory(
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
 
-        const val SHORTCUT_ZOOM_IN = '='
-        const val SHORTCUT_ZOOM_CENTERED = 'z'
-        const val SHORTCUT_ZOOM_OUT = '-'
+        private const val SHORTCUT_ZOOM_IN = '='
+        private const val SHORTCUT_ZOOM_CENTERED = 'z'
+        private const val SHORTCUT_ZOOM_OUT = '-'
+
+        private const val WEST = PApplet.LEFT
+        private const val EAST = PApplet.RIGHT
+        private const val NORTH = PApplet.UP
+        private const val SOUTH = PApplet.DOWN
+
+        private const val MOVE_AMOUNT = 5f
+
+        data class Direction(val key: Int, val moveY: Float, val moveX: Float)
+
+        val directions = arrayOf(
+            Direction(WEST, 0f, -1f),
+            Direction(NORTH, -1f, 0f),
+            Direction(EAST, 0f, 1f),
+            Direction(SOUTH, 1f, 0f),
+            Direction(NORTH + WEST, -1f, -1f),
+            Direction(NORTH + EAST, -1f, 1f),
+            Direction(SOUTH + WEST, 1f, -1f),
+            Direction(SOUTH + EAST, 1f, 1f)
+        )
     }
 }

@@ -61,15 +61,25 @@ tasks.register<JavaExec>("profile") {
     jvmArgs("-agentpath:/Applications/YourKit-Java-Profiler-2022.9.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000")
 }
 
-tasks.jar {
-    duplicatesStrategy = DuplicatesStrategy.WARN
+/*tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     manifest {
         attributes["Main-Class"] = patterningMain
     }
 
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}*/
+
+tasks.named<Copy>("processResources") {
+    duplicatesStrategy = DuplicatesStrategy.WARN
+    from("src/main/resources") {
+        include("**/*.rle")
+        include("**/*.png")
+        // Add your includes here
+    }
 }
+
 
 tasks.test {
     useJUnitPlatform()

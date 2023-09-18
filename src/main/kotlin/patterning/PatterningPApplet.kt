@@ -2,7 +2,6 @@ package patterning
 
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventManager
-import patterning.actions.MovementHandler
 import patterning.pattern.Movable
 import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
@@ -17,8 +16,6 @@ class PatterningPApplet : PApplet() {
     private lateinit var ux: UX
     private lateinit var pattern: Pattern
     private lateinit var properties: Properties
-    private lateinit var movementHandler: MovementHandler
-
 
     // used to control dragging the image around the screen with the mouse
     private var lastMouseX = 0f
@@ -81,10 +78,6 @@ class PatterningPApplet : PApplet() {
         println(KeyHandler.usageText)
 
         KeyHandler.registerKeyHandler(this)
-
-        // the coupling is weird here - we'll see...
-        movementHandler = MovementHandler(pattern)
-
     }
 
     private fun registerPatternObservers(pattern: Pattern) {
@@ -108,7 +101,6 @@ class PatterningPApplet : PApplet() {
 
         if (pattern is Movable) {
             canvas.updateZoom()
-            movementHandler.handleRequestedMovement()
         }
 
         pattern.draw()
