@@ -9,16 +9,6 @@ If you want to change something, make a pull request - i'd love to see what you 
 
 If you want to know what I want to do next, create an issue and I'll try to respond.
 
-once you get your environment set up and run the application, it will automatically load a pattern from resources. additionally you can press the numbers 1 - 9 on the keyboard to load other patterns
-
-### patterns on copy.sh
-
-You can also paste a valid RLE of a lifeform into it. Many can be found here:
-
-https://copy.sh/life/examples/
-
-Under the patterns column, pick one, click on the "pattern file" link, copy everything and paste it onto the canvas of this app,
-and then it will be off to the races.
 
 ## try out the code in your own environment
 
@@ -66,5 +56,17 @@ good luck - and let me know if any of this is wrong, or can be improved - I'd li
 for another day.
 
 ### trying it out
+once you get your environment set up and run the application, it will automatically load a pattern from resources. additionally you can press the numbers 1 - 9 on the keyboard to load other patterns
 
 There are some built in starting patterns - hooked up to the number keys (press 1 through 9).
+
+Or...
+
+### patterns on copy.sh
+
+You can also paste a valid RLE of a game of life lifeform into Patterning. Many examples can be found here:
+
+https://copy.sh/life/examples/
+
+Under the patterns column, pick one, click on the "pattern file" link, copy everything and paste it onto the canvas of this app,
+and then it will be off to the races.
