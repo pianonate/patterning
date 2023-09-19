@@ -58,12 +58,12 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
 
 
     private fun startPos(
-        orthogonalDimension: FlexibleDecimal,
         orthogonalStartWithOffset: FlexibleDecimal,
+        orthogonalDimensionSize: FlexibleDecimal,
         orthogonalCanvasSize: FlexibleDecimal
     ): Float {
         // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
-        val halfDimension = orthogonalDimension.divide(FlexibleDecimal.TWO, canvas.mc)
+        val halfDimension = orthogonalDimensionSize.divide(FlexibleDecimal.TWO, canvas.mc)
         val startPosDecimal = orthogonalStartWithOffset + halfDimension
 
         return when {
@@ -73,8 +73,8 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
         }
     }
 
-    private fun endPos(startWithOffset: FlexibleDecimal, boxSize: FlexibleDecimal, canvasSize: FlexibleDecimal): Float {
-        val endDecimal = startWithOffset + boxSize
+    private fun endPos(startWithOffset: FlexibleDecimal, dimensionSize: FlexibleDecimal, canvasSize: FlexibleDecimal): Float {
+        val endDecimal = startWithOffset + dimensionSize
 
         return if (endDecimal > canvasSize) canvasSize.toFloat() + POSITIVE_OFFSCREEN else endDecimal.toFloat()
     }
@@ -82,9 +82,13 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     // Calculate Lines
     private val horizontalLine: Line
         get() {
-            val startY = startPos(heightDecimal, topWithOffset, canvas.height)
+            val startY = startPos(orthogonalStartWithOffset = topWithOffset,
+                orthogonalDimensionSize = heightDecimal,
+                orthogonalCanvasSize = canvas.height)
 
-            val endX = endPos(leftWithOffset, widthDecimal, canvas.width)
+            val endX = endPos(startWithOffset = leftWithOffset,
+                dimensionSize = widthDecimal,
+                canvasSize = canvas.width)
 
             return Line(Point(left, startY), Point(endX, startY))
         }
@@ -92,9 +96,13 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     private val verticalLine: Line
         get() {
 
-            val startX = startPos(widthDecimal, leftWithOffset, canvas.width)
+            val startX = startPos(orthogonalStartWithOffset = leftWithOffset,
+                orthogonalDimensionSize = widthDecimal,
+                orthogonalCanvasSize = canvas.width)
 
-            val endY = endPos(topWithOffset, heightDecimal, canvas.height)
+            val endY = endPos(startWithOffset = topWithOffset,
+                dimensionSize = heightDecimal,
+                canvasSize = canvas.height)
 
             return Line(Point(startX, top), Point(startX, endY))
         }
