@@ -112,7 +112,7 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
         verticalLine.drawDashedLine(graphics)
     }
 
-    fun draw(graphics: PGraphics, drawCrosshair: Boolean = false) {
+    fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
 
         with(graphics) {
             push()
@@ -121,7 +121,7 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
             strokeWeight(Theme.strokeWeightBounds)
             rect(left, top, this@BoundingBox.width, this@BoundingBox.height)
 
-            if (drawCrosshair) {
+            if (drawCrossHair) {
                 drawCrossHair(graphics)
             }
 
@@ -134,50 +134,55 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
             x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
             y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
         }
+
+        operator fun component1(): Float = x
+        operator fun component2(): Float = y
     }
+
 
     private data class Line(val start: Point, val end: Point) {
 
         fun drawDashedLine(graphics: PGraphics) {
-
-            val x1 = start.x
-            val y1 = start.y
-            val x2 = end.x
-            val y2 = end.y
+            val (x1, y1) = start
+            val (x2, y2) = end
 
             val distance = PApplet.dist(x1, y1, x2, y2)
             val numDashes = distance / (Theme.dashedLineDashLength + Theme.dashedLineSpaceLength)
 
+            val dxDash = (x2 - x1) / numDashes / 2
+            val dyDash = (y2 - y1) / numDashes / 2
+            val dxSpace = (x2 - x1) / numDashes / 2
+            val dySpace = (y2 - y1) / numDashes / 2
+
             var draw = true
             var x = x1
             var y = y1
-            graphics.pushStyle()
-            graphics.strokeWeight(Theme.strokeWeightDashedLine)
-            for (i in 0 until (numDashes * 2).toInt()) {
-                if (draw) {
-                    // We limit the end of the dash to be at maximum the final point
-                    val dxDash = (x2 - x1) / numDashes / 2
-                    val dyDash = (y2 - y1) / numDashes / 2
-                    val endX = (x + dxDash).coerceAtMost(x2)
-                    val endY = (y + dyDash).coerceAtMost(y2)
-                    graphics.line(x, y, endX, endY)
+
+            with (graphics) {
+
+                push()
+                strokeWeight(Theme.strokeWeightDashedLine)
+
+                for (i in 0 until (numDashes * 2).toInt()) {
+                    val (dx, dy) = if (draw) dxDash to dyDash else dxSpace to dySpace
+                    val endX = (x + dx).coerceAtMost(x2)
+                    val endY = (y + dy).coerceAtMost(y2)
+
+                    if (draw)
+                        line(x, y, endX, endY)
+
                     x = endX
                     y = endY
-                } else {
-                    val dxSpace = (x2 - x1) / numDashes / 2
-                    val dySpace = (y2 - y1) / numDashes / 2
-                    x += dxSpace
-                    y += dySpace
+                    draw = !draw
                 }
-                draw = !draw
+                pop()
             }
-            graphics.popStyle()
         }
     }
 
     companion object {
 
-        // we draw the box just a bit off screen so it won't be visible
+        // we draw the box just a bit offscreen so it won't be visible
         // but if the box is more than a pixel, we need to push it further offscreen
         // since we're using a Theme constant we can change we have to account for it
         private const val POSITIVE_OFFSCREEN = Theme.strokeWeightBounds

@@ -126,8 +126,6 @@ class LifePattern(
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
 
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
-            //            hudInfo.addOrUpdate("actuals", actualRecursions)
-
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.lifeInfo.info
             patternInfo.forEach { (key, value) ->
@@ -656,7 +654,7 @@ class LifePattern(
 
         // left and top are defined by the zoom level (cell size) multiplied
         // by half the universe size which we start out with at the nw corner which is half the size negated
-        // each level in we add half of the size at that to the  create the new size for left and top
+        // each level in we add half of the size at that to create the new size for left and top
         // to that, we add the canvas.offsetX to left and canvasOffsetY to top
         //
         // the size at this level is then added to the left to get the right side of the universe
@@ -687,7 +685,7 @@ class LifePattern(
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
             val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
-            universeBox.draw(pattern.graphics, drawCrosshair = true)
+            universeBox.draw(pattern.graphics, drawCrossHair = true)
             currentLevel++
         }
     }
