@@ -8,7 +8,6 @@ import patterning.actions.KeyCombo
 import patterning.actions.KeyHandler
 import patterning.actions.SimpleKeyCallback
 import patterning.actions.ValidOS
-import patterning.actions.toKeyComboSet
 import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
@@ -18,6 +17,21 @@ class KeyCallbackFactory(
     private val pattern: Pattern,
     private val canvas: Canvas
 ) {
+    /**
+     * these are provided just for readability when instantiating SimpleKeyCallback
+     * if you come up with different ways that you want to create KeyCombos than these, just add another extension
+     * right now these are all invoked from KeyCallbackFactory so they're marked private so as not to pollute the
+     * namespace where they can't otherwise be used
+     */
+    private fun Char.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(KeyCombo(this.code))
+
+    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.map { KeyCombo(it.code) }.toCollection(LinkedHashSet())
+
+    private fun KeyCombo.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(this)
+
+    private fun Pair<KeyCombo, KeyCombo>.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(first, second)
+
+    private fun Set<Int>.toKeyComboSet():  LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
