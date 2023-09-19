@@ -27,9 +27,10 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
 
     override fun settings() {
+        fullScreen(P3D, 1)
+
         properties = Properties(this, canvas)
        // size(properties.width, properties.height, P3D)
-        fullScreen(P3D)
     }
 
     /**
@@ -42,14 +43,13 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
-
         windowTitle("patterning")
 
      //   windowResizable(true)
 
         Theme.init(this)
 
-        properties.setWindowPosition()
+        // properties.setWindowPosition()
 
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
