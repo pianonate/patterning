@@ -1,7 +1,7 @@
 # patterning
 
 This project is a visualizer of (to begin with) [John Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life), a cellular automata that he created in 1970. There's
-a way better visualize out there called golly, which goes beyond just the game of life, but this one is mine and I'm
+a way better visualizer out there called golly, which goes beyond just the game of life, but this one is mine and I'm
 trying to learn things by working on it. Right now, I'm learning, exploring and optimizing the hashlife algorithm, as
 well as kotlin idioms.
 
