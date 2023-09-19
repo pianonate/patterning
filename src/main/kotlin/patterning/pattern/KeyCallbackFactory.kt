@@ -83,7 +83,6 @@ class KeyCallbackFactory(
             pattern.handlePlayPause()
         },
         usage = "play and pause",
-        invokeEveryDraw = true,
     )
 
     val callbackGhostMode = SimpleKeyCallback(

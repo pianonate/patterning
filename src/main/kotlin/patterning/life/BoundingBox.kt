@@ -3,6 +3,7 @@ package patterning.life
 import patterning.Canvas
 import patterning.Theme
 import patterning.util.FlexibleDecimal
+import patterning.util.FlexibleInteger
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -10,85 +11,93 @@ import processing.core.PGraphics
 class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
 
     private val mc = canvas.mc
-    private val leftBD = bounds.left.toFlexibleDecimal().scale(mc)
-    private val topBD = bounds.top.toFlexibleDecimal().scale(mc)
-
     private val zoomLevel = canvas.zoomLevel.scale(mc)
-    private val offsetX = canvas.offsetX.scale(mc)
-    private val offsetY = canvas.offsetY.scale(mc)
 
-    private val leftZoomed = leftBD.multiply(zoomLevel, canvas.mc).scale(mc)
-    private val leftWithOffset = leftZoomed.plus(offsetX).scale(mc)
+    private fun FlexibleDecimal.scale(): FlexibleDecimal = this.scale(mc)
+    private fun FlexibleInteger.scale(): FlexibleDecimal = this.toFlexibleDecimal().scale(mc)
+    private fun FlexibleDecimal.zoom(): FlexibleDecimal = this.multiply(zoomLevel, canvas.mc)
+    private fun FlexibleDecimal.offset(offset: FlexibleDecimal): FlexibleDecimal = this.plus(offset)
 
-    private val topZoomed = topBD.multiply(zoomLevel, canvas.mc).scale(mc)
-    private val topWithOffset = topZoomed.plus(offsetY).scale(mc)
+    // take the bounds parameter, multiply times zoom level - intermediate values need to be scaled
+    private fun FlexibleInteger.zoomAndScale(): FlexibleDecimal = this.scale().zoom().scale()
 
-    private val widthDecimal =
-        (bounds.right - bounds.left).toFlexibleDecimal().scale(mc).multiply(zoomLevel, canvas.mc).scale(mc)
-    private val heightDecimal =
-        (bounds.bottom - bounds.top).toFlexibleDecimal().scale(mc).multiply(zoomLevel, canvas.mc).scale(mc)
+    // now offset it - again, intermediate values need to be scaled
+    private fun FlexibleInteger.zoomOffsetAndScale(offset: FlexibleDecimal): FlexibleDecimal =
+        this.zoomAndScale().offset(offset.scale()).scale()
 
-    // coerce boundaries to be drawable with floats
-    val left = if (leftWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else leftWithOffset.toFloat()
-    val top = if (topWithOffset < FlexibleDecimal.ZERO) negativeOffScreen else topWithOffset.toFloat()
+    private val leftWithOffset = bounds.left.zoomOffsetAndScale(canvas.offsetX)
+    private val topWithOffset = bounds.top.zoomOffsetAndScale(canvas.offsetY)
 
-    val right = if (leftWithOffset + widthDecimal > canvas.width)
-        canvas.width.toFloat() + positiveOffScreen
-    else
-        (leftWithOffset + widthDecimal).toFloat()
+    private val widthDecimal = bounds.width.zoomAndScale()
+    private val heightDecimal = bounds.height.zoomAndScale()
 
-    val bottom = if (topWithOffset + heightDecimal > canvas.height)
-        canvas.height.toFloat() + positiveOffScreen
-    else
-        (topWithOffset + heightDecimal).toFloat()
+    private fun FlexibleDecimal.coerceLeftAndTopToFloat(): Float =
+        if (this < FlexibleDecimal.ZERO) NEGATIVE_OFFSCREEN else this.toFloat()
 
-    val width = if (left == negativeOffScreen) (right + positiveOffScreen) else (right - left)
-    val height = if (top == negativeOffScreen) (bottom + positiveOffScreen) else (bottom - top)
+    private fun FlexibleDecimal.coerceRightAndBottomToFloat(size: FlexibleDecimal, canvasSize: FlexibleDecimal): Float {
+
+        return if (this + size > canvasSize)
+            canvasSize.toFloat() + POSITIVE_OFFSCREEN
+        else
+            (this + size).toFloat()
+    }
+
+    // if the actual drawing calculates to be larger than a float then the call to rect will fail
+    // so - coerce boundaries to be drawable with floats
+    val left = leftWithOffset.coerceLeftAndTopToFloat()
+    val top = topWithOffset.coerceLeftAndTopToFloat()
+    val right = leftWithOffset.coerceRightAndBottomToFloat(widthDecimal, canvas.width)
+    val bottom = topWithOffset.coerceRightAndBottomToFloat(heightDecimal, canvas.height)
+
+
+    private fun Float.fitWidthAndHeight(opposite: Float): Float =
+        if (this == NEGATIVE_OFFSCREEN) (opposite + POSITIVE_OFFSCREEN) else (opposite - this)
+
+    val width = left.fitWidthAndHeight(right)
+    val height = top.fitWidthAndHeight(bottom)
+
+
+    private fun startPos(
+        orthogonalDimension: FlexibleDecimal,
+        orthogonalStartWithOffset: FlexibleDecimal,
+        orthogonalCanvasSize: FlexibleDecimal
+    ): Float {
+        // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
+        val halfDimension = orthogonalDimension.divide(FlexibleDecimal.TWO, canvas.mc)
+        val startPosDecimal = orthogonalStartWithOffset + halfDimension
+
+        return when {
+            startPosDecimal < FlexibleDecimal.ZERO -> NEGATIVE_OFFSCREEN
+            startPosDecimal > orthogonalCanvasSize -> orthogonalCanvasSize.toFloat() + POSITIVE_OFFSCREEN
+            else -> startPosDecimal.toFloat()
+        }
+    }
+
+    private fun endPos(startWithOffset: FlexibleDecimal, boxSize: FlexibleDecimal, canvasSize: FlexibleDecimal): Float {
+        val endDecimal = startWithOffset + boxSize
+
+        return if (endDecimal > canvasSize) canvasSize.toFloat() + POSITIVE_OFFSCREEN else endDecimal.toFloat()
+    }
 
     // Calculate Lines
     private val horizontalLine: Line
         get() {
-            val startX = left
+            val startY = startPos(heightDecimal, topWithOffset, canvas.height)
 
-            // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
-            val halfHeight = heightDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
-            val startYDecimal = topWithOffset + halfHeight
+            val endX = endPos(leftWithOffset, widthDecimal, canvas.width)
 
-            val startY = when {
-                startYDecimal < FlexibleDecimal.ZERO -> negativeOffScreen
-                startYDecimal > canvas.height -> canvas.height.toFloat() + positiveOffScreen
-                else -> startYDecimal.toFloat()
-            }
-
-            val endXDecimal = leftWithOffset + widthDecimal
-
-            val endX =
-                if (endXDecimal > canvas.width) canvas.width.toFloat() + positiveOffScreen else endXDecimal.toFloat()
-
-            return Line(Point(startX, startY), Point(endX, startY))
+            return Line(Point(left, startY), Point(endX, startY))
         }
 
     private val verticalLine: Line
         get() {
-            // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
 
-            val halfWidth = widthDecimal.divide(FlexibleDecimal.TWO, canvas.mc)
-            val startXDecimal = leftWithOffset + halfWidth
+            val startX = startPos(widthDecimal, leftWithOffset, canvas.width)
 
-            val startX = when {
-                startXDecimal < FlexibleDecimal.ZERO -> negativeOffScreen
-                startXDecimal > canvas.width -> canvas.width.toFloat() + positiveOffScreen
-                else -> startXDecimal.toFloat()
-            }
-
-            val endYDecimal = topWithOffset + heightDecimal
-
-            val endY =
-                if (endYDecimal > canvas.height) canvas.height.toFloat() + positiveOffScreen else endYDecimal.toFloat()
+            val endY = endPos(topWithOffset, heightDecimal, canvas.height)
 
             return Line(Point(startX, top), Point(startX, endY))
         }
-
 
     private fun drawCrossHair(graphics: PGraphics) {
         horizontalLine.drawDashedLine(graphics)
@@ -97,17 +106,19 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
 
     fun draw(graphics: PGraphics, drawCrosshair: Boolean = false) {
 
-        graphics.pushStyle()
-        graphics.noFill()
-        graphics.stroke(Theme.textColor)
-        graphics.strokeWeight(Theme.strokeWeightBounds)
-        graphics.rect(left, top, width, height)
+        with(graphics) {
+            push()
+            noFill()
+            stroke(Theme.textColor)
+            strokeWeight(Theme.strokeWeightBounds)
+            rect(left, top, this@BoundingBox.width, this@BoundingBox.height)
 
-        if (drawCrosshair) {
-            drawCrossHair(graphics)
+            if (drawCrosshair) {
+                drawCrossHair(graphics)
+            }
+
+            pop()
         }
-
-        graphics.popStyle()
     }
 
     private inner class Point(var x: Float, var y: Float) {
@@ -161,7 +172,7 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
         // we draw the box just a bit off screen so it won't be visible
         // but if the box is more than a pixel, we need to push it further offscreen
         // since we're using a Theme constant we can change we have to account for it
-        private const val positiveOffScreen = Theme.strokeWeightBounds
-        private const val negativeOffScreen = -positiveOffScreen
+        private const val POSITIVE_OFFSCREEN = Theme.strokeWeightBounds
+        private const val NEGATIVE_OFFSCREEN = -POSITIVE_OFFSCREEN
     }
 }
