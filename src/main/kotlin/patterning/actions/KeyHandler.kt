@@ -24,14 +24,6 @@ object KeyHandler {
         keyEventObservers.add(observer)
     }
 
-    fun registerKeyHandler(pApplet: PApplet) {
-        this.pApplet = pApplet.apply {
-            registerMethod("pre", this@KeyHandler)
-            registerMethod("keyEvent", this@KeyHandler)
-        }
-    }
-
-
     fun addKeyCallback(callback: KeyCallback) {
         val keyCombos = callback.keyCombos
         val duplicateKeyCombos = keyCallbacks.keys.flatten().intersect(keyCombos)
@@ -46,10 +38,34 @@ object KeyHandler {
     }
 
     /**
+     * KeyHandler is an object whose primary reason for existence is just to isolate keyboard shortcuts
+     * from the main PatterningPApplet class
+     *
+     * as such, because of Processing's settings/setup initialization process, we provide registerKeyHandler
+     * to allow for instantiating and providing method hooks for keyEvent and pre
+     *
+     * with the P2D and P3D renderers, keyEvent is called once per keypress but sometimes we want behavior
+     * to occur while a key is being held down so we also register the "pre" method which is called before
+     * each invocation of draw() so that any continually pressed keys can be handled there
+     *
+     * it feels a bit of a workaround just to separate out the code so documenting it clearly here
+     */
+    fun registerKeyHandler(pApplet: PApplet) {
+        this.pApplet = pApplet.apply {
+            registerMethod("keyEvent", this@KeyHandler)
+            registerMethod("pre", this@KeyHandler)
+        }
+    }
+
+
+    /**
      * in P2D and P3D, keyEvent will be called once per keyPress so we
-     * capture the keyEvent so it can be used in the pre call repeatedly
-     * most control key callbacks will just be called once, zooming and moving will be called
-     * every draw
+     * capture the keyEvent so it can be used in the "pre" call repeatedly during draw()
+     * most control key callbacks will just be called once, zooming, moving, undo and possibly
+     * others may be called every draw
+     *
+     * suppressing unused because keyEvent is not explicitly invoked - we have to register it with
+     * processing via a call to registerMethod
      */
     @Suppress("unused")
     fun keyEvent(event: KeyEvent) {
@@ -66,6 +82,29 @@ object KeyHandler {
         }
     }
 
+    /**
+     * "pre" will be called once per draw - if there is a currently active keyEvent then
+     * do something with it
+     *
+     * suppressing unused because pre is not explicitly invoked - we have to register it with
+     * processing via a call to registerMethod
+     */
+    @Suppress("unused")
+    fun pre() {
+
+        val localKeyEvent = keyEvent ?: return
+
+        if (pApplet.keyPressed) {
+
+            val matchingCallback = keyCallbacks.values.find { it.matches(localKeyEvent) } ?: return
+
+            // Handle repeated invocation here
+            if (matchingCallback.invokeEveryDraw) {
+                handleKeyPressed(matchingCallback, localKeyEvent)
+            }
+        }
+    }
+
     private fun handleInitialKeyPress(callback: KeyCallback, event: KeyEvent) {
         _pressedKeys.add(event.keyCode)
         keyEvent = event
@@ -77,18 +116,15 @@ object KeyHandler {
         }
     }
 
-    @Suppress("unused")
-    fun pre() {
+    private fun handleKeyPressed(callback: KeyCallback, event: KeyEvent) {
 
-        val localKeyEvent = keyEvent ?: return
-        val matchingCallback = keyCallbacks.values.find { it.matches(localKeyEvent) } ?: return
+        invokeFeature(callback, event)
 
-        if (pApplet.keyPressed) {
-            // Handle repeated invocation here
-            if (matchingCallback.invokeEveryDraw) {
-                handleKeyPressed(matchingCallback, localKeyEvent)
-            }
-        }
+        // now let all the observers know - especially the UX which will handle
+        // given key events can be disabled when isUXAvailable is false
+        // we need to be sure to do this last as this is how the UX gets re-enabled
+        // in the UX class where it will invoke RunningModeController.play()
+        keyEventObservers.forEach { it.notifyGlobalKeyPress(event) }
     }
 
     private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
@@ -103,17 +139,6 @@ object KeyHandler {
                 callback.notifyControlOnKeyPress(event)
             }
         }
-    }
-
-    private fun handleKeyPressed(callback: KeyCallback, event: KeyEvent) {
-
-        invokeFeature(callback, event)
-
-        // now let all the observers know - especially the UX which will handle
-        // given key events can be disabled when isUXAvailable is false
-        // we need to be sure to do this last as this is how the UX gets re-enabled
-        // in the UX class where it will invoke RunningModeController.play()
-        keyEventObservers.forEach { it.notifyGlobalKeyPress(event) }
     }
 
     private fun handleKeyReleased(callback: KeyCallback, event: KeyEvent) {
@@ -148,6 +173,4 @@ object KeyHandler {
                 )
             }
         }
-
-
 }
