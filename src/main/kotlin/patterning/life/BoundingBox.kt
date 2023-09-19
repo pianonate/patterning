@@ -140,43 +140,51 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     }
 
 
+    /**
+     * fold takes an initial value and a lambda. it applies the lambda cumulatively to the items
+     * in the collection, using the initial value as the starting point.  in each iteration, the
+     * lambda function gets two arguments: the accumulated value from the previous steps and
+     * the current item in the collection.  the function returns a new accumulated value, which is
+     * then used in the next iteration
+     *
+     * allows ut avoid using mutable state.
+     *
+     * interesting
+     */
     private data class Line(val start: Point, val end: Point) {
 
         fun drawDashedLine(graphics: PGraphics) {
-            val (x1, y1) = start
-            val (x2, y2) = end
 
-            val distance = PApplet.dist(x1, y1, x2, y2)
+            val xLength = end.x - start.x
+            val yLength = end.y - start.y
+
+            val distance = PApplet.dist(start.x, start.y, end.x, end.y)
             val numDashes = distance / (Theme.dashedLineDashLength + Theme.dashedLineSpaceLength)
 
-            val dxDash = (x2 - x1) / numDashes / 2
-            val dyDash = (y2 - y1) / numDashes / 2
-            val dxSpace = (x2 - x1) / numDashes / 2
-            val dySpace = (y2 - y1) / numDashes / 2
+            val dxDash = xLength / numDashes / 2
+            val dyDash = yLength / numDashes / 2
 
-            var draw = true
-            var x = x1
-            var y = y1
-
-            with (graphics) {
-
+            with(graphics) {
                 push()
                 strokeWeight(Theme.strokeWeightDashedLine)
 
-                for (i in 0 until (numDashes * 2).toInt()) {
-                    val (dx, dy) = if (draw) dxDash to dyDash else dxSpace to dySpace
-                    val endX = (x + dx).coerceAtMost(x2)
-                    val endY = (y + dy).coerceAtMost(y2)
+                val upperBound = (numDashes * 2).toInt()
+                val initialState = Triple(start.x, start.y, true)
 
-                    if (draw)
-                        line(x, y, endX, endY)
+                (0 until upperBound).fold(initialState) { (curX, curY, draw), _ ->
+                    val endX = (curX + dxDash).coerceAtMost(end.x)
+                    val endY = (curY + dyDash).coerceAtMost(end.y)
 
-                    x = endX
-                    y = endY
-                    draw = !draw
+                    if (draw) {
+                        line(curX, curY, endX, endY)
+                    }
+
+                    Triple(endX, endY, !draw)
                 }
+
                 pop()
             }
+
         }
     }
 

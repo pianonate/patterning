@@ -25,13 +25,14 @@ class KeyCallbackFactory(
      */
     private fun Char.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(KeyCombo(this.code))
 
-    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.map { KeyCombo(it.code) }.toCollection(LinkedHashSet())
+    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyCombo> =
+        this.map { KeyCombo(it.code) }.toCollection(LinkedHashSet())
 
     private fun KeyCombo.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(this)
 
     private fun Pair<KeyCombo, KeyCombo>.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(first, second)
 
-    private fun Set<Int>.toKeyComboSet():  LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
+    private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
@@ -42,8 +43,19 @@ class KeyCallbackFactory(
             addKeyCallback(callbackMovement)
             addKeyCallback(callbackZoomIn)
             addKeyCallback(callbackZoomOut)
+           // addKeyCallback(callbackMoveScreen)
         }
     }
+
+/*    private val callbackMoveScreen = SimpleKeyCallback(
+        keyCombos = 'm'.toKeyComboSet(),
+        invokeFeatureLambda = {
+            println("attempting to move")
+            pApplet.surface.setLocation(1000,1000)
+            pApplet.surface.setSize(1000,1000)
+        },
+        usage = "move the screen"
+    )*/
 
     val callback3DYaw = SimpleKeyCallback(
         keyCombos = SHORTCUT_3D_YAW.toKeyComboSet(),

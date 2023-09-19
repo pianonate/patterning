@@ -27,7 +27,7 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
 
     override fun settings() {
-        fullScreen(P3D, 1)
+        fullScreen(P3D)
 
         properties = Properties(this, canvas)
        // size(properties.width, properties.height, P3D)
