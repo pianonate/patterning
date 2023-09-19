@@ -56,9 +56,9 @@ good luck - and let me know if any of this is wrong, or can be improved - I'd li
 for another day.
 
 ### trying it out
-once you get your environment set up and run the application, it will automatically load a pattern from resources. additionally you can press the numbers 1 - 9 on the keyboard to load other patterns
+Once you get your environment set up and run the application, it will automatically load a pattern from resources.
 
-There are some built in starting patterns - hooked up to the number keys (press 1 through 9).
+Also, there are some built in starting patterns - hooked up to the number keys (press 1 through 9).
 
 Or...
 
