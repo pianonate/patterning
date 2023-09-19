@@ -58,17 +58,9 @@ to **/Applications** on my Mac so my core.jar is located here:
 
 You'll have to figure it out the location for your own environment and update the pathToCore val in your
 build.gradle.kts - don't commit this change back as it will break me. I'll need to find a way to have gradle load that
-variable from a different file but for now this is how I'm getting processing...
+variable from a different file but for now this is how I'm getting Processing...
 
-### update gradle properties if you're using vscode
-
-because i'm not a gradle wonk, the hard lesson to learn when getting up and running with vscod , using its gradle
-extension, was that i had to update the distributionUrl in .gradle/gradle-wrapper.properties to 8.1.1 which is what i
-had installed with brew. You're probably an expert, so you know all about this sort of thing. i've switched to using
-intelliJ because of it's amazing support for Kotlin - and I'm not sure if intellij just knows how to do that that sort
-of thing.
-
-### that's it for the setup
+### that's it for the setup (I think)
 
 good luck - and let me know if any of this is wrong, or can be improved - I'd like it to be fully automated but that's
 for another day.
