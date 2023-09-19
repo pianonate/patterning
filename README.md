@@ -46,9 +46,9 @@ the build.gradle.kts file should pull in the latest version - at least it does f
 This project uses processing for animation. You can download it
 here: [processing.org/download](https://processing.org/download)
 
-### make gradle aware of the path to your core.jar
+### make gradle aware of the path to your Processing core.jar
 
-I couldn't find a repo that hosted the core.jar and i'm not knowledgeable enough or motivated enough to figure this out.
+I couldn't find a repo that hosted the processing core.jar and libraries and i'm not knowledgeable enough or motivated enough to figure this out.
 So you need to update build.gradle.kts with the path to your Processing jars and libraries.
 
 Find where you installed processing and the core.jar that you downloaded from processing.org. I copied my Processing.app
