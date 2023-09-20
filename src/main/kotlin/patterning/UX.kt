@@ -195,6 +195,7 @@ class UX(
                 .apply {
                     transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                     setOrientation(Orientation.VERTICAL)
+                    addControl("camera.png", keyCallbackFactory.callbackSaveImage)
                     if (pattern is Movable) addToggleHighlightControl(
                         "boundary.png",
                         keyCallbackFactory.callbackDrawBounds

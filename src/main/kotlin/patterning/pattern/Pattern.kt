@@ -34,6 +34,7 @@ abstract class Pattern(
     abstract fun handlePlayPause()
     abstract fun loadPattern()
     abstract fun move(dx: Float, dy: Float)
+    abstract fun saveImage()
     abstract fun updateProperties()
 
     final override fun registerObserver(eventType: PatternEventType, observer: (PatternEvent) -> Unit) {
@@ -67,7 +68,6 @@ abstract class Pattern(
     fun applyTransparency(originalColor: Int, alphaValue: Int): Int {
         return (originalColor and 0xFFFFFF) or (alphaValue shl 24)
     }
-
 
     protected inner class GhostOff : GhostState {
         override fun prepareGraphics(graphics: PGraphics) = graphics.clear()

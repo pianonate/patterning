@@ -34,4 +34,5 @@ class TestingState() : RunningState(RunningMode.TESTING) {
     override val isTesting = true
     override val isUXAvailable = false
     override val isPlaying = false
+    override val isPaused = false
 }

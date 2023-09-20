@@ -11,6 +11,9 @@ object RunningModeController {
     val isUXAvailable: Boolean
         get() = currentRunningState.isUXAvailable
 
+    val isPaused: Boolean
+        get() = currentRunningState.isPaused
+
     val isPlaying: Boolean
         get() = currentRunningState.isPlaying
 

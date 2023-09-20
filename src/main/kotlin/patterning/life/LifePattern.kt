@@ -23,7 +23,6 @@ import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
 import processing.core.PConstants.TWO_PI
-import processing.core.PGraphics
 import processing.core.PVector
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -75,6 +74,7 @@ class LifePattern(
     private var pattern: GraphicsReference
     private var drawBounds = false
     private var isThreeD = false
+
     private var isYawing = false
     private var isPitching = false
     private var isRolling = false
@@ -121,11 +121,13 @@ class LifePattern(
 
         performanceTest.execute()
 
-        drawPattern(life)
+        val shouldAdvance = RunningModeController.shouldAdvance()
+
+        drawPattern(life, shouldAdvance)
 
         pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
 
-        goForwardInTime()
+        goForwardInTime(shouldAdvance)
     }
 
     override fun getHUDMessage(): String {
@@ -159,6 +161,11 @@ class LifePattern(
         canvas.saveUndoState()
         canvas.moveCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
         lifeFormPosition.add(dx, dy)
+    }
+
+    override fun saveImage() {
+        val currentDir = System.getProperty("user.dir")
+        pattern.graphics.save("$currentDir/${pApplet.frameCount}.jpg")
     }
 
     override fun updateProperties() {
@@ -400,7 +407,7 @@ class LifePattern(
     /**
      * private fun
      */
-    private fun goForwardInTime() {
+    private fun goForwardInTime(shouldAdvance: Boolean) {
 
         if (asyncNextGenerationJob.isActive) {
             return
@@ -414,7 +421,7 @@ class LifePattern(
             }
         }
 
-        if (RunningModeController.shouldAdvance())
+        if (shouldAdvance)
             asyncNextGenerationJob.start()
     }
 
@@ -476,27 +483,26 @@ class LifePattern(
         if (width > 4 && isThreeD) {
             draw3DBox(posX, posY, width)
         } else {
-            pattern.graphics.rect(
-                posX,
-                posY,
-                width, width
-            )
+            pattern.graphics.rect(posX, posY, width, width)
         }
     }
 
-    private fun draw3DBox(posX: Float, posY: Float, width: Float) {
+    private fun draw3DBox(x: Float, y: Float, width: Float) {
         with(pattern.graphics) {
             push()
-            translate(posX, posY)
+            translate(x + width / 2, y + width / 2)
             strokeWeight(1f)
             stroke(Theme.boxOutlineColor)
 
             if (isPitching)
-                rotateX(-TWO_PI / 2f * lerpRotate())
+            // rotateX(-TWO_PI / 2f * lerpRotate())
+                rotateX(rotationAngle)
             if (isYawing)
-                rotateY(-TWO_PI / 2f * lerpRotate())
+            // rotateY(-TWO_PI / 2f * lerpRotate())
+                rotateY(rotationAngle)
             if (isRolling)
-                rotateZ(-TWO_PI / 2f * lerpRotate())
+            // rotateZ(-TWO_PI / 2f * lerpRotate())
+                rotateZ(rotationAngle)
             box(width)
             pop()
         }
@@ -515,42 +521,59 @@ class LifePattern(
         }
     }
 
-    private fun lerpRotate(): Float {
+    private var rotationAngle = 0f
 
-        val counter = pApplet.frameCount % Theme.threeDBoxRotationCount
+    private fun updateBoxRotationAngle() {
+        // Increment the angle based on time, you can adjust the speed by changing the 0.01f
+        rotationAngle += 0.01f
 
-        // Calculate the lerp value
-        val t = counter.toFloat() / Theme.threeDBoxRotationCount.toFloat()
-
-        return PApplet.lerp(0f, PApplet.TWO_PI, t)
+        // Keep the angle in the range of 0 to TWO_PI
+        if (rotationAngle >= PApplet.TWO_PI) {
+            rotationAngle -= PApplet.TWO_PI
+        }
     }
+
 
     private var actualRecursions = FlexibleInteger.ZERO
     private var startDelta = 0
 
-    private fun drawPattern(life: LifeUniverse) {
+    private fun drawPattern(life: LifeUniverse, shouldAdvance: Boolean) {
 
-        val graphics = pattern.graphics
-        graphics.beginDraw()
 
-        // Save the current transformation matrix
-        pattern.graphics.push()
+        with(pattern.graphics) {
 
-        ghostState.prepareGraphics(pattern.graphics)
+            beginDraw()
 
-        updateStroke(graphics)
+            // Save the current transformation matrix
+            push()
 
-        updateBoundsChanged(life.root.bounds)
+            ghostState.prepareGraphics(this)
 
-        handle3D()
+            updateBoxRotationAngle()
 
-        drawVisibleNodes(life)
+            updateStroke()
 
-        drawBounds(life)
+            updateBoundsChanged(life.root.bounds)
 
-        pattern.graphics.pop()
+            handle3D(shouldAdvance)
 
-        graphics.endDraw()
+            val shouldDraw = when {
+                ghostState !is Ghosting && RunningModeController.isPaused -> true
+                ghostState !is Ghosting -> true
+                ghostState is Ghosting && shouldAdvance -> true
+                else -> false
+            }
+
+            if (shouldDraw) {
+                drawBounds(life)
+                drawVisibleNodes(life)
+            }
+
+
+            pop()
+
+            endDraw()
+        }
 
         // reset the position in case you've had mouse moves
         lifeFormPosition[0f] = 0f
@@ -581,26 +604,29 @@ class LifePattern(
         }
     }
 
-    private fun handle3D() {
+    private fun handle3D(shouldAdvance: Boolean) {
+
         // Move to the center of the object
         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
 
-        if (isYawing) {
-            // Rotate the object around the Y-axis
-            currentYawAngle = TWO_PI * (yawCount % 360) / 360f
-            yawCount++
-        }
+        if (shouldAdvance) {
+            if (isYawing) {
+                // Rotate the object around the Y-axis
+                currentYawAngle = TWO_PI * (yawCount % 360) / 360f
+                yawCount++
+            }
 
-        if (isPitching) {
-            // Rotate the object around the X-axis
-            currentPitchAngle = TWO_PI * (pitchCount % 360) / 360f
-            pitchCount++
-        }
+            if (isPitching) {
+                // Rotate the object around the X-axis
+                currentPitchAngle = TWO_PI * (pitchCount % 360) / 360f
+                pitchCount++
+            }
 
-        if (isRolling) {
-            // Rotate the object around the Z-axis
-            currentRollAngle = TWO_PI * (rollCount % 360) / 360f
-            rollCount++
+            if (isRolling) {
+                // Rotate the object around the Z-axis
+                currentRollAngle = TWO_PI * (rollCount % 360) / 360f
+                rollCount++
+            }
         }
 
         // Apply the current rotation angles
@@ -613,11 +639,11 @@ class LifePattern(
         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
     }
 
-    private fun updateStroke(graphics: PGraphics) {
+    private fun updateStroke() {
         if (canvas.zoomLevelAsFloat > 4f) {
-            graphics.stroke(Theme.boxOutlineColor)
+            pattern.graphics.stroke(Theme.boxOutlineColor)
         } else {
-            graphics.noStroke()
+            pattern.graphics.noStroke()
         }
     }
 

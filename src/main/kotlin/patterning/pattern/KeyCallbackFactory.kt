@@ -47,6 +47,14 @@ class KeyCallbackFactory(
         }
     }
 
+    val callbackSaveImage = SimpleKeyCallback(
+        keyCombos = SHORTCUT_SAVE_IMAGE.toKeyComboSet(),
+        invokeFeatureLambda = {
+            pattern.saveImage()
+        },
+        usage = "save to disk"
+    )
+
     val callbackRainbow = SimpleKeyCallback(
         keyCombos = SHORTCUT_RAINBOW.toKeyComboSet(),
         invokeFeatureLambda = {
@@ -381,7 +389,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_STEP_SLOWER = '['
         private const val SHORTCUT_UNDO = 'z'
 
-        // private const val SHORTCUT_DRAW_SPEED = 's'
+        private const val SHORTCUT_SAVE_IMAGE = 's'
         private const val SHORTCUT_THEME_TOGGLE = 'd'
         private const val SHORTCUT_SINGLE_STEP = 't'
 

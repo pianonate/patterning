@@ -35,6 +35,8 @@ class LoadingState() : RunningState(RunningMode.LOADING) {
     override val isTesting = false
     override val isUXAvailable = false
     override val isPlaying = false
+    override val isPaused = true
+
 
     private fun start(startWith: RunningMode) {
         if (controller.previousRunningState is SingleStepState)

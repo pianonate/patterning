@@ -35,4 +35,5 @@ class PausedState() : RunningState(RunningMode.PAUSED) {
     override val isTesting = false
     override val isUXAvailable = true
     override val isPlaying = false
+    override val isPaused = true
 }

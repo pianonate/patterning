@@ -40,4 +40,5 @@ class SingleStepState() : RunningState(RunningMode.SINGLE_STEP) {
     override val isTesting = false
     override val isUXAvailable = true
     override val isPlaying = false
+    override val isPaused = false
 }
