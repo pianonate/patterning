@@ -74,7 +74,7 @@ class LifePattern(
 
     private var pattern: GraphicsReference
     private var drawBounds = false
-    private var is3D = false
+    private var isThreeD = false
     private var isYawing = false
     private var isPitching = false
     private var isRolling = false
@@ -303,7 +303,7 @@ class LifePattern(
      * ThreeDimensional overrides
      */
     override fun toggle3D() {
-        is3D = !is3D
+        isThreeD = !isThreeD
     }
 
     override fun toggleYaw() {
@@ -331,7 +331,7 @@ class LifePattern(
 
         reset3DParams()
 
-        is3D = false
+        isThreeD = false
         isYawing = false
         isPitching = false
         isRolling = false
@@ -470,30 +470,37 @@ class LifePattern(
         val width = size.roundToIntIfGreaterThanReference(size)
         val posX = x.roundToIntIfGreaterThanReference(size)
         val posY = y.roundToIntIfGreaterThanReference(size)
+        with(pattern.graphics) {
+            if (rainbowMode && ghostState !is Ghosting) {
+                colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
+                val hue = PApplet.map(x + y, 0f, canvas.width.toFloat() + canvas.height.toFloat(), 0f, 360f)
+                fill(hue, 100f, 100f, 255f)
+            } else {
+                fill(fillColor)
+            }
 
-        if (rainbowMode && ghostState !is Ghosting) {
-            pattern.graphics.colorMode(PConstants.HSB, 360f, 100f, 100f)
-            val hue = PApplet.map(x + y, 0f, canvas.width.toFloat() + canvas.height.toFloat(), 0f, 360f)
-            pattern.graphics.fill(hue, 100f, 100f)
-        } else {
-            pattern.graphics.fill(fillColor)
-        }
+            if (width > 4 && isThreeD) {
+                push()
+                translate(posX, posY)
+                strokeWeight(1f)
+                stroke(Theme.boxOutlineColor)
 
-        if (width > 4 && is3D) {
-            pattern.graphics.push()
-            pattern.graphics.translate(posX, posY)
-            pattern.graphics.strokeWeight(1f)
-            pattern.graphics.stroke(Theme.boxOutlineColor)
-            pattern.graphics.rotateX(lerpRotate())
-            pattern.graphics.box(width)
-            pattern.graphics.pop()
-        } else {
+                if (isPitching)
+                    rotateX(- PApplet.TWO_PI / 2f * lerpRotate())
+                if (isYawing)
+                    rotateY(- PApplet.TWO_PI / 2f * lerpRotate())
+                if (isRolling)
+                    rotateZ( - PApplet.TWO_PI / 2f * lerpRotate())
+                box(width)
+                pop()
+            } else {
 
-            pattern.graphics.rect(
-                posX,
-                posY,
-                width, width
-            )
+                rect(
+                    posX,
+                    posY,
+                    width, width
+                )
+            }
         }
     }
 

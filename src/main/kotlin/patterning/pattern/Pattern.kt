@@ -76,6 +76,7 @@ abstract class Pattern(
             graphics.clear()
             // graphics.fill(fillColor)
             fillColor = Theme.cellColor
+            graphics.fill(fillColor)
         }
 
         override fun transition() = run { ghostState = Ghosting() }
@@ -89,26 +90,27 @@ abstract class Pattern(
                 transition()
                 return
             }
-            // graphics.fill(fillColor)
+            graphics.fill(fillColor)
             fillColor = Theme.cellColor
             emitted = true
         }
 
-        override fun transition() = run { ghostState = Ghosting() }
+        override fun transition() = run { ghostState = Ghosting(clearFirstFrame = false) }
     }
 
 
-    protected inner class Ghosting : GhostState {
+    protected inner class Ghosting(private var clearFirstFrame: Boolean = true) : GhostState {
         private var firstFrame = true
 
         override fun update(graphics: PGraphics) {
             // graphics.fill(fillColor)
 
-            if (firstFrame) {
+            if (firstFrame && clearFirstFrame) {
                 graphics.clear()
                 firstFrame = false
             }
             fillColor = Theme.ghostColor
+            graphics.fill(fillColor)
         }
 
         override fun transition() = run { ghostState = GhostOff() }
