@@ -16,8 +16,9 @@ abstract class Pattern(
     private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
 
     protected interface GhostState {
-        fun update(graphics: PGraphics)
+        fun prepareGraphics(graphics: PGraphics)
         fun transition()
+        fun applyAlpha(color: Int): Int
     }
 
     protected var ghostState: GhostState = GhostOff()
@@ -47,10 +48,6 @@ abstract class Pattern(
         ghostState = GhostOff()
     }
 
-    protected fun updateGhost(graphics: PGraphics) {
-        ghostState.update(graphics)
-    }
-
     fun onBiggestDimensionChanged(biggestDimension: FlexibleInteger) {
         notifyObservers(PatternEventType.DimensionChanged, PatternEvent.DimensionChanged(biggestDimension))
     }
@@ -67,52 +64,44 @@ abstract class Pattern(
         ghostState = GhostKeyFrame()
     }
 
-    protected var fillColor: Int = Theme.cellColor
-        private set
+    fun applyTransparency(originalColor: Int, alphaValue: Int): Int {
+        return (originalColor and 0xFFFFFF) or (alphaValue shl 24)
+    }
 
 
     protected inner class GhostOff : GhostState {
-        override fun update(graphics: PGraphics) {
-            graphics.clear()
-            // graphics.fill(fillColor)
-            fillColor = Theme.cellColor
-            graphics.fill(fillColor)
-        }
-
+        override fun prepareGraphics(graphics: PGraphics) = graphics.clear()
         override fun transition() = run { ghostState = Ghosting() }
+        override fun applyAlpha(color: Int): Int = color
     }
 
     protected inner class GhostKeyFrame : GhostState {
         private var emitted = false
 
-        override fun update(graphics: PGraphics) {
+        override fun prepareGraphics(graphics: PGraphics) {
             if (emitted) {
                 transition()
                 return
             }
-            graphics.fill(fillColor)
-            fillColor = Theme.cellColor
             emitted = true
         }
 
         override fun transition() = run { ghostState = Ghosting(clearFirstFrame = false) }
+        override fun applyAlpha(color: Int): Int = color
     }
 
 
     protected inner class Ghosting(private var clearFirstFrame: Boolean = true) : GhostState {
         private var firstFrame = true
 
-        override fun update(graphics: PGraphics) {
-            // graphics.fill(fillColor)
-
+        override fun prepareGraphics(graphics: PGraphics) {
             if (firstFrame && clearFirstFrame) {
                 graphics.clear()
                 firstFrame = false
             }
-            fillColor = Theme.ghostColor
-            graphics.fill(fillColor)
         }
 
         override fun transition() = run { ghostState = GhostOff() }
+        override fun applyAlpha(color: Int): Int = applyTransparency(originalColor = color, Theme.ghostAlpha)
     }
 }

@@ -42,20 +42,19 @@ class KeyCallbackFactory(
             addKeyCallback(callbackMovePattern)
             addKeyCallback(callbackNextScreen)
             addKeyCallback(callbackNumberedPattern)
-            addKeyCallback(callbackRainbow)
             addKeyCallback(callbackZoomIn)
             addKeyCallback(callbackZoomOut)
         }
     }
 
-    private val callbackRainbow = SimpleKeyCallback(
+    val callbackRainbow = SimpleKeyCallback(
         keyCombos = SHORTCUT_RAINBOW.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Colorful) {
                 (pattern as Colorful).toggleRainbow()
             }
         },
-        usage = "move the screen"
+        usage = "ooo, ahhh - so pretty!"
     )
 
     private val callbackNextScreen = SimpleKeyCallback(

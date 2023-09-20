@@ -470,36 +470,47 @@ class LifePattern(
         val width = size.roundToIntIfGreaterThanReference(size)
         val posX = x.roundToIntIfGreaterThanReference(size)
         val posY = y.roundToIntIfGreaterThanReference(size)
+
+        setFill(posX, posY)
+
+        if (width > 4 && isThreeD) {
+            draw3DBox(posX, posY, width)
+        } else {
+            pattern.graphics.rect(
+                posX,
+                posY,
+                width, width
+            )
+        }
+    }
+
+    private fun draw3DBox(posX: Float, posY: Float, width: Float) {
         with(pattern.graphics) {
-            if (rainbowMode && ghostState !is Ghosting) {
+            push()
+            translate(posX, posY)
+            strokeWeight(1f)
+            stroke(Theme.boxOutlineColor)
+
+            if (isPitching)
+                rotateX(-TWO_PI / 2f * lerpRotate())
+            if (isYawing)
+                rotateY(-TWO_PI / 2f * lerpRotate())
+            if (isRolling)
+                rotateZ(-TWO_PI / 2f * lerpRotate())
+            box(width)
+            pop()
+        }
+    }
+
+    private fun setFill(x: Float, y: Float) {
+        with(pattern.graphics) {
+            if (rainbowMode) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val hue = PApplet.map(x + y, 0f, canvas.width.toFloat() + canvas.height.toFloat(), 0f, 360f)
-                fill(hue, 100f, 100f, 255f)
+                //fill(hue, 100f, 100f, 255f)
+                fill(ghostState.applyAlpha(color(hue, 100f, 100f, 255f)))
             } else {
-                fill(fillColor)
-            }
-
-            if (width > 4 && isThreeD) {
-                push()
-                translate(posX, posY)
-                strokeWeight(1f)
-                stroke(Theme.boxOutlineColor)
-
-                if (isPitching)
-                    rotateX(- PApplet.TWO_PI / 2f * lerpRotate())
-                if (isYawing)
-                    rotateY(- PApplet.TWO_PI / 2f * lerpRotate())
-                if (isRolling)
-                    rotateZ( - PApplet.TWO_PI / 2f * lerpRotate())
-                box(width)
-                pop()
-            } else {
-
-                rect(
-                    posX,
-                    posY,
-                    width, width
-                )
+                fill(ghostState.applyAlpha(Theme.cellColor))
             }
         }
     }
@@ -525,7 +536,7 @@ class LifePattern(
         // Save the current transformation matrix
         pattern.graphics.push()
 
-        updateGhost(pattern.graphics)
+        ghostState.prepareGraphics(pattern.graphics)
 
         updateStroke(graphics)
 

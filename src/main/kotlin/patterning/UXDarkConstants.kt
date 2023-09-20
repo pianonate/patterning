@@ -15,8 +15,6 @@ class UXDarkConstants internal constructor() : UXLightConstants() {
     override val controlHighlightColor = 0xDDAAAAAAu
     override val controlMousePressedColor = 0xDDFFFFFFu
 
-    override val ghostColor = 0x11FFFFFFu
-
     override val hoverTextColor = 0xFFFFFFFFu
     override val textColorStart = 0xFF000000u
     override val textColor = 0xFFDDDDDDu

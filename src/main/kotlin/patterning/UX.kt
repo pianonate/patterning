@@ -9,6 +9,7 @@ import patterning.panel.ControlPanel
 import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
+import patterning.pattern.Colorful
 import patterning.pattern.KeyCallbackFactory
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -189,43 +190,6 @@ class UX(
             )
         }
 
-      /*  panels.add(
-
-            ControlPanel.Builder(canvas, AlignHorizontal.LEFT, AlignVertical.TOP)
-                .apply {
-                    transition(
-                        Transition.TransitionDirection.DOWN,
-                        Transition.TransitionType.SLIDE,
-                        transitionDuration
-                    )
-                    setOrientation(Orientation.HORIZONTAL)
-
-                    if (pattern is NumberedPatternLoader) addControl(
-                        "random.png",
-                        keyCallbackFactory.callbackRandomPattern
-                    )
-                    if (pattern is Steppable) {
-                        addToggleHighlightControl(
-                            iconName = "singleStep.png",
-                            callback = keyCallbackFactory.callbackSingleStep
-                        )
-                        addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
-                    }
-
-                    // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
-                    addPlayPauseControl(
-                        "play.png",
-                        "pause.png",
-                        keyCallbackFactory.callbackPause,
-                    )
-
-                    //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-                    if (pattern is Steppable) addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
-                    if (pattern is Rewindable) addControl("rewind.png", keyCallbackFactory.callbackRewind)
-
-                }.build()
-        ) */
-
         panels.add(
             ControlPanel.Builder(canvas, AlignHorizontal.RIGHT, AlignVertical.CENTER)
                 .apply {
@@ -235,6 +199,7 @@ class UX(
                         "boundary.png",
                         keyCallbackFactory.callbackDrawBounds
                     )
+                    if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackRainbow)
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl(
                         "ghost.png",
