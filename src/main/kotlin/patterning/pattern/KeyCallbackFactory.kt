@@ -52,7 +52,7 @@ class KeyCallbackFactory(
         invokeFeatureLambda = {
             pattern.saveImage()
         },
-        usage = "save to disk"
+        usage = "screenshot motherfucker!"
     )
 
     val callbackRainbow = SimpleKeyCallback(
@@ -295,7 +295,9 @@ class KeyCallbackFactory(
                 }
             )
         },
-        usage = "toggle between dark and light themes"
+        usage = "toggle between dark and light themes",
+        invokeAfterDelay = true
+
     )
     private val callbackPerfTest = SimpleKeyCallback(
         keyCombos = Pair(

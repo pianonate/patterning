@@ -1,6 +1,8 @@
 package patterning.life
 
+import kotlin.math.PI
 import kotlin.math.roundToInt
+import kotlin.math.tan
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -23,6 +25,7 @@ import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
 import processing.core.PConstants.TWO_PI
+import processing.core.PMatrix3D
 import processing.core.PVector
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -75,12 +78,11 @@ class LifePattern(
     private var drawBounds = false
     private var isThreeD = false
 
+    private var currentTransformMatrix = PMatrix3D()
+
     private var isYawing = false
     private var isPitching = false
     private var isRolling = false
-    private var yawCount = 0
-    private var pitchCount = 0
-    private var rollCount = 0
     private var currentYawAngle = 0f
     private var currentPitchAngle = 0f
     private var currentRollAngle = 0f
@@ -164,8 +166,16 @@ class LifePattern(
     }
 
     override fun saveImage() {
+
+        val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
+        newGraphics.beginDraw()
+        newGraphics.background(Theme.backGroundColor)
+        val img = pattern.graphics.get()
+        newGraphics.image(img, 0f, 0f)
+        newGraphics.endDraw()
+
         val currentDir = System.getProperty("user.dir")
-        pattern.graphics.save("$currentDir/${pApplet.frameCount}.jpg")
+        newGraphics.save("$currentDir/${pApplet.frameCount}.png")
     }
 
     override fun updateProperties() {
@@ -326,9 +336,6 @@ class LifePattern(
     }
 
     private fun reset3DParams() {
-        yawCount = 0
-        pitchCount = 0
-        rollCount = 0
         currentYawAngle = 0f
         currentPitchAngle = 0f
         currentRollAngle = 0f
@@ -547,6 +554,8 @@ class LifePattern(
             // Save the current transformation matrix
             push()
 
+            handle3D(shouldAdvance)
+
             ghostState.prepareGraphics(this)
 
             updateBoxRotationAngle()
@@ -554,8 +563,6 @@ class LifePattern(
             updateStroke()
 
             updateBoundsChanged(life.root.bounds)
-
-            handle3D(shouldAdvance)
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
@@ -606,26 +613,31 @@ class LifePattern(
 
     private fun handle3D(shouldAdvance: Boolean) {
 
+        currentTransformMatrix.reset()
+
+
         // Move to the center of the object
         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
 
+        // controls speed of rotation
+        // in the future you'll want to have independent control of rotation speed
+        // which you'll want to tie to midi
+        val rotationIncrement = TWO_PI / 360f
+
         if (shouldAdvance) {
             if (isYawing) {
-                // Rotate the object around the Y-axis
-                currentYawAngle = TWO_PI * (yawCount % 360) / 360f
-                yawCount++
+                currentYawAngle += rotationIncrement
+                currentYawAngle %= TWO_PI  // Keep angle in range (0..TWO_PI)
             }
 
             if (isPitching) {
-                // Rotate the object around the X-axis
-                currentPitchAngle = TWO_PI * (pitchCount % 360) / 360f
-                pitchCount++
+                currentPitchAngle += rotationIncrement
+                currentPitchAngle %= TWO_PI
             }
 
             if (isRolling) {
-                // Rotate the object around the Z-axis
-                currentRollAngle = TWO_PI * (rollCount % 360) / 360f
-                rollCount++
+                currentRollAngle += rotationIncrement
+                currentRollAngle %= TWO_PI
             }
         }
 
@@ -634,9 +646,11 @@ class LifePattern(
         pattern.graphics.rotateX(currentPitchAngle)
         pattern.graphics.rotateZ(currentRollAngle)
 
+        pattern.graphics.getMatrix(currentTransformMatrix)
 
         // Move back by half the object's size
         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
+
     }
 
     private fun updateStroke() {
@@ -667,19 +681,9 @@ class LifePattern(
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= FlexibleDecimal.ONE && node.population.isNotZero()) {
-            try {
-                fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
-            } catch (e: Exception) {
-                println("size:$size leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset")
-                throw e
-            }
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            try {
-                fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
-            } catch (e: Exception) {
-                println("size:$size leftWithOffset:$leftWithOffset topWithOffset:$topWithOffset")
-                throw e
-            }
+            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
         } else if (node is TreeNode) {
 
             val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
@@ -694,9 +698,52 @@ class LifePattern(
         }
     }
 
-    // used by PatternDrawer a well as DrawNodePath
-    // maintains no state so it can live here as a utility function
+
+
+
+    /**
+     * used by PatternDrawer a well as DrawNodePath
+     * maintains no state so it can live here as a utility function
+     *
+     * left and top are defined by the zoom level (cell size) multiplied
+     * by half the universe size which we start out with at the nw corner which is half the size negated
+     *
+     * each level in we add half of that level size to create the new size for left and top
+     * and then to that we add the canvas.offsetX to left and canvas.offsetY to top
+     *
+     * the size at this level is then added to the left to get the right side of the universe
+     * and the size is added to the top to get the bottom of the universe
+     * then we see if this universe is inside the canvas by looking to see if
+     * in any direction it is outside.
+     *
+     * if the right side is less than zero it's to the left of the canvas
+     * if the bottom is less than zero it's above the canvas
+     * if the left is larger than the width then we're to the right of the canvas
+     * if the top is larger than the height we're below the canvas
+     */
     private fun shouldContinue(
+         node: Node,
+         size: FlexibleDecimal,
+         nodeLeft: FlexibleDecimal,
+         nodeTop: FlexibleDecimal
+     ): Boolean {
+         if (node.population.isZero()) {
+             return false
+         }
+
+         val left = nodeLeft + canvas.offsetX
+         val top = nodeTop + canvas.offsetY
+
+
+         // No need to draw anything not visible on screen
+         val right = left + size
+         val bottom = top + size
+
+         return !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
+                 left >= canvas.width || top >= canvas.height)
+     }
+
+   /* private fun shouldContinue(
         node: Node,
         size: FlexibleDecimal,
         nodeLeft: FlexibleDecimal,
@@ -709,29 +756,53 @@ class LifePattern(
         val left = nodeLeft + canvas.offsetX
         val top = nodeTop + canvas.offsetY
 
-
-        // No need to draw anything not visible on screen
+        // Calculate corner coordinates
         val right = left + size
         val bottom = top + size
 
+        // Create an array of the corner points
+        val cornerPoints = arrayOf(
+            PVector(left.toFloat(), top.toFloat()),
+            PVector(right.toFloat(), top.toFloat()),
+            PVector(right.toFloat(), bottom.toFloat()),
+            PVector(left.toFloat(), bottom.toFloat())
+        )
 
-        // left and top are defined by the zoom level (cell size) multiplied
-        // by half the universe size which we start out with at the nw corner which is half the size negated
-        // each level in we add half of the size at that to create the new size for left and top
-        // to that, we add the canvas.offsetX to left and canvasOffsetY to top
-        //
-        // the size at this level is then added to the left to get the right side of the universe
-        // and the size is added to the top to get the bottom of the universe
-        // then we see if this universe is inside the canvas by looking to see if
-        // in any direction it is outside.
-        //
-        // if the right side is less than zero it's to the left of the canvas
-        // if the bottom is less than zero it's above the canvas
-        // if the left is larger than the width then we're to the right of the canvas
-        // if the top is larger than the height we're below the canvas
-        return !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
-                left >= canvas.width || top >= canvas.height)
-    }
+        if (isRolling && pApplet.frameCount % 100 == 0) {
+            println("Before transformation: ${cornerPoints.joinToString { "(${it.x}, ${it.y})" }}")
+            println("Current Transformation Matrix")
+            currentTransformMatrix.print()
+        }
+
+        // Apply the current 3D transformation matrix to each corner point
+        cornerPoints.forEach { point ->
+            currentTransformMatrix.mult(point, point)
+        }
+
+        // Find the bounding box after rotation
+        val minX = FlexibleDecimal.create(cornerPoints.minOf { it.x })
+        val maxX = FlexibleDecimal.create(cornerPoints.maxOf { it.x })
+        val minY = FlexibleDecimal.create(cornerPoints.minOf { it.y })
+        val maxY = FlexibleDecimal.create(cornerPoints.maxOf { it.y })
+        val minZ = FlexibleDecimal.create(cornerPoints.minOf { it.z })
+        val maxZ = FlexibleDecimal.create(cornerPoints.maxOf { it.z })
+
+        val cameraDepth = FlexibleDecimal.create(-1248.0) // Define this somewhere relevant
+
+        if (isRolling && pApplet.frameCount % 100 == 0)
+        println("After transformation: ${cornerPoints.joinToString { "(${it.x}, ${it.y})" }}")
+
+        val shouldDraw = !(maxX < FlexibleDecimal.ZERO || maxY < FlexibleDecimal.ZERO || minX >= canvas.width || minY >= canvas.height)
+
+        if (isRolling && pApplet.frameCount % 100 == 0)
+        println("Should Continue Drawing: $shouldDraw")
+
+        // Check if the bounding box is visible on screen
+        // return !(maxX < FlexibleDecimal.ZERO || maxY < FlexibleDecimal.ZERO || minX >= canvas.width || minY >= canvas.height)
+        // Modify your return condition to check for Z as well
+        return shouldDraw
+    }*/
+
 
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
