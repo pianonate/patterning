@@ -99,8 +99,15 @@ abstract class Pattern(
 
 
     protected inner class Ghosting : GhostState {
+        private var firstFrame = true
+
         override fun update(graphics: PGraphics) {
             // graphics.fill(fillColor)
+
+            if (firstFrame) {
+                graphics.clear()
+                firstFrame = false
+            }
             fillColor = Theme.ghostColor
         }
 
