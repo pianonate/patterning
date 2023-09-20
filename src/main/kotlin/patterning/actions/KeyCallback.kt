@@ -7,6 +7,7 @@ interface KeyCallback {
     fun matches(event: KeyEvent): Boolean
     val isValidForCurrentOS: Boolean
     val invokeEveryDraw: Boolean
+    val invokeAfterDelay: Boolean
     val keyCombos: Set<KeyCombo>
     val usage: String
     val validKeyCombosForCurrentOS: Set<KeyCombo>

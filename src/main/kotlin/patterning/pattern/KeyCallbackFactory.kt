@@ -124,7 +124,8 @@ class KeyCallbackFactory(
             pattern.handlePlayPause()
         },
         usage = "play and pause",
-    )
+        invokeAfterDelay = true
+        )
 
     val callbackGhostMode = SimpleKeyCallback(
         keyCombos = SHORTCUT_GHOST_MODE.toKeyComboSet(),

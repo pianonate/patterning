@@ -12,6 +12,7 @@ object KeyHandler {
 
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
     private val keyEventObservers: MutableList<KeyEventObserver> = mutableListOf()
+    private val lastInvokeTime: MutableMap<KeyCallback, Long> = mutableMapOf()
 
     var latestKeyCode: Int = 0
         get() = pressedKeys.last()
@@ -99,7 +100,7 @@ object KeyHandler {
             val matchingCallback = keyCallbacks.values.find { it.matches(localKeyEvent) } ?: return
 
             // Handle repeated invocation here
-            if (matchingCallback.invokeEveryDraw) {
+            if (matchingCallback.invokeEveryDraw || matchingCallback.invokeAfterDelay) {
                 handleKeyPressed(matchingCallback, localKeyEvent)
             }
         }
@@ -117,8 +118,18 @@ object KeyHandler {
     }
 
     private fun handleKeyPressed(callback: KeyCallback, event: KeyEvent) {
+        val currentTime = System.currentTimeMillis()
+
+        if (callback.invokeAfterDelay) {
+            val lastTime = lastInvokeTime[callback] ?: 0L
+            if (currentTime - lastTime < 150) {  // 500 ms delay
+                return
+            }
+        }
 
         invokeFeature(callback, event)
+
+        lastInvokeTime[callback] = currentTime
 
         // now let all the observers know - especially the UX which will handle
         // given key events can be disabled when isUXAvailable is false

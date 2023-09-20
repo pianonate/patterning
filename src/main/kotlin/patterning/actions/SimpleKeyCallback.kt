@@ -6,7 +6,8 @@ class SimpleKeyCallback(
     keyCombos: LinkedHashSet<KeyCombo>,
     private val invokeFeatureLambda: (() -> Unit),
     override val usage: String,
-    override val invokeEveryDraw: Boolean = false
+    override val invokeEveryDraw: Boolean = false,
+    override val invokeAfterDelay: Boolean = false,
 ) : KeyCallback {
 
     // the interface of KeyCallback
