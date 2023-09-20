@@ -1,9 +1,11 @@
 package patterning.life
 
+import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
 import patterning.Theme
+import patterning.pattern.Colorful
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pasteable
@@ -19,6 +21,7 @@ import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
+import processing.core.PConstants
 import processing.core.PConstants.TWO_PI
 import processing.core.PGraphics
 import processing.core.PVector
@@ -27,7 +30,6 @@ import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.io.IOException
 import java.net.URISyntaxException
-import kotlin.math.roundToInt
 
 
 class LifePattern(
@@ -35,6 +37,7 @@ class LifePattern(
     canvas: Canvas,
     properties: Properties
 ) : Pattern(pApplet, canvas, properties),
+    Colorful,
     Movable,
     NumberedPatternLoader,
     Pasteable,
@@ -85,7 +88,7 @@ class LifePattern(
 
     init {
 
-       // pattern = GraphicsReference(pApplet.graphics, Theme.patternGraphics, isResizable = true, useOpenGL = true)
+        // pattern = GraphicsReference(pApplet.graphics, Theme.patternGraphics, isResizable = true, useOpenGL = true)
         pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics, useOpenGL = true)
         hudInfo = HUDStringBuilder()
 
@@ -100,6 +103,16 @@ class LifePattern(
 
     val lastId: Int
         get() = life.lastId.get()
+
+    /**
+     *  Colorful overrides
+     */
+
+    private var rainbowMode = false
+    override fun toggleRainbow() {
+        rainbowMode = !rainbowMode
+        println(rainbowMode)
+    }
 
     /**
      * Pattern overrides
@@ -458,6 +471,14 @@ class LifePattern(
         val posX = x.roundToIntIfGreaterThanReference(size)
         val posY = y.roundToIntIfGreaterThanReference(size)
 
+        if (rainbowMode && ghostState !is Ghosting) {
+            pattern.graphics.colorMode(PConstants.HSB, 360f, 100f, 100f)
+            val hue = PApplet.map(x + y, 0f, canvas.width.toFloat() + canvas.height.toFloat(), 0f, 360f)
+            pattern.graphics.fill(hue, 100f, 100f)
+        } else {
+            pattern.graphics.fill(fillColor)
+        }
+
         if (width > 4 && is3D) {
             pattern.graphics.push()
             pattern.graphics.translate(posX, posY)
@@ -473,8 +494,6 @@ class LifePattern(
                 posY,
                 width, width
             )
-            //println("($posX,$posY) - $size")
-
         }
     }
 

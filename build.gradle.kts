@@ -1,6 +1,16 @@
-val patterningMain: String = "patterning.Patterning"
+
+/**
+ * change this for _your_ configuration
+ */
 val pathToCore = "/Applications/Processing.app/Contents/Java/"
+
+/**
+ * leave the rest of this alone unless you know what you're doing
+ * if you know anything about gradle, you probably know more than me so if you feel confident
+ * have at it
+ */
 val pathToJoglLibraries = "${pathToCore}core/library/"
+val patterningMain: String = "patterning.Patterning"
 val platforms =
     listOf("macos-aarch64", "macos-x86_64", "windows-amd64", "linux-amd64", "linux-arm", "linux-aarch64")
 

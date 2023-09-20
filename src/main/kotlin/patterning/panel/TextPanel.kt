@@ -233,7 +233,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
      *  called on subclasses to give them the opportunity to swap out the panelBuffer necessary to draw on
      */
     override fun updatePanelGraphics() {
-        if (lastMessage != message && !canvas.openGLResizing) {
+        if (lastMessage != message) {
             setTextPanelGraphics()
         }
     }

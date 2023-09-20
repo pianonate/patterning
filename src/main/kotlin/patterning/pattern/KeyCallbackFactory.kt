@@ -37,17 +37,28 @@ class KeyCallbackFactory(
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
             addKeyCallback(callbackGhostModeKeyFrame)
-            addKeyCallback(callbackPerfTest)
             addKeyCallback(callbackPaste)
+            addKeyCallback(callbackPerfTest)
+            addKeyCallback(callbackMovePattern)
+            addKeyCallback(callbackNextScreen)
             addKeyCallback(callbackNumberedPattern)
-            addKeyCallback(callbackMovement)
+            addKeyCallback(callbackRainbow)
             addKeyCallback(callbackZoomIn)
             addKeyCallback(callbackZoomOut)
-            addKeyCallback(callbackMoveScreen)
         }
     }
 
-    private val callbackMoveScreen = SimpleKeyCallback(
+    private val callbackRainbow = SimpleKeyCallback(
+        keyCombos = SHORTCUT_RAINBOW.toKeyComboSet(),
+        invokeFeatureLambda = {
+            if (pattern is Colorful) {
+                (pattern as Colorful).toggleRainbow()
+            }
+        },
+        usage = "move the screen"
+    )
+
+    private val callbackNextScreen = SimpleKeyCallback(
         keyCombos = SHORTCUT_NEXT_SCREEN.toKeyComboSet(),
         invokeFeatureLambda = {
             canvas.nextScreen()
@@ -318,7 +329,7 @@ class KeyCallbackFactory(
         pattern.move(moveX, moveY)
     }
 
-    private val callbackMovement = SimpleKeyCallback(
+    private val callbackMovePattern = SimpleKeyCallback(
         keyCombos = setOf(WEST, EAST, NORTH, SOUTH).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
@@ -364,6 +375,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PLAY_PAUSE = ' '
         private const val SHORTCUT_PERFTEST = 't'
+        private const val SHORTCUT_RAINBOW = 'a'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'
         private const val SHORTCUT_STEP_FASTER = ']'

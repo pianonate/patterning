@@ -15,12 +15,12 @@ abstract class Pattern(
 
     private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
 
-    private interface GhostState {
+    protected interface GhostState {
         fun update(graphics: PGraphics)
         fun transition()
     }
 
-    private var ghostState: GhostState = GhostOff()
+    protected var ghostState: GhostState = GhostOff()
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
@@ -67,16 +67,21 @@ abstract class Pattern(
         ghostState = GhostKeyFrame()
     }
 
-    private inner class GhostOff : GhostState {
+    protected var fillColor: Int = Theme.cellColor
+        private set
+
+
+    protected inner class GhostOff : GhostState {
         override fun update(graphics: PGraphics) {
             graphics.clear()
-            graphics.fill(Theme.cellColor)
+            // graphics.fill(fillColor)
+            fillColor = Theme.cellColor
         }
 
         override fun transition() = run { ghostState = Ghosting() }
     }
 
-    private inner class GhostKeyFrame : GhostState {
+    protected inner class GhostKeyFrame : GhostState {
         private var emitted = false
 
         override fun update(graphics: PGraphics) {
@@ -84,7 +89,8 @@ abstract class Pattern(
                 transition()
                 return
             }
-            graphics.fill(Theme.cellColor)
+            // graphics.fill(fillColor)
+            fillColor = Theme.cellColor
             emitted = true
         }
 
@@ -92,9 +98,10 @@ abstract class Pattern(
     }
 
 
-    private inner class Ghosting : GhostState {
+    protected inner class Ghosting : GhostState {
         override fun update(graphics: PGraphics) {
-            graphics.fill(Theme.ghostColor)
+            // graphics.fill(fillColor)
+            fillColor = Theme.ghostColor
         }
 
         override fun transition() = run { ghostState = GhostOff() }

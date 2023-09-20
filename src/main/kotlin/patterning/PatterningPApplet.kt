@@ -1,5 +1,6 @@
 package patterning
 
+import kotlin.math.roundToInt
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventNotifier
 import patterning.pattern.Movable
@@ -7,7 +8,6 @@ import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
 import patterning.pattern.PatternEventType
 import processing.core.PApplet
-import kotlin.math.roundToInt
 
 
 class PatterningPApplet : PApplet() {
@@ -45,13 +45,6 @@ class PatterningPApplet : PApplet() {
 
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
-
-        // can't do this until PApplet has been initialized
-        // necessary to ensure that in openGL we don't create PGraphics
-        // during a resize - which will cause the  application to crash
-        // the order of this call matters
-        // only necessary on multiple monitors when you invoke move screen
-        canvas.listenToResize()
 
         properties = Properties(this)
 
@@ -92,21 +85,25 @@ class PatterningPApplet : PApplet() {
     }
 
     override fun draw() {
-            try {
-                canvas.drawBackground()
 
-                if (pattern is Movable) {
-                    canvas.updateZoom()
-                }
+        try {
 
-                pattern.draw()
-                ux.draw()
-            } catch(e: Exception) {
-                // it seems these only seem to happen during startup or during resizing (moving from screen to screeN)
-                // we can just let them go for now - log them just in case
-                // see canvas.getGraphics() for more info
-                println(e)
+            canvas.drawBackground()
+
+            if (pattern is Movable) {
+                canvas.updateZoom()
             }
+
+            pattern.draw()
+            ux.draw()
+
+        } catch (e: Exception) {
+            // it seems these only seem to happen during startup or during resizing (moving from screen to screeN)
+            // we can just let them go for now - log them just in case
+            // possibly the early return above has fixed this but leaving it in just in case something else
+            // mysterious pops up
+            println("error in draw() - the uncaught error of last resort: $e")
+        }
 
     }
 

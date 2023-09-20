@@ -2,12 +2,8 @@ package patterning
 
 
 import com.jogamp.newt.opengl.GLWindow
-import com.jogamp.opengl.GLAutoDrawable
-import com.jogamp.opengl.GLEventListener
 import kotlin.math.log2
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
-import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.PRECISION_BUFFER
@@ -37,12 +33,6 @@ class Canvas(private val pApplet: PApplet) {
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
 
-    var openGLResizing = false
-        private set
-    var shouldUpdateOpenGLPGraphics = false
-        private set
-
-
     var width: FlexibleDecimal = FlexibleDecimal.ZERO
         private set
     var height: FlexibleDecimal = FlexibleDecimal.ZERO
@@ -55,47 +45,6 @@ class Canvas(private val pApplet: PApplet) {
     init {
         resetMathContext()
         updateDimensions()
-    }
-
-    val resizeJob = AsyncJobRunner(
-        method = suspend {
-            delay(RESIZE_FINISHED_DELAY_MS)
-            openGLResizing = false
-            shouldUpdateOpenGLPGraphics = true
-
-            // apparently it is safe to update the UX PGraphics but
-            // for some reason we can't update the openGL without crashing
-            // so do what you can because when the user is holding down the resize handle
-            // if they move the screen then a draw is allowed through and then the UX will update to
-            // be in near the correct position
-            // it's a hack but i don't know how to make this better
-            updateResizableGraphicsReferences(updateOpenGL = false)
-            println("resize finished!")
-        })
-
-    fun listenToResize() {
-        val glWindow = pApplet.surface.native as GLWindow
-        glWindow.addGLEventListener(object : GLEventListener {
-            //have to implement the whole interface regardless...
-            override fun init(drawable: GLAutoDrawable) {}
-            override fun display(drawable: GLAutoDrawable) {}
-            override fun dispose(drawable: GLAutoDrawable) {}
-            override fun reshape(drawable: GLAutoDrawable, x: Int, y: Int, width: Int, height: Int) {
-                // This method is called when the window is resized
-                // give it a few ms to be really true before you allow resizing to be set to false
-                // otherwise we crash
-                //
-                // hard
-                //
-                // because shit is happening on other threads in the JOGL code that processing uses,
-                // and we can't do a goddamn thing about it
-                PApplet.println("listenToResize:$width, $height")
-                openGLResizing = true
-                shouldUpdateOpenGLPGraphics = false
-                resizeJob.cancelAndWait()
-                resizeJob.start()
-            }
-        })
     }
 
     /**
@@ -139,7 +88,7 @@ class Canvas(private val pApplet: PApplet) {
         val next = (index + 1) % screens.size
 
         val bounds = screens[next].defaultConfiguration.bounds
-        with (pApplet.surface) {
+        with(pApplet.surface) {
             setLocation(bounds.x, bounds.y)
             setSize(bounds.width, bounds.height)
         }
@@ -201,33 +150,27 @@ class Canvas(private val pApplet: PApplet) {
         }
     }
 
-    /**
-     * if ENABLE_DEPTH_SORT is not turned on then when starting up or moving from screen to screen
-     * a Null Pointer Exception can occur after draw is finished during the endDraw phase - in a place where
-     * we can't trap for the error - so, seemingly we can turn this on and it will prevent the NPE
-     *
-     * sometimes an error also happens during a draw but we can trap for those and just continue as this seems to be fine
-     *
-     * at this point this is a hack and I can't explain it. Also enabling depth sort, in the docs for hint(), indicate
-     * that it is not performant. on this beefy machine it seems to be no problem but your mileage may vary
-     * and note that it's not used on openGL graphics where the heavy lifting is done so probalby that's why
-     * it's not a perf hit
-     */
     fun getGraphics(width: Int, height: Int, creator: PApplet = pApplet, useOpenGL: Boolean = false): PGraphics {
 
         return if (useOpenGL) {
             creator.createGraphics(width, height, P3D).also {
                 it.smooth(OPENGL_PGRAPHICS_SMOOTH)
                 it.beginDraw()
+
                 // necessary so ghost mode looks correct for alpha values when rotating in 3 dimensions
+                // otherwise when it is on the right side of the screen it draws visibly darker
                 it.hint(PGraphics.DISABLE_DEPTH_TEST)
+
+                // seemingly necessary to stop errors occurring between end of draw() and the
+                // under the hood processing endDraw() call - which can occur (for example) when switching
+                // screens during startup, or sometimes just on a slow startup
+                // so far this seems to be a reliable fix - i consider it a hack :(
+                it.hint(PGraphics.DISABLE_OPENGL_ERRORS)
                 it.endDraw()
             }
         } else {
             // we use plain ol' renderer for the UX
-            val graphics = creator.createGraphics(width, height)
-            graphics.hint(PGraphics.ENABLE_DEPTH_SORT)
-            return graphics
+            return creator.createGraphics(width, height)
         }
     }
 
@@ -270,28 +213,20 @@ class Canvas(private val pApplet: PApplet) {
 
         if (resized) {
             updateDimensions()
-        }
+            updateResizableGraphicsReferences()
 
-        if (shouldUpdateOpenGLPGraphics && !resized) {
-            // all of this trickery just because we can't create an openGL PGraphics
-            // while the window is resizing - unfortunately we have to wait as long as possible
-            updateResizableGraphicsReferences(updateOpenGL = true)
-            shouldUpdateOpenGLPGraphics = false
         }
     }
 
-    private fun updateResizableGraphicsReferences(updateOpenGL: Boolean = false) {
+    private fun updateResizableGraphicsReferences() {
         // filter for whether they are openGL or not as we create them at different times
-        graphicsReferenceCache.filter { (_, reference) -> reference.useOpenGL == updateOpenGL }
-            .forEach { (_, reference) ->
-                if (reference.isResizable) {
-                    val newGraphics = getGraphics(pApplet.width, pApplet.height, useOpenGL = reference.useOpenGL)
-                    reference.updateGraphics(newGraphics)
-                }
+        graphicsReferenceCache.forEach { (_, reference) ->
+            if (reference.isResizable) {
+                val newGraphics = getGraphics(pApplet.width, pApplet.height, useOpenGL = reference.useOpenGL)
+                reference.updateGraphics(newGraphics)
             }
-
+        }
     }
-
 
     /**
      * internal for PatterningPApplet to delegate drawing background
@@ -481,7 +416,6 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val RESIZE_FINISHED_DELAY_MS = 10L
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
 
         private const val DEFAULT_ZOOM_LEVEL = 1f
