@@ -250,7 +250,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                         false
                     } else {
                         val mousePosition = MouseInfo.getPointerInfo().location
-                        val canvasPosition = canvas.canvasPosition
+                        val canvasPosition = canvas.position
                         val mouseX = mousePosition.x - canvasPosition.x - 1
                         val mouseY = mousePosition.y - canvasPosition.y - 1
                         if (mouseX < 0 || mouseX > pApplet.width || mouseY < 0 || mouseY > pApplet.height) {

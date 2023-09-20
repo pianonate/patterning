@@ -28,9 +28,6 @@ class PatterningPApplet : PApplet() {
 
     override fun settings() {
         fullScreen(P3D)
-
-        properties = Properties(this, canvas)
-       // size(properties.width, properties.height, P3D)
     }
 
     /**
@@ -44,20 +41,19 @@ class PatterningPApplet : PApplet() {
      */
     override fun setup() {
         windowTitle("patterning")
-
-     //   windowResizable(true)
-
         Theme.init(this)
-
-        // properties.setWindowPosition()
 
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
+
         // can't do this until PApplet has been initialized
         // necessary to ensure that in openGL we don't create PGraphics
         // during a resize - which will cause the  application to crash
         // the order of this call matters
+        // only necessary on multiple monitors when you invoke move screen
         canvas.listenToResize()
+
+        properties = Properties(this)
 
         pattern = patterning.life.LifePattern(
             pApplet = this,
@@ -96,15 +92,22 @@ class PatterningPApplet : PApplet() {
     }
 
     override fun draw() {
+            try {
+                canvas.drawBackground()
 
-        canvas.drawBackground()
+                if (pattern is Movable) {
+                    canvas.updateZoom()
+                }
 
-        if (pattern is Movable) {
-            canvas.updateZoom()
-        }
+                pattern.draw()
+                ux.draw()
+            } catch(e: Exception) {
+                // it seems these only seem to happen during startup or during resizing (moving from screen to screeN)
+                // we can just let them go for now - log them just in case
+                // see canvas.getGraphics() for more info
+                println(e)
+            }
 
-        pattern.draw()
-        ux.draw()
     }
 
     override fun mousePressed() {

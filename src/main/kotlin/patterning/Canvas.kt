@@ -17,6 +17,7 @@ import processing.core.PConstants.P3D
 import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
+import java.awt.GraphicsEnvironment
 import java.awt.Point
 import java.math.MathContext
 import java.math.RoundingMode
@@ -113,17 +114,36 @@ class Canvas(private val pApplet: PApplet) {
 
     fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
 
-    val windowPosition: Point
-        get() {
-            val window = pApplet.surface.native as GLWindow
-            return Point(window.x, window.y - window.insets.topHeight)
-        }
-
-    val canvasPosition: Point
+    val position: Point
         get() {
             val window = pApplet.surface.native as GLWindow
             return Point(window.x, window.y)
         }
+
+    fun nextScreen() {
+        val screens = GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices
+
+        val position = position
+
+        // Find the screen where the window is located
+        var index = 0
+        for (i in screens.indices) {
+            val screen = screens[i]
+            if (screen.defaultConfiguration.bounds.contains(position)) {
+                index = i
+                break
+            }
+        }
+
+        // go to the next and then wrap around to the beginning
+        val next = (index + 1) % screens.size
+
+        val bounds = screens[next].defaultConfiguration.bounds
+        with (pApplet.surface) {
+            setLocation(bounds.x, bounds.y)
+            setSize(bounds.width, bounds.height)
+        }
+    }
 
     // without this precision on the MathContext, small imprecision propagates at
     // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
@@ -181,6 +201,18 @@ class Canvas(private val pApplet: PApplet) {
         }
     }
 
+    /**
+     * if ENABLE_DEPTH_SORT is not turned on then when starting up or moving from screen to screen
+     * a Null Pointer Exception can occur after draw is finished during the endDraw phase - in a place where
+     * we can't trap for the error - so, seemingly we can turn this on and it will prevent the NPE
+     *
+     * sometimes an error also happens during a draw but we can trap for those and just continue as this seems to be fine
+     *
+     * at this point this is a hack and I can't explain it. Also enabling depth sort, in the docs for hint(), indicate
+     * that it is not performant. on this beefy machine it seems to be no problem but your mileage may vary
+     * and note that it's not used on openGL graphics where the heavy lifting is done so probalby that's why
+     * it's not a perf hit
+     */
     fun getGraphics(width: Int, height: Int, creator: PApplet = pApplet, useOpenGL: Boolean = false): PGraphics {
 
         return if (useOpenGL) {
@@ -193,7 +225,9 @@ class Canvas(private val pApplet: PApplet) {
             }
         } else {
             // we use plain ol' renderer for the UX
-            return creator.createGraphics(width, height)
+            val graphics = creator.createGraphics(width, height)
+            graphics.hint(PGraphics.ENABLE_DEPTH_SORT)
+            return graphics
         }
     }
 
@@ -447,7 +481,7 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val RESIZE_FINISHED_DELAY_MS = 200L
+        private const val RESIZE_FINISHED_DELAY_MS = 10L
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
 
         private const val DEFAULT_ZOOM_LEVEL = 1f
