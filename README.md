@@ -9,7 +9,6 @@ If you want to change something, make a pull request - i'd love to see what you 
 
 If you want to know what I want to do next, create an issue and I'll try to respond.
 
-
 ## try out the code in your own environment
 
 I use homebrew - if you want to follow my path go to https://brew.sh/ and get it
@@ -56,6 +55,7 @@ good luck - and let me know if any of this is wrong, or can be improved - I'd li
 for another day.
 
 ### trying it out
+
 Once you get your environment set up and run the application, it will automatically load a pattern from resources.
 
 Also, there are some built in starting patterns - hooked up to the number keys (press 1 through 9).
@@ -70,3 +70,5 @@ https://copy.sh/life/examples/
 
 Under the patterns column, pick one, click on the "pattern file" link, copy everything and paste it onto the canvas of this app,
 and then it will be off to the races.
+
+test
