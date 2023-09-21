@@ -30,15 +30,6 @@ fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
 // without it we'd be off by only looking at the integer part of the largest dimension
 const val PRECISION_BUFFER = 10
 
-fun FlexibleInteger.minPrecisionForDrawing(): Int {
-    return when (val number = this.value) { // Access the value property of FlexibleInteger
-        0 -> PRECISION_BUFFER
-        is Int, is Long -> ceil(ln(number.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
-        is BigInteger -> BigDecimal(number).precision() + PRECISION_BUFFER
-        else -> throw IllegalArgumentException("Unsupported number type")
-    }
-}
-
 fun Long.minPrecisionForDrawing(): Int = ceil(ln(this.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
 
 fun Number.hudFormatted(): String {
@@ -75,22 +66,7 @@ private fun Number.formatLargeNumber(): String {
     }
 }
 
-private fun FlexibleInteger.formatLargeNumber(): String {
-
-    val bigIntegerValue = if (value is BigInteger) value else BigInteger.valueOf(value.toLong())
-    val exponent = bigIntegerValue.toString().length - 1
-    val index = (exponent - 3) / 3
-    return when {
-        index < largeNumberNames.size -> {
-            val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
-            val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
-            "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
-        }
-
-        else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
-    }
-}
-
 fun Long.isOne(): Boolean = this == 1L
 fun Long.isZero(): Boolean = this == 0L
 fun Long.isNotZero(): Boolean = this != 0L
+fun Long.addOne(): Long = this + 1L

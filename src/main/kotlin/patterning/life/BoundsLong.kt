@@ -1,18 +1,21 @@
 package patterning.life
 
-import patterning.util.FlexibleInteger
+import kotlin.math.ceil
+import kotlin.math.ln
+import patterning.util.addOne
 
-data class Bounds(
-    val top: FlexibleInteger,
-    val left: FlexibleInteger,
-    val bottom: FlexibleInteger,
-    val right: FlexibleInteger
+
+data class BoundsLong(
+    val top: Long,
+    val left: Long,
+    val bottom: Long,
+    val right: Long
 ) {
 
-    val width: FlexibleInteger
+    val width: Long
         get() = (right - left).addOne()
 
-    val height: FlexibleInteger
+    val height: Long
         get() = (bottom - top).addOne()
 
     // currently only called on setup of a new life pattern
@@ -23,18 +26,15 @@ data class Bounds(
             maxOf(coordinate.addOne(), -coordinate)
         }
 
-        max = maxOf(max, FlexibleInteger.FOUR) // Ensure the minimum max value is 4
+        max = maxOf(max, 4L) // Ensure the minimum max value is 4
 
-        return max.getLevel()
+        return ceil(ln(max.toDouble()) / ln(2.0)).toInt() + 1
     }
-
-    fun toBoundsLong(): BoundsLong =
-        BoundsLong(top.toLong(), left.toLong(), bottom.toLong(), right.toLong())
 
     override fun equals(other: Any?): Boolean {
         return if (this === other) {
             true
-        } else if (other == null || other !is Bounds) {
+        } else if (other == null || other !is BoundsLong) {
             false
         } else {
             top == other.top &&

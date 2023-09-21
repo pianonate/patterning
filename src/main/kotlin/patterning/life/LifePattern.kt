@@ -710,14 +710,14 @@ class LifePattern(
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, canvas)
+        val boundingBox = BoundingBox(bounds.toBoundsLong(), canvas)
         boundingBox.draw(pattern.graphics)
 
         var currentLevel = life.root.level - 2
 
         while (currentLevel < life.root.level) {
             val halfSize = FlexibleInteger.create(LifeUniverse.pow2(currentLevel))
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize).toBoundsLong(), canvas)
             universeBox.draw(pattern.graphics, drawCrossHair = true)
             currentLevel++
         }

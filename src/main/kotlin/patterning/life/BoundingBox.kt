@@ -3,26 +3,21 @@ package patterning.life
 import patterning.Canvas
 import patterning.Theme
 import patterning.util.FlexibleDecimal
-import patterning.util.FlexibleInteger
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
+class BoundingBox(bounds: BoundsLong, private val canvas: Canvas) {
 
     private val mc = canvas.mc
-    private val zoomLevel = canvas.zoomLevel.scale(mc)
 
     private fun FlexibleDecimal.scale(): FlexibleDecimal = this.scale(mc)
-    private fun FlexibleInteger.scale(): FlexibleDecimal = this.toFlexibleDecimal().scale(mc)
-    private fun FlexibleDecimal.zoom(): FlexibleDecimal = this.multiply(zoomLevel, canvas.mc)
     private fun FlexibleDecimal.offset(offset: FlexibleDecimal): FlexibleDecimal = this.plus(offset)
 
     // take the bounds parameter, multiply times zoom level - intermediate values need to be scaled
-    private fun FlexibleInteger.zoomAndScale(): FlexibleDecimal = this.scale().zoom().scale()
+    private fun Long.zoomAndScale(): FlexibleDecimal = FlexibleDecimal.create(this * canvas.zoomLevelAsFloat)
 
-    // now offset it - again, intermediate values need to be scaled
-    private fun FlexibleInteger.zoomOffsetAndScale(offset: FlexibleDecimal): FlexibleDecimal =
+    private fun Long.zoomOffsetAndScale(offset: FlexibleDecimal): FlexibleDecimal =
         this.zoomAndScale().offset(offset.scale()).scale()
 
     private val leftWithOffset = bounds.left.zoomOffsetAndScale(canvas.offsetX)
@@ -73,7 +68,11 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
         }
     }
 
-    private fun endPos(startWithOffset: FlexibleDecimal, dimensionSize: FlexibleDecimal, canvasSize: FlexibleDecimal): Float {
+    private fun endPos(
+        startWithOffset: FlexibleDecimal,
+        dimensionSize: FlexibleDecimal,
+        canvasSize: FlexibleDecimal
+    ): Float {
         val endDecimal = startWithOffset + dimensionSize
 
         return if (endDecimal > canvasSize) canvasSize.toFloat() + POSITIVE_OFFSCREEN else endDecimal.toFloat()
@@ -82,13 +81,17 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     // Calculate Lines
     private val horizontalLine: Line
         get() {
-            val startY = startPos(orthogonalStartWithOffset = topWithOffset,
+            val startY = startPos(
+                orthogonalStartWithOffset = topWithOffset,
                 orthogonalDimensionSize = heightDecimal,
-                orthogonalCanvasSize = canvas.height)
+                orthogonalCanvasSize = canvas.height
+            )
 
-            val endX = endPos(startWithOffset = leftWithOffset,
+            val endX = endPos(
+                startWithOffset = leftWithOffset,
                 dimensionSize = widthDecimal,
-                canvasSize = canvas.width)
+                canvasSize = canvas.width
+            )
 
             return Line(Point(left, startY), Point(endX, startY))
         }
@@ -96,13 +99,17 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
     private val verticalLine: Line
         get() {
 
-            val startX = startPos(orthogonalStartWithOffset = leftWithOffset,
+            val startX = startPos(
+                orthogonalStartWithOffset = leftWithOffset,
                 orthogonalDimensionSize = widthDecimal,
-                orthogonalCanvasSize = canvas.width)
+                orthogonalCanvasSize = canvas.width
+            )
 
-            val endY = endPos(startWithOffset = topWithOffset,
+            val endY = endPos(
+                startWithOffset = topWithOffset,
                 dimensionSize = heightDecimal,
-                canvasSize = canvas.height)
+                canvasSize = canvas.height
+            )
 
             return Line(Point(startX, top), Point(startX, endY))
         }
