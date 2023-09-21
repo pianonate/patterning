@@ -19,7 +19,6 @@ import patterning.pattern.ThreeDimensional
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
-import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
 import patterning.util.isNotZero
 import patterning.util.isOne
@@ -716,8 +715,8 @@ class LifePattern(
         var currentLevel = life.root.level - 2
 
         while (currentLevel < life.root.level) {
-            val halfSize = FlexibleInteger.create(LifeUniverse.pow2(currentLevel))
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize).toBoundsLong(), canvas)
+            val halfSize = LifeUniverse.pow2(currentLevel)
+            val universeBox = BoundingBox(BoundsLong(-halfSize, -halfSize, halfSize, halfSize), canvas)
             universeBox.draw(pattern.graphics, drawCrossHair = true)
             currentLevel++
         }
