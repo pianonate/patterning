@@ -220,12 +220,12 @@ class LifePattern(
         canvas.zoom(zoomIn, x, y)
     }
 
-    private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
+    private fun center(bounds: BoundsLong, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) canvas.saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = bounds.width.toFlexibleDecimal()
-        val patternHeight = bounds.height.toFlexibleDecimal()
+        val patternWidth = FlexibleDecimal.create(bounds.width)
+        val patternHeight = FlexibleDecimal.create(bounds.height)
 
         if (fitBounds) {
             val widthRatio =
@@ -250,9 +250,9 @@ class LifePattern(
         val halfDrawingHeight = drawingHeight.divide(FlexibleDecimal.TWO, canvas.mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left.toFlexibleDecimal().multiply(-level, canvas.mc))
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (FlexibleDecimal.create(bounds.left).multiply(-level, canvas.mc))
         val offsetY =
-            halfCanvasHeight - halfDrawingHeight + (bounds.top.toFlexibleDecimal().multiply(-level, canvas.mc))
+            halfCanvasHeight - halfDrawingHeight + (FlexibleDecimal.create(bounds.top).multiply(-level, canvas.mc))
 
         canvas.updateCanvasOffsets(offsetX, offsetY)
 
@@ -710,7 +710,7 @@ class LifePattern(
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds.toBoundsLong(), canvas)
+        val boundingBox = BoundingBox(bounds, canvas)
         boundingBox.draw(pattern.graphics)
 
         var currentLevel = life.root.level - 2

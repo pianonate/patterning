@@ -36,8 +36,8 @@ class LifeUniverse internal constructor() {
         get() = rootReference.get()
         private set(value) = rootReference.set(value)
 
-    val rootBounds: Bounds
-        get() = root.bounds
+    val rootBounds: BoundsLong
+        get() = root.bounds.toBoundsLong()
 
     val lifeInfo = LifeInfo(this::updatePatternInfo)
 
