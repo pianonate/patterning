@@ -3,7 +3,6 @@ package patterning.pattern
 import patterning.Canvas
 import patterning.Properties
 import patterning.Theme
-import patterning.util.FlexibleInteger
 import processing.core.PApplet
 import processing.core.PGraphics
 

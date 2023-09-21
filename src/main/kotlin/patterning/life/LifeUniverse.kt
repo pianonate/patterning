@@ -341,8 +341,8 @@ class LifeUniverse internal constructor() {
         lifeInfo.addOrUpdate("lastId", lastId.get())
         /* lifeInfo.addOrUpdate("normalRecurse", recurse.get())
          lifeInfo.addOrUpdate("stepRecurse", recurseStep.get())*/
-        lifeInfo.addOrUpdate("width", root.bounds.width)
-        lifeInfo.addOrUpdate("height", root.bounds.height)
+        lifeInfo.addOrUpdate("width", root.bounds.width.toLong())
+        lifeInfo.addOrUpdate("height", root.bounds.height.toLong())
     }
 
     /*    private var recurse = AtomicInteger(0)

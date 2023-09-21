@@ -1,7 +1,5 @@
 package patterning.life
 
-import patterning.util.FlexibleInteger
-import patterning.util.formatWithCommas
 import patterning.util.hudFormatted
 
 class HUDStringBuilder {
@@ -17,9 +15,8 @@ class HUDStringBuilder {
     fun addOrUpdate(key: String, value: Any?) {
         when (value) {
             is Number -> data[key] = value
-            is FlexibleInteger -> data[key] = value
             is String -> data[key] = value
-            else -> throw IllegalArgumentException("Value must be a Number, FlexibleInteger, or String.")
+            else -> throw IllegalArgumentException("value must be a Number or a String.")
         }
     }
 
@@ -34,11 +31,8 @@ class HUDStringBuilder {
             for ((key, value) in data) {
 
                 val formattedValue = when (value) {
-                    is FlexibleInteger -> {
-                        "$key ${value.hudFormatted()}"
-                    }
 
-                    is Number -> "$key ${value.formatWithCommas()}"
+                    is Number -> "$key ${value.hudFormatted()}"
 
                     is String -> value
                     else -> "unknown thing"

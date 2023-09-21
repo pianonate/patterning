@@ -486,7 +486,7 @@ class LifePattern(
     }
 
 
-    private var actualRecursions = FlexibleInteger.ZERO
+    private var actualRecursions = 0L
     private var startDelta = 0
 
     private fun drawPattern(life: LifeUniverse, shouldAdvance: Boolean) {
@@ -540,7 +540,7 @@ class LifePattern(
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
         with(nodePath.getLowestEntryFromRoot(life.root)) {
-            actualRecursions = FlexibleInteger.ZERO
+            actualRecursions = 0L
 
 
             val startingNode = node

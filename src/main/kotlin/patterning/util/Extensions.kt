@@ -41,11 +41,11 @@ fun FlexibleInteger.minPrecisionForDrawing(): Int {
 
 fun Long.minPrecisionForDrawing(): Int = ceil(ln(this.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
 
-fun FlexibleInteger.hudFormatted(): String {
-    if (value == 0) return "0"
-    return if (value is Int) {
-        if (value < 1_000_000_000)
-            value.formatWithCommas()
+fun Number.hudFormatted(): String {
+    if (this == 0L) return "0"
+    return if (this is Int) {
+        if (this < 1_000_000_000)
+            this.formatWithCommas()
         else formatLargeNumber()
     } else {
         formatLargeNumber()
@@ -57,6 +57,23 @@ private val largeNumberNames = arrayOf(
     "septillion", "octillion", "nonillion", "decillion", "undecillion", "duodecillion",
     "tredecillion", "quattuordecillion"
 )
+
+private fun Number.formatLargeNumber(): String {
+    if (this.toLong() < 1_000_000_000L) return this.formatWithCommas()
+
+    val bigIntegerValue = BigInteger.valueOf(this.toLong())
+    val exponent = bigIntegerValue.toString().length - 1
+    val index = (exponent - 3) / 3
+    return when {
+        index < largeNumberNames.size && index >= 0 -> {
+            val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
+            val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
+            "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
+        }
+
+        else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
+    }
+}
 
 private fun FlexibleInteger.formatLargeNumber(): String {
 
