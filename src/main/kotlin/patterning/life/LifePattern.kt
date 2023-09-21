@@ -192,7 +192,7 @@ class LifePattern(
     // as nodes are created their bounds are calculated
     // when the bounds get larger, we need a math context to draw with that
     // allows the pattern to be drawn with the necessary precision
-    private fun updateBoundsChanged(bounds: BoundsLong) {
+    private fun updateBoundsChanged(bounds: Bounds) {
         val dimension = maxOf(bounds.width, bounds.height)
         if (dimension > biggestDimension) {
             biggestDimension = dimension
@@ -219,7 +219,7 @@ class LifePattern(
         canvas.zoom(zoomIn, x, y)
     }
 
-    private fun center(bounds: BoundsLong, fitBounds: Boolean, saveState: Boolean) {
+    private fun center(bounds: Bounds, fitBounds: Boolean, saveState: Boolean) {
         if (saveState) canvas.saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
@@ -716,7 +716,7 @@ class LifePattern(
 
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
-            val universeBox = BoundingBox(BoundsLong(-halfSize, -halfSize, halfSize, halfSize), canvas)
+            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
             universeBox.draw(pattern.graphics, drawCrossHair = true)
             currentLevel++
         }

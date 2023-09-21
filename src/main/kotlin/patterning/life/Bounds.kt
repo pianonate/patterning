@@ -5,7 +5,7 @@ import kotlin.math.ln
 import patterning.util.addOne
 
 
-data class BoundsLong(
+data class Bounds(
     val top: Long,
     val left: Long,
     val bottom: Long,
@@ -34,7 +34,7 @@ data class BoundsLong(
     override fun equals(other: Any?): Boolean {
         return if (this === other) {
             true
-        } else if (other == null || other !is BoundsLong) {
+        } else if (other == null || other !is Bounds) {
             false
         } else {
             top == other.top &&

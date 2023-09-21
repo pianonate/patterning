@@ -7,7 +7,7 @@ import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
 
-class BoundingBox(bounds: BoundsLong, private val canvas: Canvas) {
+class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
 
     private val mc = canvas.mc
 

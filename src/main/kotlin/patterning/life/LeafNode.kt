@@ -12,15 +12,15 @@ class LeafNode(
     override val sw: Node = this
     override val se: Node = this
 
-    override val bounds: BoundsLong = if (population.isOne())
-        BoundsLong(
+    override val bounds: Bounds = if (population.isOne())
+        Bounds(
             top = -1L,
             left = -1L,
             bottom = -1L,
             right = -1L
         )
     else
-        BoundsLong(
+        Bounds(
             top = 0L,
             left = 0L,
             bottom = 0L,

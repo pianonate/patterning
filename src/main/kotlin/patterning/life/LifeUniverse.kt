@@ -35,7 +35,7 @@ class LifeUniverse internal constructor() {
         get() = rootReference.get()
         private set(value) = rootReference.set(value)
 
-    val rootBounds: BoundsLong
+    val rootBounds: Bounds
         get() = root.bounds
 
     val lifeInfo = LifeInfo(this::updatePatternInfo)
@@ -128,9 +128,9 @@ class LifeUniverse internal constructor() {
 
     // this is just used when setting up the field initially unless I'm missing
     // something
-    private fun getBounds(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): BoundsLong {
+    private fun getBounds(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): Bounds {
         if (fieldX.size == 0) {
-            return BoundsLong(0L, 0L, 0L, 0L)
+            return Bounds(0L, 0L, 0L, 0L)
         }
 
         var minX = fieldX[0]
@@ -156,7 +156,7 @@ class LifeUniverse internal constructor() {
             }
         }
 
-        return BoundsLong(
+        return Bounds(
             minY.toLong(),
             minX.toLong(),
             maxY.toLong(),

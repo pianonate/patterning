@@ -33,9 +33,9 @@ class TreeNode(
 
     val populatedChildrenCount: Byte = (listOf(nw, ne, sw, se).count { it.population.isNotZero() }).toByte()
 
-    override val bounds: BoundsLong = run {
+    override val bounds: Bounds = run {
         if (this.population.isZero()) {
-            BoundsLong(
+            Bounds(
                 top = 0L,
                 left = 0L,
                 bottom = 0L,
@@ -44,7 +44,7 @@ class TreeNode(
         } else {
 
             // Initialize bounds to crazy size - currently set to the universe limit
-            var bounds = BoundsLong(
+            var bounds = Bounds(
                 LifeUniverse.MAX_VALUE,
                 LifeUniverse.MAX_VALUE,
                 LifeUniverse.MIN_VALUE,
@@ -67,18 +67,18 @@ class TreeNode(
         child: Node,
         topBottomOffset: Long,
         leftRightOffset: Long,
-        bounds: BoundsLong
-    ): BoundsLong {
+        bounds: Bounds
+    ): Bounds {
         return if (child.population.isNotZero()) {
             val childBounds = child.bounds
 
-            val translatedBounds = BoundsLong(
+            val translatedBounds = Bounds(
                 childBounds.top + topBottomOffset.toLong(),
                 childBounds.left + leftRightOffset.toLong(),
                 childBounds.bottom + topBottomOffset.toLong(),
                 childBounds.right + leftRightOffset.toLong()
             )
-            BoundsLong(
+            Bounds(
                 minOf(bounds.top, translatedBounds.top),
                 minOf(bounds.left, translatedBounds.left),
                 maxOf(bounds.bottom, translatedBounds.bottom),
