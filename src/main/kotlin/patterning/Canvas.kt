@@ -13,6 +13,7 @@ import processing.core.PConstants.P3D
 import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
+import processing.core.PMatrix3D
 import java.awt.GraphicsEnvironment
 import java.awt.Point
 import java.math.MathContext
@@ -45,6 +46,28 @@ class Canvas(private val pApplet: PApplet) {
     init {
         resetMathContext()
         updateDimensions()
+    }
+
+    /**
+     * 3D canvas stuff
+     */
+    private fun multiplyPMatrix3D(matrix: PMatrix3D, vector: Array<FlexibleDecimal>): Array<FlexibleDecimal> {
+        val x = FlexibleDecimal.create(matrix.m00).multiply(vector[0], mc) +
+                FlexibleDecimal.create(matrix.m01).multiply(vector[1], mc) +
+                FlexibleDecimal.create(matrix.m02).multiply(vector[2], mc) +
+                FlexibleDecimal.create(matrix.m03)
+
+        val y = FlexibleDecimal.create(matrix.m10).multiply(vector[0], mc) +
+                FlexibleDecimal.create(matrix.m11).multiply(vector[1], mc) +
+                FlexibleDecimal.create(matrix.m12).multiply(vector[2], mc) +
+                FlexibleDecimal.create(matrix.m13)
+
+        val z = FlexibleDecimal.create(matrix.m20).multiply(vector[0], mc) +
+                FlexibleDecimal.create(matrix.m21).multiply(vector[1], mc) +
+                FlexibleDecimal.create(matrix.m22).multiply(vector[2], mc) +
+                FlexibleDecimal.create(matrix.m23)
+
+        return arrayOf(x, y, z)
     }
 
     /**

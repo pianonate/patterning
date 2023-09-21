@@ -1,5 +1,6 @@
 package patterning.life
 
+import kotlin.math.PI
 import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
@@ -22,7 +23,6 @@ import patterning.util.ResourceManager
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
-import processing.core.PConstants.TWO_PI
 import processing.core.PMatrix3D
 import processing.core.PVector
 import java.awt.Toolkit
@@ -165,7 +165,7 @@ class LifePattern(
 
     /**
      * okay - this is hacked in for now so you can at least et something out of it but ou really need to pop the
-     * system dialog on non mobile devices.  mobile - probably sharing
+     * system dialog on non-mobile devices.  mobile - probably sharing
      */
     override fun saveImage() {
 
@@ -355,65 +355,6 @@ class LifePattern(
     }
 
     /**
-     * for yaw
-     *
-     * fov:  defines the extent of the observable world that can be seen from the camera's position. A common value is
-     * π / 3 or 60 degrees, which gives a good balance between a wide view and realistic perspective.
-     * You can think of the FOV as the "zoom level" of the camera.
-     *
-     * cameraZ: This calculates the Z position of the camera based on the height of the canvas and the FOV. It ensures that the objects maintain their apparent size as you move the camera.
-     *
-     * radius: The radius is the distance from the camera to the center of rotation. By setting it equal to the cameraZ, the objects maintain their apparent size.
-     *
-     * angle: This calculates the angle of rotation based on the current yawCount. It ranges from 0 to 2π, or 360 degrees. representing a full circle.  We want to start at 90 degrees, so we add 90 to the yawCount.
-     *
-     * eyeX and eyeZ: calculate the X and Z positions of the camera based on the angle and radius. By using sine and cosine, we ensure that the camera moves in a circle around the object.
-     *
-     * perspective: sets up the perspective projection with the defined FOV, aspect ratio, near and far clipping planes.
-     *
-     * camera: Here, the camera is set up with its position (eyeX, pApplet.height / 2f, eyeZ), the center of the scene that it's looking at (pApplet.width / 2f, pApplet.height / 2f, 0f), and the up vector (0f, 1f, 0f), which defines which direction is "up" from the camera's point of view.
-     *
-     * this code is not currently in use - but it may be the basis for being able to draw an infinite screen by controlling perspective...
-     * so that while rotating the drawing can disappear into the distance
-     */
-    /* private fun handlePerspective3D() {
-
-         if (isYawing) {
-             val fov = (PI / 3.0).toFloat() // You may adjust this value to get the desired field of view
-             val cameraZ = (pApplet.height / 2.0f) / tan(fov / 2.0f)
-
-             val radius = cameraZ // Setting the radius equal to cameraZ to keep the apparent size consistent
-
-             val angle = TWO_PI * ((yawCount + 90) % 360) / 360f
-             val eyeX = cos(angle) * radius + pApplet.width / 2f
-             val eyeZ = sin(angle) * radius
-
-             // Set the perspective
-             pApplet.perspective(
-                 fov,
-                 pApplet.width.toFloat() / pApplet.height.toFloat(),
-                 cameraZ / 10.0f,
-                 cameraZ * 10.0f
-             )
-
-             // Set the camera parameters: eye position, center position (looking at the center of the screen), and up vector
-             pattern.graphics.camera(
-                 eyeX,
-                 pApplet.height / 2f,
-                 eyeZ,
-                 pApplet.width / 2f,
-                 pApplet.height / 2f,
-                 0f,
-                 0f,
-                 1f,
-                 0f
-             )
-
-             yawCount++
-         }
-     }*/
-
-    /**
      * private fun
      */
     private fun goForwardInTime(shouldAdvance: Boolean) {
@@ -504,13 +445,10 @@ class LifePattern(
             stroke(Theme.boxOutlineColor)
 
             if (isPitching)
-            // rotateX(-TWO_PI / 2f * lerpRotate())
                 rotateX(rotationAngle)
             if (isYawing)
-            // rotateY(-TWO_PI / 2f * lerpRotate())
                 rotateY(rotationAngle)
             if (isRolling)
-            // rotateZ(-TWO_PI / 2f * lerpRotate())
                 rotateZ(rotationAngle)
             box(width)
             pop()
@@ -537,10 +475,11 @@ class LifePattern(
         rotationAngle += 0.01f
 
         // Keep the angle in the range of 0 to TWO_PI
-        if (rotationAngle >= PApplet.TWO_PI) {
-            rotationAngle -= PApplet.TWO_PI
+        if (rotationAngle >= TWO_PI) {
+            rotationAngle -=TWO_PI
         }
     }
+
 
 
     private var actualRecursions = FlexibleInteger.ZERO
@@ -615,9 +554,6 @@ class LifePattern(
 
     private fun handle3D(shouldAdvance: Boolean) {
 
-        currentTransformMatrix.reset()
-
-
         // Move to the center of the object
         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
 
@@ -629,7 +565,7 @@ class LifePattern(
         if (shouldAdvance) {
             if (isYawing) {
                 currentYawAngle += rotationIncrement
-                currentYawAngle %= TWO_PI  // Keep angle in range (0..TWO_PI)
+                currentYawAngle %= TWO_PI  // Keep angle in range (0 to TWO_PI)
             }
 
             if (isPitching) {
@@ -700,9 +636,6 @@ class LifePattern(
         }
     }
 
-
-
-
     /**
      * used by PatternDrawer a well as DrawNodePath
      * maintains no state so it can live here as a utility function
@@ -745,66 +678,6 @@ class LifePattern(
                  left >= canvas.width || top >= canvas.height)
      }
 
-   /* private fun shouldContinue(
-        node: Node,
-        size: FlexibleDecimal,
-        nodeLeft: FlexibleDecimal,
-        nodeTop: FlexibleDecimal
-    ): Boolean {
-        if (node.population.isZero()) {
-            return false
-        }
-
-        val left = nodeLeft + canvas.offsetX
-        val top = nodeTop + canvas.offsetY
-
-        // Calculate corner coordinates
-        val right = left + size
-        val bottom = top + size
-
-        // Create an array of the corner points
-        val cornerPoints = arrayOf(
-            PVector(left.toFloat(), top.toFloat()),
-            PVector(right.toFloat(), top.toFloat()),
-            PVector(right.toFloat(), bottom.toFloat()),
-            PVector(left.toFloat(), bottom.toFloat())
-        )
-
-        if (isRolling && pApplet.frameCount % 100 == 0) {
-            println("Before transformation: ${cornerPoints.joinToString { "(${it.x}, ${it.y})" }}")
-            println("Current Transformation Matrix")
-            currentTransformMatrix.print()
-        }
-
-        // Apply the current 3D transformation matrix to each corner point
-        cornerPoints.forEach { point ->
-            currentTransformMatrix.mult(point, point)
-        }
-
-        // Find the bounding box after rotation
-        val minX = FlexibleDecimal.create(cornerPoints.minOf { it.x })
-        val maxX = FlexibleDecimal.create(cornerPoints.maxOf { it.x })
-        val minY = FlexibleDecimal.create(cornerPoints.minOf { it.y })
-        val maxY = FlexibleDecimal.create(cornerPoints.maxOf { it.y })
-        val minZ = FlexibleDecimal.create(cornerPoints.minOf { it.z })
-        val maxZ = FlexibleDecimal.create(cornerPoints.maxOf { it.z })
-
-        val cameraDepth = FlexibleDecimal.create(-1248.0) // Define this somewhere relevant
-
-        if (isRolling && pApplet.frameCount % 100 == 0)
-        println("After transformation: ${cornerPoints.joinToString { "(${it.x}, ${it.y})" }}")
-
-        val shouldDraw = !(maxX < FlexibleDecimal.ZERO || maxY < FlexibleDecimal.ZERO || minX >= canvas.width || minY >= canvas.height)
-
-        if (isRolling && pApplet.frameCount % 100 == 0)
-        println("Should Continue Drawing: $shouldDraw")
-
-        // Check if the bounding box is visible on screen
-        // return !(maxX < FlexibleDecimal.ZERO || maxY < FlexibleDecimal.ZERO || minX >= canvas.width || minY >= canvas.height)
-        // Modify your return condition to check for Z as well
-        return shouldDraw
-    }*/
-
 
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
@@ -833,5 +706,6 @@ class LifePattern(
 
     companion object {
         private const val LIFE_FORM_PROPERTY = "lifeForm"
+        private const val TWO_PI = (PI * 2).toFloat()
     }
 }

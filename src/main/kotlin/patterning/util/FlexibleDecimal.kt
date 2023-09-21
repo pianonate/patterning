@@ -1,13 +1,13 @@
 package patterning.util
 
+import kotlin.math.pow
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.MathContext
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.pow
 
 class FlexibleDecimal private constructor(initialValue: Number) :
-    Comparable<FlexibleDecimal> {
+    Comparable<FlexibleDecimal>, Number() {
 
     private fun canRepresentAsDouble(value: BigDecimal): Boolean {
         val doubleValue = value.toDouble()
@@ -29,14 +29,14 @@ class FlexibleDecimal private constructor(initialValue: Number) :
     }
 
     val value: Number = initialValue.toBigDecimalSafe().let { transformed ->
-        when {
-            initialValue is Int -> initialValue.toFloat()
-            initialValue is Long -> initialValue.toDouble()
-            canRepresentAsFloat(transformed) -> transformed.toFloat()
-            canRepresentAsDouble(transformed) -> transformed.toDouble()
-            else -> transformed
+            when {
+                initialValue is Int -> initialValue.toFloat()
+                initialValue is Long -> initialValue.toDouble()
+                canRepresentAsFloat(transformed) -> transformed.toFloat()
+                canRepresentAsDouble(transformed) -> transformed.toDouble()
+                else -> transformed
+            }
         }
-    }
 
     operator fun plus(other: FlexibleDecimal): FlexibleDecimal {
         return when {
@@ -94,13 +94,29 @@ class FlexibleDecimal private constructor(initialValue: Number) :
 
     fun get(): Number = value
 
-    fun toFloat(): Float {
+    override fun toFloat(): Float {
         val doubleValue = value.toDouble()
         if (doubleValue < FLOAT_MIN || doubleValue > FLOAT_MAX) {
             throw IllegalArgumentException("Value out of range for Float.")
         } else {
             return value.toFloat()
         }
+    }
+
+    override fun toInt(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun toLong(): Long {
+        TODO("Not yet implemented")
+    }
+
+    override fun toShort(): Short {
+        TODO("Not yet implemented")
+    }
+
+    override fun toByte(): Byte {
+        TODO("Not yet implemented")
     }
 
     /**
@@ -370,7 +386,7 @@ class FlexibleDecimal private constructor(initialValue: Number) :
         }
     }
 
-    fun toDouble(): Double {
+    override fun toDouble(): Double {
         return value.toDouble()
     }
 
@@ -450,5 +466,16 @@ class FlexibleDecimal private constructor(initialValue: Number) :
                 newInstance
             }
         }
+
+        fun flexibleDecimalArrayOf(vararg elements: Number): Array<FlexibleDecimal> {
+            return Array(elements.size) { i ->
+                if (elements[i] is FlexibleDecimal) {
+                    elements[i] as FlexibleDecimal
+                } else {
+                    create(elements[i])
+                }
+            }
+        }
+
     }
 }
