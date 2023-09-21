@@ -1,8 +1,7 @@
 package patterning
 
-import kotlin.math.cos
-import kotlin.math.sin
-import patterning.util.FlexibleDecimal
+import processing.core.PMatrix3D
+import processing.core.PVector
 
 class ThreeD(val canvas: Canvas) {
 
@@ -11,8 +10,33 @@ class ThreeD(val canvas: Canvas) {
         var pitch: Float = 0f,
         var roll: Float = 0f
     ) {
-        private val mappedRotationMatrixCache = HashMap<String, Array<Array<FlexibleDecimal>>>()
         private val rotationIncrement = (Math.PI * 2 / 360).toFloat()
+
+        private val mat = PMatrix3D()
+
+        fun updateYaw() {
+            yaw = updateAngle(yaw)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
+
+        fun updatePitch() {
+            pitch = updateAngle(pitch)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
+
+        fun updateRoll() {
+            roll = updateAngle(roll)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
 
         private fun updateAngle(angle: Float): Float {
             var newAngle = angle + rotationIncrement
@@ -20,71 +44,16 @@ class ThreeD(val canvas: Canvas) {
             return newAngle
         }
 
-        fun updateYaw() {
-            yaw = updateAngle(yaw)
-        }
-
-        fun updatePitch() {
-            pitch = updateAngle(pitch)
-        }
-
-        fun updateRoll() {
-            roll = updateAngle(roll)
-        }
-
         fun reset() {
             yaw = 0f
             pitch = 0f
             roll = 0f
+            mat.reset()
         }
 
-        fun getMappedRotationMatrix(): Array<Array<FlexibleDecimal>> {
-            val key = generateCacheKey(yaw, pitch, roll)
-            return mappedRotationMatrixCache.getOrPut(key) {
-                getRotationMatrix()
-                    .map { row -> row.map { FlexibleDecimal.create(it) }.toTypedArray() }
-                    .toTypedArray()
-            }
+        fun getRotationMatrix(): PMatrix3D {
+            return mat
         }
-
-        private fun getRotationMatrix(): Array<FloatArray> {
-            return multiplyMatrices(
-                multiplyMatrices(yawMatrix(), pitchMatrix()),
-                rollMatrix()
-            )
-        }
-
-        private fun yawMatrix(): Array<FloatArray> = arrayOf(
-            floatArrayOf(cos(yaw), 0f, sin(yaw)),
-            floatArrayOf(0f, 1f, 0f),
-            floatArrayOf(-sin(yaw), 0f, cos(yaw))
-        )
-
-        private fun pitchMatrix(): Array<FloatArray> = arrayOf(
-            floatArrayOf(1f, 0f, 0f),
-            floatArrayOf(0f, cos(pitch), -sin(pitch)),
-            floatArrayOf(0f, sin(pitch), cos(pitch))
-        )
-
-        private fun rollMatrix(): Array<FloatArray> = arrayOf(
-            floatArrayOf(cos(roll), -sin(roll), 0f),
-            floatArrayOf(sin(roll), cos(roll), 0f),
-            floatArrayOf(0f, 0f, 1f)
-        )
-
-        private fun multiplyMatrices(a: Array<FloatArray>, b: Array<FloatArray>): Array<FloatArray> {
-            val result = Array(3) { FloatArray(3) }
-            for (i in 0..2) {
-                for (j in 0..2) {
-                    result[i][j] = 0f
-                    for (k in 0..2) {
-                        result[i][j] += a[i][k] * b[k][j]
-                    }
-                }
-            }
-            return result
-        }
-
     }
 
     var isYawing: Boolean = false
@@ -117,58 +86,28 @@ class ThreeD(val canvas: Canvas) {
     }
 
     // In ThreeD.kt
-    fun isRectInView(
-        left: FlexibleDecimal,
-        top: FlexibleDecimal,
-        width: FlexibleDecimal,
-        height: FlexibleDecimal
-    ): Boolean {
+    // In ThreeD.kt
+    fun isRectInView(left: Float, top: Float, width: Float, height: Float): Boolean {
+        val rotationMatrix = currentAngles.getRotationMatrix()
 
-        val rotationMatrix = currentAngles.getMappedRotationMatrix()
-        val key = generateCacheKey(rotationMatrix, left, top, width, height)
+        val corners = arrayOf(
+            PVector(left, top, 0f),
+            PVector(left + width, top, 0f),
+            PVector(left, top + height, 0f),
+            PVector(left + width, top + height, 0f)
+        )
 
-        return isRectInViewMap.getOrPut(key) {
-            val transformedCorner1 = multiplyMatrixWithVector(rotationMatrix, arrayOf(left, top, FlexibleDecimal.ZERO))
-            val transformedCorner2 =
-                multiplyMatrixWithVector(rotationMatrix, arrayOf(left + width, top, FlexibleDecimal.ZERO))
-            val transformedCorner3 =
-                multiplyMatrixWithVector(rotationMatrix, arrayOf(left, top + height, FlexibleDecimal.ZERO))
-            val transformedCorner4 =
-                multiplyMatrixWithVector(rotationMatrix, arrayOf(left + width, top + height, FlexibleDecimal.ZERO))
-
-            val minX = minOf(transformedCorner1[0], transformedCorner2[0], transformedCorner3[0], transformedCorner4[0])
-            val maxX = maxOf(transformedCorner1[0], transformedCorner2[0], transformedCorner3[0], transformedCorner4[0])
-            val minY = minOf(transformedCorner1[1], transformedCorner2[1], transformedCorner3[1], transformedCorner4[1])
-            val maxY = maxOf(transformedCorner1[1], transformedCorner2[1], transformedCorner3[1], transformedCorner4[1])
-
-            (maxX >= FlexibleDecimal.ZERO && minX < canvas.width) &&
-                    (maxY >= FlexibleDecimal.ZERO && minY < canvas.height)
+        val transformedCorners = corners.map {
+            val result = PVector()
+            rotationMatrix.mult(it, result)
+            result
         }
 
-    }
+        val minX = transformedCorners.minOf { it.x }
+        val maxX = transformedCorners.maxOf { it.x }
+        val minY = transformedCorners.minOf { it.y }
+        val maxY = transformedCorners.maxOf { it.y }
 
-    private val isRectInViewMap = HashMap<String, Boolean>()
-
-    private fun multiplyMatrixWithVector(
-        matrix: Array<Array<FlexibleDecimal>>,
-        vector: Array<FlexibleDecimal>
-    ): Array<FlexibleDecimal> {
-        val result = Array(3) { FlexibleDecimal.ZERO }
-        for (i in 0..2) {
-            for (j in 0..2) {
-                result[i] += matrix[i][j].multiply(vector[j], canvas.mc)
-            }
-        }
-        return result
-    }
-
-    companion object {
-        private fun generateCacheKey(vararg components: Any): String {
-            var result = 17
-            for (component in components) {
-                result = 31 * result + component.hashCode()
-            }
-            return result.toString()
-        }
+        return (maxX >= 0 && minX < canvas.width.toFloat()) && (maxY >= 0 && minY < canvas.height.toFloat())
     }
 }

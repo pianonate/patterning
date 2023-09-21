@@ -676,13 +676,13 @@ class LifePattern(
         val right = left + size
         val bottom = top + size
 
-        //val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
+        val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
         val retVal = !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
                 left >= canvas.width || top >= canvas.height)
 
-    /*    if (newVal != retVal) {
+        if (newVal != retVal) {
             val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
-        }*/
+        }
         return retVal
     }
 
@@ -699,7 +699,7 @@ class LifePattern(
         val left = nodeLeft + canvas.offsetX
         val top = nodeTop + canvas.offsetY
 
-        return threeD.isRectInView(left, top, size, size)
+        return threeD.isRectInView(left.toFloat(), top.toFloat(), size.toFloat(), size.toFloat())
     }
 
     private fun drawBounds(life: LifeUniverse) {
