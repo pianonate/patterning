@@ -111,7 +111,6 @@ class LifePattern(
     private var rainbowMode = false
     override fun toggleRainbow() {
         rainbowMode = !rainbowMode
-        println(rainbowMode)
     }
 
     /**
@@ -491,11 +490,9 @@ class LifePattern(
         with(pattern.graphics) {
 
             beginDraw()
-
-            // Save the current transformation matrix
             push()
 
-            handle3D(shouldAdvance)
+            // handle3D(shouldAdvance)
 
             ghostState.prepareGraphics(this)
 
@@ -517,9 +514,7 @@ class LifePattern(
                 drawVisibleNodes(life)
             }
 
-
             pop()
-
             endDraw()
         }
 

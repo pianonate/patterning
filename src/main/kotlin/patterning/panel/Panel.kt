@@ -262,10 +262,6 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
                                         && mouseX < effectivePosition.x + width
                                         && mouseY >= effectivePosition.y
                                         && mouseY < effectivePosition.y + height
-                            /*               if (overMe)
-                                               println("m.x:$mouseX m.y:$mouseY: c.x:${canvasPosition.x} e.x:${effectivePosition.x} pp.x:${parentPanel!!.effectivePosition.x} p.x:${position.x} c.y:${canvasPosition.y} e.y:${effectivePosition.y} pp.y:${parentPanel!!.effectivePosition.y} p.y:${position.y} wxh:${width}x$height overMe: $overMe")
-                                           else
-                                               println("m.x:$mouseX m.y:$mouseY:")*/
                             overMe
                         }
                     }
