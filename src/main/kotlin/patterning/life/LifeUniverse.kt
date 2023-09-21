@@ -1,5 +1,6 @@
 package patterning.life
 
+import kotlin.math.pow
 import kotlinx.coroutines.runBlocking
 import patterning.util.FlexibleInteger
 import java.math.BigInteger
@@ -25,7 +26,7 @@ class LifeUniverse internal constructor() {
     private val _bitcounts: ByteArray = ByteArray(0x758)
     private val birthRule = 1 shl 3
     private val survivalRule = 1 shl 2 or (1 shl 3)
-    private var generation: FlexibleInteger = FlexibleInteger.ZERO
+    private var generation: Long = 0L
     private var birthFrame = 0
 
     var lastId: AtomicInteger = AtomicInteger(Node.startId)
@@ -140,15 +141,15 @@ class LifeUniverse internal constructor() {
             )
         }
 
-        var minX = FlexibleInteger.create(fieldX[0])
+        var minX = fieldX[0]
         var maxX = minX
-        var minY = FlexibleInteger.create(fieldY[0])
+        var minY = fieldY[0]
         var maxY = minY
         val len = fieldX.size
 
         for (i in 1 until len) {
-            val x = FlexibleInteger.create(fieldX[i])
-            val y = FlexibleInteger.create(fieldY[i])
+            val x = fieldX[i]
+            val y = fieldY[i]
 
             if (x < minX) {
                 minX = x
@@ -164,10 +165,10 @@ class LifeUniverse internal constructor() {
         }
 
         return Bounds(
-            minY,
-            minX,
-            maxY,
-            maxX
+            FlexibleInteger.create(minY),
+            FlexibleInteger.create(minX),
+            FlexibleInteger.create(maxY),
+            FlexibleInteger.create(maxX)
         )
     }
 
@@ -335,11 +336,11 @@ class LifeUniverse internal constructor() {
 
     private fun updatePatternInfo() {
 
-        lifeInfo.addOrUpdate("level", FlexibleInteger.create(root.level))
+        lifeInfo.addOrUpdate("level", root.level)
         lifeInfo.addOrUpdate("step", pow2(step))
         lifeInfo.addOrUpdate("generation", generation)
         lifeInfo.addOrUpdate("population", root.population)
-        lifeInfo.addOrUpdate("lastId", FlexibleInteger.create(lastId.get()))
+        lifeInfo.addOrUpdate("lastId", lastId.get())
         /* lifeInfo.addOrUpdate("normalRecurse", recurse.get())
          lifeInfo.addOrUpdate("stepRecurse", recurseStep.get())*/
         lifeInfo.addOrUpdate("width", root.bounds.width)
@@ -371,7 +372,7 @@ class LifeUniverse internal constructor() {
 
         this.root = nextRoot
 
-        generation += pow2(step)
+        generation += pow2Long(step)
         birthFrame += 1
     }
 
@@ -478,9 +479,14 @@ class LifeUniverse internal constructor() {
         private const val UNIVERSE_LEVEL_LIMIT = 2048
 
         private val _powers: HashMap<Int, FlexibleInteger> = HashMap()
+        private val _powersLong: HashMap<Int, Long> = HashMap()
 
         fun pow2(x: Int): FlexibleInteger {
             return _powers.getOrPut(x) { FlexibleInteger.create(BigInteger.valueOf(2).pow(x)) }
+        }
+
+        fun pow2Long(x: Int): Long {
+            return _powersLong.getOrPut(x) { 2.0.pow(x).toLong() }
         }
 
         val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
