@@ -192,8 +192,8 @@ class LifePattern(
     // as nodes are created their bounds are calculated
     // when the bounds get larger, we need a math context to draw with that
     // allows the pattern to be drawn with the necessary precision
-    private fun updateBoundsChanged(bounds: Bounds) {
-        val dimension = maxOf(bounds.width.toLong(), bounds.height.toLong())
+    private fun updateBoundsChanged(bounds: BoundsLong) {
+        val dimension = maxOf(bounds.width, bounds.height)
         if (dimension > biggestDimension) {
             biggestDimension = dimension
             onBiggestDimensionChanged(biggestDimension)

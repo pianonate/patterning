@@ -37,7 +37,7 @@ class LifeUniverse internal constructor() {
         private set(value) = rootReference.set(value)
 
     val rootBounds: BoundsLong
-        get() = root.bounds.toBoundsLong()
+        get() = root.bounds
 
     val lifeInfo = LifeInfo(this::updatePatternInfo)
 
@@ -341,8 +341,8 @@ class LifeUniverse internal constructor() {
         lifeInfo.addOrUpdate("lastId", lastId.get())
         /* lifeInfo.addOrUpdate("normalRecurse", recurse.get())
          lifeInfo.addOrUpdate("stepRecurse", recurseStep.get())*/
-        lifeInfo.addOrUpdate("width", root.bounds.width.toLong())
-        lifeInfo.addOrUpdate("height", root.bounds.height.toLong())
+        lifeInfo.addOrUpdate("width", root.bounds.width)
+        lifeInfo.addOrUpdate("height", root.bounds.height)
     }
 
     /*    private var recurse = AtomicInteger(0)

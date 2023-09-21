@@ -4,7 +4,7 @@ interface Node {
     val id: Int
     val population: Long
     val level: Int
-    val bounds: Bounds
+    val bounds: BoundsLong
     val nw: Node
     val ne: Node
     val sw: Node

@@ -34,14 +34,14 @@ class TreeNode(
 
     val populatedChildrenCount: Byte = (listOf(nw, ne, sw, se).count { it.population.isNotZero() }).toByte()
 
-    override val bounds: Bounds = run {
+    override val bounds: BoundsLong = run {
         if (this.population.isZero()) {
             Bounds(
                 FlexibleInteger.ZERO,
                 FlexibleInteger.ZERO,
                 FlexibleInteger.ZERO,
                 FlexibleInteger.ZERO
-            )
+            ).toBoundsLong()
         } else {
 
             // Initialize bounds to crazy size - currently set to the universe limit
@@ -50,7 +50,7 @@ class TreeNode(
                 FlexibleInteger.create(LifeUniverse.MAX_VALUE),
                 FlexibleInteger.create(LifeUniverse.MIN_VALUE),
                 FlexibleInteger.create(LifeUniverse.MIN_VALUE),
-            )
+            ).toBoundsLong()
 
             val offset =
                 if (level == 1) FlexibleInteger.ONE else FlexibleInteger.create(LifeUniverse.pow2(level - 2))
@@ -68,22 +68,22 @@ class TreeNode(
         child: Node,
         topBottomOffset: FlexibleInteger,
         leftRightOffset: FlexibleInteger,
-        bounds: Bounds
-    ): Bounds {
+        bounds: BoundsLong
+    ): BoundsLong {
         return if (child.population.isNotZero()) {
             val childBounds = child.bounds
 
-            val translatedBounds = Bounds(
-                childBounds.top + topBottomOffset,
-                childBounds.left + leftRightOffset,
-                childBounds.bottom + topBottomOffset,
-                childBounds.right + leftRightOffset
+            val translatedBounds = BoundsLong(
+                childBounds.top + topBottomOffset.toLong(),
+                childBounds.left + leftRightOffset.toLong(),
+                childBounds.bottom + topBottomOffset.toLong(),
+                childBounds.right + leftRightOffset.toLong()
             )
-            Bounds(
-                bounds.top.min(translatedBounds.top),
-                bounds.left.min(translatedBounds.left),
-                bounds.bottom.max(translatedBounds.bottom),
-                bounds.right.max(translatedBounds.right)
+            BoundsLong(
+                minOf(bounds.top, translatedBounds.top),
+                minOf(bounds.left, translatedBounds.left),
+                maxOf(bounds.bottom, translatedBounds.bottom),
+                maxOf(bounds.right, translatedBounds.right)
             )
         } else {
             bounds

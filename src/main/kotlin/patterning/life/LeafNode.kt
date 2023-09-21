@@ -13,20 +13,20 @@ class LeafNode(
     override val sw: Node = this
     override val se: Node = this
 
-    override val bounds: Bounds = if (population.isOne())
+    override val bounds: BoundsLong = if (population.isOne())
         Bounds(
             top = FlexibleInteger.NEGATIVE_ONE,
             left = FlexibleInteger.NEGATIVE_ONE,
             bottom = FlexibleInteger.NEGATIVE_ONE,
             right = FlexibleInteger.NEGATIVE_ONE
-        )
+        ).toBoundsLong()
     else
         Bounds(
             top = FlexibleInteger.ZERO,
             left = FlexibleInteger.ZERO,
             bottom = FlexibleInteger.ZERO,
             right = FlexibleInteger.ZERO
-        )
+        ).toBoundsLong()
 
     override fun toString(): String {
         return if (population.isOne()) "Living Leaf" else "Dead Leaf"
