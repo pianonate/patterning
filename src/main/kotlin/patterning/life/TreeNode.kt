@@ -73,10 +73,10 @@ class TreeNode(
             val childBounds = child.bounds
 
             val translatedBounds = Bounds(
-                childBounds.top + topBottomOffset.toLong(),
-                childBounds.left + leftRightOffset.toLong(),
-                childBounds.bottom + topBottomOffset.toLong(),
-                childBounds.right + leftRightOffset.toLong()
+                childBounds.top + topBottomOffset,
+                childBounds.left + leftRightOffset,
+                childBounds.bottom + topBottomOffset,
+                childBounds.right + leftRightOffset
             )
             Bounds(
                 minOf(bounds.top, translatedBounds.top),
