@@ -1,4 +1,3 @@
-
 /**
  * change this for _your_ configuration
  */
@@ -89,7 +88,6 @@ tasks.named<Copy>("processResources") {
         // Add your includes here
     }
 }
-
 
 tasks.test {
     useJUnitPlatform()

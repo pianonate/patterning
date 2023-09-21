@@ -6,6 +6,7 @@ import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
 import patterning.Theme
+import patterning.ThreeD
 import patterning.pattern.Colorful
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -23,7 +24,6 @@ import patterning.util.ResourceManager
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
-import processing.core.PMatrix3D
 import processing.core.PVector
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -76,14 +76,18 @@ class LifePattern(
     private var drawBounds = false
     private var isThreeD = false
 
+/*
     private var currentTransformMatrix = PMatrix3D()
+*/
 
-    private var isYawing = false
+    private var threeD = ThreeD()
+
+/*    private var isYawing = false
     private var isPitching = false
     private var isRolling = false
     private var currentYawAngle = 0f
     private var currentPitchAngle = 0f
-    private var currentRollAngle = 0f
+    private var currentRollAngle = 0f*/
 
 
     init {
@@ -230,7 +234,7 @@ class LifePattern(
 
             canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
 
-            reset3DParams()
+            threeD.resetAngles()
         }
 
         val level = canvas.zoomLevel
@@ -325,31 +329,30 @@ class LifePattern(
     }
 
     override fun toggleYaw() {
-        isYawing = !isYawing
+        threeD.isYawing = !threeD.isYawing
     }
 
     override fun togglePitch() {
-        isPitching = !isPitching
+        threeD.isPitching = !threeD.isPitching
     }
 
     override fun toggleRoll() {
-        isRolling = !isRolling
+        threeD.isRolling = !threeD.isRolling
     }
 
-    private fun reset3DParams() {
+/*    private fun reset3DParams() {
         currentYawAngle = 0f
         currentPitchAngle = 0f
         currentRollAngle = 0f
-    }
+    }*/
 
     private fun reset3DAndStopRotations() {
 
-        reset3DParams()
+        threeD.resetAnglesAndStop()
 
+        // used for individual boxes
         isThreeD = false
-        isYawing = false
-        isPitching = false
-        isRolling = false
+
         pattern.graphics.camera()
     }
 
@@ -443,11 +446,11 @@ class LifePattern(
             strokeWeight(1f)
             stroke(Theme.boxOutlineColor)
 
-            if (isPitching)
+            if (threeD.isPitching)
                 rotateX(rotationAngle)
-            if (isYawing)
+            if (threeD.isYawing)
                 rotateY(rotationAngle)
-            if (isRolling)
+            if (threeD.isRolling)
                 rotateZ(rotationAngle)
             box(width)
             pop()
@@ -502,6 +505,9 @@ class LifePattern(
 
             updateBoundsChanged(life.root.bounds)
 
+            if (shouldAdvance)
+                threeD.advance()
+
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
                 ghostState !is Ghosting -> true
@@ -547,7 +553,7 @@ class LifePattern(
         }
     }
 
-    private fun handle3D(shouldAdvance: Boolean) {
+   /* private fun handle3D(shouldAdvance: Boolean) {
 
         // Move to the center of the object
         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
@@ -584,7 +590,7 @@ class LifePattern(
         // Move back by half the object's size
         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
 
-    }
+    }*/
 
     private fun updateStroke() {
         if (canvas.zoomLevelAsFloat > 4f) {
