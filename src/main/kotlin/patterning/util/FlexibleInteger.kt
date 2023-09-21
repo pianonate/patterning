@@ -256,6 +256,13 @@ class FlexibleInteger private constructor(initialValue: Number) : Comparable<Fle
         }
     }
 
+    fun toLong(): Long {
+        return when (value) {
+            is Int, is Long -> value.toLong()
+            else -> throw IllegalArgumentException("Unsupported number type")
+        }
+    }
+
     /*    fun hudFormatted(): String {
             if (value == 0) return "0"
             return if (value is Int) {

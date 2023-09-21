@@ -53,7 +53,7 @@ class LifePattern(
     private lateinit var lifeForm: LifeForm
 
     private val universeSize = UniverseSize(canvas)
-    private var biggestDimension: FlexibleInteger = FlexibleInteger.ZERO
+    private var biggestDimension: Long = 0L
 
 
     private val performanceTest = PerformanceTest(this, properties)
@@ -194,7 +194,7 @@ class LifePattern(
     // when the bounds get larger, we need a math context to draw with that
     // allows the pattern to be drawn with the necessary precision
     private fun updateBoundsChanged(bounds: Bounds) {
-        val dimension = bounds.width.max(bounds.height)
+        val dimension = maxOf(bounds.width.toLong(), bounds.height.toLong())
         if (dimension > biggestDimension) {
             biggestDimension = dimension
             onBiggestDimensionChanged(biggestDimension)
@@ -398,7 +398,7 @@ class LifePattern(
 
         center(universe.rootBounds, fitBounds = true, saveState = false)
 
-        biggestDimension = FlexibleInteger.ZERO
+        biggestDimension = 0L
 
         life = universe
 

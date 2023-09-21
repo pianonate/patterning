@@ -49,7 +49,7 @@ abstract class Pattern(
         ghostState = GhostOff()
     }
 
-    fun onBiggestDimensionChanged(biggestDimension: FlexibleInteger) {
+    fun onBiggestDimensionChanged(biggestDimension: Long) {
         notifyObservers(PatternEventType.DimensionChanged, PatternEvent.DimensionChanged(biggestDimension))
     }
 

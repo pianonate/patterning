@@ -107,16 +107,16 @@ class Canvas(private val pApplet: PApplet) {
     // without it, we'd be off by only looking at the integer part of the largest dimension
     private var previousPrecision: Int = 0
 
-    fun updateBiggestDimension(biggestDimension: FlexibleInteger) {
+    fun updateBiggestDimension(biggestDimension: Long) {
         // update math context for calculations
-        val precision = biggestDimension.minPrecisionForDrawing()
+        val precision = FlexibleInteger.create(biggestDimension).minPrecisionForDrawing()
         if (precision != previousPrecision) {
             mc = MathContext(precision)
             previousPrecision = precision
         }
 
         // update the minimum zoom level, so we don't ask for zooms that can't happen
-        zoom.minZoomLevel = FlexibleDecimal.ONE.divide(biggestDimension.toFlexibleDecimal(), mc)
+        zoom.minZoomLevel = FlexibleDecimal.ONE.divide(FlexibleDecimal.create(biggestDimension), mc)
     }
 
     fun newPattern() {
