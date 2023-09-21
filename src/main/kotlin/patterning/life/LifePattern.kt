@@ -677,13 +677,13 @@ class LifePattern(
         val right = left + size
         val bottom = top + size
 
-        //  val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
+        //val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
         val retVal = !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
                 left >= canvas.width || top >= canvas.height)
 
-        /*    if (newVal != retVal) {
-                val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
-            }*/
+    /*    if (newVal != retVal) {
+            val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
+        }*/
         return retVal
     }
 

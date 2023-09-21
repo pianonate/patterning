@@ -1,13 +1,13 @@
 package patterning.util
 
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.text.NumberFormat
 import kotlin.math.ceil
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
+import java.text.NumberFormat
 
 /**
  * Number extension functions
@@ -23,6 +23,7 @@ fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
     else
         this)
 }
+
 // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
 // now that i'm thinking about it, this is probably the required precision for a float
 // which is what the cell.cellSize is - especially for really small numbers
@@ -37,6 +38,8 @@ fun FlexibleInteger.minPrecisionForDrawing(): Int {
         else -> throw IllegalArgumentException("Unsupported number type")
     }
 }
+
+fun Long.minPrecisionForDrawing(): Int = ceil(ln(this.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
 
 fun FlexibleInteger.hudFormatted(): String {
     if (value == 0) return "0"

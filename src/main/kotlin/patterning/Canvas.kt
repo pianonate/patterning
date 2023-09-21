@@ -5,7 +5,6 @@ import com.jogamp.newt.opengl.GLWindow
 import kotlin.math.log2
 import kotlin.math.roundToInt
 import patterning.util.FlexibleDecimal
-import patterning.util.FlexibleInteger
 import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
@@ -109,7 +108,7 @@ class Canvas(private val pApplet: PApplet) {
 
     fun updateBiggestDimension(biggestDimension: Long) {
         // update math context for calculations
-        val precision = FlexibleInteger.create(biggestDimension).minPrecisionForDrawing()
+        val precision = biggestDimension.minPrecisionForDrawing()
         if (precision != previousPrecision) {
             mc = MathContext(precision)
             previousPrecision = precision
@@ -127,7 +126,7 @@ class Canvas(private val pApplet: PApplet) {
 
     private fun resetMathContext() {
         previousPrecision = 0
-        mc = MathContext(FlexibleInteger.ZERO.minPrecisionForDrawing())
+        mc = MathContext(PRECISION_BUFFER)
     }
 
     fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {
@@ -407,7 +406,6 @@ class Canvas(private val pApplet: PApplet) {
 
     companion object {
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
-
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
         private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)
