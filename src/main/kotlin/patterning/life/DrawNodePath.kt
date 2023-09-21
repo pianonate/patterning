@@ -3,6 +3,7 @@ package patterning.life
 import patterning.Canvas
 import patterning.OffsetsMovedObserver
 import patterning.util.FlexibleDecimal
+import patterning.util.isZero
 
 class DrawNodePath(
     private val shouldContinue: (Node, FlexibleDecimal, FlexibleDecimal, FlexibleDecimal) -> Boolean,

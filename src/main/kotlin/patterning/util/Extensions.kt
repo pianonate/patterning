@@ -70,3 +70,7 @@ private fun FlexibleInteger.formatLargeNumber(): String {
         else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
     }
 }
+
+fun Long.isOne(): Boolean = this == 1L
+fun Long.isZero(): Boolean = this == 0L
+fun Long.isNotZero(): Boolean = this != 0L

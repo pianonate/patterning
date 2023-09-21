@@ -1,10 +1,8 @@
 package patterning.life
 
-import patterning.util.FlexibleInteger
-
 interface Node {
     val id: Int
-    val population: FlexibleInteger
+    val population: Long
     val level: Int
     val bounds: Bounds
     val nw: Node
@@ -21,8 +19,8 @@ interface Node {
     companion object {
         private const val DEAD_ID = 3
         private const val LIVING_ID = 2
-        val deadNode = LeafNode(DEAD_ID, FlexibleInteger.ZERO)
-        val livingNode = LeafNode(LIVING_ID, FlexibleInteger.ONE)
+        val deadNode = LeafNode(DEAD_ID, 0L)
+        val livingNode = LeafNode(LIVING_ID, 1L)
         val startId = deadNode.id + 1
         var globalCacheVersion: Int = 0
 

@@ -21,6 +21,9 @@ import patterning.util.AsyncJobRunner
 import patterning.util.FlexibleDecimal
 import patterning.util.FlexibleInteger
 import patterning.util.ResourceManager
+import patterning.util.isNotZero
+import patterning.util.isOne
+import patterning.util.isZero
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
@@ -76,18 +79,18 @@ class LifePattern(
     private var drawBounds = false
     private var isThreeD = false
 
-/*
-    private var currentTransformMatrix = PMatrix3D()
-*/
+    /*
+        private var currentTransformMatrix = PMatrix3D()
+    */
 
-    private var threeD = ThreeD()
+    private var threeD = ThreeD(canvas)
 
-/*    private var isYawing = false
-    private var isPitching = false
-    private var isRolling = false
-    private var currentYawAngle = 0f
-    private var currentPitchAngle = 0f
-    private var currentRollAngle = 0f*/
+    /*    private var isYawing = false
+        private var isPitching = false
+        private var isRolling = false
+        private var currentYawAngle = 0f
+        private var currentPitchAngle = 0f
+        private var currentRollAngle = 0f*/
 
 
     init {
@@ -340,11 +343,11 @@ class LifePattern(
         threeD.isRolling = !threeD.isRolling
     }
 
-/*    private fun reset3DParams() {
-        currentYawAngle = 0f
-        currentPitchAngle = 0f
-        currentRollAngle = 0f
-    }*/
+    /*    private fun reset3DParams() {
+            currentYawAngle = 0f
+            currentPitchAngle = 0f
+            currentRollAngle = 0f
+        }*/
 
     private fun reset3DAndStopRotations() {
 
@@ -478,10 +481,9 @@ class LifePattern(
 
         // Keep the angle in the range of 0 to TWO_PI
         if (rotationAngle >= TWO_PI) {
-            rotationAngle -=TWO_PI
+            rotationAngle -= TWO_PI
         }
     }
-
 
 
     private var actualRecursions = FlexibleInteger.ZERO
@@ -553,44 +555,44 @@ class LifePattern(
         }
     }
 
-   /* private fun handle3D(shouldAdvance: Boolean) {
+    /* private fun handle3D(shouldAdvance: Boolean) {
 
-        // Move to the center of the object
-        pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
+         // Move to the center of the object
+         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
 
-        // controls speed of rotation
-        // in the future you'll want to have independent control of rotation speed
-        // which you'll want to tie to midi
-        val rotationIncrement = TWO_PI / 360f
+         // controls speed of rotation
+         // in the future you'll want to have independent control of rotation speed
+         // which you'll want to tie to midi
+         val rotationIncrement = TWO_PI / 360f
 
-        if (shouldAdvance) {
-            if (isYawing) {
-                currentYawAngle += rotationIncrement
-                currentYawAngle %= TWO_PI  // Keep angle in range (0 to TWO_PI)
-            }
+         if (shouldAdvance) {
+             if (isYawing) {
+                 currentYawAngle += rotationIncrement
+                 currentYawAngle %= TWO_PI  // Keep angle in range (0 to TWO_PI)
+             }
 
-            if (isPitching) {
-                currentPitchAngle += rotationIncrement
-                currentPitchAngle %= TWO_PI
-            }
+             if (isPitching) {
+                 currentPitchAngle += rotationIncrement
+                 currentPitchAngle %= TWO_PI
+             }
 
-            if (isRolling) {
-                currentRollAngle += rotationIncrement
-                currentRollAngle %= TWO_PI
-            }
-        }
+             if (isRolling) {
+                 currentRollAngle += rotationIncrement
+                 currentRollAngle %= TWO_PI
+             }
+         }
 
-        // Apply the current rotation angles
-        pattern.graphics.rotateY(currentYawAngle)
-        pattern.graphics.rotateX(currentPitchAngle)
-        pattern.graphics.rotateZ(currentRollAngle)
+         // Apply the current rotation angles
+         pattern.graphics.rotateY(currentYawAngle)
+         pattern.graphics.rotateX(currentPitchAngle)
+         pattern.graphics.rotateZ(currentRollAngle)
 
-        pattern.graphics.getMatrix(currentTransformMatrix)
+         pattern.graphics.getMatrix(currentTransformMatrix)
 
-        // Move back by half the object's size
-        pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
+         // Move back by half the object's size
+         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
 
-    }*/
+     }*/
 
     private fun updateStroke() {
         if (canvas.zoomLevelAsFloat > 4f) {
@@ -658,27 +660,48 @@ class LifePattern(
      * if the top is larger than the height we're below the canvas
      */
     private fun shouldContinue(
-         node: Node,
-         size: FlexibleDecimal,
-         nodeLeft: FlexibleDecimal,
-         nodeTop: FlexibleDecimal
-     ): Boolean {
-         if (node.population.isZero()) {
-             return false
-         }
+        node: Node,
+        size: FlexibleDecimal,
+        nodeLeft: FlexibleDecimal,
+        nodeTop: FlexibleDecimal
+    ): Boolean {
+        if (node.population.isZero()) {
+            return false
+        }
 
-         val left = nodeLeft + canvas.offsetX
-         val top = nodeTop + canvas.offsetY
+        val left = nodeLeft + canvas.offsetX
+        val top = nodeTop + canvas.offsetY
 
 
-         // No need to draw anything not visible on screen
-         val right = left + size
-         val bottom = top + size
+        // No need to draw anything not visible on screen
+        val right = left + size
+        val bottom = top + size
 
-         return !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
-                 left >= canvas.width || top >= canvas.height)
-     }
+        //  val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
+        val retVal = !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
+                left >= canvas.width || top >= canvas.height)
 
+        /*    if (newVal != retVal) {
+                val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
+            }*/
+        return retVal
+    }
+
+    private fun shouldContinueNew(
+        node: Node,
+        size: FlexibleDecimal,
+        nodeLeft: FlexibleDecimal,
+        nodeTop: FlexibleDecimal
+    ): Boolean {
+        if (node.population.isZero()) {
+            return false
+        }
+
+        val left = nodeLeft + canvas.offsetX
+        val top = nodeTop + canvas.offsetY
+
+        return threeD.isRectInView(left, top, size, size)
+    }
 
     private fun drawBounds(life: LifeUniverse) {
         if (!drawBounds) return
