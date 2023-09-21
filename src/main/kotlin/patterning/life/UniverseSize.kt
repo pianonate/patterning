@@ -32,7 +32,7 @@ class UniverseSize(private val canvas: Canvas) {
         val key = Pair(universeLevel, zoomLevel)
 
         return sizeMap.computeIfAbsent(key) {
-            zoomLevel.multiply(LifeUniverse.pow2(universeLevel).toFlexibleDecimal(), canvas.mc)
+            zoomLevel.multiply(FlexibleDecimal.create(LifeUniverse.pow2(universeLevel)), canvas.mc)
         }
     }
 

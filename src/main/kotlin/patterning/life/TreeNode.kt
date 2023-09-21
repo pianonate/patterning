@@ -46,13 +46,14 @@ class TreeNode(
 
             // Initialize bounds to crazy size - currently set to the universe limit
             var bounds = Bounds(
-                LifeUniverse.MAX_VALUE,
-                LifeUniverse.MAX_VALUE,
-                LifeUniverse.MIN_VALUE,
-                LifeUniverse.MIN_VALUE,
+                FlexibleInteger.create(LifeUniverse.MAX_VALUE),
+                FlexibleInteger.create(LifeUniverse.MAX_VALUE),
+                FlexibleInteger.create(LifeUniverse.MIN_VALUE),
+                FlexibleInteger.create(LifeUniverse.MIN_VALUE),
             )
 
-            val offset = if (level == 1) FlexibleInteger.ONE else LifeUniverse.pow2(level - 2)
+            val offset =
+                if (level == 1) FlexibleInteger.ONE else FlexibleInteger.create(LifeUniverse.pow2(level - 2))
             val negatedOffset = if (level == 1) FlexibleInteger.ZERO else -offset
 
             bounds = calculateChildBounds(nw, negatedOffset, negatedOffset, bounds)
@@ -125,24 +126,24 @@ class TreeNode(
          }
      } */
 
-/*    private fun traverse(root: Node) {
-        val stack = Stack<Node>()
-        stack.push(root)
+    /*    private fun traverse(root: Node) {
+            val stack = Stack<Node>()
+            stack.push(root)
 
-        while (stack.isNotEmpty()) {
-            val node = stack.pop()
+            while (stack.isNotEmpty()) {
+                val node = stack.pop()
 
-            // Process the node here
+                // Process the node here
 
-            // Add children nodes to the stack if they exist
-            if (node is TreeNode) {
-                stack.push(node.nw)
-                stack.push(node.ne)
-                stack.push(node.sw)
-                stack.push(node.se)
+                // Add children nodes to the stack if they exist
+                if (node is TreeNode) {
+                    stack.push(node.nw)
+                    stack.push(node.ne)
+                    stack.push(node.sw)
+                    stack.push(node.se)
+                }
             }
-        }
-    }*/
+        }*/
 
     override fun toString(): String {
         return "id=$id, level=$level, population=$population, born=$aliveSince"

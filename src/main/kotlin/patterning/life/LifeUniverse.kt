@@ -3,7 +3,6 @@ package patterning.life
 import kotlin.math.pow
 import kotlinx.coroutines.runBlocking
 import patterning.util.FlexibleInteger
-import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -19,7 +18,6 @@ import java.util.concurrent.atomic.AtomicReference
 class LifeUniverse internal constructor() {
 
     private var hashMap = ConcurrentHashMap<Int, MutableList<TreeNode>>(HASHMAP_INITIAL_CAPACITY)
-    //private var hashMap = ConcurrentHashMap<Int, TreeNode>(HASHMAP_INITIAL_CAPACITY)
 
     private var emptyTreeCache: MutableMap<Int, TreeNode> = HashMap()
     private val level2Cache: MutableMap<Int, TreeNode> = HashMap(LEVEL_2_CACHE_INITIAL_CAPACITY)
@@ -372,7 +370,7 @@ class LifeUniverse internal constructor() {
 
         this.root = nextRoot
 
-        generation += pow2Long(step)
+        generation += pow2(step)
         birthFrame += 1
     }
 
@@ -476,21 +474,14 @@ class LifeUniverse internal constructor() {
     companion object {
         private const val LEVEL_2_CACHE_INITIAL_CAPACITY = 0x10000
 
-        private const val UNIVERSE_LEVEL_LIMIT = 2048
+        private val _powers: HashMap<Int, Long> = HashMap()
 
-        private val _powers: HashMap<Int, FlexibleInteger> = HashMap()
-        private val _powersLong: HashMap<Int, Long> = HashMap()
-
-        fun pow2(x: Int): FlexibleInteger {
-            return _powers.getOrPut(x) { FlexibleInteger.create(BigInteger.valueOf(2).pow(x)) }
+        fun pow2(x: Int): Long {
+            return _powers.getOrPut(x) { 2.0.pow(x).toLong() }
         }
 
-        fun pow2Long(x: Int): Long {
-            return _powersLong.getOrPut(x) { 2.0.pow(x).toLong() }
-        }
-
-        val MAX_VALUE by lazy { pow2(UNIVERSE_LEVEL_LIMIT) }
-        val MIN_VALUE by lazy { -MAX_VALUE }
+        const val MAX_VALUE = Long.MAX_VALUE
+        const val MIN_VALUE = Long.MIN_VALUE
         private val HASHMAP_INITIAL_CAPACITY = pow2(24).toInt()
     }
 }
