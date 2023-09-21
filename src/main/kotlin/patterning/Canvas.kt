@@ -208,13 +208,12 @@ class Canvas(private val pApplet: PApplet) {
         }
     }
 
-    private fun handleResize() {
+    internal fun handleResize() {
         val resized = (pApplet.width != prevWidth || pApplet.height != prevHeight)
 
         if (resized) {
             updateDimensions()
             updateResizableGraphicsReferences()
-
         }
     }
 
@@ -226,15 +225,6 @@ class Canvas(private val pApplet: PApplet) {
                 reference.updateGraphics(newGraphics)
             }
         }
-    }
-
-    /**
-     * internal for PatterningPApplet to delegate drawing background
-     * in a more rigorous way :)
-     */
-    internal fun drawBackground() {
-        pApplet.background(Theme.backGroundColor)
-        handleResize()
     }
 
     /**

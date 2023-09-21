@@ -122,7 +122,7 @@ object KeyHandler {
 
         if (callback.invokeAfterDelay) {
             val lastTime = lastInvokeTime[callback] ?: 0L
-            if (currentTime - lastTime < 150) {  // 500 ms delay
+            if (currentTime - lastTime < 200) {  // 500 ms delay
                 return
             }
         }

@@ -1,8 +1,6 @@
 package patterning.life
 
-import kotlin.math.PI
 import kotlin.math.roundToInt
-import kotlin.math.tan
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
@@ -165,6 +163,10 @@ class LifePattern(
         lifeFormPosition.add(dx, dy)
     }
 
+    /**
+     * okay - this is hacked in for now so you can at least et something out of it but ou really need to pop the
+     * system dialog on non mobile devices.  mobile - probably sharing
+     */
     override fun saveImage() {
 
         val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
@@ -174,8 +176,8 @@ class LifePattern(
         newGraphics.image(img, 0f, 0f)
         newGraphics.endDraw()
 
-        val currentDir = System.getProperty("user.dir")
-        newGraphics.save("$currentDir/${pApplet.frameCount}.png")
+        val desktopDirectory = System.getProperty("user.home") + "/Desktop/"
+        newGraphics.save("$desktopDirectory${pApplet.frameCount}.png")
     }
 
     override fun updateProperties() {

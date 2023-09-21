@@ -69,6 +69,13 @@ abstract class Pattern(
         return (originalColor and 0xFFFFFF) or (alphaValue shl 24)
     }
 
+    /**
+     * in preparation for future features such as drawing as inverse rainbow and gridlines
+     */
+    fun drawBackground() {
+        pApplet.background(Theme.backGroundColor)
+    }
+
     protected inner class GhostOff : GhostState {
         override fun prepareGraphics(graphics: PGraphics) = graphics.clear()
         override fun transition() = run { ghostState = Ghosting() }

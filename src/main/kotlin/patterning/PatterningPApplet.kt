@@ -88,7 +88,8 @@ class PatterningPApplet : PApplet() {
 
         try {
 
-            canvas.drawBackground()
+            canvas.handleResize()
+            pattern.drawBackground()
 
             if (pattern is Movable) {
                 canvas.updateZoom()
