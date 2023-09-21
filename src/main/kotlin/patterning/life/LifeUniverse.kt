@@ -2,7 +2,6 @@ package patterning.life
 
 import kotlin.math.pow
 import kotlinx.coroutines.runBlocking
-import patterning.util.FlexibleInteger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -129,14 +128,9 @@ class LifeUniverse internal constructor() {
 
     // this is just used when setting up the field initially unless I'm missing
     // something
-    private fun getBounds(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): Bounds {
+    private fun getBounds(fieldX: ArrayList<Int>, fieldY: ArrayList<Int>): BoundsLong {
         if (fieldX.size == 0) {
-            return Bounds(
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-            )
+            return BoundsLong(0L, 0L, 0L, 0L)
         }
 
         var minX = fieldX[0]
@@ -162,11 +156,11 @@ class LifeUniverse internal constructor() {
             }
         }
 
-        return Bounds(
-            FlexibleInteger.create(minY),
-            FlexibleInteger.create(minX),
-            FlexibleInteger.create(maxY),
-            FlexibleInteger.create(maxX)
+        return BoundsLong(
+            minY.toLong(),
+            minX.toLong(),
+            maxY.toLong(),
+            maxX.toLong()
         )
     }
 

@@ -1,6 +1,5 @@
 package patterning.life
 
-import patterning.util.FlexibleInteger
 import patterning.util.isOne
 
 class LeafNode(
@@ -14,19 +13,19 @@ class LeafNode(
     override val se: Node = this
 
     override val bounds: BoundsLong = if (population.isOne())
-        Bounds(
-            top = FlexibleInteger.NEGATIVE_ONE,
-            left = FlexibleInteger.NEGATIVE_ONE,
-            bottom = FlexibleInteger.NEGATIVE_ONE,
-            right = FlexibleInteger.NEGATIVE_ONE
-        ).toBoundsLong()
+        BoundsLong(
+            top = -1L,
+            left = -1L,
+            bottom = -1L,
+            right = -1L
+        )
     else
-        Bounds(
-            top = FlexibleInteger.ZERO,
-            left = FlexibleInteger.ZERO,
-            bottom = FlexibleInteger.ZERO,
-            right = FlexibleInteger.ZERO
-        ).toBoundsLong()
+        BoundsLong(
+            top = 0L,
+            left = 0L,
+            bottom = 0L,
+            right = 0L
+        )
 
     override fun toString(): String {
         return if (population.isOne()) "Living Leaf" else "Dead Leaf"

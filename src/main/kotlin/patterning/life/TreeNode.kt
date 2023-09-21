@@ -1,7 +1,6 @@
 package patterning.life
 
 
-import patterning.util.FlexibleInteger
 import patterning.util.isNotZero
 import patterning.util.isZero
 
@@ -36,25 +35,25 @@ class TreeNode(
 
     override val bounds: BoundsLong = run {
         if (this.population.isZero()) {
-            Bounds(
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO,
-                FlexibleInteger.ZERO
-            ).toBoundsLong()
+            BoundsLong(
+                top = 0L,
+                left = 0L,
+                bottom = 0L,
+                right = 0L
+            )
         } else {
 
             // Initialize bounds to crazy size - currently set to the universe limit
-            var bounds = Bounds(
-                FlexibleInteger.create(LifeUniverse.MAX_VALUE),
-                FlexibleInteger.create(LifeUniverse.MAX_VALUE),
-                FlexibleInteger.create(LifeUniverse.MIN_VALUE),
-                FlexibleInteger.create(LifeUniverse.MIN_VALUE),
-            ).toBoundsLong()
+            var bounds = BoundsLong(
+                LifeUniverse.MAX_VALUE,
+                LifeUniverse.MAX_VALUE,
+                LifeUniverse.MIN_VALUE,
+                LifeUniverse.MIN_VALUE,
+            )
 
             val offset =
-                if (level == 1) FlexibleInteger.ONE else FlexibleInteger.create(LifeUniverse.pow2(level - 2))
-            val negatedOffset = if (level == 1) FlexibleInteger.ZERO else -offset
+                if (level == 1) 1L else LifeUniverse.pow2(level - 2)
+            val negatedOffset = if (level == 1) 0L else -offset
 
             bounds = calculateChildBounds(nw, negatedOffset, negatedOffset, bounds)
             bounds = calculateChildBounds(ne, negatedOffset, offset, bounds)
@@ -66,8 +65,8 @@ class TreeNode(
 
     private fun calculateChildBounds(
         child: Node,
-        topBottomOffset: FlexibleInteger,
-        leftRightOffset: FlexibleInteger,
+        topBottomOffset: Long,
+        leftRightOffset: Long,
         bounds: BoundsLong
     ): BoundsLong {
         return if (child.population.isNotZero()) {
@@ -89,61 +88,6 @@ class TreeNode(
             bounds
         }
     }
-
-    /* fun countUnusedInMap(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
-         val size = hashMap.size
-         return countUnreferencedNodes(hashMap)
-     }
-
-     private fun countUnreferencedNodes(hashMap: StatMap<Int, MutableList<TreeNode>>): Int {
-         val visited = mutableSetOf<TreeNode>()
-         traverseTree(this, visited)
-
-         var count = 0
-
-         for ((_, nodeList) in hashMap) {
-             for (node in nodeList) {
-                 if (node !in visited) {
-                     count++
-                 }
-             }
-         }
-
-         return count
-     }
-
-     private fun traverseTree(node: TreeNode, visited: MutableSet<TreeNode>) {
-         if (node in visited) {
-             return
-         }
-
-         visited.add(node)
-
-         for (child in listOf(node.nw, node.ne, node.sw, node.se)) {
-             if (child.level > 0) {
-                 traverseTree(child as TreeNode, visited)
-             }
-         }
-     } */
-
-    /*    private fun traverse(root: Node) {
-            val stack = Stack<Node>()
-            stack.push(root)
-
-            while (stack.isNotEmpty()) {
-                val node = stack.pop()
-
-                // Process the node here
-
-                // Add children nodes to the stack if they exist
-                if (node is TreeNode) {
-                    stack.push(node.nw)
-                    stack.push(node.ne)
-                    stack.push(node.sw)
-                    stack.push(node.se)
-                }
-            }
-        }*/
 
     override fun toString(): String {
         return "id=$id, level=$level, population=$population, born=$aliveSince"
