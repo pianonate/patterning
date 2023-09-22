@@ -51,7 +51,7 @@ class LifePattern(
     private lateinit var life: LifeUniverse
     private lateinit var lifeForm: LifeForm
 
-    private val universeSize = UniverseSize(canvas)
+    private val universeSize = UniverseSize()
     private var biggestDimension: Long = 0L
 
 
@@ -83,14 +83,6 @@ class LifePattern(
     */
 
     private var threeD = ThreeD(canvas)
-
-    /*    private var isYawing = false
-        private var isPitching = false
-        private var isRolling = false
-        private var currentYawAngle = 0f
-        private var currentPitchAngle = 0f
-        private var currentRollAngle = 0f*/
-
 
     init {
 
@@ -626,7 +618,7 @@ class LifePattern(
             fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
         } else if (node is TreeNode) {
 
-            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
+            val halfSize = FlexibleDecimal.create(universeSize.getHalf(node.level, canvas.zoomLevelAsFloat))
 
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
