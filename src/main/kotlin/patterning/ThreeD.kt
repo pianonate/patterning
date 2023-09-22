@@ -5,57 +5,6 @@ import processing.core.PVector
 
 class ThreeD(val canvas: Canvas) {
 
-    data class RotationAngles(
-        var yaw: Float = 0f,
-        var pitch: Float = 0f,
-        var roll: Float = 0f
-    ) {
-        private val rotationIncrement = (Math.PI * 2 / 360).toFloat()
-
-        private val mat = PMatrix3D()
-
-        fun updateYaw() {
-            yaw = updateAngle(yaw)
-            mat.reset()
-            mat.rotateX(pitch)
-            mat.rotateY(yaw)
-            mat.rotateZ(roll)
-        }
-
-        fun updatePitch() {
-            pitch = updateAngle(pitch)
-            mat.reset()
-            mat.rotateX(pitch)
-            mat.rotateY(yaw)
-            mat.rotateZ(roll)
-        }
-
-        fun updateRoll() {
-            roll = updateAngle(roll)
-            mat.reset()
-            mat.rotateX(pitch)
-            mat.rotateY(yaw)
-            mat.rotateZ(roll)
-        }
-
-        private fun updateAngle(angle: Float): Float {
-            var newAngle = angle + rotationIncrement
-            newAngle %= (Math.PI * 2).toFloat()
-            return newAngle
-        }
-
-        fun reset() {
-            yaw = 0f
-            pitch = 0f
-            roll = 0f
-            mat.reset()
-        }
-
-        fun getRotationMatrix(): PMatrix3D {
-            return mat
-        }
-    }
-
     var isYawing: Boolean = false
     var isPitching: Boolean = false
     var isRolling: Boolean = false
@@ -109,5 +58,56 @@ class ThreeD(val canvas: Canvas) {
         val maxY = transformedCorners.maxOf { it.y }
 
         return (maxX >= 0 && minX < canvas.width.toFloat()) && (maxY >= 0 && minY < canvas.height.toFloat())
+    }
+
+    data class RotationAngles(
+        var yaw: Float = 0f,
+        var pitch: Float = 0f,
+        var roll: Float = 0f
+    ) {
+        private val rotationIncrement = (Math.PI * 2 / 360).toFloat()
+
+        private val mat = PMatrix3D()
+
+        fun updateYaw() {
+            yaw = updateAngle(yaw)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
+
+        fun updatePitch() {
+            pitch = updateAngle(pitch)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
+
+        fun updateRoll() {
+            roll = updateAngle(roll)
+            mat.reset()
+            mat.rotateX(pitch)
+            mat.rotateY(yaw)
+            mat.rotateZ(roll)
+        }
+
+        private fun updateAngle(angle: Float): Float {
+            var newAngle = angle + rotationIncrement
+            newAngle %= (Math.PI * 2).toFloat()
+            return newAngle
+        }
+
+        fun reset() {
+            yaw = 0f
+            pitch = 0f
+            roll = 0f
+            mat.reset()
+        }
+
+        fun getRotationMatrix(): PMatrix3D {
+            return mat
+        }
     }
 }

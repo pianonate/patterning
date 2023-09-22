@@ -52,7 +52,7 @@ class KeyCallbackFactory(
         invokeFeatureLambda = {
             pattern.saveImage()
         },
-        usage = "screenshot motherfucker!"
+        usage = "screenshot to desktop!"
     )
 
     val callbackRainbow = SimpleKeyCallback(

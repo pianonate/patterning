@@ -681,6 +681,7 @@ class LifePattern(
                 left >= canvas.width || top >= canvas.height)
 
         if (newVal != retVal) {
+            println("and we differ!")
             val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
         }
         return retVal
