@@ -141,7 +141,7 @@ class LifePattern(
         ) {
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
-            hudInfo.addOrUpdate("zoom", canvas.zoomLevel.toFloat())
+            hudInfo.addOrUpdate("zoom", canvas.zoomLevel)
             hudInfo.addOrUpdate("mc", canvas.mc.precision)
 
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
@@ -163,7 +163,7 @@ class LifePattern(
 
     override fun move(dx: Float, dy: Float) {
         canvas.saveUndoState()
-        canvas.moveCanvasOffsets(FlexibleDecimal.create(dx), FlexibleDecimal.create(dy))
+        canvas.moveCanvasOffsets(dx, dy)
         lifeFormPosition.add(dx, dy)
     }
 
@@ -222,16 +222,16 @@ class LifePattern(
         if (saveState) canvas.saveUndoState()
 
         // remember, bounds are inclusive - if you want the count of discrete items, then you need to add one back to it
-        val patternWidth = FlexibleDecimal.create(bounds.width)
-        val patternHeight = FlexibleDecimal.create(bounds.height)
+        val patternWidth = bounds.width
+        val patternHeight = bounds.height
 
         if (fitBounds) {
             val widthRatio =
-                patternWidth.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.width.divide(it, canvas.mc) }
-                    ?: FlexibleDecimal.ONE
+                patternWidth.takeIf { it > 0f }?.let { canvas.width / it }
+                    ?: 1f
             val heightRatio =
-                patternHeight.takeIf { it > FlexibleDecimal.ZERO }?.let { canvas.height.divide(it, canvas.mc) }
-                    ?: FlexibleDecimal.ONE
+                patternHeight.takeIf { it > 0f }?.let { canvas.height / it }
+                    ?: 1f
 
             canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
 
@@ -240,18 +240,16 @@ class LifePattern(
 
         val level = canvas.zoomLevel
 
-        val drawingWidth = patternWidth.multiply(level, canvas.mc)
-        val drawingHeight = patternHeight.multiply(level, canvas.mc)
-        val halfCanvasWidth = canvas.width.divide(FlexibleDecimal.TWO, canvas.mc)
-        val halfCanvasHeight = canvas.height.divide(FlexibleDecimal.TWO, canvas.mc)
-        val halfDrawingWidth = drawingWidth.divide(FlexibleDecimal.TWO, canvas.mc)
-        val halfDrawingHeight = drawingHeight.divide(FlexibleDecimal.TWO, canvas.mc)
+        val drawingWidth = patternWidth * level
+        val drawingHeight = patternHeight * level
+        val halfCanvasWidth = canvas.width / 2f
+        val halfCanvasHeight = canvas.height / 2f
+        val halfDrawingWidth = drawingWidth / 2f
+        val halfDrawingHeight = drawingHeight / 2f
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX =
-            halfCanvasWidth - halfDrawingWidth + (FlexibleDecimal.create(bounds.left).multiply(-level, canvas.mc))
-        val offsetY =
-            halfCanvasHeight - halfDrawingHeight + (FlexibleDecimal.create(bounds.top).multiply(-level, canvas.mc))
+        val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left * -level)
+        val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top * -level)
 
         canvas.updateCanvasOffsets(offsetX, offsetY)
 
@@ -463,8 +461,7 @@ class LifePattern(
         with(pattern.graphics) {
             if (rainbowMode) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
-                val hue = PApplet.map(x + y, 0f, canvas.width.toFloat() + canvas.height.toFloat(), 0f, 360f)
-                //fill(hue, 100f, 100f, 255f)
+                val hue = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
                 fill(ghostState.applyAlpha(color(hue, 100f, 100f, 255f)))
             } else {
                 fill(ghostState.applyAlpha(Theme.cellColor))
@@ -617,8 +614,8 @@ class LifePattern(
             return
         }
 
-        val leftWithOffset = left + canvas.offsetX
-        val topWithOffset = top + canvas.offsetY
+        val leftWithOffset = left + FlexibleDecimal.create(canvas.offsetX)
+        val topWithOffset = top + FlexibleDecimal.create(canvas.offsetY)
 
 
         // If we have done a recursion down to a very small size and the population exists,
@@ -671,8 +668,8 @@ class LifePattern(
             return false
         }
 
-        val left = nodeLeft + canvas.offsetX
-        val top = nodeTop + canvas.offsetY
+        val left = nodeLeft + FlexibleDecimal.create(canvas.offsetX)
+        val top = nodeTop + FlexibleDecimal.create(canvas.offsetY)
 
 
         // No need to draw anything not visible on screen
@@ -681,7 +678,7 @@ class LifePattern(
 
         val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
         val retVal = !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
-                left >= canvas.width || top >= canvas.height)
+                left >= FlexibleDecimal.create(canvas.width) || top >= FlexibleDecimal.create(canvas.height))
 
         if (newVal != retVal) {
             println("and we differ!")
@@ -700,8 +697,8 @@ class LifePattern(
             return false
         }
 
-        val left = nodeLeft + canvas.offsetX
-        val top = nodeTop + canvas.offsetY
+        val left = nodeLeft + FlexibleDecimal.create(canvas.offsetX)
+        val top = nodeTop + FlexibleDecimal.create(canvas.offsetY)
 
         return threeD.isRectInView(left.toFloat(), top.toFloat(), size.toFloat(), size.toFloat())
     }

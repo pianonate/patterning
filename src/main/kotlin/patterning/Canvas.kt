@@ -3,8 +3,8 @@ package patterning
 
 import com.jogamp.newt.opengl.GLWindow
 import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.math.roundToInt
-import patterning.util.FlexibleDecimal
 import patterning.util.PRECISION_BUFFER
 import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
@@ -15,13 +15,12 @@ import processing.core.PImage
 import java.awt.GraphicsEnvironment
 import java.awt.Point
 import java.math.MathContext
-import java.math.RoundingMode
 
 class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(
-        val level: FlexibleDecimal,
-        val canvasOffsetX: FlexibleDecimal,
-        val canvasOffsetY: FlexibleDecimal
+        val level: Float,
+        val canvasOffsetX: Float,
+        val canvasOffsetY: Float
     )
 
     private val zoom = Zoom()
@@ -32,13 +31,13 @@ class Canvas(private val pApplet: PApplet) {
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
 
-    var width: FlexibleDecimal = FlexibleDecimal.ZERO
+    var width: Float = 0f
         private set
-    var height: FlexibleDecimal = FlexibleDecimal.ZERO
+    var height: Float = 0f
         private set
-    var offsetX: FlexibleDecimal = FlexibleDecimal.ZERO
+    var offsetX: Float = 0f
         private set
-    var offsetY: FlexibleDecimal = FlexibleDecimal.ZERO
+    var offsetY: Float = 0f
         private set
 
     init {
@@ -49,7 +48,7 @@ class Canvas(private val pApplet: PApplet) {
     /**
      * zoom delegates
      */
-    var zoomLevel: FlexibleDecimal
+    var zoomLevel: Float
         get() = zoom.level
         set(value) {
             zoom.level = zoom.computeNearestPowerOf2TargetSize(value, findNextLowerPowerOf2 = true)
@@ -115,7 +114,7 @@ class Canvas(private val pApplet: PApplet) {
         }
 
         // update the minimum zoom level, so we don't ask for zooms that can't happen
-        zoom.minZoomLevel = FlexibleDecimal.ONE.divide(FlexibleDecimal.create(biggestDimension), mc)
+        zoom.minZoomLevel = 1f / biggestDimension
     }
 
     fun newPattern() {
@@ -181,11 +180,11 @@ class Canvas(private val pApplet: PApplet) {
         return pApplet.loadImage(fileSpec)
     }
 
-    fun moveCanvasOffsets(dx: FlexibleDecimal, dy: FlexibleDecimal) {
+    fun moveCanvasOffsets(dx: Float, dy: Float) {
         updateCanvasOffsets(offsetX + dx, offsetY + dy)
     }
 
-    fun updateCanvasOffsets(offsetX: FlexibleDecimal, offsetY: FlexibleDecimal) {
+    fun updateCanvasOffsets(offsetX: Float, offsetY: Float) {
         this.offsetX = offsetX
         this.offsetY = offsetY
 
@@ -238,8 +237,8 @@ class Canvas(private val pApplet: PApplet) {
         val centerXBefore = calcCenterOnResize(width, offsetX)
         val centerYBefore = calcCenterOnResize(height, offsetY)
 
-        width = FlexibleDecimal.create(pApplet.width)
-        height = FlexibleDecimal.create(pApplet.height)
+        width = pApplet.width.toFloat()
+        height = pApplet.height.toFloat()
 
         val centerXAfter = calcCenterOnResize(width, offsetX)
         val centerYAfter = calcCenterOnResize(height, offsetY)
@@ -251,31 +250,30 @@ class Canvas(private val pApplet: PApplet) {
 
     }
 
-    private fun calcCenterOnResize(dimension: FlexibleDecimal, offset: FlexibleDecimal): FlexibleDecimal {
-        return dimension.divide(FlexibleDecimal.TWO, mc) - offset
+    private fun calcCenterOnResize(dimension: Float, offset: Float): Float {
+        return dimension / 2f - offset
     }
 
     private inner class Zoom(
         initialLevel: Float = DEFAULT_ZOOM_LEVEL
     ) {
-        var minZoomLevel = FlexibleDecimal.ZERO
-        private var _level = FlexibleDecimal.create(initialLevel)// initialLevel.toBigDecimal()
-        private var _targetSize =
-            FlexibleDecimal.create(initialLevel) // initialLevel.toBigDecimal() // backing property for targetSize
+        var minZoomLevel = 0f
+        private var _level = initialLevel
+        private var _targetSize = initialLevel
 
         private var isZooming = false
-        private var zoomCenterX = FlexibleDecimal.ZERO
-        private var zoomCenterY = FlexibleDecimal.ZERO
+        private var zoomCenterX = 0f
+        private var zoomCenterY = 0f
 
         private var stepsTaken = 0
-        private var stepSize = FlexibleDecimal.ZERO  // This is the amount to change the level by on each update
+        private var stepSize = 0f  // This is the amount to change the level by on each update
         private val totalSteps = 20  // Say you want to reach the target in 10 updates
 
-        private var targetSize: FlexibleDecimal
+        private var targetSize: Float
             get() = _targetSize
             set(value) {
                 _targetSize = when {
-                    value > FlexibleDecimal.ZERO -> computeNearestPowerOf2TargetSize(value)
+                    value > 0f -> computeNearestPowerOf2TargetSize(value)
                     else -> minZoomLevel
                 }
             }
@@ -286,33 +284,33 @@ class Canvas(private val pApplet: PApplet) {
          * problematic so if casing toDouble() results in POSITIVE_INFINITY then we just return the
          * requested targetSize - truly an edge case for a very large universe
          */
-        /*fun computeNearestPowerOf2TargetSize(value: FlexibleDecimal): FlexibleDecimal {
-            val isGreaterThanOne = value > FlexibleDecimal.ONE
+        /*fun computeNearestPowerOf2TargetSize(value: Float): Float {
+            val isGreaterThanOne = value > 1f
             
-            val adjustedValue = if (isGreaterThanOne) value else FlexibleDecimal.ONE.divide(value, mc)
+            val adjustedValue = if (isGreaterThanOne) value else 1f / value
             
             val logValueDouble = log2(adjustedValue.toDouble())
             if (logValueDouble == Double.POSITIVE_INFINITY) return value
             
             val logValue = logValueDouble.roundToInt()
-            val resultPower = FlexibleDecimal.TWO.pow(logValue)
+            val resultPower = Float.TWO.pow(logValue)
             
-            return if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+            return if (isGreaterThanOne) resultPower else 1f / resultPower
         }*/
         fun computeNearestPowerOf2TargetSize(
-            requestedZoomLevel: FlexibleDecimal,
+            requestedZoomLevel: Float,
             findNextLowerPowerOf2: Boolean = false
-        ): FlexibleDecimal {
-            val isGreaterThanOne = requestedZoomLevel > FlexibleDecimal.ONE
+        ): Float {
+            val isGreaterThanOne = requestedZoomLevel > 1f
             val adjustedValue =
-                if (isGreaterThanOne) requestedZoomLevel else FlexibleDecimal.ONE.divide(requestedZoomLevel, mc)
+                if (isGreaterThanOne) requestedZoomLevel else 1f / requestedZoomLevel
 
             val logValueDouble = log2(adjustedValue.toDouble())
             if (logValueDouble == Double.POSITIVE_INFINITY) return requestedZoomLevel
 
             var logValue = logValueDouble.roundToInt()
-            var resultPower = FlexibleDecimal.TWO.pow(logValue)
-            var result = if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+            var resultPower = 2.0.pow(logValue)
+            var result = if (isGreaterThanOne) resultPower else 1f / resultPower
 
             // If findLower is true and the result is greater than the original value, subtract 1 from the log value
             if (findNextLowerPowerOf2 && result > requestedZoomLevel) {
@@ -322,15 +320,15 @@ class Canvas(private val pApplet: PApplet) {
                 else
                     logValue + 1
 
-                resultPower = FlexibleDecimal.TWO.pow(logValue)
-                result = if (isGreaterThanOne) resultPower else FlexibleDecimal.ONE.divide(resultPower, mc)
+                resultPower = 2.0.pow(logValue)
+                result = if (isGreaterThanOne) resultPower else 1f / resultPower
             }
 
-            return result
+            return result.toFloat()
         }
 
 
-        var level: FlexibleDecimal
+        var level: Float
             get() = _level
             set(value) {
                 _level = value
@@ -341,8 +339,8 @@ class Canvas(private val pApplet: PApplet) {
 
         fun levelAsFloat(): Float {
             return cachedFloatLevel ?: run {
-                require(_level > FlexibleDecimal.ZERO) { "zoom levels can't be < 0 $_level" }
-                val floatValue = _level.toFloat()
+                require(_level > 0f) { "zoom levels can't be < 0 $_level" }
+                val floatValue = _level
                 cachedFloatLevel = floatValue
                 floatValue
             }
@@ -355,7 +353,7 @@ class Canvas(private val pApplet: PApplet) {
         fun zoom(zoomIn: Boolean, x: Float, y: Float) {
 
             val factor = if (zoomIn) ZOOM_FACTOR_IN else ZOOM_FACTOR_OUT
-            targetSize = level.multiply(factor, mc)
+            targetSize = level * factor
 
             if (targetSize <= minZoomLevel) {
                 return
@@ -363,10 +361,10 @@ class Canvas(private val pApplet: PApplet) {
 
             saveUndoState()
 
-            stepSize = (targetSize - level).divide(FlexibleDecimal.create(totalSteps), mc)  // Compute the step size
+            stepSize = (targetSize - level) / totalSteps
 
-            this.zoomCenterX = FlexibleDecimal.create(x)
-            this.zoomCenterY = FlexibleDecimal.create(y)
+            this.zoomCenterX = x
+            this.zoomCenterY = y
 
             isZooming = true
             stepsTaken = 0
@@ -388,11 +386,11 @@ class Canvas(private val pApplet: PApplet) {
                 }
 
                 // Calculate zoom factor
-                val zoomFactor = level.divide(previousCellWidth, ZOOM_MATH_CONTEXT)
+                val zoomFactor = level / previousCellWidth
 
                 // Calculate the difference in canvas offset-s before and after zoom
-                val dx = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterX - offsetX), ZOOM_MATH_CONTEXT)
-                val dy = (FlexibleDecimal.ONE - zoomFactor).multiply((zoomCenterY - offsetY), ZOOM_MATH_CONTEXT)
+                val dx = (1f - zoomFactor) * (zoomCenterX - offsetX)
+                val dy = (1f - zoomFactor) * (zoomCenterY - offsetY)
 
                 // move canvas offsets by this amount
                 moveCanvasOffsets(dx, dy)
@@ -407,8 +405,7 @@ class Canvas(private val pApplet: PApplet) {
     companion object {
         private const val OPENGL_PGRAPHICS_SMOOTH = 4
         private const val DEFAULT_ZOOM_LEVEL = 1f
-        private val ZOOM_FACTOR_IN = FlexibleDecimal.create(2)
-        private val ZOOM_FACTOR_OUT = FlexibleDecimal.create(.5f)
-        private val ZOOM_MATH_CONTEXT = MathContext(PRECISION_BUFFER, RoundingMode.HALF_UP)
+        private const val ZOOM_FACTOR_IN = 2f
+        private const val ZOOM_FACTOR_OUT = .5f
     }
 }
