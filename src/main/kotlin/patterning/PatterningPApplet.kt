@@ -71,10 +71,6 @@ class PatterningPApplet : PApplet() {
 
     private fun registerPatternObservers(pattern: Pattern) {
 
-        pattern.registerObserver(PatternEventType.DimensionChanged) { event ->
-            canvas.updateBiggestDimension((event as PatternEvent.DimensionChanged).biggestDimension)
-        }
-
         pattern.registerObserver(PatternEventType.PatternSwapped) { _ ->
             canvas.newPattern()
         }

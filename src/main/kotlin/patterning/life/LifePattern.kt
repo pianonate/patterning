@@ -18,7 +18,6 @@ import patterning.pattern.Steppable
 import patterning.pattern.ThreeDimensional
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
-import patterning.util.FlexibleDecimal
 import patterning.util.ResourceManager
 import patterning.util.isNotZero
 import patterning.util.isOne
@@ -70,12 +69,7 @@ class LifePattern(
     // lambdas are cool
     private val nodePath: DrawNodePath = DrawNodePath(
         shouldContinue = { node, size, nodeLeft, nodeTop ->
-            shouldContinue(
-                node,
-                FlexibleDecimal.create(size),
-                FlexibleDecimal.create(nodeLeft),
-                FlexibleDecimal.create(nodeTop)
-            )
+            shouldContinue(node, size, nodeLeft, nodeTop)
         },
         universeSize = universeSize,
         canvas = canvas
@@ -142,8 +136,6 @@ class LifePattern(
             hudInfo.addOrUpdate("fps", pApplet.frameRate.roundToInt())
             hudInfo.addOrUpdate("gps", asyncNextGenerationJob.getRate())
             hudInfo.addOrUpdate("zoom", canvas.zoomLevel)
-            hudInfo.addOrUpdate("mc", canvas.mc.precision)
-
             hudInfo.addOrUpdate("running", RunningModeController.runningMode.toString())
             hudInfo.addOrUpdate("stack saves", startDelta)
             val patternInfo = life.lifeInfo.info
@@ -546,11 +538,7 @@ class LifePattern(
 
             startDelta = life.root.level - startingNode.level
 
-            drawNodeRecurse(startingNode,
-                FlexibleDecimal.create(size),
-                FlexibleDecimal.create(offsetX),
-                FlexibleDecimal.create(offsetY))
-
+            drawNodeRecurse(startingNode, size, offsetX, offsetY)
         }
     }
 
@@ -603,9 +591,9 @@ class LifePattern(
 
     private fun drawNodeRecurse(
         node: Node,
-        size: FlexibleDecimal,
-        left: FlexibleDecimal,
-        top: FlexibleDecimal
+        size: Float,
+        left: Float,
+        top: Float
     ) {
         ++actualRecursions
 
@@ -614,19 +602,19 @@ class LifePattern(
             return
         }
 
-        val leftWithOffset = left + FlexibleDecimal.create(canvas.offsetX)
-        val topWithOffset = top + FlexibleDecimal.create(canvas.offsetY)
+        val leftWithOffset = left + canvas.offsetX
+        val topWithOffset = top + canvas.offsetY
 
 
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
-        if (size <= FlexibleDecimal.ONE && node.population.isNotZero()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), 1f)
+        if (size <= 1f && node.population.isNotZero()) {
+            fillSquare(leftWithOffset, topWithOffset, 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset.toFloat(), topWithOffset.toFloat(), canvas.zoomLevelAsFloat)
+            fillSquare(leftWithOffset, topWithOffset, canvas.zoomLevelAsFloat)
         } else if (node is TreeNode) {
 
-            val halfSize = FlexibleDecimal.create(universeSize.getHalf(node.level, canvas.zoomLevelAsFloat))
+            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevelAsFloat)
 
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
@@ -660,16 +648,16 @@ class LifePattern(
      */
     private fun shouldContinue(
         node: Node,
-        size: FlexibleDecimal,
-        nodeLeft: FlexibleDecimal,
-        nodeTop: FlexibleDecimal
+        size: Float,
+        nodeLeft: Float,
+        nodeTop: Float
     ): Boolean {
         if (node.population.isZero()) {
             return false
         }
 
-        val left = nodeLeft + FlexibleDecimal.create(canvas.offsetX)
-        val top = nodeTop + FlexibleDecimal.create(canvas.offsetY)
+        val left = nodeLeft + canvas.offsetX
+        val top = nodeTop + canvas.offsetY
 
 
         // No need to draw anything not visible on screen
@@ -677,8 +665,10 @@ class LifePattern(
         val bottom = top + size
 
         val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
-        val retVal = !(right < FlexibleDecimal.ZERO || bottom < FlexibleDecimal.ZERO ||
-                left >= FlexibleDecimal.create(canvas.width) || top >= FlexibleDecimal.create(canvas.height))
+        val retVal = !(right < 0f ||
+                bottom < 0f ||
+                left >= canvas.width ||
+                top >= canvas.height)
 
         if (newVal != retVal) {
             println("and we differ!")
@@ -689,18 +679,18 @@ class LifePattern(
 
     private fun shouldContinueNew(
         node: Node,
-        size: FlexibleDecimal,
-        nodeLeft: FlexibleDecimal,
-        nodeTop: FlexibleDecimal
+        size: Float,
+        nodeLeft: Float,
+        nodeTop: Float
     ): Boolean {
         if (node.population.isZero()) {
             return false
         }
 
-        val left = nodeLeft + FlexibleDecimal.create(canvas.offsetX)
-        val top = nodeTop + FlexibleDecimal.create(canvas.offsetY)
+        val left = nodeLeft + canvas.offsetX
+        val top = nodeTop + canvas.offsetY
 
-        return threeD.isRectInView(left.toFloat(), top.toFloat(), size.toFloat(), size.toFloat())
+        return threeD.isRectInView(left, top, size, size)
     }
 
     private fun drawBounds(life: LifeUniverse) {

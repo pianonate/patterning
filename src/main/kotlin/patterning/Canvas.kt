@@ -5,8 +5,6 @@ import com.jogamp.newt.opengl.GLWindow
 import kotlin.math.log2
 import kotlin.math.pow
 import kotlin.math.roundToInt
-import patterning.util.PRECISION_BUFFER
-import patterning.util.minPrecisionForDrawing
 import processing.core.PApplet
 import processing.core.PConstants.P3D
 import processing.core.PFont
@@ -14,7 +12,6 @@ import processing.core.PGraphics
 import processing.core.PImage
 import java.awt.GraphicsEnvironment
 import java.awt.Point
-import java.math.MathContext
 
 class Canvas(private val pApplet: PApplet) {
     private data class CanvasState(
@@ -41,7 +38,6 @@ class Canvas(private val pApplet: PApplet) {
         private set
 
     init {
-        resetMathContext()
         updateDimensions()
     }
 
@@ -92,40 +88,9 @@ class Canvas(private val pApplet: PApplet) {
         }
     }
 
-    // without this precision on the MathContext, small imprecision propagates at
-    // large levels on the LifePattern - sometimes this will cause the image to jump around or completely
-    // off the screen.  don't skimp on precision!
-    // updateBiggestDimension allows us to ensure we keep this up to date
-    lateinit var mc: MathContext
-        private set
-
-    // i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
-    // now that i'm thinking about it, this is probably the required precision for a float
-    // which is what the cell.cellSize is - especially for minuscule numbers
-    // without it, we'd be off by only looking at the integer part of the largest dimension
-    private var previousPrecision: Int = 0
-
-    fun updateBiggestDimension(biggestDimension: Long) {
-        // update math context for calculations
-        val precision = biggestDimension.minPrecisionForDrawing()
-        if (precision != previousPrecision) {
-            mc = MathContext(precision)
-            previousPrecision = precision
-        }
-
-        // update the minimum zoom level, so we don't ask for zooms that can't happen
-        zoom.minZoomLevel = 1f / biggestDimension
-    }
-
     fun newPattern() {
         undoDeque.clear()
         zoom.stopZooming()
-        resetMathContext()
-    }
-
-    private fun resetMathContext() {
-        previousPrecision = 0
-        mc = MathContext(PRECISION_BUFFER)
     }
 
     fun addOffsetsMovedObserver(observer: OffsetsMovedObserver) {

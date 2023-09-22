@@ -1,7 +1,5 @@
 package patterning.util
 
-import kotlin.math.ceil
-import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import java.math.BigDecimal
@@ -24,13 +22,6 @@ fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
         this)
 }
 
-// i was wondering why empirically we needed a PRECISION_BUFFER to add to the precision
-// now that i'm thinking about it, this is probably the required precision for a float
-// which is what the cell.cellSize is - especially for really small numbers
-// without it we'd be off by only looking at the integer part of the largest dimension
-const val PRECISION_BUFFER = 10
-
-fun Long.minPrecisionForDrawing(): Int = ceil(ln(this.toDouble()) / ln(10.0)).toInt() + PRECISION_BUFFER
 
 fun Number.hudFormatted(): String {
     if (this == 0L) return "0"
