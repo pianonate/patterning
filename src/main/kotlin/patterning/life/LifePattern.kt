@@ -69,7 +69,14 @@ class LifePattern(
     // it has shared methods so accepting them here
     // lambdas are cool
     private val nodePath: DrawNodePath = DrawNodePath(
-        shouldContinue = { node, size, nodeLeft, nodeTop -> shouldContinue(node, size, nodeLeft, nodeTop) },
+        shouldContinue = { node, size, nodeLeft, nodeTop ->
+            shouldContinue(
+                node,
+                FlexibleDecimal.create(size),
+                FlexibleDecimal.create(nodeLeft),
+                FlexibleDecimal.create(nodeTop)
+            )
+        },
         universeSize = universeSize,
         canvas = canvas
     )
@@ -241,7 +248,8 @@ class LifePattern(
         val halfDrawingHeight = drawingHeight.divide(FlexibleDecimal.TWO, canvas.mc)
 
         // Adjust offsetX and offsetY calculations to consider the bounds' topLeft corner
-        val offsetX = halfCanvasWidth - halfDrawingWidth + (FlexibleDecimal.create(bounds.left).multiply(-level, canvas.mc))
+        val offsetX =
+            halfCanvasWidth - halfDrawingWidth + (FlexibleDecimal.create(bounds.left).multiply(-level, canvas.mc))
         val offsetY =
             halfCanvasHeight - halfDrawingHeight + (FlexibleDecimal.create(bounds.top).multiply(-level, canvas.mc))
 
@@ -541,7 +549,10 @@ class LifePattern(
 
             startDelta = life.root.level - startingNode.level
 
-            drawNodeRecurse(startingNode, size, offsetX, offsetY)
+            drawNodeRecurse(startingNode,
+                FlexibleDecimal.create(size),
+                FlexibleDecimal.create(offsetX),
+                FlexibleDecimal.create(offsetY))
 
         }
     }

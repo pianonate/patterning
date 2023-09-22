@@ -2,11 +2,10 @@ package patterning.life
 
 import patterning.Canvas
 import patterning.OffsetsMovedObserver
-import patterning.util.FlexibleDecimal
 import patterning.util.isZero
 
 class DrawNodePath(
-    private val shouldContinue: (Node, FlexibleDecimal, FlexibleDecimal, FlexibleDecimal) -> Boolean,
+    private val shouldContinue: (Node, Float, Float, Float) -> Boolean,
     private val universeSize: UniverseSize,
     private val canvas: Canvas
 ) : OffsetsMovedObserver {
@@ -17,13 +16,7 @@ class DrawNodePath(
 
     init {
         path.add(
-            DrawNodePathEntry(
-                Node.deadNode,
-                FlexibleDecimal.ZERO,
-                FlexibleDecimal.ZERO,
-                FlexibleDecimal.ZERO,
-                Direction.NW
-            )
+            DrawNodePathEntry(node = Node.deadNode, size = 0f, left = 0f, top = 0f, direction = Direction.NW)
         )
         canvas.addOffsetsMovedObserver(this)
     }
@@ -35,8 +28,8 @@ class DrawNodePath(
     fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
         val newLevel = root.level
-        val halfSizeOffset = FlexibleDecimal.create(-universeSize.getHalf(newLevel, canvas.zoomLevelAsFloat))
-        val universeSize = FlexibleDecimal.create(universeSize.getSize(newLevel, canvas.zoomLevelAsFloat))
+        val halfSizeOffset = -universeSize.getHalf(newLevel, canvas.zoomLevelAsFloat)
+        val universeSize = universeSize.getSize(newLevel, canvas.zoomLevelAsFloat)
 
         // every generation the root changes so we have to use the latest root
         // to walk through the nodePath to find the lowest node that has children visible on screen
@@ -132,15 +125,15 @@ class DrawNodePath(
 
     private fun updateNodePath(
         node: Node,
-        left: FlexibleDecimal,
-        top: FlexibleDecimal
+        left: Float,
+        top: Float
     ) {
         if (node.population.isZero()) {
             return
         }
 
         if (node is TreeNode) {
-            val halfSize = FlexibleDecimal.create(universeSize.getHalf(node.level, canvas.zoomLevelAsFloat))
+            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevelAsFloat)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 

@@ -1,11 +1,10 @@
 package patterning.life
 
-import patterning.util.FlexibleDecimal
 
 data class DrawNodePathEntry(
     val node: Node,
-    val size: FlexibleDecimal,
-    val left: FlexibleDecimal,
-    val top: FlexibleDecimal,
+    val size: Float,
+    val left: Float,
+    val top: Float,
     val direction: Direction
 )
