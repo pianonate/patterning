@@ -13,6 +13,11 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
             // if a new pattern is loaded we stop 'yaw-ing' as it's too confusing from a ux perspective
             isHighlightFromKeypress = false
         }
+
+        builder.resetRotations?.registerObserver(PatternEventType.ResetRotations) {
+            // if we've reset rotations then clear these controls
+            isHighlightFromKeypress = false
+        }
     }
 
     override fun onMouseReleased() {
@@ -30,6 +35,7 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
         iconName: String,
         size: Int,
         val resetOnNew: Pattern? = null,
+        val resetRotations: Pattern? = null
     ) :
         Control.Builder(canvas, callback, iconName, size) {
         override fun build() = ToggleHighlightControl(this)

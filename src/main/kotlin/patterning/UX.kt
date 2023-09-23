@@ -216,17 +216,21 @@ class UX(
                         addToggleHighlightControl(
                             "yaw.png",
                             keyCallbackFactory.callback3DYaw,
-                            resetOnNew = this@UX.pattern
+                            resetOnNew = this@UX.pattern,
+                            resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "pitch.png",
                             keyCallbackFactory.callback3DPitch,
-                            resetOnNew = this@UX.pattern
-                        )
+                            resetOnNew = this@UX.pattern,
+                            resetRotations = this@UX.pattern,
+
+                            )
                         addToggleHighlightControl(
                             "roll.png",
                             keyCallbackFactory.callback3DRoll,
-                            resetOnNew = this@UX.pattern
+                            resetOnNew = this@UX.pattern,
+                            resetRotations = this@UX.pattern,
                         )
                     }
                 }.build()

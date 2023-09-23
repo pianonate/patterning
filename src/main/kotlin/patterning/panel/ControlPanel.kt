@@ -20,14 +20,15 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             addPanel(c)
         }
 
-        fun addToggleHighlightControl(iconName: String, callback: KeyCallback, resetOnNew: Pattern? = null) =
+        fun addToggleHighlightControl(iconName: String, callback: KeyCallback, resetOnNew: Pattern? = null, resetRotations: Pattern? = null) =
             apply {
                 val c: Control = ToggleHighlightControl.Builder(
                     canvas,
                     callback,
                     iconName,
                     Theme.controlSize,
-                    resetOnNew = resetOnNew
+                    resetOnNew = resetOnNew,
+                    resetRotations = resetRotations,
                 ).build()
                 addPanel(c)
             }

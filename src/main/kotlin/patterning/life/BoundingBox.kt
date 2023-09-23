@@ -1,119 +1,79 @@
 package patterning.life
 
+import kotlin.math.abs
 import patterning.Canvas
 import patterning.Theme
+import patterning.ThreeD
+import patterning.util.quadPlus3D
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
+import processing.core.PVector
 
-class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
+class BoundingBox(
+    bounds: Bounds,
+    private val canvas: Canvas,
+    private val threeD: ThreeD,
+    private val setFillLambda: (Float, Float) -> Unit
+) {
 
-    private fun Float.offset(offset: Float): Float = this.plus(offset)
+    private val widthDecimal = bounds.width * canvas.zoomLevel
+    private val heightDecimal = bounds.height * canvas.zoomLevel
 
-    // take the bounds parameter, multiply times zoom level - intermediate values need to be scaled
-    private fun Long.zoomAndScale(): Float = this * canvas.zoomLevelAsFloat
+    private val leftWithOffset = (bounds.left * canvas.zoomLevel) + canvas.offsetX
+    private val topWithOffset = (bounds.top * canvas.zoomLevel) + canvas.offsetY
 
-    private fun Long.zoomOffsetAndScale(offset: Float): Float =
-        this.zoomAndScale().offset(offset)
+    val left = leftWithOffset
+    val top = topWithOffset
+    val right = leftWithOffset + widthDecimal
+    val bottom = topWithOffset + heightDecimal
 
-    private val leftWithOffset = bounds.left.zoomOffsetAndScale(canvas.offsetX.toFloat())
-    private val topWithOffset = bounds.top.zoomOffsetAndScale(canvas.offsetY.toFloat())
-
-    private val widthDecimal = bounds.width.zoomAndScale()
-    private val heightDecimal = bounds.height.zoomAndScale()
-
-    private fun Float.coerceLeftAndTopToFloat(): Float =
-        if (this < 0f) NEGATIVE_OFFSCREEN else this
-
-    private fun Float.coerceRightAndBottomToFloat(size: Float, canvasSize: Float): Float {
-
-        return if (this + size > canvasSize)
-            canvasSize + POSITIVE_OFFSCREEN
-        else
-            (this + size)
-    }
-
-    // if the actual drawing calculates to be larger than a float then the call to rect will fail
-    // so - coerce boundaries to be drawable with floats
-    val left = leftWithOffset.coerceLeftAndTopToFloat()
-    val top = topWithOffset.coerceLeftAndTopToFloat()
-    val right = leftWithOffset.coerceRightAndBottomToFloat(widthDecimal, canvas.width.toFloat())
-    val bottom = topWithOffset.coerceRightAndBottomToFloat(heightDecimal, canvas.height.toFloat())
-
-
-    private fun Float.fitWidthAndHeight(opposite: Float): Float =
-        if (this == NEGATIVE_OFFSCREEN) (opposite + POSITIVE_OFFSCREEN) else (opposite - this)
-
-    val width = left.fitWidthAndHeight(right)
-    val height = top.fitWidthAndHeight(bottom)
-
-
-    private fun startPos(
-        orthogonalStartWithOffset: Float,
-        orthogonalDimensionSize: Float,
-        orthogonalCanvasSize: Float
-    ): Float {
-        // divide by half cell size because the draw algorithm ends up with cells at center of universe right now...
-        val halfDimension = orthogonalDimensionSize / 2f
-        val startPosDecimal = orthogonalStartWithOffset + halfDimension
-
-        return when {
-            startPosDecimal < 0f -> NEGATIVE_OFFSCREEN
-            startPosDecimal > orthogonalCanvasSize -> orthogonalCanvasSize + POSITIVE_OFFSCREEN
-            else -> startPosDecimal
-        }
-    }
-
-    private fun endPos(
-        startWithOffset: Float,
-        dimensionSize: Float,
-        canvasSize: Float
-    ): Float {
-        val endDecimal = startWithOffset + dimensionSize
-
-        return if (endDecimal > canvasSize) canvasSize + POSITIVE_OFFSCREEN else endDecimal
-    }
+    val width = right - left
+    val height = bottom - top
 
     // Calculate Lines
     private val horizontalLine: Line
         get() {
-            val startY = startPos(
-                orthogonalStartWithOffset = topWithOffset,
-                orthogonalDimensionSize = heightDecimal,
-                orthogonalCanvasSize = canvas.height.toFloat()
-            )
+            val startY = topWithOffset + heightDecimal / 2f
+            val endX = leftWithOffset + widthDecimal
 
-            val endX = endPos(
-                startWithOffset = leftWithOffset,
-                dimensionSize = widthDecimal,
-                canvasSize = canvas.width.toFloat()
-            )
-
-            return Line(Point(left, startY), Point(endX, startY))
+            return Line(Point(left, startY), Point(endX, startY), threeD)
         }
 
     private val verticalLine: Line
         get() {
 
-            val startX = startPos(
-                orthogonalStartWithOffset = leftWithOffset,
-                orthogonalDimensionSize = widthDecimal,
-                orthogonalCanvasSize = canvas.width.toFloat()
-            )
+            val startX = leftWithOffset + widthDecimal / 2
+            val endY = topWithOffset + heightDecimal
 
-            val endY = endPos(
-                startWithOffset = topWithOffset,
-                dimensionSize = heightDecimal,
-                canvasSize = canvas.height.toFloat()
-            )
-
-            return Line(Point(startX, top), Point(startX, endY))
+            return Line(Point(startX, top), Point(startX, endY), threeD)
         }
 
     private fun drawCrossHair(graphics: PGraphics) {
         horizontalLine.drawDashedLine(graphics)
         verticalLine.drawDashedLine(graphics)
     }
+
+    fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics, canvas: Canvas) {
+        val coercedCorners = corners.map { corner ->
+            Pair(
+                corner.x.toInt().coerceIn(0, canvas.width.toInt()),
+                corner.y.toInt().coerceIn(0, canvas.height.toInt())
+            )
+        }
+
+        val lines = listOf(
+            Pair(coercedCorners[0], coercedCorners[2]),
+            Pair(coercedCorners[2], coercedCorners[3]),
+            Pair(coercedCorners[3], coercedCorners[1]),
+            Pair(coercedCorners[1], coercedCorners[0])
+        )
+
+        for ((start, end) in lines) {
+            drawPixelLine(start.first, start.second, end.first, end.second, graphics)
+        }
+    }
+
 
     fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
 
@@ -122,7 +82,12 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
             noFill()
             stroke(Theme.textColor)
             strokeWeight(Theme.strokeWeightBounds)
-            rect(left, top, this@BoundingBox.width, this@BoundingBox.height)
+
+            val transformedBoundingBox =
+                threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
+
+            //quadPlus3D(transformedBoundingBox)
+            drawBoundingBoxEdges(transformedBoundingBox, graphics, canvas)
 
             if (drawCrossHair) {
                 drawCrossHair(graphics)
@@ -132,15 +97,41 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
         }
     }
 
-    private inner class Point(var x: Float, var y: Float) {
+    inner class Point(var x: Float, var y: Float) {
         init {
-            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
-            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevelAsFloat)
+            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
+            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
         }
 
         operator fun component1(): Float = x
         operator fun component2(): Float = y
     }
+
+    fun drawPixelLine(startX: Int, startY: Int, endX: Int, endY: Int, graphics: PGraphics) {
+        var (x, y) = startX to startY
+        val (dx, dy) = abs(endX - startX) to abs(endY - startY)
+        val (sx, sy) = Pair(if (startX < endX) 1 else -1, if (startY < endY) 1 else -1)
+        var err = dx - dy
+
+        generateSequence { Pair(x, y) }
+            .takeWhile { it.first != endX || it.second != endY }
+            .forEach { (px, py) ->
+                setFillLambda(px.toFloat(), py.toFloat())
+                // Replace with your setFill function or any other pixel setting code.
+                graphics.point(px.toFloat(), py.toFloat())
+
+                val e2 = 2 * err
+                if (e2 > -dy) {
+                    err -= dy
+                    x += sx
+                }
+                if (e2 < dx) {
+                    err += dx
+                    y += sy
+                }
+            }
+    }
+
 
 
     /**
@@ -154,7 +145,7 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
      *
      * interesting
      */
-    private data class Line(val start: Point, val end: Point) {
+    inner class Line(val start: Point, val end: Point, val threeD: ThreeD) {
 
         fun drawDashedLine(graphics: PGraphics) {
 
@@ -178,8 +169,16 @@ class BoundingBox(bounds: Bounds, private val canvas: Canvas) {
                     val endX = (curX + dxDash).coerceAtMost(end.x)
                     val endY = (curY + dyDash).coerceAtMost(end.y)
 
+                    val transformedCoords = threeD.getTransformedLineCoords(curX, curY, endX, endY)
+
                     if (draw) {
-                        line(curX, curY, endX, endY)
+                        drawPixelLine(
+                            transformedCoords.first.x.toInt(),
+                            transformedCoords.first.y.toInt(),
+                            transformedCoords.second.x.toInt(),
+                            transformedCoords.second.y.toInt(),
+                            this
+                        )
                     }
 
                     Triple(endX, endY, !draw)

@@ -46,7 +46,7 @@ object Theme {
     const val hudTextSize = 16
     const val iconMargin = 5
     const val startupTextSize = 50
-    const val strokeWeightBounds = 3f
+    const val strokeWeightBounds = 1f
     const val strokeWeightDashedLine = 1f
 
     /**

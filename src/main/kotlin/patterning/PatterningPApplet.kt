@@ -7,6 +7,8 @@ import patterning.pattern.Movable
 import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
 import patterning.pattern.PatternEventType
+import patterning.util.AsyncJobRunner
+import patterning.util.hudFormatted
 import processing.core.PApplet
 
 
@@ -25,6 +27,14 @@ class PatterningPApplet : PApplet() {
     // used to control whether drag behavior should be invoked
     // when a mouse has been pressed over a mouse event receiver
     private var mousePressedOverReceiver = false
+
+    private val asyncGC = AsyncJobRunner(
+        method = suspend {
+            val rt = Runtime.getRuntime()
+            println("asyncGC - total:${rt.totalMemory().hudFormatted()} free:${rt.freeMemory().hudFormatted()} used:free:${(rt.totalMemory() - rt.freeMemory()).hudFormatted()}")
+            System.gc()
+        }
+    )
 
     override fun settings() {
         fullScreen(P3D)
@@ -93,6 +103,10 @@ class PatterningPApplet : PApplet() {
 
             pattern.draw()
             ux.draw()
+
+            if (frameCount % 1000 == 0) {
+                asyncGC.start()
+            }
 
         } catch (e: Exception) {
             // it seems these only seem to happen during startup or during resizing (moving from screen to screeN)

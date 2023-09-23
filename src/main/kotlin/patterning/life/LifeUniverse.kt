@@ -281,50 +281,46 @@ class LifeUniverse internal constructor() {
         }
     }
 
-    // create or search for a node given its children
-    private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
-        val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
+     /**
+      * create or search for a node given its children
+      *
+      * if you want this to be a few seconds faster over the duration of the program
+      * you can replace
+      *
+      *         val nodeList = hashMap.getOrPut(hash) { mutableListOf() }
+      *
+      * with
+      *
+      *         var nodeList = hashMap[hash]
+      *         if (nodeList == null) {
+      *             nodeList = mutableListOf()
+      *             hashMap[hash] = nodeList
+      *         }
+     */
+     private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
+         val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
 
-        var newNode: TreeNode? = null
+         // Get or create a new list if key not found
+         val nodeList = hashMap.getOrPut(hash) { mutableListOf() }
 
-        // using compute for thread safety - it returns a nodelist so we either just return the one associated
-        // with finding a matching node in it, or we create a new node, add it to the nodelist and then return that
-        // back to the compute
-        // finally whether we created a new one or found an existing match, we return that TreeNode to be
-        // cached in the next generation cache
-        hashMap.compute(hash) { _, oldNodeList ->
-            val nodeList = oldNodeList ?: mutableListOf()
+         // Search for existing node
+         for (node in nodeList) {
+             if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
+                 return node // return existing node immediately
+             }
+         }
 
-            for (node in nodeList) {
+         // Create and add new node
+         val newNode = TreeNode(nw, ne, sw, se, lastId.getAndIncrement(), aliveSince = birthFrame)
+         nodeList.add(newNode)
 
-                if (node.nw == nw && node.ne == ne && node.sw == sw && node.se == se) {
-                    newNode = node
-                    return@compute nodeList
-                }
-            }
+         // Update the hashMap (this step ensures that the new node is accessible later)
+         hashMap[hash] = nodeList
 
-            newNode = TreeNode(nw, ne, sw, se, lastId.getAndIncrement() /*++*/, aliveSince = birthFrame)
-            nodeList.add(newNode!!)
+         return newNode
+     }
 
-            nodeList // return the updated list
-        }
 
-        return newNode ?: throw Exception("New node should not be null")
-    }
-
-    /* private fun createNode(nw: Node, ne: Node, sw: Node, se: Node): TreeNode {
-        val hash = Node.calcHash(nw.id, ne.id, sw.id, se.id)
-
-        // using compute for thread safety - it returns a TreeNode
-        return hashMap.compute(hash) { _, oldNode ->
-            // If an oldNode exists and matches the children, return it
-            if (oldNode != null && oldNode.nw == nw && oldNode.ne == ne && oldNode.sw == sw && oldNode.se == se) {
-                return@compute oldNode
-            }
-            // Otherwise create a new TreeNode, add it to the HashMap, and return it
-            return@compute TreeNode(nw, ne, sw, se, lastId++, birthFrame)
-        } ?: throw Exception("New node should not be null")
-    }*/
 
     private fun updatePatternInfo() {
 
@@ -333,8 +329,6 @@ class LifeUniverse internal constructor() {
         lifeInfo.addOrUpdate("generation", generation)
         lifeInfo.addOrUpdate("population", root.population)
         lifeInfo.addOrUpdate("lastId", lastId.get())
-        /* lifeInfo.addOrUpdate("normalRecurse", recurse.get())
-         lifeInfo.addOrUpdate("stepRecurse", recurseStep.get())*/
         lifeInfo.addOrUpdate("width", root.bounds.width)
         lifeInfo.addOrUpdate("height", root.bounds.height)
     }

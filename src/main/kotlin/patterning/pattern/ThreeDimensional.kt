@@ -5,4 +5,5 @@ interface ThreeDimensional {
     fun toggleYaw()
     fun togglePitch()
     fun toggleRoll()
+    fun centerAndResetRotations()
 }

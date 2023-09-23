@@ -1,6 +1,6 @@
 package patterning.pattern
 
 enum class PatternEventType {
-    DimensionChanged,
+    ResetRotations,
     PatternSwapped
 }

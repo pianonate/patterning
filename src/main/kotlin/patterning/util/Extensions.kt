@@ -2,6 +2,8 @@ package patterning.util
 
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import processing.core.PGraphics
+import processing.core.PVector
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -61,3 +63,12 @@ fun Long.isOne(): Boolean = this == 1L
 fun Long.isZero(): Boolean = this == 0L
 fun Long.isNotZero(): Boolean = this != 0L
 fun Long.addOne(): Long = this + 1L
+
+fun PGraphics.quadPlus3D(corners: List<PVector>) {
+    this.quad(
+        corners[0].x, corners[0].y,
+        corners[2].x, corners[2].y,
+        corners[3].x, corners[3].y,
+        corners[1].x, corners[1].y
+    )
+}

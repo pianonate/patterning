@@ -50,9 +50,6 @@ class Canvas(private val pApplet: PApplet) {
             zoom.level = zoom.computeNearestPowerOf2TargetSize(value, findNextLowerPowerOf2 = true)
         }
 
-    val zoomLevelAsFloat: Float
-        get() = zoom.levelAsFloat()
-
     fun updateZoom() = zoom.update()
 
     fun zoom(zoomIn: Boolean, x: Float, y: Float) = zoom.zoom(zoomIn, x, y)
@@ -368,7 +365,7 @@ class Canvas(private val pApplet: PApplet) {
     }
 
     companion object {
-        private const val OPENGL_PGRAPHICS_SMOOTH = 4
+        private const val OPENGL_PGRAPHICS_SMOOTH = 2
         private const val DEFAULT_ZOOM_LEVEL = 1f
         private const val ZOOM_FACTOR_IN = 2f
         private const val ZOOM_FACTOR_OUT = .5f

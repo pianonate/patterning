@@ -9,6 +9,7 @@ import patterning.actions.KeyHandler
 import patterning.actions.SimpleKeyCallback
 import patterning.actions.ValidOS
 import patterning.state.RunningModeController
+import patterning.util.hudFormatted
 import processing.core.PApplet
 import processing.event.KeyEvent
 
@@ -36,16 +37,39 @@ class KeyCallbackFactory(
 
     fun setupSimpleKeyCallbacks() {
         with(KeyHandler) {
+            addKeyCallback(callbackCenterViewResetRotations)
             addKeyCallback(callbackGhostModeKeyFrame)
+            addKeyCallback(callbackInvokeGC)
             addKeyCallback(callbackPaste)
             addKeyCallback(callbackPerfTest)
             addKeyCallback(callbackMovePattern)
             addKeyCallback(callbackNextScreen)
             addKeyCallback(callbackNumberedPattern)
+            addKeyCallback(callbackPrintMemory)
             addKeyCallback(callbackZoomIn)
             addKeyCallback(callbackZoomOut)
         }
     }
+
+    private val callbackPrintMemory = SimpleKeyCallback(
+        keyCombos = SHORTCUT_PRINT_MEMORY.toKeyComboSet(),
+        invokeFeatureLambda = {
+            println(
+                "memory: ${
+                    (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()).hudFormatted()
+                }"
+            )
+        },
+        usage = "print out memory used to console"
+    )
+
+    private val callbackInvokeGC = SimpleKeyCallback(
+        keyCombos = SHORTCUT_INVOKE_GC.toKeyComboSet(),
+        invokeFeatureLambda = {
+            System.gc()
+        },
+        usage = "invoke gc"
+    )
 
     val callbackSaveImage = SimpleKeyCallback(
         keyCombos = SHORTCUT_SAVE_IMAGE.toKeyComboSet(),
@@ -125,7 +149,7 @@ class KeyCallbackFactory(
         },
         usage = "play and pause",
         invokeAfterDelay = true
-        )
+    )
 
     val callbackGhostMode = SimpleKeyCallback(
         keyCombos = SHORTCUT_GHOST_MODE.toKeyComboSet(),
@@ -261,6 +285,16 @@ class KeyCallbackFactory(
         usage = "center the view"
     )
 
+    private val callbackCenterViewResetRotations = SimpleKeyCallback(
+        keyCombos = KeyCombo(SHORTCUT_CENTER, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).centerAndResetRotations()
+            }
+        },
+        usage = "center the view and stop rotations"
+    )
+
     val callbackUndoMovement = SimpleKeyCallback(
         keyCombos = Pair(
             KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
@@ -381,6 +415,8 @@ class KeyCallbackFactory(
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_GHOST_MODE = 'g'
+        private const val SHORTCUT_INVOKE_GC = 'i'
+        private const val SHORTCUT_PRINT_MEMORY = 'm'
         private const val SHORTCUT_NEXT_SCREEN = 'n'
         private const val SHORTCUT_PASTE = 'v'
         private const val SHORTCUT_PLAY_PAUSE = ' '

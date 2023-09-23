@@ -28,8 +28,8 @@ class DrawNodePath(
     fun getLowestEntryFromRoot(root: TreeNode): DrawNodePathEntry {
 
         val newLevel = root.level
-        val halfSizeOffset = -universeSize.getHalf(newLevel, canvas.zoomLevelAsFloat)
-        val universeSize = universeSize.getSize(newLevel, canvas.zoomLevelAsFloat)
+        val halfSizeOffset = -universeSize.getHalf(newLevel, canvas.zoomLevel)
+        val universeSize = universeSize.getSize(newLevel, canvas.zoomLevel)
 
         // every generation the root changes so we have to use the latest root
         // to walk through the nodePath to find the lowest node that has children visible on screen
@@ -133,7 +133,7 @@ class DrawNodePath(
         }
 
         if (node is TreeNode) {
-            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevelAsFloat)
+            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
 

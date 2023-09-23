@@ -48,8 +48,8 @@ abstract class Pattern(
         ghostState = GhostOff()
     }
 
-    fun onBiggestDimensionChanged(biggestDimension: Long) {
-        notifyObservers(PatternEventType.DimensionChanged, PatternEvent.DimensionChanged(biggestDimension))
+    fun onResetRotations() {
+        notifyObservers(PatternEventType.ResetRotations, PatternEvent.ResetRotations(reset = true))
     }
 
     fun onNewPattern(patternName: String) {

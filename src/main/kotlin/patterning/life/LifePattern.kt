@@ -22,6 +22,7 @@ import patterning.util.ResourceManager
 import patterning.util.isNotZero
 import patterning.util.isOne
 import patterning.util.isZero
+import patterning.util.quadPlus3D
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
@@ -79,10 +80,6 @@ class LifePattern(
     private var drawBounds = false
     private var isThreeD = false
 
-    /*
-        private var currentTransformMatrix = PMatrix3D()
-    */
-
     private var threeD = ThreeD(canvas)
 
     init {
@@ -126,6 +123,7 @@ class LifePattern(
         pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
 
         goForwardInTime(shouldAdvance)
+
     }
 
     override fun getHUDMessage(): String {
@@ -180,17 +178,6 @@ class LifePattern(
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
     }
 
-    // as nodes are created their bounds are calculated
-    // when the bounds get larger, we need a math context to draw with that
-    // allows the pattern to be drawn with the necessary precision
-    private fun updateBoundsChanged(bounds: Bounds) {
-        val dimension = maxOf(bounds.width, bounds.height)
-        if (dimension > biggestDimension) {
-            biggestDimension = dimension
-            onBiggestDimensionChanged(biggestDimension)
-        }
-    }
-
     /**
      * Movable overrides
      */
@@ -227,7 +214,8 @@ class LifePattern(
 
             canvas.zoomLevel = widthRatio.coerceAtMost(heightRatio)
 
-            threeD.resetAngles()
+            reset3DAndStopRotations()
+
         }
 
         val level = canvas.zoomLevel
@@ -332,20 +320,20 @@ class LifePattern(
         threeD.isRolling = !threeD.isRolling
     }
 
-    /*    private fun reset3DParams() {
-            currentYawAngle = 0f
-            currentPitchAngle = 0f
-            currentRollAngle = 0f
-        }*/
+    override fun centerAndResetRotations() {
+        center()
+        reset3DAndStopRotations()
+    }
 
     private fun reset3DAndStopRotations() {
 
-        threeD.resetAnglesAndStop()
+        threeD.reset()
+        onResetRotations()
 
         // used for individual boxes
         isThreeD = false
 
-        pattern.graphics.camera()
+
     }
 
     /**
@@ -427,7 +415,8 @@ class LifePattern(
         if (width > 4 && isThreeD) {
             draw3DBox(posX, posY, width)
         } else {
-            pattern.graphics.rect(posX, posY, width, width)
+            val corners = threeD.rectCorners
+            pattern.graphics.quadPlus3D(corners)
         }
     }
 
@@ -450,16 +439,20 @@ class LifePattern(
     }
 
     private fun setFill(x: Float, y: Float) {
+
         with(pattern.graphics) {
-            if (rainbowMode) {
+            val color = if (rainbowMode) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val hue = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
-                fill(ghostState.applyAlpha(color(hue, 100f, 100f, 255f)))
+                color(hue, 100f, 100f, 255f)
             } else {
-                fill(ghostState.applyAlpha(Theme.cellColor))
+                Theme.cellColor
             }
+            fill(ghostState.applyAlpha(color))
+            pattern.graphics.stroke(ghostState.applyAlpha(color))
         }
     }
+
 
     private var rotationAngle = 0f
 
@@ -493,10 +486,8 @@ class LifePattern(
 
             updateStroke()
 
-            updateBoundsChanged(life.root.bounds)
-
             if (shouldAdvance)
-                threeD.advance()
+                threeD.rotateActiveRotations()
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
@@ -542,47 +533,8 @@ class LifePattern(
         }
     }
 
-    /* private fun handle3D(shouldAdvance: Boolean) {
-
-         // Move to the center of the object
-         pattern.graphics.translate(pApplet.width / 2f, pApplet.height / 2f)
-
-         // controls speed of rotation
-         // in the future you'll want to have independent control of rotation speed
-         // which you'll want to tie to midi
-         val rotationIncrement = TWO_PI / 360f
-
-         if (shouldAdvance) {
-             if (isYawing) {
-                 currentYawAngle += rotationIncrement
-                 currentYawAngle %= TWO_PI  // Keep angle in range (0 to TWO_PI)
-             }
-
-             if (isPitching) {
-                 currentPitchAngle += rotationIncrement
-                 currentPitchAngle %= TWO_PI
-             }
-
-             if (isRolling) {
-                 currentRollAngle += rotationIncrement
-                 currentRollAngle %= TWO_PI
-             }
-         }
-
-         // Apply the current rotation angles
-         pattern.graphics.rotateY(currentYawAngle)
-         pattern.graphics.rotateX(currentPitchAngle)
-         pattern.graphics.rotateZ(currentRollAngle)
-
-         pattern.graphics.getMatrix(currentTransformMatrix)
-
-         // Move back by half the object's size
-         pattern.graphics.translate(-pApplet.width / 2f, -pApplet.height / 2f)
-
-     }*/
-
     private fun updateStroke() {
-        if (canvas.zoomLevelAsFloat > 4f) {
+        if (canvas.zoomLevel > 4f) {
             pattern.graphics.stroke(Theme.boxOutlineColor)
         } else {
             pattern.graphics.noStroke()
@@ -597,7 +549,6 @@ class LifePattern(
     ) {
         ++actualRecursions
 
-        // Check if we should continue
         if (!shouldContinue(node, size, left, top)) {
             return
         }
@@ -605,16 +556,15 @@ class LifePattern(
         val leftWithOffset = left + canvas.offsetX
         val topWithOffset = top + canvas.offsetY
 
-
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= 1f && node.population.isNotZero()) {
             fillSquare(leftWithOffset, topWithOffset, 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset, topWithOffset, canvas.zoomLevelAsFloat)
+            fillSquare(leftWithOffset, topWithOffset, canvas.zoomLevel)
         } else if (node is TreeNode) {
 
-            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevelAsFloat)
+            val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)
 
             val leftHalfSize = left + halfSize
             val topHalfSize = top + halfSize
@@ -645,39 +595,10 @@ class LifePattern(
      * if the bottom is less than zero it's above the canvas
      * if the left is larger than the width then we're to the right of the canvas
      * if the top is larger than the height we're below the canvas
+     *
+     * updated to use ThreeD to determine whether a rotated image will fit
      */
     private fun shouldContinue(
-        node: Node,
-        size: Float,
-        nodeLeft: Float,
-        nodeTop: Float
-    ): Boolean {
-        if (node.population.isZero()) {
-            return false
-        }
-
-        val left = nodeLeft + canvas.offsetX
-        val top = nodeTop + canvas.offsetY
-
-
-        // No need to draw anything not visible on screen
-        val right = left + size
-        val bottom = top + size
-
-        val newVal = shouldContinueNew(node, size, nodeLeft, nodeTop)
-        val retVal = !(right < 0f ||
-                bottom < 0f ||
-                left >= canvas.width ||
-                top >= canvas.height)
-
-        if (newVal != retVal) {
-            println("and we differ!")
-            val seeWhatsHappening = shouldContinueNew(node, size, nodeLeft, nodeTop)
-        }
-        return retVal
-    }
-
-    private fun shouldContinueNew(
         node: Node,
         size: Float,
         nodeLeft: Float,
@@ -698,16 +619,20 @@ class LifePattern(
 
         val bounds = life.rootBounds
 
+        val setFillLambda: (Float, Float) -> Unit = { x, y -> setFill(x, y) }
+
+
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, canvas)
+        val boundingBox = BoundingBox(bounds, canvas, threeD, setFillLambda)
         boundingBox.draw(pattern.graphics)
 
         var currentLevel = life.root.level - 2
 
         while (currentLevel < life.root.level) {
             val halfSize = LifeUniverse.pow2(currentLevel)
-            val universeBox = BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas)
+            val universeBox =
+                BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas, threeD, setFillLambda)
             universeBox.draw(pattern.graphics, drawCrossHair = true)
             currentLevel++
         }
