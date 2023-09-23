@@ -90,6 +90,6 @@ object ResourceManager {
         return getResourceAsString(files[number - 1])
     }
 
-    val RLE_DIRECTORY = "rle"
+    const val RLE_DIRECTORY = "rle"
 
 }

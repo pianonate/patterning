@@ -165,7 +165,7 @@ class LifePattern(
 
         val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
         newGraphics.beginDraw()
-        newGraphics.background(Theme.backGroundColor)
+        newGraphics.background(Theme.backgroundColor)
         val img = pattern.graphics.get()
         newGraphics.image(img, 0f, 0f)
         newGraphics.endDraw()
@@ -405,34 +405,69 @@ class LifePattern(
         y: Float,
         size: Float,
     ) {
+        with(pattern.graphics) {
+            push()
+            val width = size.roundToIntIfGreaterThanReference(size)
+            val posX = x.roundToIntIfGreaterThanReference(size)
+            val posY = y.roundToIntIfGreaterThanReference(size)
 
+            val cellColor = getFillColor(posX, posY)
+            fill(cellColor)
 
-        val width = size.roundToIntIfGreaterThanReference(size)
-        val posX = x.roundToIntIfGreaterThanReference(size)
-        val posY = y.roundToIntIfGreaterThanReference(size)
-
-        setFill(posX, posY)
-
-        if (width > 4 && isThreeD) {
-            draw3DBox(posX, posY, width)
-        } else {
-            val corners = threeD.rectCorners
-            val transformedCorners = corners.map { corner ->
-                PVector(
-                    corner.x.roundToIntIfGreaterThanReference(size),
-                    corner.y.roundToIntIfGreaterThanReference(size)
-                )
+            if (width > 4 && isThreeD) {
+                draw3DBox(posX, posY, width)
+            } else {
+                val corners = threeD.rectCorners
+                val transformedCorners = corners.map { corner ->
+                    PVector(
+                        corner.x,
+                        corner.y
+                    )
+                }
+                if (width <= 1.0f) {
+                    val pixelColor = getPixelColor(transformedCorners[0].x, transformedCorners[0].y)
+                    val transformedX = transformedCorners[0].x.toInt()
+                    val transformedY = transformedCorners[0].y.toInt()
+                    set(transformedX, transformedY, pixelColor)
+                } else {
+                    quadPlus(corners)
+                }
             }
 
-            pattern.graphics.quadPlus(transformedCorners, shrinkEdges = true)
+            pop()
         }
     }
+
+    private fun getPixelColor(x:Float, y:Float):Int {
+        val cellColor = getFillColor(x, y)
+
+       return if (ghostState is Ghosting) {
+            val existing = pattern.graphics.get(x.toInt(), y.toInt())
+            blendColors(existing, cellColor)
+        } else {
+            cellColor
+        }
+
+    }
+
+    private fun blendColors(existing: Int, new: Int): Int {
+        val alpha2 = (new shr 24 and 0xFF) / 255.0f
+        val invAlpha2 = 1.0f - alpha2
+
+        val r = ((existing shr 16 and 0xFF) * invAlpha2 + (new shr 16 and 0xFF) * alpha2).toInt()
+        val g = ((existing shr 8 and 0xFF) * invAlpha2 + (new shr 8 and 0xFF) * alpha2).toInt()
+        val b = ((existing and 0xFF) * invAlpha2 + (new and 0xFF) * alpha2).toInt()
+        val a = 255  // Assuming the resultant alpha is fully opaque
+
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+
 
     private fun draw3DBox(x: Float, y: Float, width: Float) {
         with(pattern.graphics) {
             push()
             translate(x + width / 2, y + width / 2)
-            strokeWeight(1f)
             stroke(Theme.boxOutlineColor)
 
             if (threeD.isPitching)
@@ -446,9 +481,9 @@ class LifePattern(
         }
     }
 
-    private fun setFill(x: Float, y: Float) {
+    private fun getFillColor(x: Float, y: Float): Int {
 
-        with(pattern.graphics) {
+        return with(pattern.graphics) {
             val color = if (rainbowMode) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val hue = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
@@ -456,8 +491,8 @@ class LifePattern(
             } else {
                 Theme.cellColor
             }
-            fill(ghostState.applyAlpha(color))
-            pattern.graphics.stroke(ghostState.applyAlpha(color))
+
+            ghostState.applyAlpha(color)
         }
     }
 
@@ -492,7 +527,7 @@ class LifePattern(
 
             updateBoxRotationAngle()
 
-            updateStroke()
+            stroke(ghostState.applyAlpha(Theme.backgroundColor))
 
             if (shouldAdvance)
                 threeD.rotateActiveRotations()
@@ -529,7 +564,6 @@ class LifePattern(
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
 
-
             val startingNode = node
             val size = size
             val offsetX = left
@@ -538,14 +572,6 @@ class LifePattern(
             startDelta = life.root.level - startingNode.level
 
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
-        }
-    }
-
-    private fun updateStroke() {
-        if (canvas.zoomLevel > 4f) {
-            pattern.graphics.stroke(Theme.boxOutlineColor)
-        } else {
-            pattern.graphics.noStroke()
         }
     }
 
@@ -619,6 +645,7 @@ class LifePattern(
         val left = nodeLeft + canvas.offsetX
         val top = nodeTop + canvas.offsetY
 
+
         return threeD.isRectInView(left, top, size, size)
     }
 
@@ -627,23 +654,23 @@ class LifePattern(
 
         val bounds = life.rootBounds
 
-        val setFillLambda: (Float, Float) -> Unit = { x, y -> setFill(x, y) }
-
-
-        // use the bounds of the "living" section of the universe to determine
-        // a visible boundary based on the current canvas offsets and cell size
-        val boundingBox = BoundingBox(bounds, canvas, threeD, setFillLambda)
-        boundingBox.draw(pattern.graphics)
+        val getPixelColor: (Float, Float) -> Int = { x, y -> getPixelColor(x, y) }
 
         var currentLevel = life.root.level - 2
 
         while (currentLevel < life.root.level) {
+            val drawOnlyBiggest = currentLevel == (life.root.level - 1)
             val halfSize = LifeUniverse.pow2(currentLevel)
-            val universeBox =
-                BoundingBox(Bounds(-halfSize, -halfSize, halfSize, halfSize), canvas, threeD, setFillLambda)
-            universeBox.draw(pattern.graphics, drawCrossHair = true)
+            val levelBounds = Bounds(-halfSize, -halfSize, halfSize, halfSize)
+            val universeBox = BoundingBox(levelBounds, canvas, threeD, getPixelColor)
+            universeBox.draw(graphics = pattern.graphics, drawCrossHair = drawOnlyBiggest)
             currentLevel++
         }
+
+        // use the bounds of the "living" section of the universe to determine
+        // a visible boundary based on the current canvas offsets and cell size
+        val patternBox = BoundingBox(bounds, canvas, threeD, getPixelColor)
+        patternBox.draw(pattern.graphics)
     }
 
     private fun asyncNextGeneration() {

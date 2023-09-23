@@ -4,7 +4,6 @@ import kotlin.math.abs
 import patterning.Canvas
 import patterning.Theme
 import patterning.ThreeD
-import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
 import processing.core.PVector
@@ -13,7 +12,8 @@ class BoundingBox(
     bounds: Bounds,
     private val canvas: Canvas,
     private val threeD: ThreeD,
-    private val setFillLambda: (Float, Float) -> Unit
+    private val getPixelColor: (Float, Float) -> Int
+
 ) {
 
     private val widthDecimal = bounds.width * canvas.zoomLevel
@@ -53,29 +53,154 @@ class BoundingBox(
         verticalLine.drawDashedLine(graphics)
     }
 
-    private fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics, canvas: Canvas) {
-        val coercedCorners = corners.map { corner ->
-            Pair(
-                corner.x.toInt().coerceIn(0, canvas.width.toInt()),
-                corner.y.toInt().coerceIn(0, canvas.height.toInt())
+    /*    private fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics, canvas: Canvas) {
+            val coercedCorners = corners.map { corner ->
+                Pair(
+                    corner.x.toInt().coerceIn(0, canvas.width.toInt()),
+                    corner.y.toInt().coerceIn(0, canvas.height.toInt())
+                )
+            }
+
+            val lines = listOf(
+                Pair(coercedCorners[0], coercedCorners[2]),
+                Pair(coercedCorners[2], coercedCorners[3]),
+                Pair(coercedCorners[3], coercedCorners[1]),
+                Pair(coercedCorners[1], coercedCorners[0])
             )
-        }
+
+            for ((start, end) in lines) {
+                drawPixelLine(start.first, start.second, end.first, end.second, graphics)
+            }
+        }*/
+    private fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics) {
 
         val lines = listOf(
-            Pair(coercedCorners[0], coercedCorners[2]),
-            Pair(coercedCorners[2], coercedCorners[3]),
-            Pair(coercedCorners[3], coercedCorners[1]),
-            Pair(coercedCorners[1], coercedCorners[0])
+            Pair(corners[0], corners[2]),
+            Pair(corners[2], corners[3]),
+            Pair(corners[3], corners[1]),
+            Pair(corners[1], corners[0])
         )
 
         for ((start, end) in lines) {
-            drawPixelLine(start.first, start.second, end.first, end.second, graphics)
+            val clippedLine = cohenSutherlandClip(start.x, start.y, end.x, end.y)
+            clippedLine?.let { (clippedStart, clippedEnd) ->
+                drawPixelLine(
+                    clippedStart.first.toInt(),
+                    clippedStart.second.toInt(),
+                    clippedEnd.first.toInt(),
+                    clippedEnd.second.toInt(),
+                    graphics
+                )
+            }
         }
     }
 
 
-    /* fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
+    enum class OutCode(val code: Int) {
+        INSIDE(0), // 0000
+        LEFT(1),  // 0001
+        RIGHT(2), // 0010
+        BOTTOM(4),// 0100
+        TOP(8);   // 1000
 
+        infix fun and(other: OutCode): OutCode {
+            return OutCode.fromCode(this.code and other.code)
+        }
+
+        infix fun or(other: OutCode): OutCode {
+            return OutCode.fromCode(this.code or other.code)
+        }
+
+        companion object {
+            fun fromCode(code: Int): OutCode {
+                return entries.firstOrNull { it.code == code } ?: INSIDE
+            }
+        }
+    }
+
+    private fun computeOutCode(x: Float, y: Float): OutCode = when {
+        x < 0 -> OutCode.LEFT
+        x > canvas.width -> OutCode.RIGHT
+        y < 0 -> OutCode.TOP
+        y > canvas.height -> OutCode.BOTTOM
+        else -> OutCode.INSIDE
+    }
+
+
+    /**
+     * used to clip the lines to only draw the portion that overlaps with the screen
+     */
+    private fun cohenSutherlandClip(
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float
+    ): Pair<Pair<Float, Float>, Pair<Float, Float>>? {
+        var (currentStartX, currentStartY, currentEndX, currentEndY) = listOf(startX, startY, endX, endY)
+        var outCodeStart = computeOutCode(currentStartX, currentStartY)
+        var outCodeEnd = computeOutCode(currentEndX, currentEndY)
+
+
+        while (true) {
+            when {
+                outCodeStart == OutCode.INSIDE && outCodeEnd == OutCode.INSIDE -> return Pair(
+                    Pair(
+                        currentStartX,
+                        currentStartY
+                    ), Pair(currentEndX, currentEndY)
+                )
+
+                outCodeStart and outCodeEnd != OutCode.INSIDE -> return null
+                else -> {
+                    val currentOutCode = if (outCodeStart != OutCode.INSIDE) outCodeStart else outCodeEnd
+                    val (x, y) = when (currentOutCode) {
+                        OutCode.TOP -> {
+                            if (currentEndY == currentStartY) {
+                                return null
+                            } else
+                                currentStartX + (currentEndX - currentStartX) * -currentStartY / (currentEndY - currentStartY) to 0f
+                        }
+
+                        OutCode.BOTTOM -> {
+                            if (currentEndY == currentStartY) {
+                                return null
+                            } else
+                                currentStartX + (currentEndX - currentStartX) * (canvas.height - currentStartY) / (currentEndY - currentStartY) to canvas.height
+                        }
+
+                        OutCode.RIGHT -> {
+                            if (currentEndX == currentStartX) {
+                                return null
+                            } else
+                                canvas.width to currentStartY + (currentEndY - currentStartY) * (canvas.width - currentStartX) / (currentEndX - currentStartX)
+                        }
+
+                        OutCode.LEFT -> {
+                            if (currentEndX == currentStartX) {
+                                return null
+                            } else
+                                0f to currentStartY + (currentEndY - currentStartY) * -currentStartX / (currentEndX - currentStartX)
+                        }
+
+                        else -> 0f to 0f  // Should never happen
+                    }
+
+                    if (currentOutCode == outCodeStart) {
+                        currentStartX = x
+                        currentStartY = y
+                        outCodeStart = computeOutCode(currentStartX, currentStartY)
+                    } else {
+                        currentEndX = x
+                        currentEndY = y
+                        outCodeEnd = computeOutCode(currentEndX, currentEndY)
+                    }
+                }
+            }
+        }
+    }
+
+
+    fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
         with(graphics) {
             push()
             noFill()
@@ -85,8 +210,7 @@ class BoundingBox(
             val transformedBoundingBox =
                 threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
 
-            //quadPlus3D(transformedBoundingBox)
-            drawBoundingBoxEdges(transformedBoundingBox, graphics, canvas)
+            drawBoundingBoxEdges(transformedBoundingBox, graphics)
 
             if (drawCrossHair) {
                 drawCrossHair(graphics)
@@ -94,39 +218,14 @@ class BoundingBox(
 
             pop()
         }
-    }*/
-fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
-    with(graphics) {
-        push()
-        noFill()
-        stroke(Theme.textColor)
-        strokeWeight(Theme.strokeWeightBounds)
-
-        val transformedBoundingBox =
-            threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
-
-        val coercedBoundingBox = transformedBoundingBox.map {
-            val x = it.x.toInt().coerceIn(0, this.width)
-            val y = it.y.toInt().coerceIn(0, this.height)
-            PVector(x.toFloat(), y.toFloat())
-        }
-
-        drawBoundingBoxEdges(coercedBoundingBox, graphics, canvas)
-
-        if (drawCrossHair) {
-            drawCrossHair(graphics)
-        }
-
-        pop()
     }
-}
 
 
-        inner class Point(var x: Float, var y: Float) {
-        init {
-            x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
-            y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
-        }
+    inner class Point(var x: Float, var y: Float) {
+        /*        init {
+                    x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
+                    y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
+                }*/
 
         operator fun component1(): Float = x
         operator fun component2(): Float = y
@@ -141,8 +240,9 @@ fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
         generateSequence { Pair(x, y) }
             .takeWhile { it.first != endX || it.second != endY }
             .forEach { (px, py) ->
-                setFillLambda(px.toFloat(), py.toFloat())
-                graphics.point(px.toFloat(), py.toFloat())
+
+                val pixelColor = getPixelColor(px.toFloat(), py.toFloat())
+                graphics.set(px, py, pixelColor)
 
                 val e2 = 2 * err
                 if (e2 > -dy) {
@@ -155,7 +255,6 @@ fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
                 }
             }
     }
-
 
 
     /**
@@ -193,18 +292,20 @@ fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
                     val endX = (curX + dxDash).coerceAtMost(end.x)
                     val endY = (curY + dyDash).coerceAtMost(end.y)
 
-                    val transformedCoords = threeD.getTransformedLineCoords(curX, curY, endX, endY)
-
-
                     if (draw) {
-                        val x0 = transformedCoords.first.x.toInt().coerceIn(0, this.width)
-                        val y0 = transformedCoords.first.y.toInt().coerceIn(0, this.height)
-                        val x1 = transformedCoords.second.x.toInt().coerceIn(0, this.width)
-                        val y1 = transformedCoords.second.y.toInt().coerceIn(0, this.height)
+                        val (start, end) = threeD.getTransformedLineCoords(curX, curY, endX, endY)
+                        val clippedLine = cohenSutherlandClip(start.x, start.y, end.x, end.y)
 
-                        drawPixelLine(x0, y0, x1, y1, this)
+                        clippedLine?.let { (clippedStart, clippedEnd) ->
+                            drawPixelLine(
+                                clippedStart.first.toInt(),
+                                clippedStart.second.toInt(),
+                                clippedEnd.first.toInt(),
+                                clippedEnd.second.toInt(),
+                                this
+                            )
+                        }
                     }
-
 
                     Triple(endX, endY, !draw)
                 }
@@ -215,12 +316,4 @@ fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
         }
     }
 
-    companion object {
-
-        // we draw the box just a bit offscreen so it won't be visible
-        // but if the box is more than a pixel, we need to push it further offscreen
-        // since we're using a Theme constant we can change we have to account for it
-        private const val POSITIVE_OFFSCREEN = Theme.strokeWeightBounds
-        private const val NEGATIVE_OFFSCREEN = -POSITIVE_OFFSCREEN
-    }
 }

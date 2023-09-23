@@ -29,10 +29,18 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
 
     private val asyncGC = AsyncJobRunner(
-        method = suspend {
-            val rt = Runtime.getRuntime()
-            println("asyncGC - total:${rt.totalMemory().hudFormatted()} free:${rt.freeMemory().hudFormatted()} used:free:${(rt.totalMemory() - rt.freeMemory()).hudFormatted()}")
+        method =  {
             System.gc()
+
+            with(Runtime.getRuntime()) {
+                val total = totalMemory().hudFormatted()
+                val free = freeMemory().hudFormatted()
+                val used = (totalMemory() - freeMemory()).hudFormatted()
+
+                println(
+                    "asyncGC - total:$total free:$free used:$used"
+                )
+            }
         }
     )
 

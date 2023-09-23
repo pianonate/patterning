@@ -9,7 +9,6 @@ object Theme {
         private set
 
     // durations
-    const val threeDBoxRotationCount = 720
     const val controlHighlightDuration = 500
     const val controlPanelTransitionDuration = 300
     const val countdownFrom = 2
@@ -66,7 +65,7 @@ object Theme {
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
 
-    val backGroundColor get() = _backgroundColor.color
+    val backgroundColor get() = _backgroundColor.color
     val boxOutlineColor get() = _boxOutlineColor.color
     val cellColor get() = _cellColor.color
     val controlColor get() = _controlColor.color

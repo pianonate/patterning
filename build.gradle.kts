@@ -42,7 +42,7 @@ application {
     applicationDefaultJvmArgs = listOf(
         "-Djava.library.path=${platforms.joinToString(separator = ":") { "$pathToJoglLibraries$it" }}",
         "-Xmx16G",
-        //"-XX:ParallelGCThreads=8",
+        //"-XX:ParallelGCThreads=12",
         "-XX:+UseZGC"
         // used to debug native library loading
         // "-Djogamp.debug.NativeLibrary=true"

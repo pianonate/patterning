@@ -72,7 +72,7 @@ abstract class Pattern(
      * in preparation for future features such as drawing as inverse rainbow and gridlines
      */
     fun drawBackground() {
-        pApplet.background(Theme.backGroundColor)
+        pApplet.background(Theme.backgroundColor)
     }
 
     protected inner class GhostOff : GhostState {

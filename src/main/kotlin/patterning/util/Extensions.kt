@@ -1,19 +1,11 @@
 package patterning.util
 
 import kotlin.math.abs
+import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import processing.core.PGraphics
 import processing.core.PVector
-import java.math.BigDecimal
-import java.math.BigInteger
-import java.math.RoundingMode
-import java.text.NumberFormat
-
-/**
- * Number extension functions
- */
-fun Number.formatWithCommas(): String = NumberFormat.getInstance().format(this)
 
 /**
  *  FLoat extension functions
@@ -25,17 +17,26 @@ fun Float.roundToIntIfGreaterThanReference(referenceValue: Float): Float {
         this)
 }
 
+/**
+ * Number extension functions
+ */
+fun Number.formatWithCommas(): String {
+    val parts = this.toString().split(".")
+    val intPart = parts[0].reversed().chunked(3).joinToString(",").reversed()
+    return if (parts.size > 1 && parts[1] != "0") "$intPart.${parts[1]}" else intPart
+}
+
 
 fun Number.hudFormatted(): String {
-    if (this == 0L) return "0"
-    return if (this is Int) {
-        if (this < 1_000_000_000)
-            this.formatWithCommas()
-        else formatLargeNumber()
-    } else {
-        formatLargeNumber()
+    val numAsDouble = this.toDouble()
+    return when {
+        numAsDouble == 0.0 -> "0"
+        numAsDouble in 0.0..1.0 -> "%.3f".format(numAsDouble)
+        numAsDouble < 1_000_000_000L -> this.formatWithCommas()
+        else -> formatLargeNumber()
     }
 }
+
 
 private val largeNumberNames = arrayOf(
     "thousand", "million", "billion", "trillion", "quadrillion", "quintillion", "sextillion",
@@ -44,43 +45,59 @@ private val largeNumberNames = arrayOf(
 )
 
 private fun Number.formatLargeNumber(): String {
-    if (this.toLong() < 1_000_000_000L) return this.formatWithCommas()
+    val num = this.toLong()
+    if (num < 1_000_000L) return this.formatWithCommas()
 
-    val bigIntegerValue = BigInteger.valueOf(this.toLong())
-    val exponent = bigIntegerValue.toString().length - 1
+    val exponent = (ln(num.toDouble()) / ln(10.0)).toInt()
     val index = (exponent - 3) / 3
-    return when {
-        index < largeNumberNames.size && index >= 0 -> {
-            val divisor = BigDecimal.valueOf(10.0.pow((index * 3 + 3).toDouble()))
-            val shortNumber = bigIntegerValue.toBigDecimal().divide(divisor, 1, RoundingMode.HALF_UP).toDouble()
-            "${shortNumber.toInt()}.${(shortNumber % 1 * 10).roundToInt()} ${largeNumberNames[index]}"
-        }
 
-        else -> String.format("%.1e", bigIntegerValue.toBigDecimal())
+    return if (index < largeNumberNames.size && index >= 0) {
+        val divisor = 10.0.pow((index * 3 + 3).toDouble())
+        val shortNumber = (num / divisor).toInt()
+        val remainder = ((num % divisor) / (divisor / 10)).toInt()
+        "$shortNumber.$remainder ${largeNumberNames[index]}"
+    } else {
+        String.format("%.1e", num.toDouble())
     }
 }
 
+
+/**
+ * Long extension functions
+ */
 fun Long.isOne(): Boolean = this == 1L
 fun Long.isZero(): Boolean = this == 0L
 fun Long.isNotZero(): Boolean = this != 0L
 fun Long.addOne(): Long = this + 1L
 
 /**
- * distance is 2 because if it's just 1 you pull in the right side (as an example)
- * to be adjacent to the next node. but you need 1 less than adjacent to make this work
- *
- * hence: 2
+ * PGraphics extension functions
  */
-fun PGraphics.quadPlus(corners: List<PVector>, shrinkEdges: Boolean = false) {
-    val distance = 2
-    val shouldShrink = (corners[1].x - corners[0].x) > distance || (corners[2].y - corners[0].y) > distance
-    val offset = if (shrinkEdges && shouldShrink) distance.toFloat() else 0f
+
+/**
+ * as we are rotating, if we're large enough to have a stroke on the box outline
+ * we _don't_ want to show it because it will eliminate too many frames as it gets edge on to
+ * the camera - this is because the strokeColor is set to the background color
+ * so that's all we see - is background color
+ *
+ * so edge on, we turn off the stroke temporarily
+ */
+fun PGraphics.quadPlus(corners: List<PVector>) {
+
+    this.push()
+
+    if ((abs(corners[2].y - corners[0].y) <= 2) || (abs(corners[1].x - corners[0].x) <= 2)) {
+        this.noStroke()
+    }
 
     this.quad(
         corners[0].x, corners[0].y,
-        corners[2].x, corners[2].y - offset,
-        corners[3].x - offset, corners[3].y - offset,
-        corners[1].x - offset, corners[1].y
+        corners[2].x, corners[2].y,
+        corners[3].x, corners[3].y,
+        corners[1].x, corners[1].y
     )
+
+    this.pop()
 }
+
 
