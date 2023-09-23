@@ -171,6 +171,7 @@ class BoundingBox(
 
                     val transformedCoords = threeD.getTransformedLineCoords(curX, curY, endX, endY)
 
+
                     if (draw) {
                         drawPixelLine(
                             transformedCoords.first.x.toInt(),
