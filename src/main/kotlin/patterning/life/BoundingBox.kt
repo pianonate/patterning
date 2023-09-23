@@ -4,7 +4,6 @@ import kotlin.math.abs
 import patterning.Canvas
 import patterning.Theme
 import patterning.ThreeD
-import patterning.util.quadPlus3D
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -54,7 +53,7 @@ class BoundingBox(
         verticalLine.drawDashedLine(graphics)
     }
 
-    fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics, canvas: Canvas) {
+    private fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics, canvas: Canvas) {
         val coercedCorners = corners.map { corner ->
             Pair(
                 corner.x.toInt().coerceIn(0, canvas.width.toInt()),
@@ -75,7 +74,7 @@ class BoundingBox(
     }
 
 
-    fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
+    /* fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
 
         with(graphics) {
             push()
@@ -95,9 +94,35 @@ class BoundingBox(
 
             pop()
         }
-    }
+    }*/
+fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
+    with(graphics) {
+        push()
+        noFill()
+        stroke(Theme.textColor)
+        strokeWeight(Theme.strokeWeightBounds)
 
-    inner class Point(var x: Float, var y: Float) {
+        val transformedBoundingBox =
+            threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
+
+        val coercedBoundingBox = transformedBoundingBox.map {
+            val x = it.x.toInt().coerceIn(0, this.width)
+            val y = it.y.toInt().coerceIn(0, this.height)
+            PVector(x.toFloat(), y.toFloat())
+        }
+
+        drawBoundingBoxEdges(coercedBoundingBox, graphics, canvas)
+
+        if (drawCrossHair) {
+            drawCrossHair(graphics)
+        }
+
+        pop()
+    }
+}
+
+
+        inner class Point(var x: Float, var y: Float) {
         init {
             x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
             y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
@@ -117,7 +142,6 @@ class BoundingBox(
             .takeWhile { it.first != endX || it.second != endY }
             .forEach { (px, py) ->
                 setFillLambda(px.toFloat(), py.toFloat())
-                // Replace with your setFill function or any other pixel setting code.
                 graphics.point(px.toFloat(), py.toFloat())
 
                 val e2 = 2 * err
@@ -145,7 +169,7 @@ class BoundingBox(
      *
      * interesting
      */
-    inner class Line(val start: Point, val end: Point, val threeD: ThreeD) {
+    inner class Line(private val start: Point, private val end: Point, private val threeD: ThreeD) {
 
         fun drawDashedLine(graphics: PGraphics) {
 
@@ -173,14 +197,14 @@ class BoundingBox(
 
 
                     if (draw) {
-                        drawPixelLine(
-                            transformedCoords.first.x.toInt(),
-                            transformedCoords.first.y.toInt(),
-                            transformedCoords.second.x.toInt(),
-                            transformedCoords.second.y.toInt(),
-                            this
-                        )
+                        val x0 = transformedCoords.first.x.toInt().coerceIn(0, this.width)
+                        val y0 = transformedCoords.first.y.toInt().coerceIn(0, this.height)
+                        val x1 = transformedCoords.second.x.toInt().coerceIn(0, this.width)
+                        val y1 = transformedCoords.second.y.toInt().coerceIn(0, this.height)
+
+                        drawPixelLine(x0, y0, x1, y1, this)
                     }
+
 
                     Triple(endX, endY, !draw)
                 }

@@ -22,7 +22,7 @@ import patterning.util.ResourceManager
 import patterning.util.isNotZero
 import patterning.util.isOne
 import patterning.util.isZero
-import patterning.util.quadPlus3D
+import patterning.util.quadPlus
 import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
@@ -406,6 +406,7 @@ class LifePattern(
         size: Float,
     ) {
 
+
         val width = size.roundToIntIfGreaterThanReference(size)
         val posX = x.roundToIntIfGreaterThanReference(size)
         val posY = y.roundToIntIfGreaterThanReference(size)
@@ -416,7 +417,14 @@ class LifePattern(
             draw3DBox(posX, posY, width)
         } else {
             val corners = threeD.rectCorners
-            pattern.graphics.quadPlus3D(corners)
+            val transformedCorners = corners.map { corner ->
+                PVector(
+                    corner.x.roundToIntIfGreaterThanReference(size),
+                    corner.y.roundToIntIfGreaterThanReference(size)
+                )
+            }
+
+            pattern.graphics.quadPlus(transformedCorners, shrinkEdges = true)
         }
     }
 

@@ -1,5 +1,6 @@
 package patterning.util
 
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import processing.core.PGraphics
@@ -64,11 +65,22 @@ fun Long.isZero(): Boolean = this == 0L
 fun Long.isNotZero(): Boolean = this != 0L
 fun Long.addOne(): Long = this + 1L
 
-fun PGraphics.quadPlus3D(corners: List<PVector>) {
+/**
+ * distance is 2 because if it's just 1 you pull in the right side (as an example)
+ * to be adjacent to the next node. but you need 1 less than adjacent to make this work
+ *
+ * hence: 2
+ */
+fun PGraphics.quadPlus(corners: List<PVector>, shrinkEdges: Boolean = false) {
+    val distance = 2
+    val shouldShrink = (corners[1].x - corners[0].x) > distance || (corners[2].y - corners[0].y) > distance
+    val offset = if (shrinkEdges && shouldShrink) distance.toFloat() else 0f
+
     this.quad(
         corners[0].x, corners[0].y,
-        corners[2].x, corners[2].y,
-        corners[3].x, corners[3].y,
-        corners[1].x, corners[1].y
+        corners[2].x, corners[2].y - offset,
+        corners[3].x - offset, corners[3].y - offset,
+        corners[1].x - offset, corners[1].y
     )
 }
+
