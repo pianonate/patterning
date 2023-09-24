@@ -7,7 +7,7 @@ open class UXLightConstants internal constructor() {
         get() = PConstants.BLEND
 
     // colors
-    open val backgroundColor = 0xFFu
+    open val backgroundColor = 0xFFFFFFFFu
     open val cellColor = 0xFF000000u
 
     open val controlColor = 0xDD404040u

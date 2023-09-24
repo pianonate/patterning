@@ -1,6 +1,7 @@
 package patterning.life
 
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
@@ -20,13 +21,12 @@ import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.ResourceManager
 import patterning.util.applyAlpha
-import patterning.util.boxPlus
 import patterning.util.isNotZero
 import patterning.util.isOne
 import patterning.util.isZero
-import patterning.util.quadPlus
 import processing.core.PApplet
 import processing.core.PConstants
+import processing.core.PGraphics
 import processing.core.PVector
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -411,22 +411,20 @@ class LifePattern(
         with(pattern.graphics) {
             push()
 
-            val getFillColorsLambda = { x: Float, y: Float, applyCubeAlpha:Boolean -> getFillColor(x, y, applyCubeAlpha) }
+            val getFillColorsLambda =
+                { x: Float, y: Float, applyCubeAlpha: Boolean -> getFillColor(x, y, applyCubeAlpha) }
             val corners = threeD.rectCorners
 
             when {
                 size > 4 && isThreeD -> {
-                    boxPlus(frontCorners = corners,
+                    boxPlus(
+                        frontCorners = corners,
                         threeD = threeD,
                         depth = size,
-                        getFillColor = getFillColorsLambda)
+                        getFillColor = getFillColorsLambda
+                    )
                 }
-                size <= 1.0f -> {
-                    val pixelColor = getPixelColor(corners[0].x, corners[0].y)
-                    val transformedX = corners[0].x.toInt()
-                    val transformedY = corners[0].y.toInt()
-                    set(transformedX, transformedY, pixelColor)
-                }
+
                 else -> {
                     quadPlus(corners = corners, getFillColor = getFillColorsLambda)
                 }
@@ -436,49 +434,7 @@ class LifePattern(
         }
     }
 
-    private fun getPixelColor(x: Float, y: Float): Int {
-        val cellColor = getFillColor(x, y, applyCubeAlpha = false)
-
-        return if (ghostState is Ghosting) {
-            val existing = pattern.graphics.get(x.toInt(), y.toInt())
-            blendColors(existing, cellColor)
-        } else {
-            cellColor
-        }
-
-    }
-
-    private fun blendColors(existing: Int, new: Int): Int {
-        val alpha2 = (new shr 24 and 0xFF) / 255.0f
-        val invAlpha2 = 1.0f - alpha2
-
-        val r = ((existing shr 16 and 0xFF) * invAlpha2 + (new shr 16 and 0xFF) * alpha2).toInt()
-        val g = ((existing shr 8 and 0xFF) * invAlpha2 + (new shr 8 and 0xFF) * alpha2).toInt()
-        val b = ((existing and 0xFF) * invAlpha2 + (new and 0xFF) * alpha2).toInt()
-        val a = 255  // Assuming the resultant alpha is fully opaque
-
-        return (a shl 24) or (r shl 16) or (g shl 8) or b
-    }
-
-
-/*    private fun draw3DBox(x: Float, y: Float, width: Float) {
-        with(pattern.graphics) {
-            push()
-            translate(x + width / 2, y + width / 2)
-            stroke(Theme.boxOutlineColor)
-
-            if (threeD.isPitching)
-                rotateX(rotationAngle)
-            if (threeD.isYawing)
-                rotateY(rotationAngle)
-            if (threeD.isRolling)
-                rotateZ(rotationAngle)
-            box(width)
-            pop()
-        }
-    }*/
-
-    private fun getFillColor(x: Float, y: Float, applyCubeAlpha:Boolean = true): Int {
+    private fun getFillColor(x: Float, y: Float, applyCubeAlpha: Boolean = true): Int {
 
         val cubeAlpha = if (isThreeD && canvas.zoomLevel >= 4.0 && applyCubeAlpha) Theme.cubeAlpha else 255
 
@@ -494,7 +450,6 @@ class LifePattern(
             ghostState.applyAlpha(color)
         }
     }
-
 
     private var rotationAngle = 0f
 
@@ -519,8 +474,6 @@ class LifePattern(
 
             beginDraw()
             push()
-
-            // handle3D(shouldAdvance)
 
             ghostState.prepareGraphics(this)
 
@@ -569,8 +522,9 @@ class LifePattern(
             val offsetY = top
 
             startDelta = life.root.level - startingNode.level
-
+            pattern.graphics.beginShape(PConstants.QUADS)
             drawNodeRecurse(startingNode, size, offsetX, offsetY)
+            pattern.graphics.endShape()
         }
     }
 
@@ -589,7 +543,7 @@ class LifePattern(
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= 1f && node.population.isNotZero()) {
-            fillSquare( 1f)
+            fillSquare(1f)
         } else if (node is LeafNode && node.population.isOne()) {
             fillSquare(canvas.zoomLevel)
         } else if (node is TreeNode) {
@@ -641,7 +595,6 @@ class LifePattern(
         val left = nodeLeft + canvas.offsetX
         val top = nodeTop + canvas.offsetY
 
-
         return threeD.isRectInView(left, top, size, size)
     }
 
@@ -650,7 +603,7 @@ class LifePattern(
 
         val bounds = life.rootBounds
 
-        val getPixelColor: (Float, Float) -> Int = { x, y -> getPixelColor(x, y) }
+        val getFillColor: (Float, Float) -> Int = { x, y -> getFillColor(x, y) }
 
         var currentLevel = life.root.level - 2
 
@@ -658,20 +611,81 @@ class LifePattern(
             val drawOnlyBiggest = currentLevel == (life.root.level - 1)
             val halfSize = LifeUniverse.pow2(currentLevel)
             val levelBounds = Bounds(-halfSize, -halfSize, halfSize, halfSize)
-            val universeBox = BoundingBox(levelBounds, canvas, threeD, getPixelColor)
+            val universeBox = BoundingBox(levelBounds, canvas, threeD, getFillColor)
             universeBox.draw(graphics = pattern.graphics, drawCrossHair = drawOnlyBiggest)
             currentLevel++
         }
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val patternBox = BoundingBox(bounds, canvas, threeD, getPixelColor)
+        val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
         patternBox.draw(pattern.graphics)
     }
 
     private fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
+    }
+
+    /**
+     * PGraphics extension functions as a helper for drawing the quads...
+     *
+     * we pass in a list of PVectors 4 at time so chunked can work to draw boxes correctly
+     *
+     * no stroke handling - as we are rotating, if we're large enough to have a stroke on the box outline
+     * we _don't_ want to show it because it will eliminate too many frames as it gets edge on to
+     * the camera - this is because the strokeColor is set to the background color
+     * so that's all we see - is background color
+     *
+     * so edge on, we turn off the stroke temporarily
+     */
+    private fun PGraphics.quadPlus(corners: List<PVector>, getFillColor: (Float, Float, Boolean) -> Int) {
+        this.push()
+        this.beginShape(PConstants.QUADS)
+
+        corners.chunked(4).forEachIndexed { index, quadCorners ->
+            if (quadCorners.size == 4) {
+
+                if ((abs(corners[2].y - corners[0].y) <= 2) || (abs(corners[1].x - corners[0].x) <= 2)) {
+                    this.noStroke()
+                }
+
+                // if we're drawing a cube there are 6 faces chunked into 4 corners
+                // don't let apply the cube alpha to the first face drawn - which is the background face
+                // so one of the faces will always be full strength and the rest will be semi-transparent
+                // because it looks cool
+                val applyCubeAlpha = (index > 0)
+                val fillColor = getFillColor(quadCorners[0].x, quadCorners[0].y, applyCubeAlpha)
+                this.fill(fillColor)
+
+
+                quadCorners.forEach { vertex(it.x, it.y) }
+            }
+        }
+
+        this.endShape()
+        this.pop()
+    }
+
+    private fun PGraphics.boxPlus(frontCorners:List<PVector>, threeD: ThreeD, depth: Float, getFillColor: (Float, Float, Boolean) -> Int) {
+        val allCorners = mutableListOf<PVector>()
+
+        val backCorners = threeD.getBackCornersAtDepth(depth)
+
+        allCorners.addAll(backCorners)
+
+        for (i in 0 until 4) {
+            val j = (i + 1) % 4
+            allCorners.add(frontCorners[i])
+            allCorners.add(frontCorners[j])
+            allCorners.add(backCorners[j])
+            allCorners.add(backCorners[i])
+        }
+
+        allCorners.addAll(frontCorners)
+
+        quadPlus(allCorners, getFillColor)
+
     }
 
     companion object {

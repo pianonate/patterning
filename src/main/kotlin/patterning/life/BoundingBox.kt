@@ -4,6 +4,7 @@ import kotlin.math.abs
 import patterning.Canvas
 import patterning.Theme
 import patterning.ThreeD
+import processing.core.PConstants
 import processing.core.PGraphics
 import processing.core.PVector
 
@@ -11,7 +12,7 @@ class BoundingBox(
     bounds: Bounds,
     private val canvas: Canvas,
     private val threeD: ThreeD,
-    private val getPixelColor: (Float, Float) -> Int
+    private val getFillColor: (Float, Float) -> Int
 
 ) {
 
@@ -74,7 +75,6 @@ class BoundingBox(
             }
         }
     }
-
 
     enum class OutCode(val code: Int) {
         INSIDE(0), // 0000
@@ -220,7 +220,7 @@ class BoundingBox(
         with(graphics) {
             push()
             noFill()
-            stroke(Theme.textColor)
+            beginShape(PConstants.POINTS)
             strokeWeight(Theme.STROKE_WEIGHT_BOUNDS)
 
             val transformedBoundingBox =
@@ -232,6 +232,7 @@ class BoundingBox(
                 drawCrossHair(graphics)
             }
 
+            endShape()
             pop()
         }
     }
@@ -264,8 +265,10 @@ class BoundingBox(
             .forEach { (px, py) ->
 
                 if (dashPattern == null || (dashPattern[patternIdx] > stepCounter && patternIdx % 2 == 0)) {
-                    val pixelColor = getPixelColor(px.toFloat(), py.toFloat())
-                    graphics.set(px, py, pixelColor)
+                    val pixelColor = getFillColor(px.toFloat(), py.toFloat())
+                    graphics.stroke(pixelColor)
+                    graphics.vertex(px.toFloat(), py.toFloat())
+                    //graphics.set(px, py, pixelColor)
                 }
 
 
