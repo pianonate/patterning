@@ -14,7 +14,7 @@ import java.util.*
 class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable {
 
     // sizes
-    private val textMargin = Theme.defaultTextMargin
+    private val textMargin = Theme.DEFAULT_TEXT_MARGIN
     private val doubleTextMargin = textMargin * 2
     private var textColor = Theme.textColor
     private val textSize: Float
@@ -51,7 +51,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             field = value
         }
 
-    private val sizing: GraphicsReference = canvas.getNamedGraphicsReference(Theme.sizingGraphics, resizable = false)
+    private val sizing: GraphicsReference = canvas.getNamedGraphicsReference(Theme.SIZING_GRAPHICS, resizable = false)
 
     init {
 
@@ -164,7 +164,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
      * necessary because new PGraphics don't inherit the font from the parent
      */
     private fun setFont(graphics: PGraphics) {
-        graphics.textFont(canvas.createFont(Theme.fontName, textSize))
+        graphics.textFont(canvas.createFont(Theme.FONT_NAME, textSize))
         graphics.textSize(textSize)
     }
 
@@ -225,7 +225,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
         return if (textWidth.isPresent) {
             textWidth.asInt
         } else {
-            canvas.width.toFloat().toInt()
+            canvas.width.toInt()
         }
     }
 
@@ -302,7 +302,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     class Builder : Panel.Builder {
         internal val message: String
         internal var wrap = false
-        internal var textSize = Theme.defaultTextSize
+        internal var textSize = Theme.DEFAULT_TEXT_SIZE
         internal var fadeInDuration = OptionalInt.empty()
         internal var fadeOutDuration = OptionalInt.empty()
         internal var displayDuration = OptionalInt.empty()

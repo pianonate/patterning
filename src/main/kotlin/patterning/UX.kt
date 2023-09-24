@@ -28,7 +28,7 @@ class UX(
 ) : KeyEventObserver {
 
     private val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
-    private val ux = canvas.getNamedGraphicsReference(Theme.uxGraphics)
+    private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
     private val hudText: TextPanel
     private val countdownText: TextPanel
 
@@ -44,34 +44,34 @@ class UX(
             hAlign = AlignHorizontal.RIGHT,
             vAlign = AlignVertical.BOTTOM
         )
-            .textSize(Theme.hudTextSize)
+            .textSize(Theme.HUD_TEXT_SIZE)
             .wrap()
             .build().also { Drawer.add(it) }
 
         // startup text
-        TextPanel.Builder(canvas, Theme.startupText, AlignHorizontal.RIGHT, AlignVertical.TOP)
-            .textSize(Theme.startupTextSize)
-            .fadeInDuration(Theme.startupTextFadeInDuration)
-            .fadeOutDuration(Theme.startupTextFadeOutDuration)
-            .displayDuration(Theme.startupTextDisplayDuration)
+        TextPanel.Builder(canvas, Theme.STARTUP_TEXST, AlignHorizontal.RIGHT, AlignVertical.TOP)
+            .textSize(Theme.STARTUP_TEXT_SIZE)
+            .fadeInDuration(Theme.STARTUP_TEXT_FADE_IN_DURATION)
+            .fadeOutDuration(Theme.STARTUP_TEXT_FADE_OUT_DURATION)
+            .displayDuration(Theme.STARTUP_TEXT_DISPLAY_DURATION)
             .transition(
                 Transition.TransitionDirection.LEFT,
                 Transition.TransitionType.SLIDE,
-                Theme.startupTextTransitionDuration
+                Theme.STARTUP_TEXT_TRANSITION_DURATION
             )
             .build().also { Drawer.add(it) }
 
         countdownText = TextPanel.Builder(
             canvas,
-            Theme.countdownText,
+            Theme.COUNTDOWN_TEXT,
             AlignHorizontal.CENTER,
             AlignVertical.CENTER
         )
             .runMethod {
                 RunningModeController.play()
             }
-            .fadeInDuration(Theme.startupTextFadeInDuration)
-            .countdownFrom(Theme.countdownFrom)
+            .fadeInDuration(Theme.STARTUP_TEXT_FADE_IN_DURATION)
+            .countdownFrom(Theme.COUNTDOWN_FROM)
             .wrap()
             .build()
     }
@@ -130,21 +130,21 @@ class UX(
     private fun displayPatternName(patternName: String) {
 
         TextPanel.Builder(canvas, patternName, AlignHorizontal.LEFT, AlignVertical.TOP)
-            .textSize(Theme.startupTextSize)
-            .fadeInDuration(Theme.startupTextFadeInDuration)
-            .fadeOutDuration(Theme.startupTextFadeOutDuration)
-            .displayDuration(Theme.startupTextDisplayDuration)
+            .textSize(Theme.STARTUP_TEXT_SIZE)
+            .fadeInDuration(Theme.STARTUP_TEXT_FADE_IN_DURATION)
+            .fadeOutDuration(Theme.STARTUP_TEXT_FADE_OUT_DURATION)
+            .displayDuration(Theme.STARTUP_TEXT_DISPLAY_DURATION)
             .transition(
                 Transition.TransitionDirection.RIGHT,
                 Transition.TransitionType.SLIDE,
-                Theme.startupTextTransitionDuration
+                Theme.STARTUP_TEXT_TRANSITION_DURATION
             )
             .build().also { Drawer.add(it) }
     }
 
     private fun setupControls() {
 
-        val transitionDuration = Theme.controlPanelTransitionDuration
+        val transitionDuration = Theme.CONTROL_PANEL_TRANSITION_DURATION
         val panels = mutableListOf<ControlPanel>()
 
         if (pattern is Movable) {
@@ -211,7 +211,8 @@ class UX(
                         addToggleHighlightControl(
                             "cube.png",
                             keyCallbackFactory.callback3D,
-                            resetOnNew = this@UX.pattern
+                            resetOnNew = this@UX.pattern,
+                            resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "yaw.png",

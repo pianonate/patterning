@@ -9,44 +9,44 @@ object Theme {
         private set
 
     // durations
-    const val controlHighlightDuration = 500
-    const val controlPanelTransitionDuration = 300
-    const val countdownFrom = 2
-    const val shortTransitionDuration = 300
-    const val startupTextDisplayDuration = 2000
-    const val startupTextFadeInDuration = 1000
-    const val startupTextFadeOutDuration = 2000
-    const val startupTextTransitionDuration = 2000
-    const val themeTransitionDuration = 500
+    const val CONTROL_HIGHLIGHT_DURATION = 500
+    const val CONTROL_PANEL_TRANSITION_DURATION = 300
+    const val COUNTDOWN_FROM = 2
+    const val SHORT_TRANSITION_DURATION = 300
+    const val STARTUP_TEXT_DISPLAY_DURATION = 2000
+    const val STARTUP_TEXT_FADE_IN_DURATION = 1000
+    const val STARTUP_TEXT_FADE_OUT_DURATION = 2000
+    const val STARTUP_TEXT_TRANSITION_DURATION = 2000
+    const val THEME_TRANSITION_DURATION = 500
 
     // names
-    const val countdownText = "press a key to start"
-    const val fontName = "Verdana"
-    const val iconPath = "icon/"
-    const val shortcutParenStart = " ("
-    const val shortcutParenEnd = ")"
-    const val startupText = "patterning"
+    const val COUNTDOWN_TEXT = "press a key to start"
+    const val FONT_NAME = "Verdana"
+    const val ICON_PATH = "icon/"
+    const val PAREN_START = " ("
+    const val PAREN_END = ")"
+    const val STARTUP_TEXST = "patterning"
 
     // PGraphics names
-    const val uxGraphics = "ux"
-    const val patternGraphics = "pattern"
-    const val sizingGraphics = "sizing"
+    const val UX_GRAPHICS = "ux"
+    const val PATTERN_GRAPHICS = "pattern"
+    const val SIZING_GRAPHICS = "sizing"
 
     // sizes
-    const val controlSize = 35
-    const val controlHighlightCornerRadius = 14
-    const val dashedLineDashLength = 6f
-    const val dashedLineSpaceLength = 2f
-    const val defaultTextMargin = 5
-    const val defaultTextSize = 30f
-    const val hoverTextMargin = 5
-    const val hoverTextWidth = 225
-    const val hoverTextSize = 14
-    const val hudTextSize = 16
-    const val iconMargin = 5
-    const val startupTextSize = 50
-    const val strokeWeightBounds = 1f
-    const val strokeWeightDashedLine = 1f
+    const val CONTROL_SIZE = 35
+    const val CONTROL_HIGHLIGHT_CORNER_RADIUS = 14
+    const val DASHED_LINE_DASH_LENGTH = 6f
+    const val DASHED_LINE_SPACE_LENGTH = 2f
+    const val DEFAULT_TEXT_MARGIN = 5
+    const val DEFAULT_TEXT_SIZE = 30f
+    const val HOVER_TEXT_MARGIN = 5
+    const val HOVER_TEXT_WIDTH = 225
+    const val HOVER_TEXT_SIZE = 14
+    const val HUD_TEXT_SIZE = 16
+    const val ICON_MARGIN = 5
+    const val STARTUP_TEXT_SIZE = 50
+    const val STROKE_WEIGHT_BOUNDS = 1f
+    const val STROKE_WEIGHT_DASHED_LINES = 1f
 
     /**
      * everything related to theme colors including the init
@@ -54,39 +54,39 @@ object Theme {
      * at the top of the file
      */
     private lateinit var _backgroundColor: ColorConstant
-    private lateinit var _boxOutlineColor: ColorConstant
     private lateinit var _cellColor: ColorConstant
     private lateinit var _controlColor: ColorConstant
     private lateinit var _controlHighlightColor: ColorConstant
     private lateinit var _controlMousePressedColor: ColorConstant
     private lateinit var _defaultPanelColor: ColorConstant
-    private lateinit var _ghostAlpha: ColorConstant
+    private var _ghostAlpha = 0
+    private var _cubeAlpha = 0
+
     private lateinit var _hoverTextColor: ColorConstant
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant  // for lerping purposes
 
     val backgroundColor get() = _backgroundColor.color
-    val boxOutlineColor get() = _boxOutlineColor.color
     val cellColor get() = _cellColor.color
     val controlColor get() = _controlColor.color
     val controlHighlightColor get() = _controlHighlightColor.color
     val controlMousePressedColor get() = _controlMousePressedColor.color
     val defaultPanelColor get() = _defaultPanelColor.color
-    val ghostAlpha get() = _ghostAlpha.color
+    val ghostAlpha get() = _ghostAlpha
+    val cubeAlpha get() = _cubeAlpha
+
     val hoverTextColor get() = _hoverTextColor.color
     val textColor get() = _textColor.color
     val textColorStart get() = _textColorStart.color
 
     fun init(pApplet: PApplet) {
         _backgroundColor = ColorConstant(pApplet)
-        _boxOutlineColor = ColorConstant(pApplet)
         _cellColor = ColorConstant(pApplet)
         _controlColor = ColorConstant(pApplet)
         _controlHighlightColor = ColorConstant(pApplet)
         _controlMousePressedColor = ColorConstant(pApplet)
         _hoverTextColor = ColorConstant(pApplet)
         _defaultPanelColor = ColorConstant(pApplet)
-        _ghostAlpha = ColorConstant(pApplet)
         _textColor = ColorConstant(pApplet)
         _textColorStart = ColorConstant(pApplet) // for lerping purposes
 
@@ -101,14 +101,14 @@ object Theme {
 
         // colors
         _backgroundColor.setColor(themeConstants.backgroundColor)
-        _boxOutlineColor.setColor(themeConstants.boxOutlineColor)
         _cellColor.setColor(themeConstants.cellColor)
         _controlColor.setColor(themeConstants.controlColor)
         _controlHighlightColor.setColor(themeConstants.controlHighlightColor)
         _controlMousePressedColor.setColor(themeConstants.controlMousePressedColor)
         _defaultPanelColor.setColor(themeConstants.defaultPanelColor)
         _hoverTextColor.setColor(themeConstants.hoverTextColor)
-        _ghostAlpha.setColor(themeConstants.ghostAlpha)
+        _ghostAlpha = themeConstants.ghostAlpha
+        _cubeAlpha = themeConstants.cubeAlpha
         _textColor.setColor(themeConstants.textColor)
         _textColorStart.setColor(themeConstants.textColorStart)
 

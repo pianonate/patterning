@@ -15,7 +15,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 canvas,
                 callback,
                 iconName,
-                Theme.controlSize
+                Theme.CONTROL_SIZE
             ).build()
             addPanel(c)
         }
@@ -26,7 +26,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                     canvas,
                     callback,
                     iconName,
-                    Theme.controlSize,
+                    Theme.CONTROL_SIZE,
                     resetOnNew = resetOnNew,
                     resetRotations = resetRotations,
                 ).build()
@@ -43,7 +43,7 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
                 callback,
                 playIconName,
                 pauseIconName,
-                Theme.controlSize,
+                Theme.CONTROL_SIZE,
             ).build()
             addPanel(c)
         }

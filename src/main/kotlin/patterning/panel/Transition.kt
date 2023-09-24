@@ -9,7 +9,7 @@ class Transition(
     private val canvas: Canvas,
     private val direction: TransitionDirection,
     private val type: TransitionType,
-    private val duration: Int = Theme.shortTransitionDuration
+    private val duration: Int = Theme.SHORT_TRANSITION_DURATION
 ) {
     private var transitionStartTime: Long = -1
 
@@ -20,7 +20,7 @@ class Transition(
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val ux = canvas.getNamedGraphicsReference(Theme.uxGraphics).graphics
+        val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS).graphics
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {

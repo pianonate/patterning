@@ -32,9 +32,9 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         MouseEventNotifier.addReceiver(this)
         icon = loadIcon(builder.iconName)
         hoverMessage = keyCallback.usage +
-                Theme.shortcutParenStart +
+                Theme.PAREN_START +
                 keyCallback.toString() +
-                Theme.shortcutParenEnd
+                Theme.PAREN_END
     }
 
     private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
@@ -49,8 +49,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
 
     protected fun loadIcon(iconName: String): PImage {
-        val icon = canvas.loadImage(Theme.iconPath + iconName)
-        icon.resize(width - Theme.iconMargin, height - Theme.iconMargin)
+        val icon = canvas.loadImage(Theme.ICON_PATH + iconName)
+        icon.resize(width - Theme.ICON_MARGIN, height - Theme.ICON_MARGIN)
         return icon
     }
 
@@ -79,8 +79,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
 
     private fun getHoverTextPanel(): TextPanel {
-        val margin = Theme.hoverTextMargin
-        val hoverTextWidth = Theme.hoverTextWidth
+        val margin = Theme.HOVER_TEXT_MARGIN
+        val hoverTextWidth = Theme.HOVER_TEXT_WIDTH
         var hoverX = parentPanel!!.position.x.toInt()
         var hoverY = parentPanel!!.position.y.toInt()
         var transitionDirection: TransitionDirection? = null
@@ -147,13 +147,13 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             AlignVertical.TOP
         ).apply {
             fill(Theme.controlColor)
-            radius(Theme.controlHighlightCornerRadius)
+            radius(Theme.CONTROL_HIGHLIGHT_CORNER_RADIUS)
             textColor(Theme.hoverTextColor)
-            textSize(Theme.hoverTextSize)
+            textSize(Theme.HOVER_TEXT_SIZE)
             textWidth(hoverTextWidth)
             wrap()
             keepShortCutTogether() // keeps the last two words on the same line when text wrapping
-            transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.shortTransitionDuration)
+            transition(transitionDirection, Transition.TransitionType.SLIDE, Theme.SHORT_TRANSITION_DURATION)
         }.build()
     }
 
@@ -190,7 +190,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelGraphics.fill(color) // Semi-transparent gray
         val roundedRectSize = size.toFloat()
         // Rounded rectangle with radius
-        panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.controlHighlightCornerRadius.toFloat())
+        panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.CONTROL_HIGHLIGHT_CORNER_RADIUS.toFloat())
     }
 
     override fun notifyGlobalKeyPress(event: KeyEvent) {
@@ -204,7 +204,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay
     private val asyncSetHighlightJob = AsyncJobRunner(
         method = suspend {
-            delay(Theme.controlHighlightDuration.toLong())
+            delay(Theme.CONTROL_HIGHLIGHT_DURATION.toLong())
             isHighlightFromKeypress = false
         }
     )

@@ -8,14 +8,14 @@ open class UXLightConstants internal constructor() {
 
     // colors
     open val backgroundColor = 0xFFu
-    open val boxOutlineColor = 0xDDFFFFFFu
     open val cellColor = 0xFF000000u
 
     open val controlColor = 0xDD404040u
     open val controlHighlightColor = 0xDDAAAAAAu
     open val controlMousePressedColor = 0xDDFFFFFFu
 
-    open val ghostAlpha = 0x10u
+    open val ghostAlpha = 2
+    open val cubeAlpha = 50
 
     open val hoverTextColor = 0xFFFFFFFFu
     open val textColorStart = 0xFFFFFFFFu

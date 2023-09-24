@@ -62,7 +62,7 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
 
     private val asyncSetPlayIconJob = AsyncJobRunner(
         method = suspend {
-            delay(Theme.controlHighlightDuration.toLong())
+            delay(Theme.CONTROL_HIGHLIGHT_DURATION.toLong())
             currentIcon = playIcon
         }
     )

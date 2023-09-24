@@ -68,6 +68,12 @@ class ThreeD(val canvas: Canvas) {
         return transformCorners(corners, combinedMatrix)
     }
 
+    fun getBackCornersAtDepth(depth: Float): List<PVector> {
+        val depthVector = PVector(0f, 0f, -depth)
+        rotationMatrix.mult(depthVector, depthVector)
+        return rectCorners.map { PVector(it.x + depthVector.x, it.y + depthVector.y, it.z + depthVector.z) }
+    }
+
     fun getTransformedLineCoords(startX: Float, startY: Float, endX: Float, endY: Float): Pair<PVector, PVector> {
         val start = PVector(startX, startY, 0f)
         val end = PVector(endX, endY, 0f)
@@ -80,8 +86,6 @@ class ThreeD(val canvas: Canvas) {
 
         return Pair(transformedStart, transformedEnd)
     }
-
-
 
     fun reset() {
         currentAngles.reset()
@@ -116,14 +120,15 @@ class ThreeD(val canvas: Canvas) {
         }
     }
 
-    private fun getCornersArray(left: Float, top: Float, width: Float, height: Float): Array<PVector> {
-        return arrayOf(
-            PVector(left, top, 0f),
-            PVector(left + width, top, 0f),
-            PVector(left, top + height, 0f),
-            PVector(left + width, top + height, 0f)
-        )
-    }
+private fun getCornersArray(left: Float, top: Float, width: Float, height: Float): Array<PVector> {
+    return arrayOf(
+        PVector(left, top, 0f),           // top-left
+        PVector(left + width, top, 0f),   // top-right
+        PVector(left + width, top + height, 0f), // bottom-right
+        PVector(left, top + height, 0f)  // bottom-left
+    )
+}
+
 
     private fun updateCombinedMatrix() {
         // Create translation matrices

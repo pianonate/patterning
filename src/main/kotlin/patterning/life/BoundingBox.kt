@@ -75,10 +75,10 @@ class BoundingBox(
     private fun drawBoundingBoxEdges(corners: List<PVector>, graphics: PGraphics) {
 
         val lines = listOf(
-            Pair(corners[0], corners[2]),
+            Pair(corners[0], corners[1]),
+            Pair(corners[1], corners[2]),
             Pair(corners[2], corners[3]),
-            Pair(corners[3], corners[1]),
-            Pair(corners[1], corners[0])
+            Pair(corners[3], corners[0])
         )
 
         for ((start, end) in lines) {
@@ -129,61 +129,45 @@ class BoundingBox(
 
     /**
      * used to clip the lines to only draw the portion that overlaps with the screen
+     *
+     * there was an issue i don't care to explore further that sometimes this algo wouldn't exit the while(true)
+     * so i added maxIterations for the following reason:
+     *
+     * Four iterations should be enough because in 2D space, a line can intersect a rectangle at most in 4 places:
+     * two vertical sides and two horizontal sides.
+     *
+     * UPDATE: empirically i still see some lines disappearing and reappearing so i changed maxIterations to 8
+     * i don't have enough of a care factor right now to debug why but it would be cool if someone could create a
+     * deterministic version of this algo that doesn't require on empiricism
+     *
+     * In the Cohen-Sutherland algorithm, each iteration should move at least one endpoint of the line to be inside
+     * the clipping rectangle or determine that the line is completely outside of it. Therefore, within 4 iterations,
+     * the algorithm should be able to resolve the line's position relative to the rectangle.
+     *
+     * However, it's still theoretically possible to have corner cases where the line keeps bouncing
+     * back and forth due to floating-point errors. So, a maximum iteration counter is a safety measure.
      */
     private fun cohenSutherlandClip(
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float
+        startX: Float, startY: Float, endX: Float, endY: Float
     ): Pair<Pair<Float, Float>, Pair<Float, Float>>? {
         var (currentStartX, currentStartY, currentEndX, currentEndY) = listOf(startX, startY, endX, endY)
         var outCodeStart = computeOutCode(currentStartX, currentStartY)
         var outCodeEnd = computeOutCode(currentEndX, currentEndY)
 
+        var iterationCount = 0
+        val maxIterations = 8 // Maximum number of iterations, set based on domain knowledge
 
-        while (true) {
+        while (iterationCount < maxIterations) {
+            iterationCount++
+
             when {
                 outCodeStart == OutCode.INSIDE && outCodeEnd == OutCode.INSIDE -> return Pair(
-                    Pair(
-                        currentStartX,
-                        currentStartY
-                    ), Pair(currentEndX, currentEndY)
+                    Pair(currentStartX, currentStartY), Pair(currentEndX, currentEndY)
                 )
-
                 outCodeStart and outCodeEnd != OutCode.INSIDE -> return null
                 else -> {
                     val currentOutCode = if (outCodeStart != OutCode.INSIDE) outCodeStart else outCodeEnd
-                    val (x, y) = when (currentOutCode) {
-                        OutCode.TOP -> {
-                            if (currentEndY == currentStartY) {
-                                return null
-                            } else
-                                currentStartX + (currentEndX - currentStartX) * -currentStartY / (currentEndY - currentStartY) to 0f
-                        }
-
-                        OutCode.BOTTOM -> {
-                            if (currentEndY == currentStartY) {
-                                return null
-                            } else
-                                currentStartX + (currentEndX - currentStartX) * (canvas.height - currentStartY) / (currentEndY - currentStartY) to canvas.height
-                        }
-
-                        OutCode.RIGHT -> {
-                            if (currentEndX == currentStartX) {
-                                return null
-                            } else
-                                canvas.width to currentStartY + (currentEndY - currentStartY) * (canvas.width - currentStartX) / (currentEndX - currentStartX)
-                        }
-
-                        OutCode.LEFT -> {
-                            if (currentEndX == currentStartX) {
-                                return null
-                            } else
-                                0f to currentStartY + (currentEndY - currentStartY) * -currentStartX / (currentEndX - currentStartX)
-                        }
-
-                        else -> 0f to 0f  // Should never happen
-                    }
+                    val (x, y) = computeNewCoordinates(currentStartX, currentStartY, currentEndX, currentEndY, currentOutCode)
 
                     if (currentOutCode == outCodeStart) {
                         currentStartX = x
@@ -197,6 +181,51 @@ class BoundingBox(
                 }
             }
         }
+        return null // Fallback in case it didn't exit within the maximum allowed iterations
+    }
+
+    private fun computeNewCoordinates(
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+        currentOutCode: OutCode
+    ): List<Float> {
+        return when (currentOutCode) {
+            OutCode.TOP -> {
+                if (endY == startY) {
+                    listOf(startX, 0f)
+                } else {
+                    listOf(startX + (endX - startX) * -startY / (endY - startY), 0f)
+                }
+            }
+
+            OutCode.BOTTOM -> {
+                if (endY == startY) {
+                    listOf(startX, canvas.height)
+                } else {
+                    listOf(startX + (endX - startX) * (canvas.height - startY) / (endY - startY), canvas.height)
+                }
+            }
+
+            OutCode.RIGHT -> {
+                if (endX == startX) {
+                    listOf(canvas.width, startY)
+                } else {
+                    listOf(canvas.width, startY + (endY - startY) * (canvas.width - startX) / (endX - startX))
+                }
+            }
+
+            OutCode.LEFT -> {
+                if (endX == startX) {
+                    listOf(0f, startY)
+                } else {
+                    listOf(0f, startY + (endY - startY) * -startX / (endX - startX))
+                }
+            }
+
+            else -> listOf(0f, 0f)  // Should never happen
+        }
     }
 
 
@@ -205,7 +234,7 @@ class BoundingBox(
             push()
             noFill()
             stroke(Theme.textColor)
-            strokeWeight(Theme.strokeWeightBounds)
+            strokeWeight(Theme.STROKE_WEIGHT_BOUNDS)
 
             val transformedBoundingBox =
                 threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
@@ -222,10 +251,6 @@ class BoundingBox(
 
 
     inner class Point(var x: Float, var y: Float) {
-        /*        init {
-                    x = x.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
-                    y = y.roundToIntIfGreaterThanReference(this@BoundingBox.canvas.zoomLevel)
-                }*/
 
         operator fun component1(): Float = x
         operator fun component2(): Float = y
@@ -276,14 +301,14 @@ class BoundingBox(
             val yLength = end.y - start.y
 
             val distance = PApplet.dist(start.x, start.y, end.x, end.y)
-            val numDashes = distance / (Theme.dashedLineDashLength + Theme.dashedLineSpaceLength)
+            val numDashes = distance / (Theme.DASHED_LINE_DASH_LENGTH + Theme.DASHED_LINE_SPACE_LENGTH)
 
             val dxDash = xLength / numDashes / 2
             val dyDash = yLength / numDashes / 2
 
             with(graphics) {
                 push()
-                strokeWeight(Theme.strokeWeightDashedLine)
+                strokeWeight(Theme.STROKE_WEIGHT_DASHED_LINES)
 
                 val upperBound = (numDashes * 2).toInt()
                 val initialState = Triple(start.x, start.y, true)

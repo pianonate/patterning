@@ -27,7 +27,7 @@ class ColorConstant(private val p: PApplet) {
             if (!transitionInProgress) {
                 return currentColor.toInt()
             }
-            val t = (System.currentTimeMillis() - transitionStartTime).toFloat() / Theme.themeTransitionDuration
+            val t = (System.currentTimeMillis() - transitionStartTime).toFloat() / Theme.THEME_TRANSITION_DURATION
             return if (t < 1.0) {
                 p.lerpColor(previousColor.toInt(), currentColor.toInt(), t)
             } else {

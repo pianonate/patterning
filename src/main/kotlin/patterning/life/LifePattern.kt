@@ -19,11 +19,12 @@ import patterning.pattern.ThreeDimensional
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.ResourceManager
+import patterning.util.applyAlpha
+import patterning.util.boxPlus
 import patterning.util.isNotZero
 import patterning.util.isOne
 import patterning.util.isZero
 import patterning.util.quadPlus
-import patterning.util.roundToIntIfGreaterThanReference
 import processing.core.PApplet
 import processing.core.PConstants
 import processing.core.PVector
@@ -84,8 +85,7 @@ class LifePattern(
 
     init {
 
-        // pattern = GraphicsReference(pApplet.graphics, Theme.patternGraphics, isResizable = true, useOpenGL = true)
-        pattern = canvas.getNamedGraphicsReference(Theme.patternGraphics, useOpenGL = true)
+        pattern = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS, useOpenGL = true)
         hudInfo = HUDStringBuilder()
 
         asyncNextGenerationJob = AsyncJobRunner(method = { asyncNextGeneration() })
@@ -400,37 +400,35 @@ class LifePattern(
         }
     }
 
+    /**
+     * i don't love it that rectCorners has the latest value from "shouldContinue"
+     * but it's done for efficiency given all the matrix multiplication going on
+     * i.e., why ask for the corners more than once?
+     */
     private fun fillSquare(
-        x: Float,
-        y: Float,
         size: Float,
     ) {
         with(pattern.graphics) {
             push()
-            val width = size.roundToIntIfGreaterThanReference(size)
-            val posX = x.roundToIntIfGreaterThanReference(size)
-            val posY = y.roundToIntIfGreaterThanReference(size)
 
-            val cellColor = getFillColor(posX, posY)
-            fill(cellColor)
+            val getFillColorsLambda = { x: Float, y: Float, applyCubeAlpha:Boolean -> getFillColor(x, y, applyCubeAlpha) }
+            val corners = threeD.rectCorners
 
-            if (width > 4 && isThreeD) {
-                draw3DBox(posX, posY, width)
-            } else {
-                val corners = threeD.rectCorners
-                val transformedCorners = corners.map { corner ->
-                    PVector(
-                        corner.x,
-                        corner.y
-                    )
+            when {
+                size > 4 && isThreeD -> {
+                    boxPlus(frontCorners = corners,
+                        threeD = threeD,
+                        depth = size,
+                        getFillColor = getFillColorsLambda)
                 }
-                if (width <= 1.0f) {
-                    val pixelColor = getPixelColor(transformedCorners[0].x, transformedCorners[0].y)
-                    val transformedX = transformedCorners[0].x.toInt()
-                    val transformedY = transformedCorners[0].y.toInt()
+                size <= 1.0f -> {
+                    val pixelColor = getPixelColor(corners[0].x, corners[0].y)
+                    val transformedX = corners[0].x.toInt()
+                    val transformedY = corners[0].y.toInt()
                     set(transformedX, transformedY, pixelColor)
-                } else {
-                    quadPlus(corners)
+                }
+                else -> {
+                    quadPlus(corners = corners, getFillColor = getFillColorsLambda)
                 }
             }
 
@@ -438,10 +436,10 @@ class LifePattern(
         }
     }
 
-    private fun getPixelColor(x:Float, y:Float):Int {
-        val cellColor = getFillColor(x, y)
+    private fun getPixelColor(x: Float, y: Float): Int {
+        val cellColor = getFillColor(x, y, applyCubeAlpha = false)
 
-       return if (ghostState is Ghosting) {
+        return if (ghostState is Ghosting) {
             val existing = pattern.graphics.get(x.toInt(), y.toInt())
             blendColors(existing, cellColor)
         } else {
@@ -463,8 +461,7 @@ class LifePattern(
     }
 
 
-
-    private fun draw3DBox(x: Float, y: Float, width: Float) {
+/*    private fun draw3DBox(x: Float, y: Float, width: Float) {
         with(pattern.graphics) {
             push()
             translate(x + width / 2, y + width / 2)
@@ -479,17 +476,19 @@ class LifePattern(
             box(width)
             pop()
         }
-    }
+    }*/
 
-    private fun getFillColor(x: Float, y: Float): Int {
+    private fun getFillColor(x: Float, y: Float, applyCubeAlpha:Boolean = true): Int {
+
+        val cubeAlpha = if (isThreeD && canvas.zoomLevel >= 4.0 && applyCubeAlpha) Theme.cubeAlpha else 255
 
         return with(pattern.graphics) {
             val color = if (rainbowMode) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
-                val hue = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
-                color(hue, 100f, 100f, 255f)
+                val mappedColor = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
+                color(mappedColor, 100f, 100f, cubeAlpha.toFloat())
             } else {
-                Theme.cellColor
+                Theme.cellColor.applyAlpha(cubeAlpha)
             }
 
             ghostState.applyAlpha(color)
@@ -540,8 +539,8 @@ class LifePattern(
             }
 
             if (shouldDraw) {
-                drawBounds(life)
                 drawVisibleNodes(life)
+                drawBounds(life)
             }
 
             pop()
@@ -587,15 +586,12 @@ class LifePattern(
             return
         }
 
-        val leftWithOffset = left + canvas.offsetX
-        val topWithOffset = top + canvas.offsetY
-
         // If we have done a recursion down to a very small size and the population exists,
         // draw a unit square and be done
         if (size <= 1f && node.population.isNotZero()) {
-            fillSquare(leftWithOffset, topWithOffset, 1f)
+            fillSquare( 1f)
         } else if (node is LeafNode && node.population.isOne()) {
-            fillSquare(leftWithOffset, topWithOffset, canvas.zoomLevel)
+            fillSquare(canvas.zoomLevel)
         } else if (node is TreeNode) {
 
             val halfSize = universeSize.getHalf(node.level, canvas.zoomLevel)

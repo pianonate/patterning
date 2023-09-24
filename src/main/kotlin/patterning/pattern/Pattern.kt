@@ -3,6 +3,7 @@ package patterning.pattern
 import patterning.Canvas
 import patterning.Properties
 import patterning.Theme
+import patterning.util.applyAlpha
 import processing.core.PApplet
 import processing.core.PGraphics
 
@@ -64,10 +65,6 @@ abstract class Pattern(
         ghostState = GhostKeyFrame()
     }
 
-    fun applyTransparency(originalColor: Int, alphaValue: Int): Int {
-        return (originalColor and 0xFFFFFF) or (alphaValue shl 24)
-    }
-
     /**
      * in preparation for future features such as drawing as inverse rainbow and gridlines
      */
@@ -108,6 +105,6 @@ abstract class Pattern(
         }
 
         override fun transition() = run { ghostState = GhostOff() }
-        override fun applyAlpha(color: Int): Int = applyTransparency(originalColor = color, Theme.ghostAlpha)
+        override fun applyAlpha(color: Int): Int = color.applyAlpha(Theme.ghostAlpha)
     }
 }

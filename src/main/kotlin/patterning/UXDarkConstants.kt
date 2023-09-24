@@ -8,7 +8,6 @@ class UXDarkConstants internal constructor() : UXLightConstants() {
         get() = PConstants.SCREEN
 
     override val backgroundColor = 0u
-    override val boxOutlineColor = 0x22000000u
     override val cellColor = 0xFFFFFFFFu
 
     override val controlColor = 0xDD404040u
