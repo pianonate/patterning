@@ -35,8 +35,8 @@ object Theme {
     // sizes
     const val CONTROL_SIZE = 35
     const val CONTROL_HIGHLIGHT_CORNER_RADIUS = 14
-    const val DASHED_LINE_DASH_LENGTH = 6f
-    const val DASHED_LINE_SPACE_LENGTH = 2f
+    const val DASHED_LINE_DASH_LENGTH = 8
+    const val DASHED_LINE_SPACE_LENGTH = 5
     const val DEFAULT_TEXT_MARGIN = 5
     const val DEFAULT_TEXT_SIZE = 30f
     const val HOVER_TEXT_MARGIN = 5

@@ -8,6 +8,7 @@ class ThreeD(val canvas: Canvas) {
     private val combinedMatrix = PMatrix3D()
 
     enum class Rotation { YAW, PITCH, ROLL }
+
     private val activeRotations = mutableListOf<Rotation>()
     private var currentAngles = RotationAngles(0f, 0f, 0f)
 
@@ -120,14 +121,14 @@ class ThreeD(val canvas: Canvas) {
         }
     }
 
-private fun getCornersArray(left: Float, top: Float, width: Float, height: Float): Array<PVector> {
-    return arrayOf(
-        PVector(left, top, 0f),           // top-left
-        PVector(left + width, top, 0f),   // top-right
-        PVector(left + width, top + height, 0f), // bottom-right
-        PVector(left, top + height, 0f)  // bottom-left
-    )
-}
+    private fun getCornersArray(left: Float, top: Float, width: Float, height: Float): Array<PVector> {
+        return arrayOf(
+            PVector(left, top, 0f),           // top-left
+            PVector(left + width, top, 0f),   // top-right
+            PVector(left + width, top + height, 0f), // bottom-right
+            PVector(left, top + height, 0f)  // bottom-left
+        )
+    }
 
 
     private fun updateCombinedMatrix() {
