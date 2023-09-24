@@ -424,8 +424,8 @@ class KeyCallbackFactory(
         private const val SHORTCUT_RAINBOW = 'a'
         private const val SHORTCUT_RANDOM_FILE = 'r'
         private const val SHORTCUT_REWIND = 'w'
-        private const val SHORTCUT_STEP_FASTER = '>'
-        private const val SHORTCUT_STEP_SLOWER = '<'
+        private const val SHORTCUT_STEP_FASTER = '.'
+        private const val SHORTCUT_STEP_SLOWER = ','
         private const val SHORTCUT_UNDO = 'z'
 
         private const val SHORTCUT_SAVE_IMAGE = 's'
