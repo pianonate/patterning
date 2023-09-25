@@ -70,5 +70,3 @@ https://copy.sh/life/examples/
 
 Under the patterns column, pick one, click on the "pattern file" link, copy everything and paste it onto the canvas of this app,
 and then it will be off to the races.
-
-test
