@@ -24,7 +24,7 @@ class SimpleKeyCallback(
     override fun toString(): String {
         val keysStrings = validKeyCombosForCurrentOS.map { it.toString() }
         // special case
-        return if (keysStrings.map { it.toIntOrNull() }.filterNotNull() == (1..9).toList()) {
+        return if (keysStrings.mapNotNull { it.toIntOrNull() } == (1..9).toList()) {
             "1...9"
         } else {
             keysStrings.joinToString(", ")

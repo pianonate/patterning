@@ -35,9 +35,9 @@ import java.util.OptionalInt
  *      textSize(30)
  *   }.build()
  *   ```
- *   the apply ensures that you can apply methods from anywhere in the hierarchy without
+ *   apply ensures that you can apply methods from anywhere in the hierarchy without
  *   having to worry about the return type of each. The receiver of the apply block will always be
- *   TextPanel.builder type - allowing you to call methods from both the parent and the child
+ *   TextPanel.Builder type - allowing you to call methods from both the parent and the child
  *   seamlessly
  *
  *   Note that you'll only need to use apply if you're trying to chain methods from different levels

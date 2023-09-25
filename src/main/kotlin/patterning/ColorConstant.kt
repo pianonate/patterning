@@ -3,7 +3,7 @@ package patterning
 import processing.core.PApplet
 
 class ColorConstant(private val p: PApplet) {
-    internal var transitionInProgress = false
+    private var transitionInProgress = false
 
     private var currentColor = 0u
     private var previousColor = 0u

@@ -1,6 +1,6 @@
 package patterning.state
 
-class SingleStepState() : RunningState(RunningMode.SINGLE_STEP) {
+class SingleStepState : RunningState(RunningMode.SINGLE_STEP) {
     private var wasSingleStepActivated = false
 
     override fun togglePlayPause() {

@@ -3,19 +3,18 @@ package patterning.life
 import patterning.util.hudFormatted
 
 class HUDStringBuilder {
-    private val data // Changed from Number to Object
-            : MutableMap<String, Any>
+    private val hudInfo: MutableMap<String, Any>
     private var cachedFormattedString = ""
     private var lastUpdateFrame = 0
 
     init {
-        data = LinkedHashMap() // Use LinkedHashMap to maintain the insertion order
+        hudInfo = LinkedHashMap() // Use LinkedHashMap to maintain the insertion order
     }
 
     fun addOrUpdate(key: String, value: Any?) {
         when (value) {
-            is Number -> data[key] = value
-            is String -> data[key] = value
+            is Number -> hudInfo[key] = value
+            is String -> hudInfo[key] = value
             else -> throw IllegalArgumentException("value must be a Number or a String.")
         }
     }
@@ -26,9 +25,10 @@ class HUDStringBuilder {
         updateFn: () -> Unit
     ): String {
         if (frameCount - lastUpdateFrame >= updateFrequency || cachedFormattedString.isEmpty()) {
+            // lambda passed into update hudInfo - this is convoluted - it could be improved...
             updateFn()
             val formattedString = StringBuilder()
-            for ((key, value) in data) {
+            for ((key, value) in hudInfo) {
 
                 val formattedValue = when (value) {
 
@@ -38,11 +38,11 @@ class HUDStringBuilder {
                     else -> "unknown thing"
                 }
 
-                formattedString.append(formattedValue).append(delimiter)
+                formattedString.append(formattedValue).append(DELIMITER)
             }
             // Remove the last delimiter
             if (formattedString.isNotEmpty()) {
-                formattedString.setLength(formattedString.length - delimiter.length)
+                formattedString.setLength(formattedString.length - DELIMITER.length)
             }
             cachedFormattedString = formattedString.toString()
             lastUpdateFrame = frameCount
@@ -51,6 +51,6 @@ class HUDStringBuilder {
     }
 
     companion object {
-        private const val delimiter = " | "
+        private const val DELIMITER = " | "
     }
 }

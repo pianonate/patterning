@@ -22,6 +22,5 @@ open class UXLightConstants internal constructor() {
     open val textColor = 0xFF777777u
 
     /* currently not open */
-    val defaultPanelColor
-        get() = 0x00FFFFFFu
+    val defaultPanelColor = 0x00FFFFFFu
 }

@@ -25,7 +25,7 @@ object Theme {
     const val ICON_PATH = "icon/"
     const val PAREN_START = " ("
     const val PAREN_END = ")"
-    const val STARTUP_TEXST = "patterning"
+    const val STARTUP_TEXT = "patterning"
 
     // PGraphics names
     const val UX_GRAPHICS = "ux"
@@ -64,7 +64,7 @@ object Theme {
 
     private lateinit var _hoverTextColor: ColorConstant
     private lateinit var _textColor: ColorConstant
-    private lateinit var _textColorStart: ColorConstant  // for lerping purposes
+    private lateinit var _textColorStart: ColorConstant
 
     val backgroundColor get() = _backgroundColor.color
     val cellColor get() = _cellColor.color
@@ -88,7 +88,7 @@ object Theme {
         _hoverTextColor = ColorConstant(pApplet)
         _defaultPanelColor = ColorConstant(pApplet)
         _textColor = ColorConstant(pApplet)
-        _textColorStart = ColorConstant(pApplet) // for lerping purposes
+        _textColorStart = ColorConstant(pApplet)
 
         setTheme(ThemeType.DARK)
     }

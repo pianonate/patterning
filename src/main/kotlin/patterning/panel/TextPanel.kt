@@ -122,7 +122,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
     }
 
     /**
-     * hovertext defaults to 255 and even if the width changes
+     * hoverText defaults to 255 and even if the width changes
      * the position works for left, top and bottom
      * but it doesn't work for alignRight so we have to offset it
      * we can't know in advance so we pass in a parameter to deal with it

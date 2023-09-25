@@ -1,6 +1,6 @@
 package patterning.state
 
-class PausedState() : RunningState(RunningMode.PAUSED) {
+class PausedState : RunningState(RunningMode.PAUSED) {
 
     override fun togglePlayPause() {
         controller.changeState(PlayingState())

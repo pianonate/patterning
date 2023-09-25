@@ -344,7 +344,7 @@ class LifeUniverse internal constructor() {
 
         // when you're super stepping you need the first argument re:step to grow it immediately large enough!
         // and if stepNextGeneration is expanding the universe then the population sizes won't match up
-        // so so make sure we're big enough to handle the expansion
+        // so make sure we're big enough to handle the expansion
         while (currentRoot.level <= step + 2 ||
             currentRoot.nw.population != currentRoot.nw.se.se.population ||
             currentRoot.ne.population != currentRoot.ne.sw.sw.population ||
@@ -380,6 +380,7 @@ class LifeUniverse internal constructor() {
         path that nodeQuickNextGeneration does.
     */
 
+    @Suppress("DuplicatedCode")
     private fun nextGenerationRecurse(node: TreeNode): TreeNode {
         node.nextGenCache?.let { return it }
         // recurse.getAndIncrement()
@@ -389,7 +390,7 @@ class LifeUniverse internal constructor() {
         }
 
         if (node.level == 2) {
-            // level two's are straightforward to create and not that many of them
+            // a level 2 is straightforward to create and not that many of them
             // so we cache them on the node itself
             node.nextGenStepCache = node.nextGenStepCache ?: nodeLevel2Next(node)
             return node.nextGenStepCache as TreeNode
@@ -400,8 +401,7 @@ class LifeUniverse internal constructor() {
         val sw = node.sw
         val se = node.se
 
-        val n00 =
-            createNode(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw)
+        val n00 = createNode(nw.nw.se, nw.ne.sw, nw.sw.ne, nw.se.nw)
         val n01 = createNode(nw.ne.se, ne.nw.sw, nw.se.ne, ne.sw.nw)
         val n02 = createNode(ne.nw.se, ne.ne.sw, ne.sw.ne, ne.se.nw)
         val n10 = createNode(nw.sw.se, nw.se.sw, sw.nw.ne, sw.ne.nw)

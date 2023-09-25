@@ -1,6 +1,6 @@
 package patterning.state
 
-class TestingState() : RunningState(RunningMode.TESTING) {
+class TestingState : RunningState(RunningMode.TESTING) {
 
     override fun togglePlayPause() {
         throw IllegalStateException("Cannot toggle running mode during test mode")

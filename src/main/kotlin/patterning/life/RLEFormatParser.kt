@@ -12,13 +12,12 @@ class RLEFormatParser internal constructor(text: String) {
         handleHeader(text)
         parseInstructions()
 
-        result.title = if (result.title.isEmpty()) {
+        result.title = result.title.ifEmpty {
             if (result.comments.size == 0)
                 "untitled"
             else
                 result.comments[0].take(20)
-        } else
-            result.title
+        }
     }
 
     private fun parseInstructions() {
@@ -91,7 +90,7 @@ class RLEFormatParser internal constructor(text: String) {
                 "x" -> result.width = value.toInt()
                 "y" -> result.height = value.toInt()
                 "rule" -> {
-                    // parseRuleRLE ensures that the if there is a prefix of B or S then
+                    // parseRuleRLE ensures when there is a prefix of B or S then
                     // it puts them in the correct order each time and walks through parse to get the value
                     // that's what the true and false are for here
                     result.rulesS = parseRuleRLE(value, true)
@@ -160,26 +159,26 @@ class RLEFormatParser internal constructor(text: String) {
     }
 
     private fun rule2str(ruleS: Int, ruleB: Int): String {
-        var _ruleS = ruleS
-        var _ruleB = ruleB
+        var currentRuleS = ruleS
+        var currentRuleB = ruleB
         val rule = StringBuilder()
         run {
             var i = 0
-            while (_ruleS != 0) {
-                if (_ruleS and 1 != 0) {
+            while (currentRuleS != 0) {
+                if (currentRuleS and 1 != 0) {
                     rule.append(i)
                 }
-                _ruleS = _ruleS shr 1
+                currentRuleS = currentRuleS shr 1
                 i++
             }
         }
         rule.append("/")
         var i = 0
-        while (_ruleB != 0) {
-            if (_ruleB and 1 != 0) {
+        while (currentRuleB != 0) {
+            if (currentRuleB and 1 != 0) {
                 rule.append(i)
             }
-            _ruleB = _ruleB shr 1
+            currentRuleB = currentRuleB shr 1
             i++
         }
         return rule.toString()

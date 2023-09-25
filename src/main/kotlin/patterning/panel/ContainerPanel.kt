@@ -14,7 +14,7 @@ abstract class ContainerPanel protected constructor(builder: Builder) : Panel(bu
         updatePanelSize()
 
         // super(builder) causes Panel to create an initial panelGraphics
-        // to draw into.  However ContainerPanel's don't have a width and height until
+        // to draw into. However, ContainerPanel's don't have a width and height until
         // we've run updatePanelSize as we don't know how
         // many children will get added to a ContainerPanel -
         // given we've already called super(builder), set

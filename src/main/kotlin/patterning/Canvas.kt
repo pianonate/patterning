@@ -299,15 +299,6 @@ class Canvas(private val pApplet: PApplet) {
 
         private var cachedFloatLevel: Float? = null
 
-        fun levelAsFloat(): Float {
-            return cachedFloatLevel ?: run {
-                require(_level > 0f) { "zoom levels can't be < 0 $_level" }
-                val floatValue = _level
-                cachedFloatLevel = floatValue
-                floatValue
-            }
-        }
-
         fun stopZooming() {
             isZooming = false
         }

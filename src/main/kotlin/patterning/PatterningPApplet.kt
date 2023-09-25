@@ -84,7 +84,7 @@ class PatterningPApplet : PApplet() {
         // ux sets up key callbacks and we can now print them out
         println(KeyEventNotifier.usageText)
 
-        KeyEventNotifier.registerKeyHandler(this)
+        KeyEventNotifier.registerPAppletEventHandlers(this)
     }
 
     private fun registerPatternObservers(pattern: Pattern) {

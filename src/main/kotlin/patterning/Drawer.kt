@@ -28,11 +28,11 @@ object Drawer {
         }
 
         // clean up drawables that need to be removed
-        drawables.removeAll(toBeRemoved)
+        drawables.removeAll(toBeRemoved.toSet())
         toBeRemoved.clear()
 
         // Add all drawables that need to be added
-        drawables.addAll(toBeAdded)
+        drawables.addAll(toBeAdded.toSet())
         toBeAdded.clear()
 
     }

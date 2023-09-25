@@ -49,7 +49,7 @@ class UX(
             .build().also { Drawer.add(it) }
 
         // startup text
-        TextPanel.Builder(canvas, Theme.STARTUP_TEXST, AlignHorizontal.RIGHT, AlignVertical.TOP)
+        TextPanel.Builder(canvas, Theme.STARTUP_TEXT, AlignHorizontal.RIGHT, AlignVertical.TOP)
             .textSize(Theme.STARTUP_TEXT_SIZE)
             .fadeInDuration(Theme.STARTUP_TEXT_FADE_IN_DURATION)
             .fadeOutDuration(Theme.STARTUP_TEXT_FADE_OUT_DURATION)

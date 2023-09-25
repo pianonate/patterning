@@ -1,6 +1,6 @@
 package patterning.state
 
-class LoadingState() : RunningState(RunningMode.LOADING) {
+class LoadingState : RunningState(RunningMode.LOADING) {
 
     override fun togglePlayPause() {
         throw IllegalStateException("Cannot toggle running during loading")

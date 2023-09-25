@@ -58,10 +58,10 @@ object KeyEventNotifier {
     }
 
     /**
-     * KeyHandler is an object whose primary reason for existence is just to isolate keyboard shortcuts
+     * KeyEventNotifier is an object whose primary reason for existence is just to isolate keyboard shortcuts
      * from the main PatterningPApplet class
      *
-     * as such, because of Processing's settings/setup initialization process, we provide registerKeyHandler
+     * as such, because of Processing's settings/setup initialization process, we provide registerPAppletEventHandlers
      * to allow for instantiating and providing method hooks for keyEvent and pre
      *
      * with the P2D and P3D renderers, keyEvent is called once per keypress but sometimes we want behavior
@@ -70,16 +70,15 @@ object KeyEventNotifier {
      *
      * it feels a bit of a workaround just to separate out the code so documenting it clearly here
      */
-    fun registerKeyHandler(pApplet: PApplet) {
+    fun registerPAppletEventHandlers(pApplet: PApplet) {
         this.pApplet = pApplet.apply {
             registerMethod("keyEvent", this@KeyEventNotifier)
             registerMethod("pre", this@KeyEventNotifier)
         }
     }
 
-
     /**
-     * in P2D and P3D, keyEvent will be called once per keyPress so we
+     * when using P2D and P3D renderers, keyEvent will be called once per keyPress so we
      * capture the keyEvent so it can be used in the "pre" call repeatedly during draw()
      * most control key callbacks will just be called once, zooming, moving, undo and possibly
      * others may be called every draw
