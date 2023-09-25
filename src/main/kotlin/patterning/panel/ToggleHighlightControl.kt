@@ -10,7 +10,10 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
 
     init {
         builder.resetOnNew?.registerObserver(PatternEventType.PatternSwapped) {
-            // if a new pattern is loaded we stop 'yaw-ing' as it's too confusing from a ux perspective
+            // if a new pattern is loaded, reset the control
+            // right now we have to update this behavior both in the boolean (such as rotation managing booleans)
+            // and in the instantiation of the associated control
+            // maybe there's a better way?
             isHighlightFromKeypress = false
         }
 

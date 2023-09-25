@@ -7,7 +7,9 @@ import patterning.GraphicsReference
 import patterning.Properties
 import patterning.Theme
 import patterning.ThreeD
+import patterning.pattern.BoundaryMode
 import patterning.pattern.Colorful
+import patterning.pattern.DisplayState
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pasteable
@@ -37,8 +39,9 @@ import java.net.URISyntaxException
 class LifePattern(
     pApplet: PApplet,
     canvas: Canvas,
-    properties: Properties
-) : Pattern(pApplet, canvas, properties),
+    properties: Properties,
+    displayState: DisplayState
+) : Pattern(pApplet, canvas, properties, displayState),
     Colorful,
     Movable,
     NumberedPatternLoader,
@@ -77,8 +80,7 @@ class LifePattern(
     )
 
     private var pattern: GraphicsReference
-    private var drawBounds = false
-    private var drawBoundaryOnly = false
+
     private var isThreeD = false
 
     private var threeD = ThreeD(canvas)
@@ -188,15 +190,6 @@ class LifePattern(
 
     override fun fitToScreen() {
         center(life.rootBounds, fitBounds = true, saveState = true)
-    }
-
-    override fun toggleDrawBounds() {
-        drawBounds = !drawBounds
-        if (drawBounds && drawBoundaryOnly) drawBoundaryOnly = false
-    }
-
-    override fun toggleDrawBoundaryOnly() {
-        drawBoundaryOnly = !drawBoundaryOnly
     }
 
     override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
@@ -506,7 +499,8 @@ class LifePattern(
     // this is more for the thrill of solving a complicated problem and it's
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
-        if (drawBoundaryOnly) return
+
+        if (displayState.boundaryMode==BoundaryMode.BoundaryOnly) return
 
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
@@ -594,7 +588,7 @@ class LifePattern(
     }
 
     private fun drawBounds(life: LifeUniverse) {
-        if (!(drawBounds || drawBoundaryOnly)) return
+        if (displayState.boundaryMode == BoundaryMode.PatternOnly) return
 
         val bounds = life.rootBounds
 

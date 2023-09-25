@@ -3,6 +3,7 @@ package patterning.pattern
 import patterning.Canvas
 import patterning.Properties
 import patterning.Theme
+import patterning.ThemeType
 import patterning.util.applyAlpha
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -10,8 +11,9 @@ import processing.core.PGraphics
 abstract class Pattern(
     val pApplet: PApplet,
     val canvas: Canvas,
-    val properties: Properties
-) : ObservablePattern {
+    val properties: Properties,
+    val displayState: DisplayState,
+) : ObservablePattern, DisplayState.Observer {
 
     private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
 
@@ -25,6 +27,20 @@ abstract class Pattern(
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
+    }
+
+    override fun onStateChanged(changedOption: RenderingOption) {
+        when (changedOption) {
+            RenderingOption.DarkMode -> {
+                Theme.setTheme(
+                    when (Theme.currentThemeType) {
+                        ThemeType.DEFAULT -> ThemeType.DARK
+                        else -> ThemeType.DEFAULT
+                    }
+                )
+            }
+            else -> {}
+        }
     }
 
     // currently these are the only methods called by PatterningPApplet so we

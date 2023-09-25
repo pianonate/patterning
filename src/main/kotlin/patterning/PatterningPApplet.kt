@@ -3,6 +3,7 @@ package patterning
 import kotlin.math.roundToInt
 import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
+import patterning.pattern.DisplayState
 import patterning.pattern.Movable
 import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
@@ -66,11 +67,18 @@ class PatterningPApplet : PApplet() {
 
         properties = Properties(this)
 
+        val displayState = DisplayState()
+
+        // pattern both holds the reference to display state but also
+        // is an observer of changes in displayState
         pattern = patterning.life.LifePattern(
             pApplet = this,
             canvas = canvas,
-            properties
+            properties = properties,
+            displayState = displayState,
         )
+
+        displayState.addObserver(pattern)
 
         ux = UX(this, canvas, pattern)
 

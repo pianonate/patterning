@@ -2,8 +2,6 @@ package patterning.pattern
 
 import kotlinx.coroutines.runBlocking
 import patterning.Canvas
-import patterning.Theme
-import patterning.ThemeType
 import patterning.actions.KeyCombo
 import patterning.actions.KeyEventNotifier
 import patterning.actions.SimpleKeyCallback
@@ -16,7 +14,8 @@ import processing.event.KeyEvent
 class KeyCallbackFactory(
     private val pApplet: PApplet,
     private val pattern: Pattern,
-    private val canvas: Canvas
+    private val canvas: Canvas,
+    private val displayState: DisplayState
 ) {
     /**
      * these are provided just for readability when instantiating SimpleKeyCallback
@@ -34,6 +33,16 @@ class KeyCallbackFactory(
     private fun Pair<KeyCombo, KeyCombo>.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(first, second)
 
     private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
+
+    val callbackThemeToggle = SimpleKeyCallback(
+        keyCombos = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
+        invokeFeatureLambda = {
+            displayState.toggleState(RenderingOption.DarkMode)
+        },
+        usage = "toggle between dark and light themes",
+        invokeAfterDelay = true
+
+    )
 
     fun setupSimpleKeyCallbacks() {
         with(KeyEventNotifier) {
@@ -279,9 +288,7 @@ class KeyCallbackFactory(
     val callbackDrawBounds = SimpleKeyCallback(
         keyCombos = SHORTCUT_DISPLAY_BOUNDS.toKeyComboSet(),
         invokeFeatureLambda = {
-            if (pattern is Movable) {
-                (pattern as Movable).toggleDrawBounds()
-            }
+            displayState.toggleState(RenderingOption.Boundary)
         },
         usage = "draw a border around the pattern",
     )
@@ -289,9 +296,7 @@ class KeyCallbackFactory(
     val callbackBoundaryOnly = SimpleKeyCallback(
         keyCombos = KeyCombo(SHORTCUT_DISPLAY_BOUNDS, KeyEvent.SHIFT).toKeyComboSet(),
         invokeFeatureLambda = {
-            if (pattern is Movable) {
-                (pattern as Movable).toggleDrawBoundaryOnly()
-            }
+            displayState.toggleState(RenderingOption.BoundaryOnly)
         },
         usage = "draw a border around the pattern - exclude the pattern",
     )
@@ -340,20 +345,6 @@ class KeyCallbackFactory(
         usage = "fit the pattern to the screen"
     )
 
-    val callbackThemeToggle = SimpleKeyCallback(
-        keyCombos = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
-        invokeFeatureLambda = {
-            Theme.setTheme(
-                when (Theme.currentThemeType) {
-                    ThemeType.DEFAULT -> ThemeType.DARK
-                    else -> ThemeType.DEFAULT
-                }
-            )
-        },
-        usage = "toggle between dark and light themes",
-        invokeAfterDelay = true
-
-    )
     private val callbackPerfTest = SimpleKeyCallback(
         keyCombos = Pair(
             KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),

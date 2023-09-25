@@ -10,6 +10,8 @@ import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
 import patterning.actions.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
+import patterning.pattern.DisplayState
+import patterning.pattern.RenderingOption
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
@@ -24,16 +26,21 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
 
+    /**
+     * if the warning about 'leaking this' is bothersome, you'd have to create
+     * a method that is invoked after control is fully created (sort of like a build().also())
+     * to initialize observers
+     */
     init {
+
         size = builder.size
         fillColor = Theme.controlColor
+        icon = loadIcon(builder.iconName)
+
         keyCallback = builder.callback
-        // if the warning about 'leaking this' is bothersome, you'd have to create
-        // a method that is invoked after control is fully created (sort of like a build().also())
-        // to initialize observers
         KeyEventNotifier.addControlKeyCallbackObserver(keyCallback, this)
         MouseEventNotifier.addMouseEventObserver(this)
-        icon = loadIcon(builder.iconName)
+
         hoverMessage = keyCallback.usage +
                 Theme.PAREN_START +
                 keyCallback.toString() +

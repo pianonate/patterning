@@ -27,7 +27,8 @@ class UX(
     private val pattern: Pattern
 ) : KeyCallbackObserver {
 
-    private val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
+    private val keyCallbackFactory =
+        KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas, displayState = pattern.displayState)
     private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
     private val hudText: TextPanel
     private val countdownText: TextPanel
