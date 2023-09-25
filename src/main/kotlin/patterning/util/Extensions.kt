@@ -17,7 +17,7 @@ fun Number.hudFormatted(): String {
     val numAsDouble = this.toDouble()
     return when {
         numAsDouble == 0.0 -> "0"
-        numAsDouble in 0.0..1.0 -> "%.3f".format(numAsDouble)
+        numAsDouble in 0.0..<1.0 -> "%.3f".format(numAsDouble)
         numAsDouble < 1_000_000_000L -> this.formatWithCommas()
         else -> formatLargeNumber()
     }

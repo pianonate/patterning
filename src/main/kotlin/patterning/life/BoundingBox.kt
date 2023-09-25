@@ -218,9 +218,8 @@ class BoundingBox(
 
     fun draw(graphics: PGraphics, drawCrossHair: Boolean = false) {
         with(graphics) {
-            push()
-            noFill()
             beginShape(PConstants.POINTS)
+            noFill()
             strokeWeight(Theme.STROKE_WEIGHT_BOUNDS)
 
             val transformedBoundingBox =
@@ -233,7 +232,6 @@ class BoundingBox(
             }
 
             endShape()
-            pop()
         }
     }
 
@@ -310,7 +308,6 @@ class BoundingBox(
 
         fun drawDashedLine(graphics: PGraphics) {
             with(graphics) {
-                push()
                 strokeWeight(Theme.STROKE_WEIGHT_DASHED_LINES)
 
                 val (transformedStart, transformedEnd) = threeD.getTransformedLineCoords(start.x, start.y, end.x, end.y)
@@ -327,8 +324,6 @@ class BoundingBox(
                     this,
                     dashPattern = listOf(Theme.DASHED_LINE_DASH_LENGTH, Theme.DASHED_LINE_SPACE_LENGTH)
                 )
-
-                pop()
             }
         }
     }

@@ -11,7 +11,7 @@ object KeyHandler {
         get() = _pressedKeys
 
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
-    private val keyEventObservers: MutableList<KeyEventObserver> = mutableListOf()
+    private val keyCallbackObservers: MutableList<KeyCallbackObserver> = mutableListOf()
     private val lastInvokeTime: MutableMap<KeyCallback, Long> = mutableMapOf()
 
     var latestKeyCode: Int = 0
@@ -21,8 +21,8 @@ object KeyHandler {
     private lateinit var pApplet: PApplet
     private var keyEvent: KeyEvent? = null
 
-    fun addKeyObserver(observer: KeyEventObserver) {
-        keyEventObservers.add(observer)
+    fun addKeyCallbackObserver(observer: KeyCallbackObserver) {
+        keyCallbackObservers.add(observer)
     }
 
     fun addKeyCallback(callback: KeyCallback) {
@@ -79,7 +79,7 @@ object KeyHandler {
 
         when (event.action) {
             KeyEvent.PRESS -> handleInitialKeyPress(matchingCallback, event)
-            KeyEvent.RELEASE -> handleKeyReleased(matchingCallback, event)
+            KeyEvent.RELEASE -> handleKeyReleased(event)
         }
     }
 
@@ -135,7 +135,7 @@ object KeyHandler {
         // given key events can be disabled when isUXAvailable is false
         // we need to be sure to do this last as this is how the UX gets re-enabled
         // in the UX class where it will invoke RunningModeController.play()
-        keyEventObservers.forEach { it.notifyGlobalKeyPress(event) }
+        keyCallbackObservers.forEach { it.notifyGlobalKeyPress(event) }
     }
 
     private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
@@ -146,23 +146,16 @@ object KeyHandler {
             callback.invokeFeature()
 
             // Check if matchingCallback is KeyObservable - for callbacks that notify other parts of the system
-            if (callback is ControlKeyEventObservable) {
+            if (callback is ControlKeyCallbackObservable) {
                 callback.notifyControlOnKeyPress(event)
             }
         }
     }
 
-    private fun handleKeyReleased(callback: KeyCallback, event: KeyEvent) {
+    private fun handleKeyReleased( event: KeyEvent) {
         val keyCode = event.keyCode
         _pressedKeys.remove(keyCode)
         latestKeyCode = keyCode
-
-        if (callback is ControlKeyEventObservable && RunningModeController.isUXAvailable) {
-            callback.notifyControlOnKeyRelease(event)
-        }
-
-        keyEventObservers.forEach { it.notifyGlobalKeyRelease(event) }
-
         keyEvent = null
     }
 

@@ -1,6 +1,6 @@
 package patterning
 
-import patterning.actions.KeyEventObserver
+import patterning.actions.KeyCallbackObserver
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventNotifier
 import patterning.panel.AlignHorizontal
@@ -25,7 +25,7 @@ class UX(
     private val pApplet: PApplet,
     private val canvas: Canvas,
     private val pattern: Pattern
-) : KeyEventObserver {
+) : KeyCallbackObserver {
 
     private val keyCallbackFactory = KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
     private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
@@ -34,7 +34,7 @@ class UX(
 
     init {
 
-        KeyHandler.addKeyObserver(this)
+        KeyHandler.addKeyCallbackObserver(this)
 
         keyCallbackFactory.setupSimpleKeyCallbacks()
         setupControls()
@@ -84,10 +84,6 @@ class UX(
         // it doesn't feel great that we're both listening to all keys and also
         // have a special case for the one key that would also handle play/pause as it's actual function
         handleCountdownInterrupt()
-    }
-
-    override fun notifyGlobalKeyRelease(event: KeyEvent) {
-        // do nothing
     }
 
     private fun handleCountdownInterrupt() {
@@ -196,10 +192,10 @@ class UX(
                     transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                     setOrientation(Orientation.VERTICAL)
                     addControl("camera.png", keyCallbackFactory.callbackSaveImage)
-                    if (pattern is Movable) addToggleHighlightControl(
-                        "boundary.png",
-                        keyCallbackFactory.callbackDrawBounds
-                    )
+                    if (pattern is Movable) {
+                        addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
+                        addToggleHighlightControl("boundaryOnly.png", keyCallbackFactory.callbackBoundaryOnly)
+                    }
                     if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackRainbow)
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl(

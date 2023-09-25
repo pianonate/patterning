@@ -283,7 +283,17 @@ class KeyCallbackFactory(
                 (pattern as Movable).toggleDrawBounds()
             }
         },
-        usage = "border drawn around the part of the universe containing living cells",
+        usage = "draw a border around the pattern",
+    )
+
+    val callbackBoundaryOnly = SimpleKeyCallback(
+        keyCombos = KeyCombo(SHORTCUT_DISPLAY_BOUNDS, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = {
+            if (pattern is Movable) {
+                (pattern as Movable).toggleDrawBoundaryOnly()
+            }
+        },
+        usage = "draw a border around the pattern - exclude the pattern",
     )
 
     val callbackCenterView = SimpleKeyCallback(

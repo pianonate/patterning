@@ -6,7 +6,7 @@ import patterning.Drawer
 import patterning.Theme
 import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
-import patterning.actions.KeyEventObserver
+import patterning.actions.KeyCallbackObserver
 import patterning.actions.KeyHandler
 import patterning.actions.MouseEventNotifier
 import patterning.actions.MouseEventReceiver
@@ -17,7 +17,7 @@ import processing.core.PImage
 import processing.core.PVector
 import processing.event.KeyEvent
 
-open class Control protected constructor(builder: Builder) : Panel(builder), KeyEventObserver, MouseEventReceiver {
+open class Control protected constructor(builder: Builder) : Panel(builder), KeyCallbackObserver, MouseEventReceiver {
     private val keyCallback: ControlKeyCallback
     private val size: Int
     internal var isHighlightFromKeypress = false
@@ -195,10 +195,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
 
     override fun notifyGlobalKeyPress(event: KeyEvent) {
         highlightFromKeyPress()
-    }
-
-    override fun notifyGlobalKeyRelease(event: KeyEvent) {
-        // do nothing
     }
 
     // Create AsyncJobRunner with a method that sets isHighlightFromKeypress = false after delay

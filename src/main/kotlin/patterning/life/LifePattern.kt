@@ -78,6 +78,7 @@ class LifePattern(
 
     private var pattern: GraphicsReference
     private var drawBounds = false
+    private var drawBoundaryOnly = false
     private var isThreeD = false
 
     private var threeD = ThreeD(canvas)
@@ -191,6 +192,11 @@ class LifePattern(
 
     override fun toggleDrawBounds() {
         drawBounds = !drawBounds
+        if (drawBounds && drawBoundaryOnly) drawBoundaryOnly = false
+    }
+
+    override fun toggleDrawBoundaryOnly() {
+        drawBoundaryOnly = !drawBoundaryOnly
     }
 
     override fun zoom(zoomIn: Boolean, x: Float, y: Float) {
@@ -412,7 +418,7 @@ class LifePattern(
         size: Float,
     ) {
         with(pattern.graphics) {
-            push()
+           // push()
 
             val getFillColorsLambda =
                 { x: Float, y: Float, applyCubeAlpha: Boolean -> getFillColor(x, y, applyCubeAlpha) }
@@ -433,7 +439,7 @@ class LifePattern(
                 }
             }
 
-            pop()
+           // pop()
         }
     }
 
@@ -464,7 +470,6 @@ class LifePattern(
         with(pattern.graphics) {
 
             beginDraw()
-            push()
 
             ghostState.prepareGraphics(this)
 
@@ -485,7 +490,6 @@ class LifePattern(
                 drawBounds(life)
             }
 
-            pop()
             endDraw()
         }
 
@@ -502,6 +506,8 @@ class LifePattern(
     // this is more for the thrill of solving a complicated problem and it's
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
+        if (drawBoundaryOnly) return
+
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
 
@@ -588,7 +594,7 @@ class LifePattern(
     }
 
     private fun drawBounds(life: LifeUniverse) {
-        if (!drawBounds) return
+        if (!(drawBounds || drawBoundaryOnly)) return
 
         val bounds = life.rootBounds
 
@@ -605,10 +611,11 @@ class LifePattern(
             currentLevel++
         }
 
-        // use the bounds of the "living" section of the universe to determine
-        // a visible boundary based on the current canvas offsets and cell size
-        val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
-        patternBox.draw(pattern.graphics)
+            // use the bounds of the "living" section of the universe to determine
+            // a visible boundary based on the current canvas offsets and cell size
+            val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
+            patternBox.draw(pattern.graphics)
+
     }
 
     private fun asyncNextGeneration() {
@@ -629,7 +636,6 @@ class LifePattern(
      * so edge on, we turn off the stroke temporarily
      */
     private fun PGraphics.quadPlus(corners: List<PVector>, getFillColor: (Float, Float, Boolean) -> Int) {
-        this.push()
         this.beginShape(PConstants.QUADS)
 
         corners.chunked(4).forEachIndexed { index, quadCorners ->
@@ -653,7 +659,6 @@ class LifePattern(
         }
 
         this.endShape()
-        this.pop()
     }
 
     private fun PGraphics.boxPlus(frontCorners:List<PVector>, threeD: ThreeD, depth: Float, getFillColor: (Float, Float, Boolean) -> Int) {

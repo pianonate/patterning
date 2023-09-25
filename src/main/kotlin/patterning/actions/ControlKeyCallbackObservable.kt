@@ -6,7 +6,6 @@ import processing.event.KeyEvent
  *  used by ControlKeyCallback to notify controls associated with KeyEvent that a key has been
  *  pressed or released, so they can adjust their appearance accordingly
  */
-interface ControlKeyEventObservable {
+interface ControlKeyCallbackObservable {
     fun notifyControlOnKeyPress(event: KeyEvent)
-    fun notifyControlOnKeyRelease(event: KeyEvent)
 }
