@@ -1,6 +1,5 @@
 package patterning.life
 
-import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import patterning.Canvas
@@ -82,6 +81,7 @@ class LifePattern(
     private var isThreeD = false
 
     private var threeD = ThreeD(canvas)
+    private var alwaysRotate = false
 
     init {
 
@@ -116,13 +116,13 @@ class LifePattern(
 
         performanceTest.execute()
 
-        val shouldAdvance = RunningModeController.shouldAdvance()
+        val shouldAdvancePattern = RunningModeController.shouldAdvancePattern()
 
-        drawPattern(life, shouldAdvance)
+        drawPattern(life, shouldAdvancePattern)
 
         pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
 
-        goForwardInTime(shouldAdvance)
+        goForwardInTime(shouldAdvancePattern)
 
     }
 
@@ -325,6 +325,10 @@ class LifePattern(
         reset3DAndStopRotations()
     }
 
+    override fun toggleInfiniteRotation() {
+        alwaysRotate = !alwaysRotate
+    }
+
     private fun reset3DAndStopRotations() {
 
         threeD.reset()
@@ -332,8 +336,7 @@ class LifePattern(
 
         // used for individual boxes
         isThreeD = false
-
-
+        alwaysRotate = false
     }
 
     /**
@@ -451,23 +454,11 @@ class LifePattern(
         }
     }
 
-    private var rotationAngle = 0f
-
-    private fun updateBoxRotationAngle() {
-        // Increment the angle based on time, you can adjust the speed by changing the 0.01f
-        rotationAngle += 0.01f
-
-        // Keep the angle in the range of 0 to TWO_PI
-        if (rotationAngle >= TWO_PI) {
-            rotationAngle -= TWO_PI
-        }
-    }
-
 
     private var actualRecursions = 0L
     private var startDelta = 0
 
-    private fun drawPattern(life: LifeUniverse, shouldAdvance: Boolean) {
+    private fun drawPattern(life: LifeUniverse, shouldAdvancePattern: Boolean) {
 
 
         with(pattern.graphics) {
@@ -477,17 +468,15 @@ class LifePattern(
 
             ghostState.prepareGraphics(this)
 
-            updateBoxRotationAngle()
-
             stroke(ghostState.applyAlpha(Theme.backgroundColor))
 
-            if (shouldAdvance)
+            if (shouldAdvancePattern || alwaysRotate)
                 threeD.rotateActiveRotations()
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
                 ghostState !is Ghosting -> true
-                ghostState is Ghosting && shouldAdvance -> true
+                ghostState is Ghosting && (shouldAdvancePattern || alwaysRotate) -> true
                 else -> false
             }
 
@@ -690,6 +679,5 @@ class LifePattern(
 
     companion object {
         private const val LIFE_FORM_PROPERTY = "lifeForm"
-        private const val TWO_PI = (PI * 2).toFloat()
     }
 }

@@ -233,6 +233,12 @@ class UX(
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
                         )
+                        addToggleHighlightControl(
+                            "infinity.png",
+                            keyCallbackFactory.callbackInfiniteRotation,
+                            resetOnNew = this@UX.pattern,
+                            resetRotations = this@UX.pattern,
+                        )
                     }
                 }.build()
         )

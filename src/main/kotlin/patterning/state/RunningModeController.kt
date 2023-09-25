@@ -20,7 +20,7 @@ object RunningModeController {
     val isTesting: Boolean
         get() = currentRunningState.isTesting
 
-    fun shouldAdvance(): Boolean {
+    fun shouldAdvancePattern(): Boolean {
         return currentRunningState.shouldAdvance()
     }
 

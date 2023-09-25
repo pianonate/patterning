@@ -6,4 +6,5 @@ interface ThreeDimensional {
     fun togglePitch()
     fun toggleRoll()
     fun centerAndResetRotations()
+    fun toggleInfiniteRotation()
 }

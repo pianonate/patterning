@@ -51,6 +51,17 @@ class KeyCallbackFactory(
         }
     }
 
+    val callbackInfiniteRotation = SimpleKeyCallback(
+        keyCombos = SHORTCUT_INFINITE_ROTATION.toKeyComboSet(),
+        invokeFeatureLambda = {
+            if (pattern is ThreeDimensional) {
+                (pattern as ThreeDimensional).toggleInfiniteRotation()
+            }
+        },
+        usage = "always rotate - even if paused"
+    )
+
+
     private val callbackPrintMemory = SimpleKeyCallback(
         keyCombos = SHORTCUT_PRINT_MEMORY.toKeyComboSet(),
         invokeFeatureLambda = {
@@ -64,11 +75,11 @@ class KeyCallbackFactory(
     )
 
     private val callbackInvokeGC = SimpleKeyCallback(
-        keyCombos = SHORTCUT_INVOKE_GC.toKeyComboSet(),
+        keyCombos = KeyCombo(SHORTCUT_INVOKE_GC, KeyEvent.SHIFT).toKeyComboSet(),
         invokeFeatureLambda = {
             System.gc()
         },
-        usage = "invoke gc"
+        usage = "manually invoke gc - for debugging purposes only"
     )
 
     val callbackSaveImage = SimpleKeyCallback(
@@ -415,6 +426,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_FIT_UNIVERSE = 'f'
         private const val SHORTCUT_GHOST_MODE = 'g'
+        private const val SHORTCUT_INFINITE_ROTATION = 'i'
         private const val SHORTCUT_INVOKE_GC = 'i'
         private const val SHORTCUT_PRINT_MEMORY = 'm'
         private const val SHORTCUT_NEXT_SCREEN = 'n'
