@@ -4,41 +4,46 @@ class DisplayState {
 
     private val observers: MutableList<Observer> = mutableListOf()
 
-    private data class OptionState(val option: RenderingOption, var isEnabled: Boolean)
+    private data class OptionState(val option: DisplayMode, var isEnabled: Boolean)
 
-    private val renderingOptions: Map<RenderingOption, OptionState> =
-        RenderingOption.entries.associateWith { OptionState(it, false) }
+    private val renderingOptions: Map<DisplayMode, OptionState> =
+        DisplayMode.entries.associateWith { OptionState(it, false) }
 
-    // right now these are just
     var boundaryMode: BoundaryMode = BoundaryMode.PatternOnly
         private set
 
+    infix fun expects(mode: DisplayMode): Boolean = this.renderingOptions.getValue(mode).isEnabled
+
     interface Observer {
-        fun onStateChanged(changedOption: RenderingOption)
+        fun onStateChanged(changedOption: DisplayMode)
     }
 
     fun addObserver(observer: Observer) {
         observers.add(observer)
     }
 
-    fun toggleState(option: RenderingOption) {
+    fun disable(option: DisplayMode) {
+        renderingOptions.getValue(option).isEnabled = false
+    }
+
+    fun toggleState(option: DisplayMode) {
         val optionState = renderingOptions.getValue(option)
         optionState.isEnabled = !optionState.isEnabled
 
-        if (option == RenderingOption.Boundary || option == RenderingOption.BoundaryOnly) {
+        if (option == DisplayMode.Boundary || option == DisplayMode.BoundaryOnly) {
             updateBoundaryMode()
         }
 
         notifyObservers(option)
     }
 
-    private fun notifyObservers(option: RenderingOption) {
+    private fun notifyObservers(option: DisplayMode) {
         observers.forEach { it.onStateChanged(option) }
     }
 
     private fun updateBoundaryMode() {
-        val isBoundary = renderingOptions.getValue(RenderingOption.Boundary).isEnabled
-        val isBoundaryOnly = renderingOptions.getValue(RenderingOption.BoundaryOnly).isEnabled
+        val isBoundary = renderingOptions.getValue(DisplayMode.Boundary).isEnabled
+        val isBoundaryOnly = renderingOptions.getValue(DisplayMode.BoundaryOnly).isEnabled
 
         val newMode = when {
             isBoundary && isBoundaryOnly -> BoundaryMode.BoundaryOnly

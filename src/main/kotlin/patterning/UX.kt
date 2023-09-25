@@ -28,7 +28,7 @@ class UX(
 ) : KeyCallbackObserver {
 
     private val keyCallbackFactory =
-        KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas, displayState = pattern.displayState)
+        KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
     private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
     private val hudText: TextPanel
     private val countdownText: TextPanel
@@ -170,7 +170,7 @@ class UX(
                         addPlayPauseControl(
                             "play.png",
                             "pause.png",
-                            keyCallbackFactory.callbackPause,
+                            keyCallbackFactory.callbackPlayPause,
                         )
 
                         //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
@@ -179,8 +179,8 @@ class UX(
 
                         addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
                         addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
-                        addControl("fitToScreen.png", keyCallbackFactory.callbackFitUniverseOnScreen)
-                        addControl("center.png", keyCallbackFactory.callbackCenterView)
+                        addControl("fitToScreen.png", keyCallbackFactory.callbackCenterAndFit)
+                        addControl("center.png", keyCallbackFactory.callbackCenter)
                         addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
 
                     }.build()
@@ -194,10 +194,10 @@ class UX(
                     setOrientation(Orientation.VERTICAL)
                     addControl("camera.png", keyCallbackFactory.callbackSaveImage)
                     if (pattern is Movable) {
-                        addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBounds)
-                        addToggleHighlightControl("boundaryOnly.png", keyCallbackFactory.callbackBoundaryOnly)
+                        addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBoundary)
+                        addToggleHighlightControl("boundaryOnly.png", keyCallbackFactory.callbackDrawBoundaryOnly)
                     }
-                    if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackRainbow)
+                    if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackColorful)
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
                     addToggleHighlightControl(
                         "ghost.png",
@@ -207,32 +207,32 @@ class UX(
                     if (pattern is ThreeDimensional) {
                         addToggleHighlightControl(
                             "cube.png",
-                            keyCallbackFactory.callback3D,
+                            keyCallbackFactory.callbackThreeDBoxes,
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "yaw.png",
-                            keyCallbackFactory.callback3DYaw,
+                            keyCallbackFactory.callbackThreeDYaw,
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "pitch.png",
-                            keyCallbackFactory.callback3DPitch,
+                            keyCallbackFactory.callbackThreeDPitch,
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
 
                             )
                         addToggleHighlightControl(
                             "roll.png",
-                            keyCallbackFactory.callback3DRoll,
+                            keyCallbackFactory.callbackThreeDRoll,
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "infinity.png",
-                            keyCallbackFactory.callbackInfiniteRotation,
+                            keyCallbackFactory.callbackAlwaysRotate,
                             resetOnNew = this@UX.pattern,
                             resetRotations = this@UX.pattern,
                         )

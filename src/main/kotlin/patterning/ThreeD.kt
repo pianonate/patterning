@@ -1,65 +1,38 @@
 package patterning
 
+import patterning.pattern.DisplayMode
+import patterning.pattern.DisplayState
 import processing.core.PMatrix3D
 import processing.core.PVector
 
-class ThreeD(val canvas: Canvas) {
+class ThreeD(private val canvas: Canvas, private val displayState:DisplayState)  {
     private val rotationMatrix = PMatrix3D()
     private val combinedMatrix = PMatrix3D()
 
-    enum class Rotation { YAW, PITCH, ROLL }
+    private val rotationDisplayModes = setOf(DisplayMode.ThreeDYaw, DisplayMode.ThreeDPitch, DisplayMode.ThreeDRoll)
 
-    private val activeRotations = mutableListOf<Rotation>()
     private var currentAngles = RotationAngles(0f, 0f, 0f)
 
     var rectCorners: List<PVector> = listOf()
         private set
 
-    var isYawing: Boolean
-        get() = Rotation.YAW in activeRotations
-        set(value) {
-            if (value) {
-                activeRotations.add(Rotation.YAW)
-            } else {
-                activeRotations.remove(Rotation.YAW)
-            }
-        }
-
-    var isPitching: Boolean
-        get() = Rotation.PITCH in activeRotations
-        set(value) {
-            if (value) {
-                activeRotations.add(Rotation.PITCH)
-            } else {
-                activeRotations.remove(Rotation.PITCH)
-            }
-        }
-
-    var isRolling: Boolean
-        get() = Rotation.ROLL in activeRotations
-        set(value) {
-            if (value) {
-                activeRotations.add(Rotation.ROLL)
-            } else {
-                activeRotations.remove(Rotation.ROLL)
-            }
-        }
-
     /**
      * called from draw to move active rotations forward
      */
     fun rotateActiveRotations() {
-
-        if (activeRotations.isEmpty()) return
+        if (rotationDisplayModes.none { displayState expects it }) return
 
         val matrix = PMatrix3D(rotationMatrix)
-        activeRotations.forEach { rotation ->
-            when (rotation) {
-                Rotation.YAW -> currentAngles.updateYaw(matrix)
-                Rotation.PITCH -> currentAngles.updatePitch(matrix)
-                Rotation.ROLL -> currentAngles.updateRoll(matrix)
+
+        rotationDisplayModes.forEach { displayMode ->
+            when (displayMode) {
+                DisplayMode.ThreeDYaw -> if (displayState expects displayMode) currentAngles.updateYaw(matrix)
+                DisplayMode.ThreeDPitch -> if (displayState expects displayMode) currentAngles.updatePitch(matrix)
+                DisplayMode.ThreeDRoll -> if (displayState expects displayMode) currentAngles.updateRoll(matrix)
+                else -> {} // do nothing - added because there are actually many display modes even if not invoked here
             }
         }
+
         rotationMatrix.set(matrix)
         updateCombinedMatrix()
     }
@@ -90,10 +63,14 @@ class ThreeD(val canvas: Canvas) {
 
     fun reset() {
         currentAngles.reset()
-        activeRotations.clear()
         rotationMatrix.reset()
         updateCombinedMatrix()
+
+        rotationDisplayModes.forEach { displayMode ->
+            displayState.disable(displayMode)
+        }
     }
+
 
     fun isRectInView(left: Float, top: Float, width: Float, height: Float): Boolean {
 

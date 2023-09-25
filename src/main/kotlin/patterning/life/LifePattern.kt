@@ -9,6 +9,7 @@ import patterning.Theme
 import patterning.ThreeD
 import patterning.pattern.BoundaryMode
 import patterning.pattern.Colorful
+import patterning.pattern.DisplayMode
 import patterning.pattern.DisplayState
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -81,10 +82,6 @@ class LifePattern(
 
     private var pattern: GraphicsReference
 
-    private var isThreeD = false
-
-    private var threeD = ThreeD(canvas)
-    private var alwaysRotate = false
 
     init {
 
@@ -98,19 +95,11 @@ class LifePattern(
         if (storedLife.isEmpty()) {
             getRandomLifeform()
         }
+
     }
 
     val lastId: Int
         get() = life.lastId.get()
-
-    /**
-     *  Colorful overrides
-     */
-
-    private var rainbowMode = false
-    override fun toggleRainbow() {
-        rainbowMode = !rainbowMode
-    }
 
     /**
      * Pattern overrides
@@ -146,10 +135,6 @@ class LifePattern(
         }
     }
 
-    override fun handlePlayPause() {
-        RunningModeController.togglePlayPause()
-    }
-
     override fun loadPattern() {
         instantiateLifeform()
     }
@@ -158,23 +143,6 @@ class LifePattern(
         canvas.saveUndoState()
         canvas.moveCanvasOffsets(dx, dy)
         lifeFormPosition.add(dx, dy)
-    }
-
-    /**
-     * okay - this is hacked in for now so you can at least et something out of it but ou really need to pop the
-     * system dialog on non-mobile devices.  mobile - probably sharing
-     */
-    override fun saveImage() {
-
-        val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
-        newGraphics.beginDraw()
-        newGraphics.background(Theme.backgroundColor)
-        val img = pattern.graphics.get()
-        newGraphics.image(img, 0f, 0f)
-        newGraphics.endDraw()
-
-        val desktopDirectory = System.getProperty("user.home") + "/Desktop/"
-        newGraphics.save("$desktopDirectory${pApplet.frameCount}.png")
     }
 
     override fun updateProperties() {
@@ -303,29 +271,9 @@ class LifePattern(
     /**
      * ThreeDimensional overrides
      */
-    override fun toggle3D() {
-        isThreeD = !isThreeD
-    }
-
-    override fun toggleYaw() {
-        threeD.isYawing = !threeD.isYawing
-    }
-
-    override fun togglePitch() {
-        threeD.isPitching = !threeD.isPitching
-    }
-
-    override fun toggleRoll() {
-        threeD.isRolling = !threeD.isRolling
-    }
-
     override fun centerAndResetRotations() {
         center()
         reset3DAndStopRotations()
-    }
-
-    override fun toggleInfiniteRotation() {
-        alwaysRotate = !alwaysRotate
     }
 
     private fun reset3DAndStopRotations() {
@@ -334,8 +282,8 @@ class LifePattern(
         onResetRotations()
 
         // used for individual boxes
-        isThreeD = false
-        alwaysRotate = false
+        displayState.disable(DisplayMode.ThreeDBoxes)
+        displayState.disable(DisplayMode.AlwaysRotate)
     }
 
     /**
@@ -411,14 +359,13 @@ class LifePattern(
         size: Float,
     ) {
         with(pattern.graphics) {
-           // push()
 
             val getFillColorsLambda =
                 { x: Float, y: Float, applyCubeAlpha: Boolean -> getFillColor(x, y, applyCubeAlpha) }
             val corners = threeD.rectCorners
 
             when {
-                size > 4 && isThreeD -> {
+                size > 4F && (displayState expects DisplayMode.ThreeDBoxes) -> {
                     boxPlus(
                         frontCorners = corners,
                         threeD = threeD,
@@ -431,17 +378,19 @@ class LifePattern(
                     quadPlus(corners = corners, getFillColor = getFillColorsLambda)
                 }
             }
-
-           // pop()
         }
     }
 
     private fun getFillColor(x: Float, y: Float, applyCubeAlpha: Boolean = true): Int {
 
-        val cubeAlpha = if (isThreeD && canvas.zoomLevel >= 4.0 && applyCubeAlpha) Theme.cubeAlpha else 255
+        val cubeAlpha = if (
+            displayState expects DisplayMode.ThreeDBoxes &&
+            canvas.zoomLevel >= 4F && applyCubeAlpha
+        )
+            Theme.cubeAlpha else 255
 
         return with(pattern.graphics) {
-            val color = if (rainbowMode) {
+            val color = if (displayState expects DisplayMode.Colorful) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val mappedColor = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
                 color(mappedColor, 100f, 100f, cubeAlpha.toFloat())
@@ -468,13 +417,15 @@ class LifePattern(
 
             stroke(ghostState.applyAlpha(Theme.backgroundColor))
 
-            if (shouldAdvancePattern || alwaysRotate)
+            val patternIsDrawable = shouldAdvancePattern || (displayState expects DisplayMode.AlwaysRotate)
+            if (patternIsDrawable)
                 threeD.rotateActiveRotations()
+
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
+                ghostState is Ghosting && patternIsDrawable -> true
                 ghostState !is Ghosting -> true
-                ghostState is Ghosting && (shouldAdvancePattern || alwaysRotate) -> true
                 else -> false
             }
 
@@ -500,7 +451,7 @@ class LifePattern(
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
 
-        if (displayState.boundaryMode==BoundaryMode.BoundaryOnly) return
+        if (displayState.boundaryMode == BoundaryMode.BoundaryOnly) return
 
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
@@ -605,10 +556,10 @@ class LifePattern(
             currentLevel++
         }
 
-            // use the bounds of the "living" section of the universe to determine
-            // a visible boundary based on the current canvas offsets and cell size
-            val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
-            patternBox.draw(pattern.graphics)
+        // use the bounds of the "living" section of the universe to determine
+        // a visible boundary based on the current canvas offsets and cell size
+        val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
+        patternBox.draw(pattern.graphics)
 
     }
 
@@ -655,7 +606,12 @@ class LifePattern(
         this.endShape()
     }
 
-    private fun PGraphics.boxPlus(frontCorners:List<PVector>, threeD: ThreeD, depth: Float, getFillColor: (Float, Float, Boolean) -> Int) {
+    private fun PGraphics.boxPlus(
+        frontCorners: List<PVector>,
+        threeD: ThreeD,
+        depth: Float,
+        getFillColor: (Float, Float, Boolean) -> Int
+    ) {
         val allCorners = mutableListOf<PVector>()
 
         val backCorners = threeD.getBackCornersAtDepth(depth)

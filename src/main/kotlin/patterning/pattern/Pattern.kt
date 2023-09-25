@@ -4,6 +4,7 @@ import patterning.Canvas
 import patterning.Properties
 import patterning.Theme
 import patterning.ThemeType
+import patterning.ThreeD
 import patterning.util.applyAlpha
 import processing.core.PApplet
 import processing.core.PGraphics
@@ -24,14 +25,15 @@ abstract class Pattern(
     }
 
     protected var ghostState: GhostState = GhostOff()
+    protected var threeD = ThreeD(canvas, displayState)
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
     }
 
-    override fun onStateChanged(changedOption: RenderingOption) {
+    override fun onStateChanged(changedOption: DisplayMode) {
         when (changedOption) {
-            RenderingOption.DarkMode -> {
+            DisplayMode.DarkMode -> {
                 Theme.setTheme(
                     when (Theme.currentThemeType) {
                         ThemeType.DEFAULT -> ThemeType.DARK
@@ -39,6 +41,9 @@ abstract class Pattern(
                     }
                 )
             }
+
+            DisplayMode.GhostMode -> ghostState.transition()
+
             else -> {}
         }
     }
@@ -47,10 +52,8 @@ abstract class Pattern(
     // require all Patterns to implement them
     abstract fun draw()
     abstract fun getHUDMessage(): String
-    abstract fun handlePlayPause()
     abstract fun loadPattern()
     abstract fun move(dx: Float, dy: Float)
-    abstract fun saveImage()
     abstract fun updateProperties()
 
     final override fun registerObserver(eventType: PatternEventType, observer: (PatternEvent) -> Unit) {
@@ -65,16 +68,12 @@ abstract class Pattern(
         ghostState = GhostOff()
     }
 
-    fun onResetRotations() {
+    internal fun onResetRotations() {
         notifyObservers(PatternEventType.ResetRotations, PatternEvent.ResetRotations(reset = true))
     }
 
     fun onNewPattern(patternName: String) {
         notifyObservers(PatternEventType.PatternSwapped, PatternEvent.PatternSwapped(patternName))
-    }
-
-    fun toggleGhost() {
-        ghostState.transition()
     }
 
     fun stampGhostModeKeyFrame() {
@@ -86,6 +85,23 @@ abstract class Pattern(
      */
     fun drawBackground() {
         pApplet.background(Theme.backgroundColor)
+    }
+
+    /**
+     * okay - this is hacked in for now so you can at least et something out of it but ou really need to pop the
+     * system dialog on non-mobile devices.  mobile - probably sharing
+     */
+    fun saveImage() {
+
+        val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
+        newGraphics.beginDraw()
+        newGraphics.background(Theme.backgroundColor)
+        val img = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS).graphics.get()
+        newGraphics.image(img, 0f, 0f)
+        newGraphics.endDraw()
+
+        val desktopDirectory = System.getProperty("user.home") + "/Desktop/"
+        newGraphics.save("$desktopDirectory${pApplet.frameCount}.png")
     }
 
     protected inner class GhostOff : GhostState {
