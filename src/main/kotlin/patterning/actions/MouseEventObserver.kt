@@ -1,6 +1,6 @@
 package patterning.actions
 
-interface MouseEventReceiver {
+interface MouseEventObserver {
     fun onMousePressed()
     fun onMouseReleased()
     fun mousePressedOverMe(): Boolean

@@ -3,22 +3,22 @@ package patterning.actions
 import patterning.state.RunningModeController
 
 object MouseEventNotifier {
-    private val mouseEventReceivers: MutableSet<MouseEventReceiver> = HashSet()
+    private val mouseEventObservers: MutableSet<MouseEventObserver> = HashSet()
 
-    fun addReceiver(receiver: MouseEventReceiver) = mouseEventReceivers.add(receiver)
-    fun addAll(receivers: Collection<MouseEventReceiver>) = mouseEventReceivers.addAll(receivers)
+    fun addMouseEventObserver(receiver: MouseEventObserver) = mouseEventObservers.add(receiver)
+    fun addAll(receivers: Collection<MouseEventObserver>) = mouseEventObservers.addAll(receivers)
 
     val isMousePressedOverAnyReceiver: Boolean
         get() = pressedReceiver != null
 
-    private var pressedReceiver: MouseEventReceiver? = null
+    private var pressedReceiver: MouseEventObserver? = null
 
     fun onMousePressed() {
         if (!RunningModeController.isUXAvailable) {
             return
         }
         pressedReceiver = null
-        mouseEventReceivers.forEach { receiver ->
+        mouseEventObservers.forEach { receiver ->
             if (!isMousePressedOverAnyReceiver && receiver.mousePressedOverMe()) {
                 pressedReceiver = receiver
                 receiver.onMousePressed()

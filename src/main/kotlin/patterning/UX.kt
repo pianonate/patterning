@@ -1,7 +1,7 @@
 package patterning
 
 import patterning.actions.KeyCallbackObserver
-import patterning.actions.KeyHandler
+import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
@@ -34,7 +34,7 @@ class UX(
 
     init {
 
-        KeyHandler.addKeyCallbackObserver(this)
+        KeyEventNotifier.addGlobalKeyCallbackObserver(this)
 
         keyCallbackFactory.setupSimpleKeyCallbacks()
         setupControls()
@@ -80,7 +80,7 @@ class UX(
      * only invoke handlePlay if it's not the key that already toggles play mode
      * it doesn't feel like good design to have to explicitly check for this key
      */
-    override fun notifyGlobalKeyPress(event: KeyEvent) {
+    override fun onKeyPressed(event: KeyEvent) {
         // it doesn't feel great that we're both listening to all keys and also
         // have a special case for the one key that would also handle play/pause as it's actual function
         handleCountdownInterrupt()

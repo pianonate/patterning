@@ -5,7 +5,7 @@ import patterning.Canvas
 import patterning.Theme
 import patterning.ThemeType
 import patterning.actions.KeyCombo
-import patterning.actions.KeyHandler
+import patterning.actions.KeyEventNotifier
 import patterning.actions.SimpleKeyCallback
 import patterning.actions.ValidOS
 import patterning.state.RunningModeController
@@ -36,7 +36,7 @@ class KeyCallbackFactory(
     private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
 
     fun setupSimpleKeyCallbacks() {
-        with(KeyHandler) {
+        with(KeyEventNotifier) {
             addKeyCallback(callbackCenterViewResetRotations)
             addKeyCallback(callbackGhostModeKeyFrame)
             addKeyCallback(callbackInvokeGC)
@@ -182,7 +182,7 @@ class KeyCallbackFactory(
         keyCombos = ('1'..'9').toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is NumberedPatternLoader) {
-                val number = KeyHandler.latestKeyCode - '0'.code
+                val number = KeyEventNotifier.latestKeyCode - '0'.code
                 (pattern as NumberedPatternLoader).setNumberedPattern(number)
             }
         },
@@ -398,7 +398,7 @@ class KeyCallbackFactory(
         keyCombos = setOf(WEST, EAST, NORTH, SOUTH).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
-                val movementKeys = KeyHandler.pressedKeys.intersect(
+                val movementKeys = KeyEventNotifier.pressedKeys.intersect(
                     setOf(
                         WEST,
                         EAST,

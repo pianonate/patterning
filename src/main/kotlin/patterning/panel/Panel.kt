@@ -5,7 +5,7 @@ import patterning.Drawable
 import patterning.GraphicsReference
 import patterning.PatterningPApplet
 import patterning.Theme
-import patterning.actions.MouseEventReceiver
+import patterning.actions.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
 import patterning.panel.Transition.TransitionType
 import processing.core.PGraphics
@@ -44,7 +44,7 @@ import java.util.OptionalInt
  *   of the hierarchy - the compiler will tell you if it can't find something when you chain the first way
  *   with methods from across the hierarchy.
  */
-abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEventReceiver {
+abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEventObserver {
 
 
     internal var parentPanel: Panel? = null

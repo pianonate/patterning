@@ -25,7 +25,7 @@ class ToggleHighlightControl private constructor(builder: Builder) : Control(bui
         toggleHighlight()
     }
 
-    override fun notifyGlobalKeyPress(event: KeyEvent) {
+    override fun onKeyPressed(event: KeyEvent) {
         toggleHighlight()
     }
 

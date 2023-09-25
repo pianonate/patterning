@@ -1,7 +1,7 @@
 package patterning
 
 import kotlin.math.roundToInt
-import patterning.actions.KeyHandler
+import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
 import patterning.pattern.Movable
 import patterning.pattern.Pattern
@@ -82,9 +82,9 @@ class PatterningPApplet : PApplet() {
         pattern.loadPattern()
 
         // ux sets up key callbacks and we can now print them out
-        println(KeyHandler.usageText)
+        println(KeyEventNotifier.usageText)
 
-        KeyHandler.registerKeyHandler(this)
+        KeyEventNotifier.registerKeyHandler(this)
     }
 
     private fun registerPatternObservers(pattern: Pattern) {

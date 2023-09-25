@@ -4,14 +4,17 @@ import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-object KeyHandler {
+object KeyEventNotifier {
 
     private val _pressedKeys: MutableSet<Int> = mutableSetOf()
     val pressedKeys: Set<Int>
         get() = _pressedKeys
 
     private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
-    private val keyCallbackObservers: MutableList<KeyCallbackObserver> = mutableListOf()
+
+    private val globalKeyCallbackObservers: MutableList<KeyCallbackObserver> = mutableListOf()
+    private val controlKeyCallbackObservers = mutableMapOf<KeyCallback, MutableList<KeyCallbackObserver>>()
+
     private val lastInvokeTime: MutableMap<KeyCallback, Long> = mutableMapOf()
 
     var latestKeyCode: Int = 0
@@ -21,12 +24,28 @@ object KeyHandler {
     private lateinit var pApplet: PApplet
     private var keyEvent: KeyEvent? = null
 
-    fun addKeyCallbackObserver(observer: KeyCallbackObserver) {
-        keyCallbackObservers.add(observer)
+    /**
+     * right now the UX is the only thing listening to any key press
+     */
+    fun addGlobalKeyCallbackObserver(observer: KeyCallbackObserver) {
+        globalKeyCallbackObservers.add(observer)
     }
 
-    fun addKeyCallback(callback: KeyCallback) {
-        val keyCombos = callback.keyCombos
+    /**
+     * controls register themselves to be mapped to a specific keyCallback this way
+     */
+    fun addControlKeyCallbackObserver(controlKeyCallback: KeyCallback, observer: KeyCallbackObserver) {
+        addKeyCallback(controlKeyCallback)
+        controlKeyCallbackObservers.getOrPut(controlKeyCallback) { mutableListOf() }.add(observer)
+    }
+
+    /**
+     * whether it is a keyCallback associated with a control or an unattached keyCallback
+     * (simple keyboard shortcut) - they all have to be added to the keyCallbacks list
+     * so they can be matched at runtime and then invoked as appropriate
+     */
+    fun addKeyCallback(simpleKeyCallback: KeyCallback) {
+        val keyCombos = simpleKeyCallback.keyCombos
         val duplicateKeyCombos = keyCallbacks.keys.flatten().intersect(keyCombos)
         require(duplicateKeyCombos.isEmpty()) {
             "The following key combos are already associated with another callback: ${
@@ -35,7 +54,7 @@ object KeyHandler {
                 )
             }"
         }
-        keyCallbacks[keyCombos] = callback
+        keyCallbacks[keyCombos] = simpleKeyCallback
     }
 
     /**
@@ -53,8 +72,8 @@ object KeyHandler {
      */
     fun registerKeyHandler(pApplet: PApplet) {
         this.pApplet = pApplet.apply {
-            registerMethod("keyEvent", this@KeyHandler)
-            registerMethod("pre", this@KeyHandler)
+            registerMethod("keyEvent", this@KeyEventNotifier)
+            registerMethod("pre", this@KeyEventNotifier)
         }
     }
 
@@ -135,7 +154,7 @@ object KeyHandler {
         // given key events can be disabled when isUXAvailable is false
         // we need to be sure to do this last as this is how the UX gets re-enabled
         // in the UX class where it will invoke RunningModeController.play()
-        keyCallbackObservers.forEach { it.notifyGlobalKeyPress(event) }
+        globalKeyCallbackObservers.forEach { it.onKeyPressed(event) }
     }
 
     private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
@@ -145,10 +164,9 @@ object KeyHandler {
             // println("invoking feature - state:${RunningModeController.runningMode}")
             callback.invokeFeature()
 
-            // Check if matchingCallback is KeyObservable - for callbacks that notify other parts of the system
-            if (callback is ControlKeyCallbackObservable) {
-                callback.notifyControlOnKeyPress(event)
-            }
+            // Check if the callback is associated with a control
+            // then it will have a list of control(s) that it notifies
+            controlKeyCallbackObservers[callback]?.forEach {it.onKeyPressed(event)}
         }
     }
 

@@ -4,12 +4,11 @@ import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
 import patterning.Theme
-import patterning.actions.ControlKeyCallback
 import patterning.actions.KeyCallback
 import patterning.actions.KeyCallbackObserver
-import patterning.actions.KeyHandler
+import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
-import patterning.actions.MouseEventReceiver
+import patterning.actions.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
@@ -17,8 +16,8 @@ import processing.core.PImage
 import processing.core.PVector
 import processing.event.KeyEvent
 
-open class Control protected constructor(builder: Builder) : Panel(builder), KeyCallbackObserver, MouseEventReceiver {
-    private val keyCallback: ControlKeyCallback
+open class Control protected constructor(builder: Builder) : Panel(builder), KeyCallbackObserver, MouseEventObserver {
+    private val keyCallback: KeyCallback
     private val size: Int
     internal var isHighlightFromKeypress = false
     protected var icon: PImage
@@ -28,19 +27,17 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     init {
         size = builder.size
         fillColor = Theme.controlColor
-        keyCallback = registerCallback(builder.callback)
-        MouseEventNotifier.addReceiver(this)
+        keyCallback = builder.callback
+        // if the warning about 'leaking this' is bothersome, you'd have to create
+        // a method that is invoked after control is fully created (sort of like a build().also())
+        // to initialize observers
+        KeyEventNotifier.addControlKeyCallbackObserver(keyCallback, this)
+        MouseEventNotifier.addMouseEventObserver(this)
         icon = loadIcon(builder.iconName)
         hoverMessage = keyCallback.usage +
                 Theme.PAREN_START +
                 keyCallback.toString() +
                 Theme.PAREN_END
-    }
-
-    private fun registerCallback(callback: KeyCallback): ControlKeyCallback {
-        val keyCallback = ControlKeyCallback(callback, this)
-        KeyHandler.addKeyCallback(keyCallback)
-        return keyCallback
     }
 
     protected fun toggleHighlight() {
@@ -193,7 +190,7 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         panelGraphics.rect(0f, 0f, roundedRectSize, roundedRectSize, Theme.CONTROL_HIGHLIGHT_CORNER_RADIUS.toFloat())
     }
 
-    override fun notifyGlobalKeyPress(event: KeyEvent) {
+    override fun onKeyPressed(event: KeyEvent) {
         highlightFromKeyPress()
     }
 
