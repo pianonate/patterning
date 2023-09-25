@@ -10,8 +10,6 @@ import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
 import patterning.actions.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
-import patterning.pattern.DisplayState
-import patterning.pattern.RenderingOption
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import processing.core.PImage
