@@ -1,8 +1,8 @@
 package patterning
 
-import patterning.actions.KeyEventNotifier
-import patterning.actions.MouseEventNotifier
-import patterning.pattern.DisplayState
+import patterning.events.KeyEventNotifier
+import patterning.events.MouseEventNotifier
+import patterning.pattern.VisualsManager
 import patterning.pattern.Movable
 import patterning.pattern.Pattern
 import patterning.pattern.PatternEvent
@@ -66,22 +66,24 @@ class PatterningPApplet : PApplet() {
 
         properties = Properties(this)
 
-        val displayState = DisplayState()
+        val visuals = VisualsManager()
 
 
         // val fadeShader = loadShader("shaders/frag.glsl", "shaders/vert.glsl")
 
-        // pattern both holds the reference to display state but also
-        // is an observer of changes in displayState
+        // pattern both holds the reference to VisualsManager but also
+        // is an observer of changes in visuals
         pattern = patterning.life.LifePattern(
             pApplet = this,
             canvas = canvas,
             properties = properties,
-            displayState = displayState,
+            visuals = visuals,
             //fadeShader = fadeShader,
         )
 
-        displayState.addObserver(pattern)
+        // pattern needs to be notified of some changes in visuals
+        // but also holds a reference to it in order to manage visuals directly
+        visuals.addObserver(pattern)
 
         ux = UX(this, canvas, pattern)
 
@@ -92,7 +94,7 @@ class PatterningPApplet : PApplet() {
         // observers have been registered!
         pattern.loadPattern()
 
-        // ux sets up key callbacks and we can now print them out
+        // ux sets up behaviors with their associated keyboard shortcuts and we can now print them out
         println(KeyEventNotifier.usageText)
 
         KeyEventNotifier.registerPAppletEventHandlers(this)

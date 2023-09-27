@@ -2,65 +2,64 @@ package patterning.pattern
 
 import kotlinx.coroutines.runBlocking
 import patterning.Canvas
-import patterning.actions.KeyCombo
-import patterning.actions.KeyEventNotifier
-import patterning.actions.SimpleKeyCallback
-import patterning.actions.ValidOS
+import patterning.events.KeyboardShortcut
+import patterning.events.KeyEventNotifier
+import patterning.events.ValidOS
 import patterning.state.RunningModeController
 import patterning.util.hudFormatted
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyCallbackFactory(
+class CommandFactory(
     private val pApplet: PApplet,
     private val pattern: Pattern,
     private val canvas: Canvas,
 ) {
     /**
-     * these are provided just for readability when instantiating SimpleKeyCallback
+     * these are provided just for readability when instantiating Simplecommand
      * if you come up with different ways that you want to create KeyCombos than these, just add another extension
-     * right now these are all invoked from KeyCallbackFactory so they're marked private so as not to pollute the
+     * right now these are all invoked from commandFactory so they're marked private so as not to pollute the
      * namespace where they can't otherwise be used
      */
-    private fun Char.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(KeyCombo(this.code))
+    private fun Char.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(KeyboardShortcut(this.code))
 
-    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyCombo> =
-        this.map { KeyCombo(it.code) }.toCollection(LinkedHashSet())
+    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> =
+        this.map { KeyboardShortcut(it.code) }.toCollection(LinkedHashSet())
 
-    private fun KeyCombo.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(this)
+    private fun KeyboardShortcut.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(this)
 
-    private fun Pair<KeyCombo, KeyCombo>.toKeyComboSet(): LinkedHashSet<KeyCombo> = linkedSetOf(first, second)
+    private fun Pair<KeyboardShortcut, KeyboardShortcut>.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(first, second)
 
-    private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyCombo> = this.mapTo(LinkedHashSet()) { KeyCombo(it) }
+    private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = this.mapTo(LinkedHashSet()) { KeyboardShortcut(it) }
 
-    private val displayState = pattern.displayState
+    private val visuals = pattern.visuals
 
-    fun setupSimpleKeyCallbacks() {
+    fun setupSimpleCommands() {
         with(KeyEventNotifier) {
-            addKeyCallback(callbackCenterViewResetRotations)
-            addKeyCallback(callbackGhostModeKeyFrame)
-            addKeyCallback(callbackGhostFadeAwayMode)
-            addKeyCallback(callbackInvokeGC)
-            addKeyCallback(callbackPaste)
-            addKeyCallback(callbackPerfTest)
-            addKeyCallback(callbackMovePattern)
-            addKeyCallback(callbackNextScreen)
-            addKeyCallback(callbackNumberedPattern)
-            addKeyCallback(callbackPrintMemory)
-            addKeyCallback(callbackZoomIn)
-            addKeyCallback(callbackZoomOut)
+            addCommand(commandCenterViewResetRotations)
+            addCommand(commandGhostModeKeyFrame)
+            addCommand(commandGhostFadeAwayMode)
+            addCommand(commandInvokeGC)
+            addCommand(commandPaste)
+            addCommand(commandPerfTest)
+            addCommand(commandMovePattern)
+            addCommand(commandNextScreen)
+            addCommand(commandNumberedPattern)
+            addCommand(commandPrintMemory)
+            addCommand(commandZoomIn)
+            addCommand(commandZoomOut)
         }
     }
 
-    val callbackAlwaysRotate = SimpleKeyCallback(
-        keyCombos = SHORTCUT_ALWAYS_ROTATE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.AlwaysRotate) },
-        isEnabledLambda =  { displayState expects Behavior.AlwaysRotate },
+    val commandAlwaysRotate = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_ALWAYS_ROTATE.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.AlwaysRotate) },
+        isEnabledLambda =  { visuals requires Visual.AlwaysRotate },
         usage = "always rotate - even if paused"
     )
 
-    val callbackCenter = SimpleKeyCallback(
-        keyCombos = SHORTCUT_CENTER.toKeyComboSet(),
+    val commandCenter = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_CENTER.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).center()
@@ -69,8 +68,8 @@ class KeyCallbackFactory(
         usage = "center the view"
     )
 
-    val callbackCenterAndFit = SimpleKeyCallback(
-        keyCombos = SHORTCUT_CENTER_AND_FIT.toKeyComboSet(),
+    val commandCenterAndFit = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_CENTER_AND_FIT.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).fitToScreen()
@@ -79,8 +78,8 @@ class KeyCallbackFactory(
         usage = "fit the pattern to the screen"
     )
 
-    private val callbackCenterViewResetRotations = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_CENTER, KeyEvent.SHIFT).toKeyComboSet(),
+    private val commandCenterViewResetRotations = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_CENTER, KeyEvent.SHIFT).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is ThreeDimensional) {
                 (pattern as ThreeDimensional).centerAndResetRotations()
@@ -89,62 +88,62 @@ class KeyCallbackFactory(
         usage = "center the view and stop rotations"
     )
 
-    val callbackColorful = SimpleKeyCallback(
-        keyCombos = SHORTCUT_COLORFUL.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.Colorful) },
-        isEnabledLambda =  { displayState expects Behavior.Colorful },
+    val commandColorful = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_COLORFUL.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.Colorful) },
+        isEnabledLambda =  { visuals requires Visual.Colorful },
         usage = "ooo, ahhh - so pretty!"
     )
 
-    val callbackDrawBoundary = SimpleKeyCallback(
-        keyCombos = SHORTCUT_DISPLAY_BOUNDS.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.Boundary) },
-        isEnabledLambda =  { displayState expects Behavior.Boundary },
+    val commandDrawBoundary = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_DRAW_BOUNDARY.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.Boundary) },
+        isEnabledLambda =  { visuals requires Visual.Boundary },
         usage = "draw a border around the pattern",
     )
 
-    val callbackDrawBoundaryOnly = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_DISPLAY_BOUNDS, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.BoundaryOnly) },
-        isEnabledLambda =  { displayState expects Behavior.BoundaryOnly },
+    val commandDrawBoundaryOnly = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_DRAW_BOUNDARY, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.BoundaryOnly) },
+        isEnabledLambda =  { visuals requires Visual.BoundaryOnly },
         usage = "draw a border around the pattern - exclude the pattern",
     )
 
-    val callbackFadeAway = SimpleKeyCallback(
-        keyCombos = SHORTCUT_FADE_AWAY.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.FadeAway) },
-        isEnabledLambda =  { displayState expects Behavior.FadeAway },
+    val commandFadeAway = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_FADE_AWAY.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.FadeAway) },
+        isEnabledLambda =  { visuals requires Visual.FadeAway },
         usage = "fade away the pattern - aka Joshua mode"
     )
 
-    val callbackGhostMode = SimpleKeyCallback(
-        keyCombos = SHORTCUT_GHOST_MODE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.GhostMode) },
-        isEnabledLambda =  { displayState expects Behavior.GhostMode },
-        usage = "ghost mode. Also try ${KeyCombo.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
+    val commandGhostMode = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_GHOST_MODE.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.GhostMode) },
+        isEnabledLambda =  { visuals requires Visual.GhostMode },
+        usage = "ghost mode. Also try ${KeyboardShortcut.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
     )
 
-    private val callbackGhostFadeAwayMode = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.GhostFadeAwayMode) },
-        isEnabledLambda =  { displayState expects Behavior.GhostFadeAwayMode },
+    private val commandGhostFadeAwayMode = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.GhostFadeAwayMode) },
+        isEnabledLambda =  { visuals requires Visual.GhostFadeAwayMode },
         usage = "ghost fade away mode - hidden capability"
     )
 
-    private val callbackGhostModeKeyFrame = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.META).toKeyComboSet(),
+    private val commandGhostModeKeyFrame = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.META).toKeyComboSet(),
         invokeFeatureLambda = { pattern.stampGhostModeKeyFrame() },
         usage = "ghost mode emit a key frame - while ghosting - try me!"
     )
 
-    private val callbackInvokeGC = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_INVOKE_GC, KeyEvent.SHIFT).toKeyComboSet(),
+    private val commandInvokeGC = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_INVOKE_GC, KeyEvent.SHIFT).toKeyComboSet(),
         invokeFeatureLambda = { System.gc() },
         usage = "manually invoke gc - for debugging purposes only"
     )
 
-    private val callbackMovePattern = SimpleKeyCallback(
-        keyCombos = setOf(WEST, EAST, NORTH, SOUTH).toKeyComboSet(),
+    private val commandMovePattern = SimpleCommand(
+        keyboardShortcuts = setOf(WEST, EAST, NORTH, SOUTH).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 val movementKeys = KeyEventNotifier.pressedKeys.intersect(
@@ -165,14 +164,14 @@ class KeyCallbackFactory(
         invokeEveryDraw = true,
     )
 
-    private val callbackNextScreen = SimpleKeyCallback(
-        keyCombos = SHORTCUT_NEXT_SCREEN.toKeyComboSet(),
+    private val commandNextScreen = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_NEXT_SCREEN.toKeyComboSet(),
         invokeFeatureLambda = { canvas.nextScreen() },
         usage = "move the screen"
     )
 
-    private val callbackNumberedPattern = SimpleKeyCallback(
-        keyCombos = ('1'..'9').toKeyComboSet(),
+    private val commandNumberedPattern = SimpleCommand(
+        keyboardShortcuts = ('1'..'9').toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is NumberedPatternLoader) {
                 val number = KeyEventNotifier.latestKeyCode - '0'.code
@@ -182,10 +181,10 @@ class KeyCallbackFactory(
         usage = "load one of the first 9 patterns by pressing one of the # keys"
     )
 
-    private val callbackPaste = SimpleKeyCallback(
-        keyCombos = Pair(
-            KeyCombo(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
-            KeyCombo(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+    private val commandPaste = SimpleCommand(
+        keyboardShortcuts = Pair(
+            KeyboardShortcut(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
+            KeyboardShortcut(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Pasteable) {
@@ -195,10 +194,10 @@ class KeyCallbackFactory(
         usage = "paste a new pattern into the app - currently only supports RLE encoded lifeforms"
     )
 
-    private val callbackPerfTest = SimpleKeyCallback(
-        keyCombos = Pair(
-            KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
-            KeyCombo(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+    private val commandPerfTest = SimpleCommand(
+        keyboardShortcuts = Pair(
+            KeyboardShortcut(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
+            KeyboardShortcut(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is PerformanceTestable) {
@@ -208,15 +207,15 @@ class KeyCallbackFactory(
         usage = "performance test"
     )
 
-    val callbackPlayPause = SimpleKeyCallback(
-        keyCombos = SHORTCUT_PLAY_PAUSE.toKeyComboSet(),
+    val commandPlayPause = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_PLAY_PAUSE.toKeyComboSet(),
         invokeFeatureLambda = { RunningModeController.togglePlayPause() },
         usage = "play and pause",
         invokeAfterDelay = true
     )
 
-    private val callbackPrintMemory = SimpleKeyCallback(
-        keyCombos = SHORTCUT_PRINT_MEMORY.toKeyComboSet(),
+    private val commandPrintMemory = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_PRINT_MEMORY.toKeyComboSet(),
         invokeFeatureLambda = {
             println(
                 "memory: ${
@@ -227,8 +226,8 @@ class KeyCallbackFactory(
         usage = "print out memory used to console"
     )
 
-    val callbackRandomPattern = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_RANDOM_FILE, KeyEvent.META).toKeyComboSet(),
+    val commandRandomPattern = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_RANDOM_FILE, KeyEvent.META).toKeyComboSet(),
         invokeFeatureLambda = {
             runBlocking {
                 if (pattern is NumberedPatternLoader) {
@@ -239,8 +238,8 @@ class KeyCallbackFactory(
         usage = "random pattern from from the built-in library"
     )
 
-    val callbackRewind = SimpleKeyCallback(
-        keyCombos = SHORTCUT_REWIND.toKeyComboSet(),
+    val commandRewind = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_REWIND.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Rewindable) {
                 (pattern as Rewindable).rewind()
@@ -249,14 +248,14 @@ class KeyCallbackFactory(
         usage = "rewind the current life form back to generation 0"
     )
 
-    val callbackSaveImage = SimpleKeyCallback(
-        keyCombos = SHORTCUT_SAVE_IMAGE.toKeyComboSet(),
+    val commandSaveImage = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_SAVE_IMAGE.toKeyComboSet(),
         invokeFeatureLambda = { pattern.saveImage() },
         usage = "screenshot to desktop!"
     )
 
-    val callbackSingleStep = SimpleKeyCallback(
-        keyCombos = SHORTCUT_SINGLE_STEP.toKeyComboSet(),
+    val commandSingleStep = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_SINGLE_STEP.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 RunningModeController.toggleSingleStep()
@@ -266,8 +265,8 @@ class KeyCallbackFactory(
         usage = "toggle single step mode where which advances one generation at a time"
     )
 
-    val callbackStepFaster = SimpleKeyCallback(
-        keyCombos = SHORTCUT_STEP_FASTER.toKeyComboSet(),
+    val commandStepFaster = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_STEP_FASTER.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(true)
@@ -276,8 +275,8 @@ class KeyCallbackFactory(
         usage = "step faster - double the generations each step"
     )
 
-    val callbackStepSlower = SimpleKeyCallback(
-        keyCombos = SHORTCUT_STEP_SLOWER.toKeyComboSet(),
+    val commandStepSlower = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_STEP_SLOWER.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(false)
@@ -286,46 +285,46 @@ class KeyCallbackFactory(
         usage = "step slower - halve the generations per step"
     )
 
-    val callbackThemeToggle = SimpleKeyCallback(
-        keyCombos = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.DarkMode) },
-        isEnabledLambda =  { displayState expects Behavior.DarkMode },
+    val commandThemeToggle = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.DarkMode) },
+        isEnabledLambda =  { visuals requires Visual.DarkMode },
         usage = "toggle between dark and light themes",
         invokeAfterDelay = true
     )
 
-    val callbackThreeDBoxes = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_THREE_D_BOXES, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDBoxes) },
-        isEnabledLambda =  { displayState expects Behavior.ThreeDBoxes },
+    val commandThreeDBoxes = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_THREE_D_BOXES, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDBoxes) },
+        isEnabledLambda =  { visuals requires Visual.ThreeDBoxes },
         usage = "three dimensional mode - try me!"
     )
 
-    val callbackThreeDYaw = SimpleKeyCallback(
-        keyCombos = SHORTCUT_THREE_D_YAW.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDYaw) },
-        isEnabledLambda =  { displayState expects Behavior.ThreeDYaw },
+    val commandThreeDYaw = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_THREE_D_YAW.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDYaw) },
+        isEnabledLambda =  { visuals requires Visual.ThreeDYaw },
         usage = "rotate on the y axis (yaw)"
     )
 
-    val callbackThreeDPitch = SimpleKeyCallback(
-        keyCombos = SHORTCUT_THREE_D_PITCH.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDPitch) },
-        isEnabledLambda =  { displayState expects Behavior.ThreeDPitch },
+    val commandThreeDPitch = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_THREE_D_PITCH.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDPitch) },
+        isEnabledLambda =  { visuals requires Visual.ThreeDPitch },
         usage = "rotate on the x axis (pitch)"
     )
 
-    val callbackThreeDRoll = SimpleKeyCallback(
-        keyCombos = SHORTCUT_THREE_D_ROLL.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDRoll) },
-        isEnabledLambda =  { displayState expects Behavior.ThreeDRoll },
+    val commandThreeDRoll = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_THREE_D_ROLL.toKeyComboSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDRoll) },
+        isEnabledLambda =  { visuals requires Visual.ThreeDRoll },
         usage = "rotate on the z axis (roll)"
     )
 
-    val callbackUndoMovement = SimpleKeyCallback(
-        keyCombos = Pair(
-            KeyCombo(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
-            KeyCombo(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
+    val commandUndoMovement = SimpleCommand(
+        keyboardShortcuts = Pair(
+            KeyboardShortcut(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
+            KeyboardShortcut(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
         ).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
@@ -336,9 +335,9 @@ class KeyCallbackFactory(
         invokeEveryDraw = true
     )
 
-    private val callbackZoomIn = SimpleKeyCallback(
+    private val commandZoomIn = SimpleCommand(
         // we want it to handle both = and shift= (+) the same way
-        keyCombos = Pair(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)).toKeyComboSet(),
+        keyboardShortcuts = Pair(KeyboardShortcut(SHORTCUT_ZOOM_IN.code), KeyboardShortcut(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
@@ -348,8 +347,8 @@ class KeyCallbackFactory(
         invokeEveryDraw = true,
     )
 
-    private val callbackZoomOut = SimpleKeyCallback(
-        keyCombos = SHORTCUT_ZOOM_OUT.toKeyComboSet(),
+    private val commandZoomOut = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_ZOOM_OUT.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
@@ -359,8 +358,8 @@ class KeyCallbackFactory(
         invokeEveryDraw = true,
     )
 
-    val callbackZoomInCenter = SimpleKeyCallback(
-        keyCombos = SHORTCUT_ZOOM_CENTERED.toKeyComboSet(),
+    val commandZoomInCenter = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_ZOOM_CENTERED.toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
@@ -370,8 +369,8 @@ class KeyCallbackFactory(
         invokeEveryDraw = true,
     )
 
-    val callbackZoomOutCenter = SimpleKeyCallback(
-        keyCombos = KeyCombo(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT).toKeyComboSet(),
+    val commandZoomOutCenter = SimpleCommand(
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT).toKeyComboSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
@@ -402,7 +401,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_THREE_D_ROLL = 'r'
 
         private const val SHORTCUT_CENTER = 'c'
-        private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
+        private const val SHORTCUT_DRAW_BOUNDARY = 'b'
         private const val SHORTCUT_CENTER_AND_FIT = 'f'
         private const val SHORTCUT_FADE_AWAY = 'j'
         private const val SHORTCUT_GHOST_MODE = 'g'

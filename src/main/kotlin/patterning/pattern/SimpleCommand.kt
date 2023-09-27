@@ -1,28 +1,26 @@
-package patterning.actions
+package patterning.pattern
 
+import patterning.events.KeyboardShortcut
 import processing.event.KeyEvent
 
-class SimpleKeyCallback(
-    keyCombos: LinkedHashSet<KeyCombo>,
+class SimpleCommand(
+    keyboardShortcuts: LinkedHashSet<KeyboardShortcut>,
     private val invokeFeatureLambda: (() -> Unit),
     private val isEnabledLambda: () -> Boolean = { true },
     override val usage: String,
     override val invokeEveryDraw: Boolean = false,
     override val invokeAfterDelay: Boolean = false,
-) : KeyCallback {
+) : Command {
 
-    // the interface of KeyCallback
     override fun invokeFeature() = invokeFeatureLambda()
     override val isEnabled: Boolean
         get() = isEnabledLambda()
 
-    // properties
-    override val keyCombos: Set<KeyCombo> = keyCombos.toSet()
-    override val validKeyCombosForCurrentOS: Set<KeyCombo> = keyCombos.filter { it.isValidForCurrentOS }.toSet()
-    override val isValidForCurrentOS: Boolean = keyCombos.any { it.isValidForCurrentOS }
+    override val keyboardShortcuts: Set<KeyboardShortcut> = keyboardShortcuts.toSet()
+    override val validKeyCombosForCurrentOS: Set<KeyboardShortcut> = keyboardShortcuts.filter { it.isValidForCurrentOS }.toSet()
+    override val isValidForCurrentOS: Boolean = keyboardShortcuts.any { it.isValidForCurrentOS }
 
-    // methods
-    override fun matches(event: KeyEvent): Boolean = keyCombos.any { it.matches(event) }
+    override fun matches(event: KeyEvent): Boolean = keyboardShortcuts.any { it.matches(event) }
 
     override fun toString(): String {
         val keysStrings = validKeyCombosForCurrentOS.map { it.toString() }

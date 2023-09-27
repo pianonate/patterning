@@ -1,15 +1,16 @@
-package patterning.actions
+package patterning.pattern
 
+import patterning.events.KeyboardShortcut
 import processing.event.KeyEvent
 
-interface KeyCallback {
+interface Command {
     fun invokeFeature()
     fun matches(event: KeyEvent): Boolean
     val isEnabled: Boolean
     val isValidForCurrentOS: Boolean
     val invokeEveryDraw: Boolean
     val invokeAfterDelay: Boolean
-    val keyCombos: Set<KeyCombo>
+    val keyboardShortcuts: Set<KeyboardShortcut>
     val usage: String
-    val validKeyCombosForCurrentOS: Set<KeyCombo>
+    val validKeyCombosForCurrentOS: Set<KeyboardShortcut>
 }

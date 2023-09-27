@@ -1,15 +1,15 @@
 package patterning
 
-import patterning.pattern.Behavior
-import patterning.pattern.DisplayState
+import patterning.pattern.Visual
+import patterning.pattern.VisualsManager
 import processing.core.PMatrix3D
 import processing.core.PVector
 
-class ThreeD(private val canvas: Canvas, private val displayState: DisplayState) {
+class ThreeD(private val canvas: Canvas, private val visuals: VisualsManager) {
     private val rotationMatrix = PMatrix3D()
     private val combinedMatrix = PMatrix3D()
 
-    private val rotationDisplayModes = setOf(Behavior.ThreeDYaw, Behavior.ThreeDPitch, Behavior.ThreeDRoll)
+    private val rotationDisplayModes = setOf(Visual.ThreeDYaw, Visual.ThreeDPitch, Visual.ThreeDRoll)
 
     private var currentAngles = RotationAngles(0f, 0f, 0f)
 
@@ -20,15 +20,15 @@ class ThreeD(private val canvas: Canvas, private val displayState: DisplayState)
      * called from draw to move active rotations forward
      */
     fun rotate() {
-        if (rotationDisplayModes.none { displayState expects it }) return
+        if (rotationDisplayModes.none { visuals requires it }) return
 
         val matrix = PMatrix3D(rotationMatrix)
 
-        rotationDisplayModes.forEach { displayMode ->
-            when (displayMode) {
-                Behavior.ThreeDYaw -> if (displayState expects displayMode) currentAngles.updateYaw(matrix)
-                Behavior.ThreeDPitch -> if (displayState expects displayMode) currentAngles.updatePitch(matrix)
-                Behavior.ThreeDRoll -> if (displayState expects displayMode) currentAngles.updateRoll(matrix)
+        rotationDisplayModes.forEach { visual ->
+            when (visual) {
+                Visual.ThreeDYaw -> if (visuals requires visual) currentAngles.updateYaw(matrix)
+                Visual.ThreeDPitch -> if (visuals requires visual) currentAngles.updatePitch(matrix)
+                Visual.ThreeDRoll -> if (visuals requires visual) currentAngles.updateRoll(matrix)
                 else -> {} // do nothing - added because there are actually many display modes even if not invoked here
             }
         }
@@ -67,7 +67,7 @@ class ThreeD(private val canvas: Canvas, private val displayState: DisplayState)
         updateCombinedMatrix()
 
         rotationDisplayModes.forEach { displayMode ->
-            displayState.disable(displayMode)
+            visuals.disable(displayMode)
         }
     }
 

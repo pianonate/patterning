@@ -15,8 +15,8 @@ abstract class Pattern(
     val pApplet: PApplet,
     val canvas: Canvas,
     val properties: Properties,
-    val displayState: DisplayState,
-) : ObservablePattern, DisplayState.Observer {
+    val visuals: VisualsManager,
+) : ObservablePattern, VisualsManager.Observer {
 
     protected interface GhostState {
         fun prepareGraphics(graphics: PGraphics)
@@ -31,16 +31,16 @@ abstract class Pattern(
     private val patternGraphics = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS).graphics
 
     protected var ghostState: GhostState = GhostOff()
-    protected var threeD = ThreeD(canvas, displayState)
+    protected var threeD = ThreeD(canvas, visuals)
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
     }
 
-    override fun onStateChanged(changedOption: Behavior) {
+    override fun onStateChanged(changedOption: Visual) {
         when (changedOption) {
-            Behavior.DarkMode -> updateTheme()
-            Behavior.GhostMode -> ghostState.transition()
+            Visual.DarkMode -> updateTheme()
+            Visual.GhostMode -> ghostState.transition()
             else -> {}
         }
     }
@@ -77,14 +77,14 @@ abstract class Pattern(
 
     private fun resetOnNewPattern() {
         ghostState = GhostOff()
-        with(displayState) {
-            disable(Behavior.AlwaysRotate)
-            disable(Behavior.GhostMode)
-            disable(Behavior.GhostFadeAwayMode)
-            disable(Behavior.ThreeDBoxes)
-            disable(Behavior.ThreeDYaw)
-            disable(Behavior.ThreeDPitch)
-            disable(Behavior.ThreeDRoll)
+        with(visuals) {
+            disable(Visual.AlwaysRotate)
+            disable(Visual.GhostMode)
+            disable(Visual.GhostFadeAwayMode)
+            disable(Visual.ThreeDBoxes)
+            disable(Visual.ThreeDYaw)
+            disable(Visual.ThreeDPitch)
+            disable(Visual.ThreeDRoll)
         }
     }
 
@@ -123,7 +123,7 @@ abstract class Pattern(
             val x = 0f
             val y = 0f
 
-            if (displayState expects Behavior.FadeAway) {
+            if (visuals requires Visual.FadeAway) {
                 accumulatedGraphics.beginDraw()
                 accumulatedGraphics.blendMode(PConstants.BLEND)
                 accumulatedGraphics.fill(Theme.backgroundColor, 35f)
@@ -131,8 +131,6 @@ abstract class Pattern(
                 accumulatedGraphics.image(patternGraphics, x, y)
                 accumulatedGraphics.endDraw()
                 image(accumulatedGraphics, x, y)
-
-
             } else {
                 accumulatedGraphics.beginDraw()
                 accumulatedGraphics.clear()

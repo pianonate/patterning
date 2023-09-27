@@ -1,9 +1,9 @@
-package patterning.actions
+package patterning.events
 
 import processing.core.PApplet
 import processing.event.KeyEvent
 
-class KeyCombo(
+class KeyboardShortcut(
     private val keyCode: Int,
     private val modifiers: Int = 0,
     private val validOS: ValidOS = ValidOS.ANY

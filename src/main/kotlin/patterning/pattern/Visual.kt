@@ -1,6 +1,6 @@
 package patterning.pattern
 
-enum class Behavior {
+enum class Visual {
     AlwaysRotate,
     Boundary,
     BoundaryOnly,

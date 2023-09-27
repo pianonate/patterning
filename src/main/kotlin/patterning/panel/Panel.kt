@@ -5,7 +5,7 @@ import patterning.Drawable
 import patterning.GraphicsReference
 import patterning.PatterningPApplet
 import patterning.Theme
-import patterning.actions.MouseEventObserver
+import patterning.events.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
 import patterning.panel.Transition.TransitionType
 import processing.core.PGraphics
@@ -66,7 +66,6 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
     private var transitionAble: Boolean
     private var transition: Transition? = null
 
-    // PGraphics and callbacks
     internal var parentGraphicsReference: GraphicsReference
 
     // returns a reference to the ControlPanel container PGraphics for any Control

@@ -1,5 +1,6 @@
-package patterning.actions
+package patterning.events
 
+import patterning.pattern.Command
 import patterning.state.RunningModeController
 import processing.core.PApplet
 import processing.event.KeyEvent
@@ -10,12 +11,12 @@ object KeyEventNotifier {
     val pressedKeys: Set<Int>
         get() = _pressedKeys
 
-    private var keyCallbacks: MutableMap<Set<KeyCombo>, KeyCallback> = mutableMapOf()
+    private var behaviors: MutableMap<Set<KeyboardShortcut>, Command> = mutableMapOf()
 
-    private val globalKeyCallbackObservers: MutableList<KeyCallbackObserver> = mutableListOf()
-    private val controlKeyCallbackObservers = mutableMapOf<KeyCallback, MutableList<KeyCallbackObserver>>()
+    private val globalKeyEventObservers: MutableList<KeyEventObserver> = mutableListOf()
+    private val controlKeyEventObservers = mutableMapOf<Command, MutableList<KeyEventObserver>>()
 
-    private val lastInvokeTime: MutableMap<KeyCallback, Long> = mutableMapOf()
+    private val lastInvokeTime: MutableMap<Command, Long> = mutableMapOf()
 
     var latestKeyCode: Int = 0
         get() = pressedKeys.last()
@@ -27,16 +28,16 @@ object KeyEventNotifier {
     /**
      * right now the UX is the only thing listening to any key press
      */
-    fun addGlobalKeyCallbackObserver(observer: KeyCallbackObserver) {
-        globalKeyCallbackObservers.add(observer)
+    fun addGlobalCommandObserver(observer: KeyEventObserver) {
+        globalKeyEventObservers.add(observer)
     }
 
     /**
      * controls register themselves to be mapped to a specific keyCallback this way
      */
-    fun addControlKeyCallbackObserver(controlKeyCallback: KeyCallback, observer: KeyCallbackObserver) {
-        addKeyCallback(controlKeyCallback)
-        controlKeyCallbackObservers.getOrPut(controlKeyCallback) { mutableListOf() }.add(observer)
+    fun addControlCommandObserver(controlCommand: Command, observer: KeyEventObserver) {
+        addCommand(controlCommand)
+        controlKeyEventObservers.getOrPut(controlCommand) { mutableListOf() }.add(observer)
     }
 
     /**
@@ -44,9 +45,9 @@ object KeyEventNotifier {
      * (simple keyboard shortcut) - they all have to be added to the keyCallbacks list
      * so they can be matched at runtime and then invoked as appropriate
      */
-    fun addKeyCallback(simpleKeyCallback: KeyCallback) {
-        val keyCombos = simpleKeyCallback.keyCombos
-        val duplicateKeyCombos = keyCallbacks.keys.flatten().intersect(keyCombos)
+    fun addCommand(simpleCommand: Command) {
+        val keyCombos = simpleCommand.keyboardShortcuts
+        val duplicateKeyCombos = behaviors.keys.flatten().intersect(keyCombos)
         require(duplicateKeyCombos.isEmpty()) {
             "The following key combos are already associated with another callback: ${
                 duplicateKeyCombos.joinToString(
@@ -54,7 +55,7 @@ object KeyEventNotifier {
                 )
             }"
         }
-        keyCallbacks[keyCombos] = simpleKeyCallback
+        behaviors[keyCombos] = simpleCommand
     }
 
     /**
@@ -93,7 +94,7 @@ object KeyEventNotifier {
             _pressedKeys.clear() // clear movement keys
         }
 
-        val matchingCallback = keyCallbacks.values.find { it.matches(event) } ?: return
+        val matchingCallback = behaviors.values.find { it.matches(event) } ?: return
 
         when (event.action) {
             KeyEvent.PRESS -> handleInitialKeyPress(matchingCallback, event)
@@ -115,7 +116,7 @@ object KeyEventNotifier {
 
         if (pApplet.keyPressed) {
 
-            val matchingCallback = keyCallbacks.values.find { it.matches(localKeyEvent) } ?: return
+            val matchingCallback = behaviors.values.find { it.matches(localKeyEvent) } ?: return
 
             // Handle repeated invocation here
             if (matchingCallback.invokeEveryDraw || matchingCallback.invokeAfterDelay) {
@@ -124,18 +125,18 @@ object KeyEventNotifier {
         }
     }
 
-    private fun handleInitialKeyPress(callback: KeyCallback, event: KeyEvent) {
+    private fun handleInitialKeyPress(command: Command, event: KeyEvent) {
         _pressedKeys.add(event.keyCode)
         keyEvent = event
 
         // Handle one-time invocation here
         // repeated invocation callbacks are handled in "pre"
-        if (!callback.invokeEveryDraw) {
-            handleKeyPressed(callback, event)
+        if (!command.invokeEveryDraw) {
+            handleKeyPressed(command, event)
         }
     }
 
-    private fun handleKeyPressed(callback: KeyCallback, event: KeyEvent) {
+    private fun handleKeyPressed(callback: Command, event: KeyEvent) {
         val currentTime = System.currentTimeMillis()
 
         if (callback.invokeAfterDelay) {
@@ -153,10 +154,10 @@ object KeyEventNotifier {
         // given key events can be disabled when isUXAvailable is false
         // we need to be sure to do this last as this is how the UX gets re-enabled
         // in the UX class where it will invoke RunningModeController.play()
-        globalKeyCallbackObservers.forEach { it.onKeyPressed(event) }
+        globalKeyEventObservers.forEach { it.onKeyPressed(event) }
     }
 
-    private fun invokeFeature(callback: KeyCallback, event: KeyEvent) {
+    private fun invokeFeature(callback: Command, event: KeyEvent) {
         if (RunningModeController.isUXAvailable) {
 
             // disallow feature invoking during testing
@@ -165,7 +166,7 @@ object KeyEventNotifier {
 
             // Check if the callback is associated with a control
             // then it will have a list of control(s) that it notifies
-            controlKeyCallbackObservers[callback]?.forEach {it.onKeyPressed(event)}
+            controlKeyEventObservers[callback]?.forEach {it.onKeyPressed(event)}
         }
     }
 
@@ -178,14 +179,14 @@ object KeyEventNotifier {
 
     val usageText: String
         get() {
-            val maxKeysWidth = keyCallbacks.values
+            val maxKeysWidth = behaviors.values
                 .filter { it.isValidForCurrentOS }
                 .maxOf { it.toString().length }
 
             return buildString {
                 append("\nKey Usage:\n")
                 append(
-                    keyCallbacks.values
+                    behaviors.values
                         .filter { it.isValidForCurrentOS }
                         .sortedBy { it.usage }
                         .joinToString(separator = "\n") { callback ->

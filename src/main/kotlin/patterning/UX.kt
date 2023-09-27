@@ -1,8 +1,8 @@
 package patterning
 
-import patterning.actions.KeyCallbackObserver
-import patterning.actions.KeyEventNotifier
-import patterning.actions.MouseEventNotifier
+import patterning.events.KeyEventObserver
+import patterning.events.KeyEventNotifier
+import patterning.events.MouseEventNotifier
 import patterning.panel.AlignHorizontal
 import patterning.panel.AlignVertical
 import patterning.panel.ControlPanel
@@ -10,7 +10,7 @@ import patterning.panel.Orientation
 import patterning.panel.TextPanel
 import patterning.panel.Transition
 import patterning.pattern.Colorful
-import patterning.pattern.KeyCallbackFactory
+import patterning.pattern.CommandFactory
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pattern
@@ -25,19 +25,19 @@ class UX(
     private val pApplet: PApplet,
     private val canvas: Canvas,
     private val pattern: Pattern
-) : KeyCallbackObserver {
+) : KeyEventObserver {
 
-    private val keyCallbackFactory =
-        KeyCallbackFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
+    private val commandFactory =
+        CommandFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
     private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
     private val hudText: TextPanel
     private val countdownText: TextPanel
 
     init {
 
-        KeyEventNotifier.addGlobalKeyCallbackObserver(this)
+        KeyEventNotifier.addGlobalCommandObserver(this)
 
-        keyCallbackFactory.setupSimpleKeyCallbacks()
+        commandFactory.setupSimpleCommands()
         setupControls()
 
         hudText = TextPanel.Builder(
@@ -156,32 +156,32 @@ class UX(
                         setOrientation(Orientation.VERTICAL)
                         if (pattern is NumberedPatternLoader) addControl(
                             "random.png",
-                            keyCallbackFactory.callbackRandomPattern
+                            commandFactory.commandRandomPattern
                         )
                         if (pattern is Steppable) {
                             addToggleHighlightControl(
                                 iconName = "singleStep.png",
-                                callback = keyCallbackFactory.callbackSingleStep
+                                command = commandFactory.commandSingleStep
                             )
-                            addControl("stepSlower.png", keyCallbackFactory.callbackStepSlower)
+                            addControl("stepSlower.png", commandFactory.commandStepSlower)
                         }
 
-                        // .addControl("drawSlower.png", keyFactory.callbackDrawSlower)
+                        // .addControl("drawSlower.png", keyFactory.commandDrawSlower)
                         addPlayPauseControl(
                             "play.png",
                             "pause.png",
-                            keyCallbackFactory.callbackPlayPause,
+                            commandFactory.commandPlayPause,
                         )
 
-                        //.addControl("drawFaster.png", keyFactory.callbackDrawFaster)
-                        if (pattern is Steppable) addControl("stepFaster.png", keyCallbackFactory.callbackStepFaster)
-                        if (pattern is Rewindable) addControl("rewind.png", keyCallbackFactory.callbackRewind)
+                        //.addControl("drawFaster.png", keyFactory.commandDrawFaster)
+                        if (pattern is Steppable) addControl("stepFaster.png", commandFactory.commandStepFaster)
+                        if (pattern is Rewindable) addControl("rewind.png", commandFactory.commandRewind)
 
-                        addControl("zoomIn.png", keyCallbackFactory.callbackZoomInCenter)
-                        addControl("zoomOut.png", keyCallbackFactory.callbackZoomOutCenter)
-                        addControl("fitToScreen.png", keyCallbackFactory.callbackCenterAndFit)
-                        addControl("center.png", keyCallbackFactory.callbackCenter)
-                        addControl("undo.png", keyCallbackFactory.callbackUndoMovement)
+                        addControl("zoomIn.png", commandFactory.commandZoomInCenter)
+                        addControl("zoomOut.png", commandFactory.commandZoomOutCenter)
+                        addControl("fitToScreen.png", commandFactory.commandCenterAndFit)
+                        addControl("center.png", commandFactory.commandCenter)
+                        addControl("undo.png", commandFactory.commandUndoMovement)
 
                     }.build()
             )
@@ -192,35 +192,35 @@ class UX(
                 .apply {
                     transition(Transition.TransitionDirection.LEFT, Transition.TransitionType.SLIDE, transitionDuration)
                     setOrientation(Orientation.VERTICAL)
-                    addControl("camera.png", keyCallbackFactory.callbackSaveImage)
+                    addControl("camera.png", commandFactory.commandSaveImage)
                     if (pattern is Movable) {
-                        addToggleHighlightControl("boundary.png", keyCallbackFactory.callbackDrawBoundary)
-                        addToggleHighlightControl("boundaryOnly.png", keyCallbackFactory.callbackDrawBoundaryOnly)
+                        addToggleHighlightControl("boundary.png", commandFactory.commandDrawBoundary)
+                        addToggleHighlightControl("boundaryOnly.png", commandFactory.commandDrawBoundaryOnly)
                     }
-                    if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackColorful)
-                    addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-                    addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode,)
-                    addToggleHighlightControl("fade.png", keyCallbackFactory.callbackFadeAway,)
+                    if (pattern is Colorful) addToggleHighlightControl("heart.png", commandFactory.commandColorful)
+                    addToggleHighlightControl("darkmode.png", commandFactory.commandThemeToggle)
+                    addToggleHighlightControl("ghost.png", commandFactory.commandGhostMode,)
+                    addToggleHighlightControl("fade.png", commandFactory.commandFadeAway,)
                     if (pattern is ThreeDimensional) {
                         addToggleHighlightControl(
                             "cube.png",
-                            keyCallbackFactory.callbackThreeDBoxes,
+                            commandFactory.commandThreeDBoxes,
                         )
                         addToggleHighlightControl(
                             "yaw.png",
-                            keyCallbackFactory.callbackThreeDYaw,
+                            commandFactory.commandThreeDYaw,
                         )
                         addToggleHighlightControl(
                             "pitch.png",
-                            keyCallbackFactory.callbackThreeDPitch,
+                            commandFactory.commandThreeDPitch,
                             )
                         addToggleHighlightControl(
                             "roll.png",
-                            keyCallbackFactory.callbackThreeDRoll,
+                            commandFactory.commandThreeDRoll,
                         )
                         addToggleHighlightControl(
                             "infinity.png",
-                            keyCallbackFactory.callbackAlwaysRotate,
+                            commandFactory.commandAlwaysRotate,
                         )
                     }
                 }.build()

@@ -3,7 +3,7 @@ package patterning.panel
 import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Theme
-import patterning.actions.KeyCallback
+import patterning.pattern.Command
 import patterning.state.RunningModeController
 import patterning.state.RunningModeObserver
 import patterning.util.AsyncJobRunner
@@ -65,12 +65,12 @@ class PlayPauseControl(builder: Builder) : Control(builder), RunningModeObserver
 
     class Builder(
         canvas: Canvas,
-        callback: KeyCallback,
+        behavior: Command,
         iconName: String,
         val pausedIconName: String,
         size: Int,
 
-        ) : Control.Builder(canvas, callback, iconName, size) {
+        ) : Control.Builder(canvas, behavior, iconName, size) {
 
         override fun build() = PlayPauseControl(this)
     }

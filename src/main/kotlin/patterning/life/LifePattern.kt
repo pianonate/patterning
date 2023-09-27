@@ -9,8 +9,8 @@ import patterning.Theme
 import patterning.ThreeD
 import patterning.pattern.BoundaryMode
 import patterning.pattern.Colorful
-import patterning.pattern.Behavior
-import patterning.pattern.DisplayState
+import patterning.pattern.Visual
+import patterning.pattern.VisualsManager
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pasteable
@@ -41,9 +41,9 @@ class LifePattern(
     pApplet: PApplet,
     canvas: Canvas,
     properties: Properties,
-    displayState: DisplayState,
+    visuals: VisualsManager,
    // fadeShader: PShader
-) : Pattern(pApplet, canvas, properties, displayState/*, fadeShader*/),
+) : Pattern(pApplet, canvas, properties, visuals/*, fadeShader*/),
     Colorful,
     Movable,
     NumberedPatternLoader,
@@ -254,13 +254,13 @@ class LifePattern(
     private fun reset3DAndStopRotations() {
 
         threeD.reset()
-        displayState.disable(Behavior.ThreeDYaw)
-        displayState.disable(Behavior.ThreeDPitch)
-        displayState.disable(Behavior.ThreeDRoll)
+        visuals.disable(Visual.ThreeDYaw)
+        visuals.disable(Visual.ThreeDPitch)
+        visuals.disable(Visual.ThreeDRoll)
 
         // used for individual boxes
-        displayState.disable(Behavior.ThreeDBoxes)
-        displayState.disable(Behavior.AlwaysRotate)
+        visuals.disable(Visual.ThreeDBoxes)
+        visuals.disable(Visual.AlwaysRotate)
     }
 
     /**
@@ -340,7 +340,7 @@ class LifePattern(
             val corners = threeD.rectCorners
 
             when {
-                size > 4F && (displayState expects Behavior.ThreeDBoxes) -> {
+                size > 4F && (visuals requires Visual.ThreeDBoxes) -> {
                     boxPlus(
                         frontCorners = corners,
                         threeD = threeD,
@@ -359,13 +359,13 @@ class LifePattern(
     private fun getFillColor(x: Float, y: Float, applyCubeAlpha: Boolean = true): Int {
 
         val cubeAlpha = if (
-            displayState expects Behavior.ThreeDBoxes &&
+            visuals requires Visual.ThreeDBoxes &&
             canvas.zoomLevel >= 4F && applyCubeAlpha
         )
             Theme.cubeAlpha else 255
 
         return with(pattern.graphics) {
-            val color = if (displayState expects Behavior.Colorful) {
+            val color = if (visuals requires Visual.Colorful) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val mappedColor = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
                 color(mappedColor, 100f, 100f, cubeAlpha.toFloat())
@@ -391,7 +391,7 @@ class LifePattern(
             ghostState.prepareGraphics(this)
             stroke(ghostState.applyAlpha(Theme.backgroundColor))
 
-            val patternIsDrawable = shouldAdvancePattern || (displayState expects Behavior.AlwaysRotate)
+            val patternIsDrawable = shouldAdvancePattern || (visuals requires Visual.AlwaysRotate)
             if (patternIsDrawable)
                 threeD.rotate()
 
@@ -424,7 +424,7 @@ class LifePattern(
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
 
-        if (displayState.boundaryMode == BoundaryMode.BoundaryOnly) return
+        if (visuals.boundaryMode == BoundaryMode.BoundaryOnly) return
 
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
@@ -512,7 +512,7 @@ class LifePattern(
     }
 
     private fun drawBounds(life: LifeUniverse) {
-        if (displayState.boundaryMode == BoundaryMode.PatternOnly) return
+        if (visuals.boundaryMode == BoundaryMode.PatternOnly) return
 
         val bounds = life.rootBounds
 

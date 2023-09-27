@@ -1,4 +1,4 @@
-package patterning.actions
+package patterning.events
 
 import patterning.state.RunningModeController
 

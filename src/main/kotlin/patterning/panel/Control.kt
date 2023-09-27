@@ -4,11 +4,11 @@ import kotlinx.coroutines.delay
 import patterning.Canvas
 import patterning.Drawer
 import patterning.Theme
-import patterning.actions.KeyCallback
-import patterning.actions.KeyCallbackObserver
-import patterning.actions.KeyEventNotifier
-import patterning.actions.MouseEventNotifier
-import patterning.actions.MouseEventObserver
+import patterning.pattern.Command
+import patterning.events.KeyEventObserver
+import patterning.events.KeyEventNotifier
+import patterning.events.MouseEventNotifier
+import patterning.events.MouseEventObserver
 import patterning.panel.Transition.TransitionDirection
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
@@ -16,8 +16,8 @@ import processing.core.PImage
 import processing.core.PVector
 import processing.event.KeyEvent
 
-open class Control protected constructor(builder: Builder) : Panel(builder), KeyCallbackObserver, MouseEventObserver {
-    internal val keyCallback: KeyCallback
+open class Control protected constructor(builder: Builder) : Panel(builder), KeyEventObserver, MouseEventObserver {
+    internal val controlCommand: Command
     private val size: Int
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
@@ -36,13 +36,13 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
         fillColor = Theme.controlColor
         icon = loadIcon(builder.iconName)
 
-        keyCallback = builder.callback
-        KeyEventNotifier.addControlKeyCallbackObserver(keyCallback, this)
+        controlCommand = builder.command
+        KeyEventNotifier.addControlCommandObserver(controlCommand, this)
         MouseEventNotifier.addMouseEventObserver(this)
 
-        hoverMessage = keyCallback.usage +
+        hoverMessage = controlCommand.usage +
                 Theme.PAREN_START +
-                keyCallback.toString() +
+                controlCommand.toString() +
                 Theme.PAREN_END
     }
 
@@ -223,13 +223,13 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     override fun onMouseReleased() {
         super.onMouseReleased() // Calls Panel's onMouseReleased
         if (isMouseOverMe && RunningModeController.isUXAvailable) {
-            keyCallback.invokeFeature() // Specific to Control
+            controlCommand.invokeFeature() // Specific to Control
         }
     }
 
     open class Builder(
         canvas: Canvas,
-        val callback: KeyCallback,
+        val command: Command,
         val iconName: String,
         val size: Int
     ) : Panel.Builder(
