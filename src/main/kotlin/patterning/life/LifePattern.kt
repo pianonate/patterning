@@ -82,7 +82,7 @@ class LifePattern(
 
     init {
 
-        pattern = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS, useOpenGL = true)
+        pattern = canvas.getNamedGraphicsReference(Theme.GRAPHICS_PATTERN, useOpenGL = true)
         hudInfo = HUDStringBuilder()
 
         asyncNextGenerationJob = AsyncJobRunner(method = { asyncNextGeneration() })

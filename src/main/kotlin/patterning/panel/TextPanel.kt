@@ -51,7 +51,7 @@ class TextPanel private constructor(builder: Builder) : Panel(builder), Drawable
             field = value
         }
 
-    private val sizing: GraphicsReference = canvas.getNamedGraphicsReference(Theme.SIZING_GRAPHICS, resizable = false)
+    private val sizing: GraphicsReference = canvas.getNamedGraphicsReference(Theme.GRAPHICS_SIZING, resizable = false)
 
     init {
 

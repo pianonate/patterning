@@ -28,10 +28,10 @@ object Theme {
     const val STARTUP_TEXT = "patterning"
 
     // PGraphics names
-    const val UX_GRAPHICS = "ux"
-    const val PATTERN_GRAPHICS = "pattern"
-    const val GHOST_ACCUMULATED_GRAPHICS = "accumulated"
-    const val SIZING_GRAPHICS = "sizing"
+    const val GRAPHICS_UX = "ux"
+    const val GRAPHICS_PATTERN = "pattern"
+    const val GRAPHICS_ACCUMULATOR = "accumulator"
+    const val GRAPHICS_SIZING = "sizing"
 
     // sizes
     const val CONTROL_SIZE = 35

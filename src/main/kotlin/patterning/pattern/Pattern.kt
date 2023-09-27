@@ -25,10 +25,11 @@ abstract class Pattern(
     }
 
     private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
-    private val accumulatedGraphics =
-        canvas.getNamedGraphicsReference(Theme.GHOST_ACCUMULATED_GRAPHICS, useOpenGL = true).graphics
+    private val accumulator =
+        canvas.getNamedGraphicsReference(Theme.GRAPHICS_ACCUMULATOR, useOpenGL = true).graphics
 
-    private val patternGraphics = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS).graphics
+
+    private val patternGraphics = canvas.getNamedGraphicsReference(Theme.GRAPHICS_PATTERN).graphics
 
     protected var ghostState: GhostState = GhostOff()
     protected var threeD = ThreeD(canvas, visuals)
@@ -41,9 +42,19 @@ abstract class Pattern(
         when (changedOption) {
             Visual.DarkMode -> updateTheme()
             Visual.GhostMode -> ghostState.transition()
+            Visual.FadeAway -> initFadeAway()
             else -> {}
         }
     }
+
+    private fun initFadeAway() {
+        with(accumulator) {
+            beginDraw()
+            clear()
+            endDraw()
+        }
+    }
+
 
     private fun updateTheme() {
         Theme.setTheme(
@@ -57,8 +68,6 @@ abstract class Pattern(
                 }
             }
         )
-
-
     }
 
     // requirements of a pattern
@@ -120,24 +129,28 @@ abstract class Pattern(
             val shouldAdvancePattern = RunningModeController.shouldAdvancePattern()
             drawPattern(shouldAdvancePattern)
 
-            val x = 0f
-            val y = 0f
-
-            if (visuals requires Visual.FadeAway) {
-                accumulatedGraphics.beginDraw()
-                accumulatedGraphics.blendMode(PConstants.BLEND)
-                accumulatedGraphics.fill(Theme.backgroundColor, 35f)
-                accumulatedGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
-                accumulatedGraphics.image(patternGraphics, x, y)
-                accumulatedGraphics.endDraw()
-                image(accumulatedGraphics, x, y)
-            } else {
-                accumulatedGraphics.beginDraw()
-                accumulatedGraphics.clear()
-                accumulatedGraphics.endDraw()
-                image(patternGraphics, x, y)
-            }
+            handleImaging()
         }
+    }
+
+    private fun PApplet.handleImaging() {
+
+        if (visuals requires Visual.FadeAway) {
+
+            with(accumulator) {
+                beginDraw()
+                blendMode(PConstants.BLEND)
+                fill(Theme.backgroundColor, 15f)
+                rect(0f, 0f, width.toFloat(), height.toFloat())
+                image(patternGraphics, 0f, 0f)
+                endDraw()
+            }
+            image(accumulator, 0f, 0f)
+
+        } else {
+            image(patternGraphics, 0f, 0f)
+        }
+
     }
 
     /**
@@ -149,7 +162,7 @@ abstract class Pattern(
         val newGraphics = pApplet.createGraphics(pApplet.width, pApplet.height)
         newGraphics.beginDraw()
         newGraphics.background(Theme.backgroundColor)
-        val img = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS).graphics.get()
+        val img = canvas.getNamedGraphicsReference(Theme.GRAPHICS_PATTERN).graphics.get()
         newGraphics.image(img, 0f, 0f)
         newGraphics.endDraw()
 

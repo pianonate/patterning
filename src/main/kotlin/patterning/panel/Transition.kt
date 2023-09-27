@@ -20,7 +20,7 @@ class Transition(
         if (transitionStartTime == -1L) {
             transitionStartTime = System.currentTimeMillis()
         }
-        val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS).graphics
+        val ux = canvas.getNamedGraphicsReference(Theme.GRAPHICS_UX).graphics
         val elapsed = System.currentTimeMillis() - transitionStartTime
         val transitionProgress = PApplet.constrain(elapsed.toFloat() / duration, 0f, 1f)
         when (type) {

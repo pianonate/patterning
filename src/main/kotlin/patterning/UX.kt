@@ -29,7 +29,7 @@ class UX(
 
     private val commandFactory =
         CommandFactory(pApplet = pApplet, pattern = pattern, canvas = canvas)
-    private val ux = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
+    private val ux = canvas.getNamedGraphicsReference(Theme.GRAPHICS_UX)
     private val hudText: TextPanel
     private val countdownText: TextPanel
 

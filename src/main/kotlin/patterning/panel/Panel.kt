@@ -97,7 +97,7 @@ abstract class Panel protected constructor(builder: Builder) : Drawable, MouseEv
         transitionDuration = builder.transitionDuration
         transitionAble = transitionDirection != null && transitionType != null
 
-        parentGraphicsReference = canvas.getNamedGraphicsReference(Theme.UX_GRAPHICS)
+        parentGraphicsReference = canvas.getNamedGraphicsReference(Theme.GRAPHICS_UX)
 
         // we don't say ux graphics here because sometimes the parentGraphics is the ux
         // and sometimes it's going to be the graphics from a container panel so we need to
