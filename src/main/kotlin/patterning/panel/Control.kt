@@ -17,12 +17,13 @@ import processing.core.PVector
 import processing.event.KeyEvent
 
 open class Control protected constructor(builder: Builder) : Panel(builder), KeyCallbackObserver, MouseEventObserver {
-    private val keyCallback: KeyCallback
+    internal val keyCallback: KeyCallback
     private val size: Int
-    internal var isHighlightFromKeypress = false
     protected var icon: PImage
     private var hoverTextPanel: TextPanel? = null
     private val hoverMessage: String
+    private var isHighlightFromKeypress = false
+
 
     /**
      * if the warning about 'leaking this' is bothersome, you'd have to create
@@ -45,16 +46,19 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
                 Theme.PAREN_END
     }
 
-    protected fun toggleHighlight() {
-        if (RunningModeController.isUXAvailable)
-            isHighlightFromKeypress = !isHighlightFromKeypress
-    }
-
     protected fun loadIcon(iconName: String): PImage {
         val icon = canvas.loadImage(Theme.ICON_PATH + iconName)
         icon.resize(width - Theme.ICON_MARGIN, height - Theme.ICON_MARGIN)
         return icon
     }
+
+    /**
+     * provides ability for subclasses to update the enabled state of a control
+     * so it will show as highlighted whenever drawPressed is executed
+     * currently used by ToggleHighlightControl to show its enabled state
+     */
+    protected var isEnabled = false
+    open fun updateEnabled() {}
 
     override fun panelSubclassDraw() {
         panelGraphics.noStroke()
@@ -78,7 +82,6 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
             }
         }
     }
-
 
     private fun getHoverTextPanel(): TextPanel {
         val margin = Theme.HOVER_TEXT_MARGIN
@@ -171,7 +174,8 @@ open class Control protected constructor(builder: Builder) : Panel(builder), Key
     }
 
     private fun drawPressed() {
-        if (isPressed || isHighlightFromKeypress) {
+        updateEnabled()
+        if (isPressed || isHighlightFromKeypress || isEnabled) {
             drawControlHighlight(Theme.controlMousePressedColor)
         }
     }

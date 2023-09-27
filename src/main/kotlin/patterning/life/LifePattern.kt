@@ -9,7 +9,7 @@ import patterning.Theme
 import patterning.ThreeD
 import patterning.pattern.BoundaryMode
 import patterning.pattern.Colorful
-import patterning.pattern.DisplayMode
+import patterning.pattern.Behavior
 import patterning.pattern.DisplayState
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
@@ -41,8 +41,9 @@ class LifePattern(
     pApplet: PApplet,
     canvas: Canvas,
     properties: Properties,
-    displayState: DisplayState
-) : Pattern(pApplet, canvas, properties, displayState),
+    displayState: DisplayState,
+   // fadeShader: PShader
+) : Pattern(pApplet, canvas, properties, displayState/*, fadeShader*/),
     Colorful,
     Movable,
     NumberedPatternLoader,
@@ -66,9 +67,6 @@ class LifePattern(
     private var targetStep = 0
     private val hudInfo: HUDStringBuilder
 
-    // used to move the pattern around the screen
-    private var lifeFormPosition = PVector(0f, 0f)
-
     // DrawNodePath is just a helper class extracted into a separate class only for readability
     // it has shared methods so accepting them here
     // lambdas are cool
@@ -80,8 +78,7 @@ class LifePattern(
         canvas = canvas
     )
 
-    private var pattern: GraphicsReference
-
+    private val pattern: GraphicsReference
 
     init {
 
@@ -100,23 +97,6 @@ class LifePattern(
 
     val lastId: Int
         get() = life.lastId.get()
-
-    /**
-     * Pattern overrides
-     */
-    override fun draw() {
-
-        performanceTest.execute()
-
-        val shouldAdvancePattern = RunningModeController.shouldAdvancePattern()
-
-        drawPattern(life, shouldAdvancePattern)
-
-        pApplet.image(pattern.graphics, lifeFormPosition.x, lifeFormPosition.y)
-
-        goForwardInTime(shouldAdvancePattern)
-
-    }
 
     override fun getHUDMessage(): String {
         return hudInfo.getFormattedString(
@@ -139,11 +119,6 @@ class LifePattern(
         instantiateLifeform()
     }
 
-    override fun move(dx: Float, dy: Float) {
-        canvas.saveUndoState()
-        canvas.moveCanvasOffsets(dx, dy)
-        lifeFormPosition.add(dx, dy)
-    }
 
     override fun updateProperties() {
         properties.setProperty(LIFE_FORM_PROPERTY, storedLife)
@@ -279,11 +254,13 @@ class LifePattern(
     private fun reset3DAndStopRotations() {
 
         threeD.reset()
-        onResetRotations()
+        displayState.disable(Behavior.ThreeDYaw)
+        displayState.disable(Behavior.ThreeDPitch)
+        displayState.disable(Behavior.ThreeDRoll)
 
         // used for individual boxes
-        displayState.disable(DisplayMode.ThreeDBoxes)
-        displayState.disable(DisplayMode.AlwaysRotate)
+        displayState.disable(Behavior.ThreeDBoxes)
+        displayState.disable(Behavior.AlwaysRotate)
     }
 
     /**
@@ -331,8 +308,6 @@ class LifePattern(
 
         onNewPattern(lifeForm.title)
 
-        System.gc()
-
     }
 
     private fun parseStoredLife() {
@@ -365,7 +340,7 @@ class LifePattern(
             val corners = threeD.rectCorners
 
             when {
-                size > 4F && (displayState expects DisplayMode.ThreeDBoxes) -> {
+                size > 4F && (displayState expects Behavior.ThreeDBoxes) -> {
                     boxPlus(
                         frontCorners = corners,
                         threeD = threeD,
@@ -384,13 +359,13 @@ class LifePattern(
     private fun getFillColor(x: Float, y: Float, applyCubeAlpha: Boolean = true): Int {
 
         val cubeAlpha = if (
-            displayState expects DisplayMode.ThreeDBoxes &&
+            displayState expects Behavior.ThreeDBoxes &&
             canvas.zoomLevel >= 4F && applyCubeAlpha
         )
             Theme.cubeAlpha else 255
 
         return with(pattern.graphics) {
-            val color = if (displayState expects DisplayMode.Colorful) {
+            val color = if (displayState expects Behavior.Colorful) {
                 colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
                 val mappedColor = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
                 color(mappedColor, 100f, 100f, cubeAlpha.toFloat())
@@ -406,21 +381,19 @@ class LifePattern(
     private var actualRecursions = 0L
     private var startDelta = 0
 
-    private fun drawPattern(life: LifeUniverse, shouldAdvancePattern: Boolean) {
+    override fun drawPattern(shouldAdvancePattern: Boolean) {
 
+        performanceTest.execute()
 
         with(pattern.graphics) {
 
             beginDraw()
-
             ghostState.prepareGraphics(this)
-
             stroke(ghostState.applyAlpha(Theme.backgroundColor))
 
-            val patternIsDrawable = shouldAdvancePattern || (displayState expects DisplayMode.AlwaysRotate)
+            val patternIsDrawable = shouldAdvancePattern || (displayState expects Behavior.AlwaysRotate)
             if (patternIsDrawable)
                 threeD.rotateActiveRotations()
-
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
@@ -437,8 +410,8 @@ class LifePattern(
             endDraw()
         }
 
-        // reset the position in case you've had mouse moves
-        lifeFormPosition[0f] = 0f
+        goForwardInTime(shouldAdvancePattern)
+
     }
 
     // getLowestEntryFromRoot returns a DrawNodePathEntry - which contains the node

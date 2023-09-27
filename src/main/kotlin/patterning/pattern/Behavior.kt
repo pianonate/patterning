@@ -1,12 +1,14 @@
 package patterning.pattern
 
-enum class DisplayMode {
+enum class Behavior {
     AlwaysRotate,
     Boundary,
     BoundaryOnly,
     Colorful,
     DarkMode,
+    FadeAway,
     GhostMode,
+    GhostFadeAwayMode,
     ThreeDBoxes,
     ThreeDYaw,
     ThreeDPitch,

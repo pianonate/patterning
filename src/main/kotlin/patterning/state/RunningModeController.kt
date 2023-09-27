@@ -17,6 +17,9 @@ object RunningModeController {
     val isPlaying: Boolean
         get() = currentRunningState.isPlaying
 
+    val isSingleStep: Boolean
+        get() = currentRunningState.isSingleStep
+
     val isTesting: Boolean
         get() = currentRunningState.isTesting
 

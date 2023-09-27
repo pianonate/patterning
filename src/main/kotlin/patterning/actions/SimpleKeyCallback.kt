@@ -5,6 +5,7 @@ import processing.event.KeyEvent
 class SimpleKeyCallback(
     keyCombos: LinkedHashSet<KeyCombo>,
     private val invokeFeatureLambda: (() -> Unit),
+    private val isEnabledLambda: () -> Boolean = { true },
     override val usage: String,
     override val invokeEveryDraw: Boolean = false,
     override val invokeAfterDelay: Boolean = false,
@@ -12,6 +13,8 @@ class SimpleKeyCallback(
 
     // the interface of KeyCallback
     override fun invokeFeature() = invokeFeatureLambda()
+    override val isEnabled: Boolean
+        get() = isEnabledLambda()
 
     // properties
     override val keyCombos: Set<KeyCombo> = keyCombos.toSet()

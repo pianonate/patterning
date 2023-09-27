@@ -1,6 +1,5 @@
 package patterning
 
-import kotlin.math.roundToInt
 import patterning.actions.KeyEventNotifier
 import patterning.actions.MouseEventNotifier
 import patterning.pattern.DisplayState
@@ -11,7 +10,6 @@ import patterning.pattern.PatternEventType
 import patterning.util.AsyncJobRunner
 import patterning.util.hudFormatted
 import processing.core.PApplet
-
 
 class PatterningPApplet : PApplet() {
 
@@ -30,7 +28,7 @@ class PatterningPApplet : PApplet() {
     private var mousePressedOverReceiver = false
 
     private val asyncGC = AsyncJobRunner(
-        method =  {
+        method = {
             System.gc()
 
             with(Runtime.getRuntime()) {
@@ -62,12 +60,16 @@ class PatterningPApplet : PApplet() {
         windowTitle("patterning")
         Theme.init(this)
 
+
         // pattern needs to have proper dimensions before instantiation
         canvas.updateDimensions()
 
         properties = Properties(this)
 
         val displayState = DisplayState()
+
+
+        // val fadeShader = loadShader("shaders/frag.glsl", "shaders/vert.glsl")
 
         // pattern both holds the reference to display state but also
         // is an observer of changes in displayState
@@ -76,6 +78,7 @@ class PatterningPApplet : PApplet() {
             canvas = canvas,
             properties = properties,
             displayState = displayState,
+            //fadeShader = fadeShader,
         )
 
         displayState.addObserver(pattern)
@@ -111,12 +114,10 @@ class PatterningPApplet : PApplet() {
         try {
 
             canvas.handleResize()
-            pattern.drawBackground()
 
             if (pattern is Movable) {
                 canvas.updateZoom()
             }
-
             pattern.draw()
             ux.draw()
 
@@ -129,7 +130,7 @@ class PatterningPApplet : PApplet() {
             // we can just let them go for now - log them just in case
             // possibly the early return above has fixed this but leaving it in just in case something else
             // mysterious pops up
-            println("error in draw() - the uncaught error of last resort: $e")
+            println("error in draw() - the uncaught error of last resort: $e\n${e.stackTrace}")
         }
 
     }
@@ -147,6 +148,7 @@ class PatterningPApplet : PApplet() {
     override fun mouseReleased() {
         if (draggingDrawing) {
             draggingDrawing = false
+            startDrag = true
         } else {
             mousePressedOverReceiver = false
             MouseEventNotifier.onMouseReleased()
@@ -157,10 +159,14 @@ class PatterningPApplet : PApplet() {
         ux.mouseReleased()
     }
 
+    private var startDrag = true
     override fun mouseDragged() {
         if (draggingDrawing) {
-            val dx = (mouseX - lastMouseX).roundToInt().toFloat()
-            val dy = (mouseY - lastMouseY).roundToInt().toFloat()
+            if (startDrag) {
+                startDrag = false
+            }
+            val dx = (mouseX - lastMouseX)//.roundToInt().toFloat()
+            val dy = (mouseY - lastMouseY)//.roundToInt().toFloat()
             pattern.move(dx, dy)
             lastMouseX += dx
             lastMouseY += dy

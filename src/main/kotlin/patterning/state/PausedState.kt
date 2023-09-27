@@ -27,7 +27,6 @@ class PausedState : RunningState(RunningMode.PAUSED) {
         controller.changeState(TestingState())
     }
 
-
     override fun shouldAdvance(): Boolean {
         return false
     }
@@ -36,4 +35,6 @@ class PausedState : RunningState(RunningMode.PAUSED) {
     override val isUXAvailable = true
     override val isPlaying = false
     override val isPaused = true
+    override val isSingleStep = false
+
 }

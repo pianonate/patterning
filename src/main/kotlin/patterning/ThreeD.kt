@@ -1,15 +1,15 @@
 package patterning
 
-import patterning.pattern.DisplayMode
+import patterning.pattern.Behavior
 import patterning.pattern.DisplayState
 import processing.core.PMatrix3D
 import processing.core.PVector
 
-class ThreeD(private val canvas: Canvas, private val displayState:DisplayState)  {
+class ThreeD(private val canvas: Canvas, private val displayState: DisplayState) {
     private val rotationMatrix = PMatrix3D()
     private val combinedMatrix = PMatrix3D()
 
-    private val rotationDisplayModes = setOf(DisplayMode.ThreeDYaw, DisplayMode.ThreeDPitch, DisplayMode.ThreeDRoll)
+    private val rotationDisplayModes = setOf(Behavior.ThreeDYaw, Behavior.ThreeDPitch, Behavior.ThreeDRoll)
 
     private var currentAngles = RotationAngles(0f, 0f, 0f)
 
@@ -26,9 +26,9 @@ class ThreeD(private val canvas: Canvas, private val displayState:DisplayState) 
 
         rotationDisplayModes.forEach { displayMode ->
             when (displayMode) {
-                DisplayMode.ThreeDYaw -> if (displayState expects displayMode) currentAngles.updateYaw(matrix)
-                DisplayMode.ThreeDPitch -> if (displayState expects displayMode) currentAngles.updatePitch(matrix)
-                DisplayMode.ThreeDRoll -> if (displayState expects displayMode) currentAngles.updateRoll(matrix)
+                Behavior.ThreeDYaw -> if (displayState expects displayMode) currentAngles.updateYaw(matrix)
+                Behavior.ThreeDPitch -> if (displayState expects displayMode) currentAngles.updatePitch(matrix)
+                Behavior.ThreeDRoll -> if (displayState expects displayMode) currentAngles.updateRoll(matrix)
                 else -> {} // do nothing - added because there are actually many display modes even if not invoked here
             }
         }
@@ -90,21 +90,29 @@ class ThreeD(private val canvas: Canvas, private val displayState:DisplayState) 
         return (tRight >= 0 && tLeft <= canvas.width) && (tBottom >= 0 && tTop <= canvas.height)
     }
 
+
+    /**
+     * just re-use a pre-allocated PVector array - when using the profiler
+     * and then invoking the perftest, PVector accounted for 12GB! of memory allocations
+     * with this re-use in place, the memory dropped to negligible
+     * amazing - and the intelliJ profiler is pretty badass
+     */
+    private val reusableCorners = Array(4) { PVector() }
+
     private fun transformCorners(corners: Array<PVector>, matrix: PMatrix3D): List<PVector> {
-        return corners.map {
-            val result = PVector()
-            matrix.mult(it, result)
-            result
+        return corners.mapIndexed { index, it ->
+            matrix.mult(it, reusableCorners[index])
+            reusableCorners[index]
         }
     }
 
     private fun getCornersArray(left: Float, top: Float, width: Float, height: Float): Array<PVector> {
-        return arrayOf(
-            PVector(left, top, 0f),           // top-left
-            PVector(left + width, top, 0f),   // top-right
-            PVector(left + width, top + height, 0f), // bottom-right
-            PVector(left, top + height, 0f)  // bottom-left
-        )
+        // Directly modify the elements in the reusable array.
+        reusableCorners[0].set(left, top, 0f)
+        reusableCorners[1].set(left + width, top, 0f)
+        reusableCorners[2].set(left + width, top + height, 0f)
+        reusableCorners[3].set(left, top + height, 0f)
+        return reusableCorners
     }
 
 
@@ -127,7 +135,7 @@ class ThreeD(private val canvas: Canvas, private val displayState:DisplayState) 
         var pitch: Float = 0f,
         var roll: Float = 0f
     ) {
-        private val rotationIncrement = (Math.PI * 2 / 360).toFloat()
+        private val rotationIncrement = (Math.PI * 2 / 120).toFloat()
 
         fun updateYaw(mat: PMatrix3D) {
             mat.rotateY(rotationIncrement)
@@ -147,4 +155,5 @@ class ThreeD(private val canvas: Canvas, private val displayState:DisplayState) 
             roll = 0f
         }
     }
+
 }

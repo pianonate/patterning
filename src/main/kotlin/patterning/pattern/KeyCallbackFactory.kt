@@ -39,6 +39,7 @@ class KeyCallbackFactory(
         with(KeyEventNotifier) {
             addKeyCallback(callbackCenterViewResetRotations)
             addKeyCallback(callbackGhostModeKeyFrame)
+            addKeyCallback(callbackGhostFadeAwayMode)
             addKeyCallback(callbackInvokeGC)
             addKeyCallback(callbackPaste)
             addKeyCallback(callbackPerfTest)
@@ -53,7 +54,8 @@ class KeyCallbackFactory(
 
     val callbackAlwaysRotate = SimpleKeyCallback(
         keyCombos = SHORTCUT_ALWAYS_ROTATE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.AlwaysRotate) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.AlwaysRotate) },
+        isEnabledLambda =  { displayState expects Behavior.AlwaysRotate },
         usage = "always rotate - even if paused"
     )
 
@@ -89,26 +91,44 @@ class KeyCallbackFactory(
 
     val callbackColorful = SimpleKeyCallback(
         keyCombos = SHORTCUT_COLORFUL.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.Colorful) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.Colorful) },
+        isEnabledLambda =  { displayState expects Behavior.Colorful },
         usage = "ooo, ahhh - so pretty!"
     )
 
     val callbackDrawBoundary = SimpleKeyCallback(
         keyCombos = SHORTCUT_DISPLAY_BOUNDS.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.Boundary) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.Boundary) },
+        isEnabledLambda =  { displayState expects Behavior.Boundary },
         usage = "draw a border around the pattern",
     )
 
     val callbackDrawBoundaryOnly = SimpleKeyCallback(
         keyCombos = KeyCombo(SHORTCUT_DISPLAY_BOUNDS, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.BoundaryOnly) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.BoundaryOnly) },
+        isEnabledLambda =  { displayState expects Behavior.BoundaryOnly },
         usage = "draw a border around the pattern - exclude the pattern",
+    )
+
+    val callbackFadeAway = SimpleKeyCallback(
+        keyCombos = SHORTCUT_FADE_AWAY.toKeyComboSet(),
+        invokeFeatureLambda = { displayState.toggleState(Behavior.FadeAway) },
+        isEnabledLambda =  { displayState expects Behavior.FadeAway },
+        usage = "fade away the pattern - aka Joshua mode"
     )
 
     val callbackGhostMode = SimpleKeyCallback(
         keyCombos = SHORTCUT_GHOST_MODE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.GhostMode) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.GhostMode) },
+        isEnabledLambda =  { displayState expects Behavior.GhostMode },
         usage = "ghost mode. Also try ${KeyCombo.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
+    )
+
+    private val callbackGhostFadeAwayMode = SimpleKeyCallback(
+        keyCombos = KeyCombo(SHORTCUT_GHOST_MODE, KeyEvent.SHIFT).toKeyComboSet(),
+        invokeFeatureLambda = { displayState.toggleState(Behavior.GhostFadeAwayMode) },
+        isEnabledLambda =  { displayState expects Behavior.GhostFadeAwayMode },
+        usage = "ghost fade away mode - hidden capability"
     )
 
     private val callbackGhostModeKeyFrame = SimpleKeyCallback(
@@ -242,6 +262,7 @@ class KeyCallbackFactory(
                 RunningModeController.toggleSingleStep()
             }
         },
+        isEnabledLambda =  { RunningModeController.isSingleStep },
         usage = "toggle single step mode where which advances one generation at a time"
     )
 
@@ -267,45 +288,38 @@ class KeyCallbackFactory(
 
     val callbackThemeToggle = SimpleKeyCallback(
         keyCombos = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.DarkMode) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.DarkMode) },
+        isEnabledLambda =  { displayState expects Behavior.DarkMode },
         usage = "toggle between dark and light themes",
         invokeAfterDelay = true
     )
 
     val callbackThreeDBoxes = SimpleKeyCallback(
         keyCombos = KeyCombo(SHORTCUT_THREE_D_BOXES, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.ThreeDBoxes) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDBoxes) },
+        isEnabledLambda =  { displayState expects Behavior.ThreeDBoxes },
         usage = "three dimensional mode - try me!"
     )
 
     val callbackThreeDYaw = SimpleKeyCallback(
         keyCombos = SHORTCUT_THREE_D_YAW.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.ThreeDYaw) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDYaw) },
+        isEnabledLambda =  { displayState expects Behavior.ThreeDYaw },
         usage = "rotate on the y axis (yaw)"
     )
 
     val callbackThreeDPitch = SimpleKeyCallback(
         keyCombos = SHORTCUT_THREE_D_PITCH.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.ThreeDPitch) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDPitch) },
+        isEnabledLambda =  { displayState expects Behavior.ThreeDPitch },
         usage = "rotate on the x axis (pitch)"
     )
 
     val callbackThreeDRoll = SimpleKeyCallback(
         keyCombos = SHORTCUT_THREE_D_ROLL.toKeyComboSet(),
-        invokeFeatureLambda = { displayState.toggleState(DisplayMode.ThreeDRoll) },
+        invokeFeatureLambda = { displayState.toggleState(Behavior.ThreeDRoll) },
+        isEnabledLambda =  { displayState expects Behavior.ThreeDRoll },
         usage = "rotate on the z axis (roll)"
-    )
-
-    private val callbackZoomIn = SimpleKeyCallback(
-        // we want it to handle both = and shift= (+) the same way
-        keyCombos = Pair(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)).toKeyComboSet(),
-        invokeFeatureLambda = {
-            if (pattern is Movable) {
-                (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
-            }
-        },
-        usage = "zoom in centered on the mouse",
-        invokeEveryDraw = true,
     )
 
     val callbackUndoMovement = SimpleKeyCallback(
@@ -320,6 +334,18 @@ class KeyCallbackFactory(
         },
         usage = "undo  movements / actions such as centering or fitting to screen",
         invokeEveryDraw = true
+    )
+
+    private val callbackZoomIn = SimpleKeyCallback(
+        // we want it to handle both = and shift= (+) the same way
+        keyCombos = Pair(KeyCombo(SHORTCUT_ZOOM_IN.code), KeyCombo(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)).toKeyComboSet(),
+        invokeFeatureLambda = {
+            if (pattern is Movable) {
+                (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
+            }
+        },
+        usage = "zoom in centered on the mouse",
+        invokeEveryDraw = true,
     )
 
     private val callbackZoomOut = SimpleKeyCallback(
@@ -378,6 +404,7 @@ class KeyCallbackFactory(
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DISPLAY_BOUNDS = 'b'
         private const val SHORTCUT_CENTER_AND_FIT = 'f'
+        private const val SHORTCUT_FADE_AWAY = 'j'
         private const val SHORTCUT_GHOST_MODE = 'g'
         private const val SHORTCUT_ALWAYS_ROTATE = 'e'
         private const val SHORTCUT_INVOKE_GC = 'i'

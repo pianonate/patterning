@@ -36,4 +36,5 @@ class PlayingState : RunningState(RunningMode.PLAYING) {
     override val isUXAvailable = true
     override val isPlaying = true
     override val isPaused = false
+    override val isSingleStep = false
 }

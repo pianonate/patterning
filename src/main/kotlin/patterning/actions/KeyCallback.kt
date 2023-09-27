@@ -5,6 +5,7 @@ import processing.event.KeyEvent
 interface KeyCallback {
     fun invokeFeature()
     fun matches(event: KeyEvent): Boolean
+    val isEnabled: Boolean
     val isValidForCurrentOS: Boolean
     val invokeEveryDraw: Boolean
     val invokeAfterDelay: Boolean

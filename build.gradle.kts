@@ -33,6 +33,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     //implementation(kotlin("stdlib-jdk8"))
     testImplementation(kotlin("test"))
+
 }
 
 application {
@@ -42,7 +43,7 @@ application {
         "-Djava.library.path=${platforms.joinToString(separator = ":") { "$pathToJoglLibraries$it" }}",
         "-Xmx16G",
         //"-XX:ParallelGCThreads=12",
-        "-XX:+UseZGC"
+        "-XX:+UseZGC",
         // used to debug native library loading
         // "-Djogamp.debug.NativeLibrary=true"
     )

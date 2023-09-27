@@ -5,8 +5,10 @@ import patterning.Properties
 import patterning.Theme
 import patterning.ThemeType
 import patterning.ThreeD
+import patterning.state.RunningModeController
 import patterning.util.applyAlpha
 import processing.core.PApplet
+import processing.core.PConstants
 import processing.core.PGraphics
 
 abstract class Pattern(
@@ -16,44 +18,68 @@ abstract class Pattern(
     val displayState: DisplayState,
 ) : ObservablePattern, DisplayState.Observer {
 
-    private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
-
     protected interface GhostState {
         fun prepareGraphics(graphics: PGraphics)
         fun transition()
         fun applyAlpha(color: Int): Int
     }
 
+    private val observers: MutableMap<PatternEventType, MutableList<(PatternEvent) -> Unit>> = mutableMapOf()
+    private val accumulatedGraphics =
+        canvas.getNamedGraphicsReference(Theme.GHOST_ACCUMULATED_GRAPHICS, useOpenGL = true).graphics
+
+    private val patternGraphics = canvas.getNamedGraphicsReference(Theme.PATTERN_GRAPHICS).graphics
+
     protected var ghostState: GhostState = GhostOff()
     protected var threeD = ThreeD(canvas, displayState)
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
+  /*      accumulatedGraphics.beginDraw()
+        accumulatedGraphics.background(Theme.backgroundColor)
+        accumulatedGraphics.endDraw()
+        fadeShader.set("targetColor", 0.0f,0.0f, 0.0f)
+        fadeShader.set("alphaModifier", 0.05f)*/
     }
 
-    override fun onStateChanged(changedOption: DisplayMode) {
+    override fun onStateChanged(changedOption: Behavior) {
         when (changedOption) {
-            DisplayMode.DarkMode -> {
-                Theme.setTheme(
-                    when (Theme.currentThemeType) {
-                        ThemeType.DEFAULT -> ThemeType.DARK
-                        else -> ThemeType.DEFAULT
-                    }
-                )
-            }
-
-            DisplayMode.GhostMode -> ghostState.transition()
-
+            Behavior.DarkMode -> updateTheme()
+            Behavior.GhostMode -> ghostState.transition()
             else -> {}
         }
     }
 
-    // currently these are the only methods called by PatterningPApplet so we
-    // require all Patterns to implement them
-    abstract fun draw()
+    private fun updateTheme() {
+        Theme.setTheme(
+            when (Theme.currentThemeType) {
+                ThemeType.DEFAULT -> {
+                    /*fadeShader.set("targetColor", 0f, 0f, 0f, 1f)
+                    fadeShader.set("alphaModifier", 0.01f)
+                    accumulatedGraphics.beginDraw()
+                    accumulatedGraphics.background(0f,0f,0f,0f)
+                    accumulatedGraphics.endDraw()*/
+                    ThemeType.DARK
+                }
+
+                else -> {
+                /*    fadeShader.set("targetColor", 1.0f,1.0f, 1.0f, 1.0f)
+                    fadeShader.set("alphaModifier", -0.05f)
+                    accumulatedGraphics.beginDraw()
+                    accumulatedGraphics.background(255f,255f,255f,255f)
+                    accumulatedGraphics.endDraw()*/
+                    ThemeType.DEFAULT
+                }
+            }
+        )
+
+
+    }
+
+    // requirements of a pattern
+    abstract fun drawPattern(shouldAdvancePattern: Boolean)
     abstract fun getHUDMessage(): String
     abstract fun loadPattern()
-    abstract fun move(dx: Float, dy: Float)
     abstract fun updateProperties()
 
     final override fun registerObserver(eventType: PatternEventType, observer: (PatternEvent) -> Unit) {
@@ -66,10 +92,15 @@ abstract class Pattern(
 
     private fun resetOnNewPattern() {
         ghostState = GhostOff()
-    }
-
-    internal fun onResetRotations() {
-        notifyObservers(PatternEventType.ResetRotations, PatternEvent.ResetRotations(reset = true))
+        with(displayState) {
+            disable(Behavior.AlwaysRotate)
+            disable(Behavior.GhostMode)
+            disable(Behavior.GhostFadeAwayMode)
+            disable(Behavior.ThreeDBoxes)
+            disable(Behavior.ThreeDYaw)
+            disable(Behavior.ThreeDPitch)
+            disable(Behavior.ThreeDRoll)
+        }
     }
 
     fun onNewPattern(patternName: String) {
@@ -80,11 +111,38 @@ abstract class Pattern(
         ghostState = GhostKeyFrame()
     }
 
-    /**
-     * in preparation for future features such as drawing as inverse rainbow and gridlines
-     */
-    fun drawBackground() {
-        pApplet.background(Theme.backgroundColor)
+    fun move(dx: Float, dy: Float) {
+        canvas.saveUndoState()
+        canvas.moveCanvasOffsets(dx, dy)
+    }
+
+    fun draw() {
+        with(pApplet) {
+            background(Theme.backgroundColor)
+
+            val shouldAdvancePattern = RunningModeController.shouldAdvancePattern()
+            drawPattern(shouldAdvancePattern)
+
+            val x = 0f
+            val y = 0f
+
+            if (displayState expects Behavior.FadeAway) {
+                accumulatedGraphics.beginDraw()
+                accumulatedGraphics.blendMode(PConstants.BLEND )
+                accumulatedGraphics.fill(Theme.backgroundColor, 35f)
+                accumulatedGraphics.rect(0f,0f,width.toFloat(), height.toFloat())
+                accumulatedGraphics.image(patternGraphics, x, y)
+                accumulatedGraphics.endDraw()
+                image(accumulatedGraphics, x, y)
+
+
+            } else {
+                accumulatedGraphics.beginDraw()
+                accumulatedGraphics.clear()
+                accumulatedGraphics.endDraw()
+                image(patternGraphics, x, y)
+            }
+        }
     }
 
     /**

@@ -7,7 +7,7 @@ class UXDarkConstants internal constructor() : UXLightConstants() {
     override val blendMode: Int
         get() = PConstants.SCREEN
 
-    override val backgroundColor = 0u
+    override val backgroundColor = 0xFF000000u
     override val cellColor = 0xFFFFFFFFu
 
     override val controlColor = 0xDD404040u

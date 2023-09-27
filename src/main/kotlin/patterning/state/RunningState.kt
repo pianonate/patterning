@@ -13,5 +13,6 @@ abstract class RunningState(val runningMode: RunningMode) {
     abstract val isUXAvailable: Boolean
     abstract val isPlaying: Boolean
     abstract val isPaused: Boolean
+    abstract val isSingleStep: Boolean
 
 }

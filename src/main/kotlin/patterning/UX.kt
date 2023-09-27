@@ -199,42 +199,28 @@ class UX(
                     }
                     if (pattern is Colorful) addToggleHighlightControl("heart.png", keyCallbackFactory.callbackColorful)
                     addToggleHighlightControl("darkmode.png", keyCallbackFactory.callbackThemeToggle)
-                    addToggleHighlightControl(
-                        "ghost.png",
-                        keyCallbackFactory.callbackGhostMode,
-                        resetOnNew = this@UX.pattern
-                    )
+                    addToggleHighlightControl("ghost.png", keyCallbackFactory.callbackGhostMode,)
+                    addToggleHighlightControl("fade.png", keyCallbackFactory.callbackFadeAway,)
                     if (pattern is ThreeDimensional) {
                         addToggleHighlightControl(
                             "cube.png",
                             keyCallbackFactory.callbackThreeDBoxes,
-                            resetOnNew = this@UX.pattern,
-                            resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "yaw.png",
                             keyCallbackFactory.callbackThreeDYaw,
-                            resetOnNew = this@UX.pattern,
-                            resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "pitch.png",
                             keyCallbackFactory.callbackThreeDPitch,
-                            resetOnNew = this@UX.pattern,
-                            resetRotations = this@UX.pattern,
-
                             )
                         addToggleHighlightControl(
                             "roll.png",
                             keyCallbackFactory.callbackThreeDRoll,
-                            resetOnNew = this@UX.pattern,
-                            resetRotations = this@UX.pattern,
                         )
                         addToggleHighlightControl(
                             "infinity.png",
                             keyCallbackFactory.callbackAlwaysRotate,
-                            resetOnNew = this@UX.pattern,
-                            resetRotations = this@UX.pattern,
                         )
                     }
                 }.build()

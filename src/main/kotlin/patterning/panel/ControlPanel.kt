@@ -3,7 +3,6 @@ package patterning.panel
 import patterning.Canvas
 import patterning.Theme
 import patterning.actions.KeyCallback
-import patterning.pattern.Pattern
 
 class ControlPanel internal constructor(builder: Builder) : ContainerPanel(builder) {
 
@@ -20,15 +19,13 @@ class ControlPanel internal constructor(builder: Builder) : ContainerPanel(build
             addPanel(c)
         }
 
-        fun addToggleHighlightControl(iconName: String, callback: KeyCallback, resetOnNew: Pattern? = null, resetRotations: Pattern? = null) =
+        fun addToggleHighlightControl(iconName: String, callback: KeyCallback) =
             apply {
                 val c: Control = ToggleHighlightControl.Builder(
                     canvas,
                     callback,
                     iconName,
                     Theme.CONTROL_SIZE,
-                    resetOnNew = resetOnNew,
-                    resetRotations = resetRotations,
                 ).build()
                 addPanel(c)
             }

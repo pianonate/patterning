@@ -30,6 +30,7 @@ object Theme {
     // PGraphics names
     const val UX_GRAPHICS = "ux"
     const val PATTERN_GRAPHICS = "pattern"
+    const val GHOST_ACCUMULATED_GRAPHICS = "accumulated"
     const val SIZING_GRAPHICS = "sizing"
 
     // sizes
