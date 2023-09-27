@@ -393,7 +393,7 @@ class LifePattern(
 
             val patternIsDrawable = shouldAdvancePattern || (displayState expects Behavior.AlwaysRotate)
             if (patternIsDrawable)
-                threeD.rotateActiveRotations()
+                threeD.rotate()
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true

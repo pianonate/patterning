@@ -19,7 +19,7 @@ class ThreeD(private val canvas: Canvas, private val displayState: DisplayState)
     /**
      * called from draw to move active rotations forward
      */
-    fun rotateActiveRotations() {
+    fun rotate() {
         if (rotationDisplayModes.none { displayState expects it }) return
 
         val matrix = PMatrix3D(rotationMatrix)
@@ -37,7 +37,7 @@ class ThreeD(private val canvas: Canvas, private val displayState: DisplayState)
         updateCombinedMatrix()
     }
 
-    fun getTransformedRectCorners(left: Float, top: Float, width: Float, height: Float): List<PVector> {
+    fun getTransformedCorners(left: Float, top: Float, width: Float, height: Float): List<PVector> {
         val corners = getCornersArray(left, top, width, height)
         return transformCorners(corners, combinedMatrix)
     }
@@ -114,6 +114,36 @@ class ThreeD(private val canvas: Canvas, private val displayState: DisplayState)
         reusableCorners[3].set(left, top + height, 0f)
         return reusableCorners
     }
+
+    // doesn't work - fundamentally hard problem
+    /*fun getMouseMoveOffsets(mouseBefore:PVector, mouseAfter:PVector, g: PGraphics): PVector {
+
+        val matrix = PMatrix3D(combinedMatrix)
+
+        // Create a copy of the before position
+        val transformedMouseBefore = PVector(mouseBefore.x, mouseBefore.y)
+
+        // Create a copy of the after position
+        val transformedMouseAfter = PVector(mouseAfter.x, mouseAfter.y)
+
+        matrix.invert()
+
+        // Apply the rotation matrix
+        matrix.mult(mouseBefore, transformedMouseBefore)
+        matrix.mult(mouseAfter, transformedMouseAfter)
+
+        val x = transformedMouseAfter.x
+        val y = transformedMouseAfter.y
+        val z = transformedMouseAfter.z
+        val screenX = g.screenX(x,y,z)
+        val screenY = g.screenY(x,y,z)
+
+       // val offsetVector =  PVector(transformedMouseAfter.x - transformedMouseBefore.x, transformedMouseAfter.y - transformedMouseBefore.y)
+        val offsetVector =  PVector(screenX,screenY)
+
+        return offsetVector
+
+    }*/
 
 
     private fun updateCombinedMatrix() {

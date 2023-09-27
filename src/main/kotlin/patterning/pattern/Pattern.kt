@@ -35,11 +35,6 @@ abstract class Pattern(
 
     init {
         registerObserver(PatternEventType.PatternSwapped) { _ -> resetOnNewPattern() }
-  /*      accumulatedGraphics.beginDraw()
-        accumulatedGraphics.background(Theme.backgroundColor)
-        accumulatedGraphics.endDraw()
-        fadeShader.set("targetColor", 0.0f,0.0f, 0.0f)
-        fadeShader.set("alphaModifier", 0.05f)*/
     }
 
     override fun onStateChanged(changedOption: Behavior) {
@@ -54,20 +49,10 @@ abstract class Pattern(
         Theme.setTheme(
             when (Theme.currentThemeType) {
                 ThemeType.DEFAULT -> {
-                    /*fadeShader.set("targetColor", 0f, 0f, 0f, 1f)
-                    fadeShader.set("alphaModifier", 0.01f)
-                    accumulatedGraphics.beginDraw()
-                    accumulatedGraphics.background(0f,0f,0f,0f)
-                    accumulatedGraphics.endDraw()*/
                     ThemeType.DARK
                 }
 
                 else -> {
-                /*    fadeShader.set("targetColor", 1.0f,1.0f, 1.0f, 1.0f)
-                    fadeShader.set("alphaModifier", -0.05f)
-                    accumulatedGraphics.beginDraw()
-                    accumulatedGraphics.background(255f,255f,255f,255f)
-                    accumulatedGraphics.endDraw()*/
                     ThemeType.DEFAULT
                 }
             }
@@ -111,6 +96,18 @@ abstract class Pattern(
         ghostState = GhostKeyFrame()
     }
 
+
+    /**
+     * fundamentally hard problem - i don't have enough math to figure this out how to
+     * make a rotating object snap to the mouse position so you can move it reliably on screen
+     * how to adjust the offsets to make this work
+     */
+    /*    fun mouseMove(before: PVector, after: PVector) {
+        val offsets = threeD.getMouseMoveOffsets(before, after,pApplet.graphics)
+       // move(offsets.x, offsets.y)
+        canvas.updateCanvasOffsets(offsets.x, offsets.y)
+    }*/
+
     fun move(dx: Float, dy: Float) {
         canvas.saveUndoState()
         canvas.moveCanvasOffsets(dx, dy)
@@ -128,9 +125,9 @@ abstract class Pattern(
 
             if (displayState expects Behavior.FadeAway) {
                 accumulatedGraphics.beginDraw()
-                accumulatedGraphics.blendMode(PConstants.BLEND )
+                accumulatedGraphics.blendMode(PConstants.BLEND)
                 accumulatedGraphics.fill(Theme.backgroundColor, 35f)
-                accumulatedGraphics.rect(0f,0f,width.toFloat(), height.toFloat())
+                accumulatedGraphics.rect(0f, 0f, width.toFloat(), height.toFloat())
                 accumulatedGraphics.image(patternGraphics, x, y)
                 accumulatedGraphics.endDraw()
                 image(accumulatedGraphics, x, y)

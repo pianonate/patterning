@@ -67,7 +67,6 @@ sourceSets {
 
 tasks.register<JavaExec>("profile") {
     sourceSets["main"].runtimeClasspath.also { this.classpath = it }
-    jvmArgs("-agentpath:/Applications/YourKit-Java-Profiler-2022.9.app/Contents/Resources/bin/mac/libyjpagent.dylib=disablestacktelemetry,exceptions=disable,delay=10000")
 }
 
 /*tasks.jar {

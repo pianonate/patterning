@@ -148,7 +148,6 @@ class PatterningPApplet : PApplet() {
     override fun mouseReleased() {
         if (draggingDrawing) {
             draggingDrawing = false
-            startDrag = true
         } else {
             mousePressedOverReceiver = false
             MouseEventNotifier.onMouseReleased()
@@ -159,14 +158,10 @@ class PatterningPApplet : PApplet() {
         ux.mouseReleased()
     }
 
-    private var startDrag = true
     override fun mouseDragged() {
         if (draggingDrawing) {
-            if (startDrag) {
-                startDrag = false
-            }
-            val dx = (mouseX - lastMouseX)//.roundToInt().toFloat()
-            val dy = (mouseY - lastMouseY)//.roundToInt().toFloat()
+            val dx = (mouseX - lastMouseX)
+            val dy = (mouseY - lastMouseY)
             pattern.move(dx, dy)
             lastMouseX += dx
             lastMouseY += dy

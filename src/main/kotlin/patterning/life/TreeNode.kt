@@ -112,8 +112,6 @@ class TreeNode(
         if (se != other.se) return false
 
         return (hash == other.hash)
-        /* if (hash != other.hash) return false
-         if (nextGenerationCache != other.nextGenerationCache) return false
-         return (level2NextCache == other.level2NextCache)*/
+
     }
 }

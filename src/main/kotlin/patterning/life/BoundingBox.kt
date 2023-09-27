@@ -223,7 +223,7 @@ class BoundingBox(
             strokeWeight(Theme.STROKE_WEIGHT_BOUNDS)
 
             val transformedBoundingBox =
-                threeD.getTransformedRectCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
+                threeD.getTransformedCorners(left, top, this@BoundingBox.width, this@BoundingBox.height)
 
             drawBoundingBoxEdges(transformedBoundingBox, graphics)
 
