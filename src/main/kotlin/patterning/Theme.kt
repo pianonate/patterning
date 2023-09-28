@@ -9,7 +9,7 @@ object Theme {
         private set
 
     // durations
-    const val CONTROL_HIGHLIGHT_DURATION = 500
+    const val CONTROL_HIGHLIGHT_DURATION = 100
     const val CONTROL_PANEL_TRANSITION_DURATION = 300
     const val COUNTDOWN_FROM = 2
     const val SHORT_TRANSITION_DURATION = 300

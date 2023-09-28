@@ -339,6 +339,17 @@ class LifeUniverse internal constructor() {
     fun nextGeneration() {
         var currentRoot = this.root
 
+ /*          hashMap.values.flatten()
+            .flatMap { listOf(Pair(it.bounds.left, it.bounds.top), Pair(it.bounds.bottom, it.bounds.right)) }
+            .groupingBy { it }
+            .eachCount()
+            .filter { it.value > 1 }
+            .size*/
+
+
+
+
+
         /*      recurse = AtomicInteger(0)
               recurseStep = AtomicInteger(0)*/
 
