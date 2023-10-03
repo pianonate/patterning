@@ -10,10 +10,12 @@ import processing.core.PConstants.P3D
 import processing.core.PFont
 import processing.core.PGraphics
 import processing.core.PImage
+import processing.core.PVector
 import java.awt.GraphicsEnvironment
 import java.awt.Point
 
 class Canvas(private val pApplet: PApplet) {
+
     private data class CanvasState(
         val level: Float,
         val canvasOffsetX: Float,
@@ -27,6 +29,7 @@ class Canvas(private val pApplet: PApplet) {
 
     private var prevWidth: Int = 0
     private var prevHeight: Int = 0
+    private lateinit var threeD: ThreeD
 
     var width: Float = 0f
         private set
@@ -37,8 +40,11 @@ class Canvas(private val pApplet: PApplet) {
     var offsetY: Float = 0f
         private set
 
-    init {
-        updateDimensions()
+    val offsetVector
+        get() = PVector(offsetX, offsetY)
+
+    fun registerThreeD(threeD: ThreeD) {
+        this.threeD = threeD
     }
 
     /**
@@ -142,29 +148,41 @@ class Canvas(private val pApplet: PApplet) {
         return pApplet.loadImage(fileSpec)
     }
 
-    fun moveCanvasOffsets(dx: Float, dy: Float) {
-        updateCanvasOffsets(offsetX + dx, offsetY + dy)
-    }
+    private fun notifyObservers() {
 
-    fun updateCanvasOffsets(offsetX: Float, offsetY: Float) {
-        this.offsetX = offsetX
-        this.offsetY = offsetY
-
+        //undo will already set the threeD offset so no need to do it twice
         for (observer in offsetsMovedObservers) {
-            observer.onOffsetsMoved()
+            observer.onCanvasOffsetsMoved()
         }
     }
 
+    fun setCanvasOffsets(offset: PVector) {
+        this.offsetX = offset.x
+        this.offsetY = offset.y
+        notifyObservers()
+    }
+
+    fun moveCanvasOffsets(delta: PVector) {
+        this.offsetX += delta.x
+        this.offsetY += delta.y
+        notifyObservers()
+    }
+
     fun saveUndoState() {
+
         undoDeque.add(CanvasState(zoom.level, offsetX, offsetY))
     }
+
 
     fun undoMovement() {
         if (undoDeque.isNotEmpty()) {
             zoom.stopZooming()
             val previous = undoDeque.removeLast()
             zoom.level = previous.level
-            updateCanvasOffsets(previous.canvasOffsetX, previous.canvasOffsetY)
+
+            setCanvasOffsets(
+                offset = PVector(previous.canvasOffsetX, previous.canvasOffsetY),
+            )
         }
     }
 
@@ -206,8 +224,10 @@ class Canvas(private val pApplet: PApplet) {
         val centerYAfter = calcCenterOnResize(height, offsetY)
 
         moveCanvasOffsets(
-            dx = (centerXAfter - centerXBefore),
-            dy = (centerYAfter - centerYBefore)
+            PVector(
+                (centerXAfter - centerXBefore),
+                (centerYAfter - centerYBefore)
+            )
         )
 
     }
@@ -346,7 +366,7 @@ class Canvas(private val pApplet: PApplet) {
                 val dy = (1f - zoomFactor) * (zoomCenterY - offsetY)
 
                 // move canvas offsets by this amount
-                moveCanvasOffsets(dx, dy)
+                moveCanvasOffsets(delta = PVector(dx, dy))
 
                 if (level == targetSize) {
                     stopZooming()

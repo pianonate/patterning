@@ -1,9 +1,9 @@
 package patterning.life
 
-import kotlin.math.abs
 import patterning.Canvas
 import patterning.Theme
 import patterning.ThreeD
+import patterning.util.drawPixelLine
 import processing.core.PConstants
 import processing.core.PGraphics
 import processing.core.PVector
@@ -12,9 +12,9 @@ class BoundingBox(
     bounds: Bounds,
     private val canvas: Canvas,
     private val threeD: ThreeD,
-    private val getFillColor: (Float, Float) -> Int
+    private val getFillColor: (Float, Float, Boolean) -> Int,
 
-) {
+    ) {
 
     private val widthDecimal = bounds.width * canvas.zoomLevel
     private val heightDecimal = bounds.height * canvas.zoomLevel
@@ -65,12 +65,12 @@ class BoundingBox(
         for ((start, end) in lines) {
             val clippedLine = cohenSutherlandClip(start.x, start.y, end.x, end.y)
             clippedLine?.let { (clippedStart, clippedEnd) ->
-                drawPixelLine(
-                    clippedStart.first.toInt(),
-                    clippedStart.second.toInt(),
-                    clippedEnd.first.toInt(),
-                    clippedEnd.second.toInt(),
-                    graphics
+                graphics.drawPixelLine(
+                    startX = clippedStart.first.toInt(),
+                    startY = clippedStart.second.toInt(),
+                    endX = clippedEnd.first.toInt(),
+                    endY = clippedEnd.second.toInt(),
+                    getFillColor = getFillColor,
                 )
             }
         }
@@ -242,57 +242,6 @@ class BoundingBox(
         operator fun component2(): Float = y
     }
 
-    fun drawPixelLine(
-        startX: Int,
-        startY: Int,
-        endX: Int,
-        endY: Int,
-        graphics: PGraphics,
-        dashPattern: List<Int>? = null
-    ) {
-        var (x, y) = startX to startY
-        val (dx, dy) = abs(endX - startX) to abs(endY - startY)
-        val (sx, sy) = Pair(if (startX < endX) 1 else -1, if (startY < endY) 1 else -1)
-        var err = dx - dy
-
-        var patternIdx = 0
-        var stepCounter = 0
-
-        generateSequence { Pair(x, y) }
-            .takeWhile { it.first != endX || it.second != endY }
-            .forEach { (px, py) ->
-
-                if (dashPattern == null || (dashPattern[patternIdx] > stepCounter && patternIdx % 2 == 0)) {
-                    val pixelColor = getFillColor(px.toFloat(), py.toFloat())
-                    graphics.stroke(pixelColor)
-                    graphics.vertex(px.toFloat(), py.toFloat())
-                    //graphics.set(px, py, pixelColor)
-                }
-
-
-                if (dashPattern != null) {
-                    stepCounter++
-                    //println("Step Counter: $stepCounter, Pattern Index: $patternIdx")  // Debug line
-                    if (stepCounter >= dashPattern[patternIdx]) {
-                       // println("Resetting Step Counter and Toggling Pattern Index")  // Debug line
-                        stepCounter = 0
-                        patternIdx = (patternIdx + 1) % dashPattern.size
-                    }
-                }
-
-                val e2 = 2 * err
-                if (e2 > -dy) {
-                    err -= dy
-                    x += sx
-                }
-                if (e2 < dx) {
-                    err += dx
-                    y += sy
-                }
-            }
-    }
-
-
     /**
      * fold takes an initial value and a lambda. it applies the lambda cumulatively to the items
      * in the collection, using the initial value as the starting point.  in each iteration, the
@@ -321,8 +270,8 @@ class BoundingBox(
                     clippedStart.second.toInt(),
                     clippedEnd.first.toInt(),
                     clippedEnd.second.toInt(),
-                    this,
-                    dashPattern = listOf(Theme.DASHED_LINE_DASH_LENGTH, Theme.DASHED_LINE_SPACE_LENGTH)
+                    listOf(Theme.DASHED_LINE_DASH_LENGTH, Theme.DASHED_LINE_SPACE_LENGTH),
+                    getFillColor,
                 )
             }
         }

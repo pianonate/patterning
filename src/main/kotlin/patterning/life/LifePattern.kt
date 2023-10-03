@@ -1,16 +1,12 @@
 package patterning.life
 
-import kotlin.math.abs
 import kotlin.math.roundToInt
 import patterning.Canvas
 import patterning.GraphicsReference
 import patterning.Properties
 import patterning.Theme
 import patterning.ThreeD
-import patterning.pattern.BoundaryMode
 import patterning.pattern.Colorful
-import patterning.pattern.Visual
-import patterning.pattern.VisualsManager
 import patterning.pattern.Movable
 import patterning.pattern.NumberedPatternLoader
 import patterning.pattern.Pasteable
@@ -19,16 +15,18 @@ import patterning.pattern.PerformanceTestable
 import patterning.pattern.Rewindable
 import patterning.pattern.Steppable
 import patterning.pattern.ThreeDimensional
+import patterning.pattern.Visual
+import patterning.pattern.VisualsManager
 import patterning.state.RunningModeController
 import patterning.util.AsyncJobRunner
 import patterning.util.ResourceManager
-import patterning.util.applyAlpha
+import patterning.util.boxPlus
 import patterning.util.isNotZero
 import patterning.util.isOne
 import patterning.util.isZero
+import patterning.util.quadPlus
 import processing.core.PApplet
 import processing.core.PConstants
-import processing.core.PGraphics
 import processing.core.PVector
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -42,8 +40,9 @@ class LifePattern(
     canvas: Canvas,
     properties: Properties,
     visuals: VisualsManager,
-   // fadeShader: PShader
-) : Pattern(pApplet, canvas, properties, visuals/*, fadeShader*/),
+    threeD: ThreeD,
+    // fadeShader: PShader
+) : Pattern(pApplet, canvas, properties, visuals, threeD /*, fadeShader*/),
     Colorful,
     Movable,
     NumberedPatternLoader,
@@ -173,7 +172,7 @@ class LifePattern(
         val offsetX = halfCanvasWidth - halfDrawingWidth + (bounds.left * -level)
         val offsetY = halfCanvasHeight - halfDrawingHeight + (bounds.top * -level)
 
-        canvas.updateCanvasOffsets(offsetX, offsetY)
+        canvas.setCanvasOffsets(offset = PVector(offsetX, offsetY))
 
     }
 
@@ -335,8 +334,6 @@ class LifePattern(
     ) {
         with(pattern.graphics) {
 
-            val getFillColorsLambda =
-                { x: Float, y: Float, applyCubeAlpha: Boolean -> getFillColor(x, y, applyCubeAlpha) }
             val corners = threeD.rectCorners
 
             when {
@@ -356,44 +353,15 @@ class LifePattern(
         }
     }
 
-    private fun getFillColor(x: Float, y: Float, applyCubeAlpha: Boolean = true): Int {
-
-        val cubeAlpha = if (
-            visuals requires Visual.ThreeDBoxes &&
-            canvas.zoomLevel >= 4F && applyCubeAlpha
-        )
-            Theme.cubeAlpha else 255
-
-        return with(pattern.graphics) {
-            val color = if (visuals requires Visual.Colorful) {
-                colorMode(PConstants.HSB, 360f, 100f, 100f, 255f)
-                val mappedColor = PApplet.map(x + y, 0f, canvas.width + canvas.height, 0f, 360f)
-                color(mappedColor, 100f, 100f, cubeAlpha.toFloat())
-            } else {
-                Theme.cellColor.applyAlpha(cubeAlpha)
-            }
-
-            ghostState.applyAlpha(color)
-        }
-    }
-
 
     private var actualRecursions = 0L
     private var startDelta = 0
 
-    override fun drawPattern(shouldAdvancePattern: Boolean) {
+    override fun drawPattern(patternIsDrawable: Boolean, shouldAdvancePattern: Boolean) {
 
         performanceTest.execute()
 
         with(pattern.graphics) {
-
-            beginDraw()
-            ghostState.prepareGraphics(this)
-            stroke(ghostState.applyAlpha(Theme.backgroundColor))
-
-            val patternIsDrawable = shouldAdvancePattern || (visuals requires Visual.AlwaysRotate)
-            if (patternIsDrawable)
-                threeD.rotate()
 
             val shouldDraw = when {
                 ghostState !is Ghosting && RunningModeController.isPaused -> true
@@ -407,7 +375,6 @@ class LifePattern(
                 drawBounds(life)
             }
 
-            endDraw()
         }
 
         goForwardInTime(shouldAdvancePattern)
@@ -424,7 +391,7 @@ class LifePattern(
     // no small thing that stack traces become much smaller
     private fun drawVisibleNodes(life: LifeUniverse) {
 
-        if (visuals.boundaryMode == BoundaryMode.BoundaryOnly) return
+        if (visuals requires Visual.HidePattern) return
 
         with(nodePath.getLowestEntryFromRoot(life.root)) {
             actualRecursions = 0L
@@ -512,11 +479,9 @@ class LifePattern(
     }
 
     private fun drawBounds(life: LifeUniverse) {
-        if (visuals.boundaryMode == BoundaryMode.PatternOnly) return
+        if (!(visuals requires Visual.Boundary)) return
 
         val bounds = life.rootBounds
-
-        val getFillColor: (Float, Float) -> Int = { x, y -> getFillColor(x, y) }
 
         var currentLevel = life.root.level - 2
 
@@ -524,14 +489,14 @@ class LifePattern(
             val drawOnlyBiggest = currentLevel == (life.root.level - 1)
             val halfSize = LifeUniverse.pow2(currentLevel)
             val levelBounds = Bounds(-halfSize, -halfSize, halfSize, halfSize)
-            val universeBox = BoundingBox(levelBounds, canvas, threeD, getFillColor)
+            val universeBox = BoundingBox(levelBounds, canvas, threeD, getFillColorsLambda)
             universeBox.draw(graphics = pattern.graphics, drawCrossHair = drawOnlyBiggest)
             currentLevel++
         }
 
         // use the bounds of the "living" section of the universe to determine
         // a visible boundary based on the current canvas offsets and cell size
-        val patternBox = BoundingBox(bounds, canvas, threeD, getFillColor)
+        val patternBox = BoundingBox(bounds, canvas, threeD, getFillColorsLambda)
         patternBox.draw(pattern.graphics)
 
     }
@@ -539,70 +504,6 @@ class LifePattern(
     private fun asyncNextGeneration() {
         life.nextGeneration()
         // targetStep += 1 // use this for testing - later on you can implement lightspeed around this
-    }
-
-    /**
-     * PGraphics extension functions as a helper for drawing the quads...
-     *
-     * we pass in a list of PVectors 4 at time so chunked can work to draw boxes correctly
-     *
-     * no stroke handling - as we are rotating, if we're large enough to have a stroke on the box outline
-     * we _don't_ want to show it because it will eliminate too many frames as it gets edge on to
-     * the camera - this is because the strokeColor is set to the background color
-     * so that's all we see - is background color
-     *
-     * so edge on, we turn off the stroke temporarily
-     */
-    private fun PGraphics.quadPlus(corners: List<PVector>, getFillColor: (Float, Float, Boolean) -> Int) {
-        this.beginShape(PConstants.QUADS)
-
-        corners.chunked(4).forEachIndexed { index, quadCorners ->
-            if (quadCorners.size == 4) {
-
-                if ((abs(corners[2].y - corners[0].y) <= 2) || (abs(corners[1].x - corners[0].x) <= 2)) {
-                    this.noStroke()
-                }
-
-                // if we're drawing a cube there are 6 faces chunked into 4 corners
-                // don't let apply the cube alpha to the first face drawn - which is the background face
-                // so one of the faces will always be full strength and the rest will be semi-transparent
-                // because it looks cool
-                val applyCubeAlpha = (index > 0)
-                val fillColor = getFillColor(quadCorners[0].x, quadCorners[0].y, applyCubeAlpha)
-                this.fill(fillColor)
-
-
-                quadCorners.forEach { vertex(it.x, it.y) }
-            }
-        }
-
-        this.endShape()
-    }
-
-    private fun PGraphics.boxPlus(
-        frontCorners: List<PVector>,
-        threeD: ThreeD,
-        depth: Float,
-        getFillColor: (Float, Float, Boolean) -> Int
-    ) {
-        val allCorners = mutableListOf<PVector>()
-
-        val backCorners = threeD.getBackCornersAtDepth(depth)
-
-        allCorners.addAll(backCorners)
-
-        for (i in 0 until 4) {
-            val j = (i + 1) % 4
-            allCorners.add(frontCorners[i])
-            allCorners.add(frontCorners[j])
-            allCorners.add(backCorners[j])
-            allCorners.add(backCorners[i])
-        }
-
-        allCorners.addAll(frontCorners)
-
-        quadPlus(allCorners, getFillColor)
-
     }
 
     companion object {

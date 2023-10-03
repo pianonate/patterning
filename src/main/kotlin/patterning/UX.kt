@@ -195,7 +195,8 @@ class UX(
                     addControl("camera.png", commandFactory.commandSaveImage)
                     if (pattern is Movable) {
                         addToggleHighlightControl("boundary.png", commandFactory.commandDrawBoundary)
-                        addToggleHighlightControl("boundaryOnly.png", commandFactory.commandDrawBoundaryOnly)
+                        addToggleHighlightControl("hidePattern.png", commandFactory.commandHidePattern)
+                        addToggleHighlightControl("threeDMousePosition.png", commandFactory.commandThreeDMousePosition)
                     }
                     if (pattern is Colorful) addToggleHighlightControl("heart.png", commandFactory.commandColorful)
                     addToggleHighlightControl("darkmode.png", commandFactory.commandThemeToggle)

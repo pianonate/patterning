@@ -2,12 +2,13 @@ package patterning.pattern
 
 import kotlinx.coroutines.runBlocking
 import patterning.Canvas
-import patterning.events.KeyboardShortcut
 import patterning.events.KeyEventNotifier
+import patterning.events.KeyboardShortcut
 import patterning.events.ValidOS
 import patterning.state.RunningModeController
 import patterning.util.hudFormatted
 import processing.core.PApplet
+import processing.core.PVector
 import processing.event.KeyEvent
 
 class CommandFactory(
@@ -20,17 +21,21 @@ class CommandFactory(
      * if you come up with different ways that you want to create KeyCombos than these, just add another extension
      * right now these are all invoked from commandFactory so they're marked private so as not to pollute the
      * namespace where they can't otherwise be used
+     *
+     * these are all private and i don't know if they would cause clashes with .toSet() that exists in the
+     * kotlin library - i really don't think so but even if so, these are scoped to this class only
      */
-    private fun Char.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(KeyboardShortcut(this.code))
+    private fun Char.toSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(KeyboardShortcut(this.code))
 
-    private fun CharRange.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> =
+    private fun CharRange.toSet(): LinkedHashSet<KeyboardShortcut> =
         this.map { KeyboardShortcut(it.code) }.toCollection(LinkedHashSet())
 
-    private fun KeyboardShortcut.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(this)
+    private fun KeyboardShortcut.toSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(this)
 
-    private fun Pair<KeyboardShortcut, KeyboardShortcut>.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = linkedSetOf(first, second)
+    private fun Pair<KeyboardShortcut, KeyboardShortcut>.toSet(): LinkedHashSet<KeyboardShortcut> =
+        linkedSetOf(first, second)
 
-    private fun Set<Int>.toKeyComboSet(): LinkedHashSet<KeyboardShortcut> = this.mapTo(LinkedHashSet()) { KeyboardShortcut(it) }
+    private fun Set<Int>.toSet(): LinkedHashSet<KeyboardShortcut> = this.mapTo(LinkedHashSet()) { KeyboardShortcut(it) }
 
     private val visuals = pattern.visuals
 
@@ -52,14 +57,14 @@ class CommandFactory(
     }
 
     val commandAlwaysRotate = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_ALWAYS_ROTATE.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_ALWAYS_ROTATE.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.AlwaysRotate) },
-        isEnabledLambda =  { visuals requires Visual.AlwaysRotate },
+        isEnabledLambda = { visuals requires Visual.AlwaysRotate },
         usage = "always rotate - even if paused"
     )
 
     val commandCenter = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_CENTER.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_CENTER.toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).center()
@@ -69,7 +74,7 @@ class CommandFactory(
     )
 
     val commandCenterAndFit = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_CENTER_AND_FIT.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_CENTER_AND_FIT.toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).fitToScreen()
@@ -79,7 +84,7 @@ class CommandFactory(
     )
 
     private val commandCenterViewResetRotations = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_CENTER, KeyEvent.SHIFT).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_CENTER, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = {
             if (pattern is ThreeDimensional) {
                 (pattern as ThreeDimensional).centerAndResetRotations()
@@ -89,61 +94,64 @@ class CommandFactory(
     )
 
     val commandColorful = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_COLORFUL.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_COLORFUL.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.Colorful) },
-        isEnabledLambda =  { visuals requires Visual.Colorful },
+        isEnabledLambda = { visuals requires Visual.Colorful },
         usage = "ooo, ahhh - so pretty!"
     )
 
     val commandDrawBoundary = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_DRAW_BOUNDARY.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_DRAW_BOUNDARY.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.Boundary) },
-        isEnabledLambda =  { visuals requires Visual.Boundary },
+        isEnabledLambda = { visuals requires Visual.Boundary },
         usage = "draw a border around the pattern",
     )
 
-    val commandDrawBoundaryOnly = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_DRAW_BOUNDARY, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { visuals.toggleState(Visual.BoundaryOnly) },
-        isEnabledLambda =  { visuals requires Visual.BoundaryOnly },
-        usage = "draw a border around the pattern - exclude the pattern",
-    )
-
     val commandFadeAway = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_FADE_AWAY.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_FADE_AWAY.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.FadeAway) },
-        isEnabledLambda =  { visuals requires Visual.FadeAway },
+        isEnabledLambda = { visuals requires Visual.FadeAway },
         usage = "fade away the pattern - aka Joshua mode"
     )
 
     val commandGhostMode = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_GHOST_MODE.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_GHOST_MODE.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.GhostMode) },
-        isEnabledLambda =  { visuals requires Visual.GhostMode },
+        isEnabledLambda = { visuals requires Visual.GhostMode },
         usage = "ghost mode. Also try ${KeyboardShortcut.META_KEY}${SHORTCUT_GHOST_MODE.uppercaseChar()} to stamp out a key frame while in ghost mode. Try me!"
     )
 
     private val commandGhostFadeAwayMode = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.SHIFT).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.GhostFadeAwayMode) },
-        isEnabledLambda =  { visuals requires Visual.GhostFadeAwayMode },
+        isEnabledLambda = { visuals requires Visual.GhostFadeAwayMode },
         usage = "ghost fade away mode - hidden capability"
     )
 
     private val commandGhostModeKeyFrame = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.META).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_GHOST_MODE, KeyEvent.META).toSet(),
         invokeFeatureLambda = { pattern.stampGhostModeKeyFrame() },
         usage = "ghost mode emit a key frame - while ghosting - try me!"
     )
 
+    val commandHidePattern = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_HIDE_PATTERN.toSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.HidePattern) },
+        isEnabledLambda = { visuals requires Visual.HidePattern },
+        usage = "hide the pattern",
+    )
+
     private val commandInvokeGC = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_INVOKE_GC, KeyEvent.SHIFT).toKeyComboSet(),
-        invokeFeatureLambda = { System.gc() },
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_INVOKE_GC, KeyEvent.SHIFT).toSet(),
+        invokeFeatureLambda = {
+            System.gc()
+            println("manual gc")
+        },
         usage = "manually invoke gc - for debugging purposes only"
     )
 
     private val commandMovePattern = SimpleCommand(
-        keyboardShortcuts = setOf(WEST, EAST, NORTH, SOUTH).toKeyComboSet(),
+        keyboardShortcuts = setOf(WEST, EAST, NORTH, SOUTH).toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 val movementKeys = KeyEventNotifier.pressedKeys.intersect(
@@ -165,13 +173,13 @@ class CommandFactory(
     )
 
     private val commandNextScreen = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_NEXT_SCREEN.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_NEXT_SCREEN.toSet(),
         invokeFeatureLambda = { canvas.nextScreen() },
         usage = "move the screen"
     )
 
     private val commandNumberedPattern = SimpleCommand(
-        keyboardShortcuts = ('1'..'9').toKeyComboSet(),
+        keyboardShortcuts = ('1'..'9').toSet(),
         invokeFeatureLambda = {
             if (pattern is NumberedPatternLoader) {
                 val number = KeyEventNotifier.latestKeyCode - '0'.code
@@ -185,7 +193,7 @@ class CommandFactory(
         keyboardShortcuts = Pair(
             KeyboardShortcut(SHORTCUT_PASTE.code, KeyEvent.META, ValidOS.MAC),
             KeyboardShortcut(SHORTCUT_PASTE.code, KeyEvent.CTRL, ValidOS.NON_MAC)
-        ).toKeyComboSet(),
+        ).toSet(),
         invokeFeatureLambda = {
             if (pattern is Pasteable) {
                 (pattern as Pasteable).paste()
@@ -198,7 +206,7 @@ class CommandFactory(
         keyboardShortcuts = Pair(
             KeyboardShortcut(SHORTCUT_PERFTEST.code, KeyEvent.META, ValidOS.MAC),
             KeyboardShortcut(SHORTCUT_PERFTEST.code, KeyEvent.CTRL, ValidOS.NON_MAC)
-        ).toKeyComboSet(),
+        ).toSet(),
         invokeFeatureLambda = {
             if (pattern is PerformanceTestable) {
                 RunningModeController.test()
@@ -208,14 +216,14 @@ class CommandFactory(
     )
 
     val commandPlayPause = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_PLAY_PAUSE.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_PLAY_PAUSE.toSet(),
         invokeFeatureLambda = { RunningModeController.togglePlayPause() },
         usage = "play and pause",
         invokeAfterDelay = true
     )
 
     private val commandPrintMemory = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_PRINT_MEMORY.toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_PRINT_MEMORY, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = {
             println(
                 "memory: ${
@@ -227,7 +235,7 @@ class CommandFactory(
     )
 
     val commandRandomPattern = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_RANDOM_FILE, KeyEvent.META).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_RANDOM_FILE, KeyEvent.META).toSet(),
         invokeFeatureLambda = {
             runBlocking {
                 if (pattern is NumberedPatternLoader) {
@@ -239,7 +247,7 @@ class CommandFactory(
     )
 
     val commandRewind = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_REWIND.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_REWIND.toSet(),
         invokeFeatureLambda = {
             if (pattern is Rewindable) {
                 (pattern as Rewindable).rewind()
@@ -249,24 +257,24 @@ class CommandFactory(
     )
 
     val commandSaveImage = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_SAVE_IMAGE.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_SAVE_IMAGE.toSet(),
         invokeFeatureLambda = { pattern.saveImage() },
         usage = "screenshot to desktop!"
     )
 
     val commandSingleStep = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_SINGLE_STEP.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_SINGLE_STEP.toSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 RunningModeController.toggleSingleStep()
             }
         },
-        isEnabledLambda =  { RunningModeController.isSingleStep },
+        isEnabledLambda = { RunningModeController.isSingleStep },
         usage = "toggle single step mode where which advances one generation at a time"
     )
 
     val commandStepFaster = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_STEP_FASTER.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_STEP_FASTER.toSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(true)
@@ -276,7 +284,7 @@ class CommandFactory(
     )
 
     val commandStepSlower = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_STEP_SLOWER.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_STEP_SLOWER.toSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(false)
@@ -286,38 +294,45 @@ class CommandFactory(
     )
 
     val commandThemeToggle = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_THEME_TOGGLE.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_THEME_TOGGLE.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.DarkMode) },
-        isEnabledLambda =  { visuals requires Visual.DarkMode },
+        isEnabledLambda = { visuals requires Visual.DarkMode },
         usage = "toggle between dark and light themes",
         invokeAfterDelay = true
     )
 
     val commandThreeDBoxes = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_THREE_D_BOXES, KeyEvent.SHIFT).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_THREE_D_BOXES, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDBoxes) },
-        isEnabledLambda =  { visuals requires Visual.ThreeDBoxes },
+        isEnabledLambda = { visuals requires Visual.ThreeDBoxes },
         usage = "three dimensional mode - try me!"
     )
 
+    val commandThreeDMousePosition = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_THREE_D_MOUSE_POSITION.toSet(),
+        invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDMousePosition) },
+        isEnabledLambda = { visuals requires Visual.ThreeDMousePosition },
+        usage = "show the mouse where it is, where it would be translated by rotation, and also where the 'unrotated' position would be. connected by lines. use with ghost mode, rainbow mode and josh mode for creative effects. only really works when you're rotating the image"
+    )
+
     val commandThreeDYaw = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_THREE_D_YAW.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_THREE_D_YAW.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDYaw) },
-        isEnabledLambda =  { visuals requires Visual.ThreeDYaw },
+        isEnabledLambda = { visuals requires Visual.ThreeDYaw },
         usage = "rotate on the y axis (yaw)"
     )
 
     val commandThreeDPitch = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_THREE_D_PITCH.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_THREE_D_PITCH.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDPitch) },
-        isEnabledLambda =  { visuals requires Visual.ThreeDPitch },
+        isEnabledLambda = { visuals requires Visual.ThreeDPitch },
         usage = "rotate on the x axis (pitch)"
     )
 
     val commandThreeDRoll = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_THREE_D_ROLL.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_THREE_D_ROLL.toSet(),
         invokeFeatureLambda = { visuals.toggleState(Visual.ThreeDRoll) },
-        isEnabledLambda =  { visuals requires Visual.ThreeDRoll },
+        isEnabledLambda = { visuals requires Visual.ThreeDRoll },
         usage = "rotate on the z axis (roll)"
     )
 
@@ -325,7 +340,7 @@ class CommandFactory(
         keyboardShortcuts = Pair(
             KeyboardShortcut(SHORTCUT_UNDO.code, KeyEvent.META, ValidOS.MAC),
             KeyboardShortcut(SHORTCUT_UNDO.code, KeyEvent.CTRL, ValidOS.NON_MAC)
-        ).toKeyComboSet(),
+        ).toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 canvas.undoMovement()
@@ -337,7 +352,10 @@ class CommandFactory(
 
     private val commandZoomIn = SimpleCommand(
         // we want it to handle both = and shift= (+) the same way
-        keyboardShortcuts = Pair(KeyboardShortcut(SHORTCUT_ZOOM_IN.code), KeyboardShortcut(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)).toKeyComboSet(),
+        keyboardShortcuts = Pair(
+            KeyboardShortcut(SHORTCUT_ZOOM_IN.code),
+            KeyboardShortcut(SHORTCUT_ZOOM_IN, KeyEvent.SHIFT)
+        ).toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(true, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
@@ -348,7 +366,7 @@ class CommandFactory(
     )
 
     private val commandZoomOut = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_ZOOM_OUT.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_ZOOM_OUT.toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(false, pApplet.mouseX.toFloat(), pApplet.mouseY.toFloat())
@@ -359,7 +377,7 @@ class CommandFactory(
     )
 
     val commandZoomInCenter = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_ZOOM_CENTERED.toKeyComboSet(),
+        keyboardShortcuts = SHORTCUT_ZOOM_CENTERED.toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(true, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
@@ -370,7 +388,7 @@ class CommandFactory(
     )
 
     val commandZoomOutCenter = SimpleCommand(
-        keyboardShortcuts = KeyboardShortcut(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT).toKeyComboSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_ZOOM_CENTERED, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = {
             if (pattern is Movable) {
                 (pattern as Movable).zoom(false, pApplet.width.toFloat() / 2, pApplet.height.toFloat() / 2)
@@ -391,11 +409,12 @@ class CommandFactory(
             }
         }
 
-        pattern.move(moveX, moveY)
+        pattern.move(PVector(moveX, moveY))
     }
 
     companion object {
         private const val SHORTCUT_THREE_D_BOXES = '3'
+        private const val SHORTCUT_THREE_D_MOUSE_POSITION = 'm'
         private const val SHORTCUT_THREE_D_PITCH = 'p'
         private const val SHORTCUT_THREE_D_YAW = 'y'
         private const val SHORTCUT_THREE_D_ROLL = 'r'
@@ -406,6 +425,7 @@ class CommandFactory(
         private const val SHORTCUT_FADE_AWAY = 'j'
         private const val SHORTCUT_GHOST_MODE = 'g'
         private const val SHORTCUT_ALWAYS_ROTATE = 'e'
+        private const val SHORTCUT_HIDE_PATTERN = 'h'
         private const val SHORTCUT_INVOKE_GC = 'i'
         private const val SHORTCUT_PRINT_MEMORY = 'm'
         private const val SHORTCUT_NEXT_SCREEN = 'n'

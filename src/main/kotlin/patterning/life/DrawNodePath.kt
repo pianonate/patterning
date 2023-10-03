@@ -21,7 +21,7 @@ class DrawNodePath(
         canvas.addOffsetsMovedObserver(this)
     }
 
-    override fun onOffsetsMoved() {
+    override fun onCanvasOffsetsMoved() {
         offsetsMoved = true
     }
 

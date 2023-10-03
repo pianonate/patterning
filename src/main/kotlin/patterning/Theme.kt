@@ -45,6 +45,7 @@ object Theme {
     const val HOVER_TEXT_SIZE = 14
     const val HUD_TEXT_SIZE = 16
     const val ICON_MARGIN = 5
+    const val MOUSE_CIRCLE_SIZE = 10f
     const val STARTUP_TEXT_SIZE = 50
     const val STROKE_WEIGHT_BOUNDS = 1f
     const val STROKE_WEIGHT_DASHED_LINES = 1f
@@ -54,18 +55,26 @@ object Theme {
      * is below here - just to allow for easy access to constants
      * at the top of the file
      */
+    @Suppress("unused")
+    const val RED = 0xFFFF0000.toInt()
+    @Suppress("unused")
+    const val BLUE = 0xFF0000FF.toInt()
+    @Suppress("unused")
+    const val GREEN = 0xFF00FF00.toInt()
+
     private lateinit var _backgroundColor: ColorConstant
     private lateinit var _cellColor: ColorConstant
     private lateinit var _controlColor: ColorConstant
     private lateinit var _controlHighlightColor: ColorConstant
     private lateinit var _controlMousePressedColor: ColorConstant
     private lateinit var _defaultPanelColor: ColorConstant
-    private var _ghostAlpha = 0
-    private var _cubeAlpha = 0
 
     private lateinit var _hoverTextColor: ColorConstant
     private lateinit var _textColor: ColorConstant
     private lateinit var _textColorStart: ColorConstant
+
+    private var _ghostAlpha = 0
+    private var _cubeAlpha = 0
 
     val backgroundColor get() = _backgroundColor.color
     val cellColor get() = _cellColor.color
@@ -75,6 +84,7 @@ object Theme {
     val defaultPanelColor get() = _defaultPanelColor.color
     val ghostAlpha get() = _ghostAlpha
     val cubeAlpha get() = _cubeAlpha
+    const val OPAQUE = 255
 
     val hoverTextColor get() = _hoverTextColor.color
     val textColor get() = _textColor.color

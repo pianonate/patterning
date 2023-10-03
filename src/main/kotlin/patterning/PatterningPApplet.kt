@@ -9,11 +9,15 @@ import patterning.pattern.PatternEvent
 import patterning.pattern.PatternEventType
 import patterning.util.AsyncJobRunner
 import patterning.util.hudFormatted
+import patterning.util.mouseVector
 import processing.core.PApplet
+import processing.core.PVector
 
 class PatterningPApplet : PApplet() {
-
+    private val visuals = VisualsManager()
     private val canvas = Canvas(this)
+    private val threeD = ThreeD(canvas, visuals)
+
     private lateinit var ux: UX
     private lateinit var pattern: Pattern
     private lateinit var properties: Properties
@@ -57,6 +61,7 @@ class PatterningPApplet : PApplet() {
      * to work around Processing
      */
     override fun setup() {
+        canvas.registerThreeD(threeD)
         windowTitle("patterning")
         Theme.init(this)
 
@@ -65,9 +70,6 @@ class PatterningPApplet : PApplet() {
         canvas.updateDimensions()
 
         properties = Properties(this)
-
-        val visuals = VisualsManager()
-
 
         // val fadeShader = loadShader("shaders/frag.glsl", "shaders/vert.glsl")
 
@@ -78,6 +80,7 @@ class PatterningPApplet : PApplet() {
             canvas = canvas,
             properties = properties,
             visuals = visuals,
+            threeD = threeD,
             //fadeShader = fadeShader,
         )
 
@@ -101,10 +104,6 @@ class PatterningPApplet : PApplet() {
     }
 
     private fun registerPatternObservers(pattern: Pattern) {
-
-        pattern.registerObserver(PatternEventType.PatternSwapped) { _ ->
-            canvas.newPattern()
-        }
 
         pattern.registerObserver(PatternEventType.PatternSwapped) { event ->
             ux.newPattern((event as PatternEvent.PatternSwapped).patternName)
@@ -132,7 +131,7 @@ class PatterningPApplet : PApplet() {
             // we can just let them go for now - log them just in case
             // possibly the early return above has fixed this but leaving it in just in case something else
             // mysterious pops up
-            println("error in draw() - the uncaught error of last resort: $e\n${e.stackTrace}")
+            println("uncaught error: $e")
         }
 
     }
@@ -164,7 +163,17 @@ class PatterningPApplet : PApplet() {
         if (draggingDrawing) {
             val dx = (mouseX - lastMouseX)
             val dy = (mouseY - lastMouseY)
-            pattern.move(dx, dy)
+
+
+            if (keyPressed && keyCode == SHIFT) {
+                println("setting new rotation center")
+                threeD.setTranslationCenter(this.mouseVector)
+            }
+
+           /* if (threeD.isRotating)
+                threeD.setTranslationCenter(this.mouseVector)*/
+            pattern.move(movementDelta = PVector(dx, dy))
+
             lastMouseX += dx
             lastMouseY += dy
         }

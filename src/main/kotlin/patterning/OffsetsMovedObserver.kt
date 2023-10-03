@@ -1,5 +1,5 @@
 package patterning
 
 interface OffsetsMovedObserver {
-    fun onOffsetsMoved()
+    fun onCanvasOffsetsMoved()
 }
