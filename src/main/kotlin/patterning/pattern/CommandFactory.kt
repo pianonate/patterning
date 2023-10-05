@@ -106,6 +106,16 @@ class CommandFactory(
         isEnabledLambda = { visuals requires Visual.Boundary },
         usage = "draw a border around the pattern",
     )
+    val commandDrawSlower = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_DRAW_SLOWER.toSet(),
+        invokeFeatureLambda = { pattern.drawSlower() },
+        usage = "draw less frequently",
+    )
+    val commandDrawFaster = SimpleCommand(
+        keyboardShortcuts = SHORTCUT_DRAW_FASTER.toSet(),
+        invokeFeatureLambda = { pattern.drawFaster() },
+        usage = "draw more frequently",
+    )
 
     val commandFadeAway = SimpleCommand(
         keyboardShortcuts = SHORTCUT_FADE_AWAY.toSet(),
@@ -274,7 +284,7 @@ class CommandFactory(
     )
 
     val commandStepFaster = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_STEP_FASTER.toSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_STEP_FASTER, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(true)
@@ -284,7 +294,7 @@ class CommandFactory(
     )
 
     val commandStepSlower = SimpleCommand(
-        keyboardShortcuts = SHORTCUT_STEP_SLOWER.toSet(),
+        keyboardShortcuts = KeyboardShortcut(SHORTCUT_STEP_SLOWER, KeyEvent.SHIFT).toSet(),
         invokeFeatureLambda = {
             if (pattern is Steppable) {
                 (pattern as Steppable).handleStep(false)
@@ -421,6 +431,9 @@ class CommandFactory(
 
         private const val SHORTCUT_CENTER = 'c'
         private const val SHORTCUT_DRAW_BOUNDARY = 'b'
+        private const val SHORTCUT_DRAW_SLOWER = ','
+        private const val SHORTCUT_DRAW_FASTER = '.'
+
         private const val SHORTCUT_CENTER_AND_FIT = 'f'
         private const val SHORTCUT_FADE_AWAY = 'j'
         private const val SHORTCUT_GHOST_MODE = 'g'

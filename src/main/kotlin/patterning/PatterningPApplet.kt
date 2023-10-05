@@ -116,15 +116,20 @@ class PatterningPApplet : PApplet() {
 
             canvas.handleResize()
 
-            if (pattern is Movable) {
-                canvas.updateZoom()
-            }
-            pattern.draw()
-            ux.draw()
 
+
+            if (frameCount % pattern.drawRate == 0) {
+
+                if (pattern is Movable) {
+                    canvas.updateZoom()
+                }
+                pattern.draw()
+            }
+            ux.draw()
             if (frameCount % 1000 == 0) {
                 asyncGC.start()
             }
+
 
         } catch (e: Exception) {
             // it seems these only seem to happen during startup or during resizing (moving from screen to screeN)

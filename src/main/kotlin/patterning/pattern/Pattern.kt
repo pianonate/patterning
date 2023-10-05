@@ -35,6 +35,9 @@ abstract class Pattern(
     val getFillColorsLambda =
         { x: Float, y: Float, applyCubeAlpha: Boolean -> getFillColor(x, y, applyCubeAlpha) }
 
+    var drawRate = 1
+        private set
+
     protected var ghostState: GhostState = GhostOff()
     /*var threeD = ThreeD(canvas, visuals)
         private set*/
@@ -104,6 +107,7 @@ abstract class Pattern(
             disable(Visual.ThreeDPitch)
             disable(Visual.ThreeDRoll)
         }
+        resetDrawRate()
     }
 
     fun onNewPattern(patternName: String) {
@@ -267,6 +271,19 @@ abstract class Pattern(
 
         val desktopDirectory = System.getProperty("user.home") + "/Desktop/"
         newGraphics.save("$desktopDirectory${pApplet.frameCount}.png")
+    }
+
+    fun drawSlower() {
+        drawRate++
+    }
+
+    fun drawFaster() {
+        if (drawRate > 1)
+             drawRate--
+    }
+
+    fun resetDrawRate() {
+        drawRate = 1
     }
 
     protected inner class GhostOff : GhostState {

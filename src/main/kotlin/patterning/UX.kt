@@ -166,14 +166,14 @@ class UX(
                             addControl("stepSlower.png", commandFactory.commandStepSlower)
                         }
 
-                        // .addControl("drawSlower.png", keyFactory.commandDrawSlower)
+                        addControl("drawSlower.png", commandFactory.commandDrawSlower)
                         addPlayPauseControl(
                             "play.png",
                             "pause.png",
                             commandFactory.commandPlayPause,
                         )
 
-                        //.addControl("drawFaster.png", keyFactory.commandDrawFaster)
+                        addControl("drawFaster.png", commandFactory.commandDrawFaster)
                         if (pattern is Steppable) addControl("stepFaster.png", commandFactory.commandStepFaster)
                         if (pattern is Rewindable) addControl("rewind.png", commandFactory.commandRewind)
 
